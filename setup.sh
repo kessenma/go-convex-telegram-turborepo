@@ -66,7 +66,11 @@ docker compose up convex-backend -d
 
 # Wait for backend to be healthy
 echo "⏳ Waiting for Convex backend to be healthy..."
-sleep 15
+for i in {15..1}; do
+    echo -ne "\r⏳ $i seconds remaining...";
+    sleep 1;
+done
+echo -e "\r✨ Done waiting!                  "
 
 # Check if backend is healthy
 if ! curl -f http://localhost:3210/version > /dev/null 2>&1; then
@@ -80,6 +84,10 @@ echo "✅ Convex backend is healthy"
 echo "🔑 Generating Convex admin key..."
 ADMIN_KEY=$(docker compose exec convex-backend ./generate_admin_key.sh | grep -E '^[^|]+\|[a-f0-9]+$' | tail -1)
 echo "✅ Admin key generated: ${ADMIN_KEY}"
+echo "🔐🔑"
+echo "🔐🔑"
+echo "🔐🔑"
+echo "🔐🔑"
 
 # Deploy Convex functions
 echo "📦 Deploying Convex functions..."
@@ -134,8 +142,8 @@ echo "=================="
 echo ""
 echo "📱 Your Telegram bot is now connected to Convex!"
 echo "🌐 Convex Dashboard: http://localhost:6791"
-echo "🔍 API Health Check: http://localhost:3210/api/health"
-echo "📨 Messages API: http://localhost:3210/api/telegram/messages"
+echo "🔍 API Health Check: http://localhost:3211/api/health"
+echo "📨 Messages API: http://localhost:3211/api/telegram/messages"
 echo ""
 echo "💬 Send a message to your Telegram bot to test the integration!"
 echo ""
@@ -145,5 +153,5 @@ echo "   Stop services: docker compose down"
 echo "   Restart bot: docker compose restart telegram-bot"
 echo ""
 echo "🔍 Test the API:"
-echo "   curl http://localhost:3210/api/health"
-echo "   curl http://localhost:3210/api/telegram/messages"
+echo "   curl http://localhost:3211/api/health"
+echo "   curl http://localhost:3211/api/telegram/messages"

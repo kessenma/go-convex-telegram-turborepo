@@ -18,58 +18,20 @@ The setup includes:
 
 ## 🚀 Quick Start
 
-### 1. Environment Setup
+The setup process has been automated with a single command:
 
 ```bash
-# Copy the environment template
-cp .env.example .env
-
-# Edit the .env file and add your Telegram bot token
-# TELEGRAM_TOKEN=your_bot_token_here
+pnpm setup-init
 ```
 
-### 2. Generate Convex Admin Key
+This script will:
+1. Create `.env` file from template if it doesn't exist
+2. Prompt for your Telegram bot token if not configured
+3. Start the Convex backend and generate admin key
+4. Deploy Convex functions
+5. Start all services
 
-First, start only the Convex backend to generate the admin key:
-
-```bash
-# Start Convex backend
-docker compose up convex-backend -d
-
-# Wait for it to be healthy, then generate admin key
-sleep 10
-docker compose exec convex-backend ./generate_admin_key.sh
-```
-
-This will create the admin key file needed for Convex operations.
-
-### 3. Deploy Convex Functions
-
-Deploy the Convex functions (schema, mutations, queries, HTTP routes):
-
-```bash
-# Navigate to the Convex app directory
-cd apps/docker-convex
-
-# Install dependencies
-pnpm install
-
-# Deploy functions to your local Convex instance
-CONVEX_URL=http://localhost:3210 pnpm convex dev --once
-
-# Return to root directory
-cd ../..
-```
-
-### 4. Start All Services
-
-```bash
-# Start all services (backend, dashboard, telegram bot)
-docker compose up -d
-
-# Check logs
-docker compose logs -f
-```
+The script provides feedback at each step and will notify you when setup is complete.
 
 ## 🔍 Verify Setup
 
@@ -80,14 +42,14 @@ docker compose logs -f
 docker compose ps
 
 # Test Convex API health
-curl http://localhost:3210/api/health
+curl http://localhost:3211/api/health
 ```
 
 ### 2. Test Telegram Bot
 
 1. Send a message to your Telegram bot
 2. Check the logs: `docker compose logs telegram-bot`
-3. Verify the message was saved by checking: `curl "http://localhost:3210/api/telegram/messages"`
+3. Verify the message was saved by checking: `curl "http://localhost:3211/api/telegram/messages"`
 
 ### 3. Access Convex Dashboard
 
@@ -140,7 +102,7 @@ docker system prune -af
 ## 🔧 Troubleshooting
 
 ### Bot Not Connecting to Convex
-1. Check if Convex backend is healthy: `curl http://localhost:3210/api/health`
+1. Check if Convex backend is healthy: `curl http://localhost:3211/api/health`
 2. Verify network connectivity: `docker compose exec telegram-bot ping convex-backend`
 3. Check environment variables: `docker compose exec telegram-bot env | grep CONVEX`
 
@@ -151,7 +113,7 @@ docker system prune -af
 
 ### Messages Not Saving
 1. Check bot logs: `docker compose logs telegram-bot`
-2. Test API directly: `curl -X POST http://localhost:3210/api/telegram/messages -H "Content-Type: application/json" -d '{"messageId":1,"chatId":123,"text":"test"}'`
+2. Test API directly: `curl -X POST http://localhost:3211/api/telegram/messages -H "Content-Type: application/json" -d '{"messageId":1,"chatId":123,"text":"test"}'`
 3. Verify schema is deployed: Check dashboard at http://localhost:6791
 
 ## 🔒 Security Notes
