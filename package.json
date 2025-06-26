@@ -1,0 +1,29 @@
+{
+  "name": "go-convex-telegram-turborepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check-types": "turbo run check-types",
+    "setup-init": "./setup.sh",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:restart-bot": "docker compose restart telegram-bot",
+    "docker:build": "docker compose up --build -d",
+    "docker:reset": "docker compose down -v && docker system prune -af",
+    "convex:deploy": "cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
+    "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.0",
+    "turbo": "^2.5.4",
+    "typescript": "5.8.2"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  }
+}
