@@ -13,12 +13,13 @@ This project consists of:
 - **🖥️ Next.js web app** (`apps/web/`) - Next.js frontend that displays messages from the Telegram bot
 - **📦 Shared Packages** (`packages/`) - Shared UI components and configurations
 
-<img src="https://www.docker.com/app/uploads/2023/08/logo-guide-logos-2.svg" width="120" alt="Docker Logo">
+<img src="https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/97_Docker_logo_logos-512.png" width="120" alt="Docker Logo">
+<img src="https://camo.githubusercontent.com/a72f086b878c2e74b90d5dbd3360e7a4aa132a219a662f4d83b7c243298fea4d/68747470733a2f2f7261772e6769746875622e636f6d2f676f6c616e672d73616d706c65732f676f706865722d766563746f722f6d61737465722f676f706865722e706e67" width="120" alt="Golang Logo">
 <img src="https://turborepo.com/api/og" width="150" alt="Turborepo Logo">
-<img src="https://www.techasoft.com/blog/2019/12/1576592374.png" width="120" alt="Golang Logo">
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Nextjs-logo.svg/788px-Nextjs-logo.svg.png" width="100" alt="Next.js Logo">
+<img src="https://camo.githubusercontent.com/c3635f27439ecdbf20e3cbf969c156f4040f10a0c8c836cf307d916dd8f806d4/68747470733a2f2f6173736574732e76657263656c2e636f6d2f696d6167652f75706c6f61642f76313636323133303535392f6e6578746a732f49636f6e5f6461726b5f6261636b67726f756e642e706e67" width="100" alt="Next.js Logo">
 <img src="https://docs.convex.dev/img/convex-dark.svg" width="120" alt="Convex Logo">
 <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="50" alt="Telegram Logo">
+
 
 
 ## 🚀 Quick Start
@@ -29,13 +30,21 @@ This project consists of:
 - [Node.js 18+](https://nodejs.org/en) and [pnpm](https://pnpm.io/installation)
 - Telegram Bot Token and Telegram bot username from [@BotFather](https://t.me/botfather)
 
-### One-Command Setup
 
+### three-Command Setup
+
+1.
 ```bash
 # Clone and setup everything
 git clone https://github.com/kessenma/go-convex-telegram-turborepo
+```
+2.
+```bash
 cd go-convex-telegram-turborepo
 pnpm install
+```
+3.
+```bash
 pnpm setup-init
 ```
 
@@ -50,12 +59,29 @@ see [SETUP.md](./SETUP.md) for detailed setup instructions.
 
 
 # Docker management
+```bash
 pnpm docker:up          # Start all services
+```
+
+```bash
 pnpm docker:down        # Stop all services
+```
+
+```bash
 pnpm docker:logs        # View logs
+```
+
+```bash
 pnpm docker:restart-bot # Restart just the bot
+```
+
+```bash
 pnpm docker:build       # Rebuild and start
+```
+
+```bash
 pnpm docker:reset       # Reset everything
+```
 
 # Convex functions
 pnpm convex:deploy      # Deploy Convex functions (Convex as a database runs off typescript functions, which is one way how it is different than a traditional SQL database. you can add more functions as you need and i think of them as the "database schema".)
@@ -64,9 +90,18 @@ pnpm convex:deploy      # Deploy Convex functions (Convex as a database runs off
 pnpm test:api           # Test API endpoints
 
 # Traditional Turborepo commands
+```bash
 pnpm build              # Build all packages
+```
+
+```bash
 pnpm dev                # Start development servers
+```
+```bash
 pnpm lint               # Lint all packages
+```
+
+```bash
 pnpm format             # Format code
 ```
 
@@ -81,7 +116,7 @@ Your Convex backend exposes these HTTP endpoints:
 
 ## 🗂️ Project Structure
 
-```
+```bash
 ├── apps/
 │   ├── docker-convex/          # Convex backend
 │   │   ├── convex/
