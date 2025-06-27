@@ -2,6 +2,7 @@
 
 # Telegram Bot + Convex Backend Setup Script
 # This script automates the setup process described in SETUP.md
+# For detailed manual setup instructions, see: https://github.com/your-repo/SETUP.md
 
 set -e  # Exit on any error
 
@@ -60,6 +61,79 @@ fi
 
 echo "✅ TELEGRAM_TOKEN is configured"
 
+# Check if TELEGRAM_BOT_USERNAME is set
+source .env
+if [ -z "$TELEGRAM_BOT_USERNAME" ] || [ "$TELEGRAM_BOT_USERNAME" = "your_bot_username_here" ]; then
+    echo ""
+    echo "🤖 Telegram Bot Username Setup"
+    echo "=============================="
+    echo "You need your bot's username to generate the bot URL."
+    echo "This is the username you chose when creating the bot with @BotFather."
+    echo "Note: Bot usernames always end with '_bot' (e.g., rust_telegram_bot_example_bot)"
+    echo ""
+    read -p "Do you want to enter your Telegram bot username now? (y/n): " -n 1 -r
+    echo ""
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo ""
+        read -p "Enter your Telegram bot username (including _bot suffix): " TELEGRAM_BOT_USERNAME_INPUT
+        
+        if [ -z "$TELEGRAM_BOT_USERNAME_INPUT" ]; then
+            echo "❌ No username provided. Exiting..."
+            exit 1
+        fi
+        
+        # Update the .env file with the provided username
+        if grep -q "^TELEGRAM_BOT_USERNAME=" .env; then
+            # Update existing line
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                # macOS
+                sed -i '' "s/TELEGRAM_BOT_USERNAME=.*/TELEGRAM_BOT_USERNAME=$TELEGRAM_BOT_USERNAME_INPUT/" .env
+            else
+                # Linux
+                sed -i "s/TELEGRAM_BOT_USERNAME=.*/TELEGRAM_BOT_USERNAME=$TELEGRAM_BOT_USERNAME_INPUT/" .env
+            fi
+        else
+            # Add new line if it doesn't exist
+            echo "TELEGRAM_BOT_USERNAME=$TELEGRAM_BOT_USERNAME_INPUT" >> .env
+        fi
+        
+        echo "✅ Telegram bot username saved to .env file"
+        
+        # Re-source the .env file to get the updated username
+        source .env
+    else
+        echo "❌ Bot username is optional but recommended for easy bot access."
+        echo "   You can add it later by editing the .env file."
+        TELEGRAM_BOT_USERNAME=""
+    fi
+fi
+
+echo "✅ TELEGRAM_BOT_USERNAME is configured"
+
+# Check if WEB_DASHBOARD_PORT is set
+source .env
+if [ -z "$WEB_DASHBOARD_PORT" ]; then
+    echo "📝 Setting default web dashboard port to 3000..."
+    if grep -q "^WEB_DASHBOARD_PORT=" .env; then
+        # Update existing line
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            sed -i '' "s/WEB_DASHBOARD_PORT=.*/WEB_DASHBOARD_PORT=3000/" .env
+        else
+            # Linux
+            sed -i "s/WEB_DASHBOARD_PORT=.*/WEB_DASHBOARD_PORT=3000/" .env
+        fi
+    else
+        # Add new line if it doesn't exist
+        echo "WEB_DASHBOARD_PORT=3000" >> .env
+    fi
+    # Re-source the .env file
+    source .env
+fi
+
+echo "✅ WEB_DASHBOARD_PORT is configured (${WEB_DASHBOARD_PORT})"
+
 # Start Convex backend first
 echo "🔧 Starting Convex backend..."
 docker compose up convex-backend -d
@@ -83,11 +157,7 @@ echo "✅ Convex backend is healthy"
 # Generate admin key and configure Convex
 echo "🔑 Generating Convex admin key..."
 ADMIN_KEY=$(docker compose exec convex-backend ./generate_admin_key.sh | grep -E '^[^|]+\|[a-f0-9]+$' | tail -1)
-echo "✅ Admin key generated: ${ADMIN_KEY}"
-echo "🔐🔑"
-echo "🔐🔑"
-echo "🔐🔑"
-echo "🔐🔑"
+echo "✅ Admin key generated and saved"
 
 # Deploy Convex functions
 echo "📦 Deploying Convex functions..."
@@ -125,6 +195,27 @@ cd ../..
 
 echo "✅ Convex functions deployed"
 
+# Build Next.js web dashboard
+echo "🌐 Building Next.js web dashboard..."
+cd apps/web
+
+# Check if pnpm is installed (already checked above, but being safe)
+if ! command -v pnpm &> /dev/null; then
+    echo "❌ pnpm is not installed. Please install it first:"
+    echo "   npm install -g pnpm"
+    exit 1
+fi
+
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing web dashboard dependencies..."
+    pnpm install
+fi
+
+cd ../..
+
+echo "✅ Web dashboard prepared"
+
 # Start all services
 echo "🚀 Starting all services..."
 docker compose up -d
@@ -136,21 +227,60 @@ sleep 5
 echo "📊 Service Status:"
 docker compose ps
 
+# Re-source .env to get updated variables for final output
+source .env
+
 echo ""
 echo "🎉 Setup Complete!"
 echo "=================="
 echo ""
 echo "📱 Your Telegram bot is now connected to Convex!"
 echo "🌐 Convex Dashboard: http://localhost:6791"
+echo "🖥️  Web Dashboard: http://localhost:${WEB_DASHBOARD_PORT}"
 echo "🔍 API Health Check: http://localhost:3211/api/health"
 echo "📨 Messages API: http://localhost:3211/api/telegram/messages"
 echo ""
-echo "💬 Send a message to your Telegram bot to test the integration!"
+
+# Display bot URL if username is configured
+if [ ! -z "$TELEGRAM_BOT_USERNAME" ] && [ "$TELEGRAM_BOT_USERNAME" != "your_bot_username_here" ]; then
+    echo "🤖 Your Telegram Bot URL: https://t.me/${TELEGRAM_BOT_USERNAME}"
+    echo "💬 Click the link above or search for @${TELEGRAM_BOT_USERNAME} in Telegram to start chatting!"
+else
+    echo "💬 Send a message to your Telegram bot to test the integration!"
+fi
+echo ""
+
+echo "🐳 Docker Desktop Instructions:"
+echo "=============================="
+echo "1. Open Docker Desktop application on your computer"
+echo "2. Navigate to the 'Containers' tab"
+echo "3. Look for containers with names like:"
+echo "   - telegram-bot-convex-backend-1"
+echo "   - telegram-bot-telegram-bot-1"
+echo "   - telegram-bot-web-dashboard-1"
+echo "4. You can view logs, restart, or stop containers from there"
+echo ""
+
+echo "🗄️ Database Management:"
+echo "======================="
+echo "Access your Convex database web interface to:"
+echo "• View and edit data in real-time"
+echo "• Import/export data"
+echo "• Create backups"
+echo "• Manage database schema"
+echo "• Monitor performance"
+echo ""
+echo "🔗 Database Access:"
+echo "   Dashboard URL: http://localhost:6791"
+echo "   Admin Key: ${ADMIN_KEY}"
+echo "   Deployment URL: http://localhost:3210"
 echo ""
 echo "📋 Useful commands:"
 echo "   View logs: docker compose logs -f"
 echo "   Stop services: docker compose down"
 echo "   Restart bot: docker compose restart telegram-bot"
+echo "   Restart dashboard: docker compose restart web-dashboard"
+echo "   View dashboard logs: docker compose logs -f web-dashboard"
 echo ""
 echo "🔍 Test the API:"
 echo "   curl http://localhost:3211/api/health"

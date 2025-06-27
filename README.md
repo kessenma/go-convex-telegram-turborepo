@@ -23,7 +23,7 @@ This project consists of:
 
 ```bash
 # Clone and setup everything
-git clone <your-repo>
+git clone https://github.com/kessenma/go-convex-telegram-turborepo
 cd go-convex-telegram-turborepo
 pnpm setup
 ```
@@ -35,34 +35,9 @@ The setup script will:
 4. Deploy Convex functions
 5. Start all services
 
-### Manual Setup
+### Initial Setup
+see [SETUP.md](./SETUP.md) for detailed instructions.
 
-If you prefer manual setup, see [SETUP.md](./SETUP.md) for detailed instructions.
-
-## 📱 Usage
-
-1. **Configure your bot token**:
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your TELEGRAM_TOKEN
-   ```
-
-2. **Start all services**:
-   ```bash
-   pnpm docker:up
-   ```
-
-3. **Send a message to your Telegram bot** - it will be automatically saved to the Convex database!
-
-4. **View saved messages**:
-   - Dashboard: http://localhost:6791
-   - API: http://localhost:3210/api/telegram/messages
-
-## 🛠️ Development Commands
-
-```bash
-# Setup everything
-pnpm setup
 
 # Docker management
 pnpm docker:up          # Start all services

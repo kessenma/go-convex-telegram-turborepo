@@ -1,0 +1,7 @@
+{
+  "functions": "../docker-convex/convex/",
+  "generateCommonJSApi": false,
+  "node": {
+    "externalPackages": ["@node-rs/argon2", "@node-rs/bcrypt"]
+  }
+}

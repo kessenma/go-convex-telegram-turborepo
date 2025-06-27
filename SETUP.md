@@ -14,7 +14,8 @@ The setup includes:
 
 1. **Docker & Docker Compose** installed on your system
 2. **Telegram Bot Token** from [@BotFather](https://t.me/botfather)
-3. **pnpm** (for Convex function deployment)
+3. **Telegram Bot Username** (the username you chose when creating the bot, ending with `_bot`)
+4. **pnpm** (for Convex function deployment)
 
 ## 🚀 Quick Start
 
@@ -27,9 +28,10 @@ pnpm setup-init
 This script will:
 1. Create `.env` file from template if it doesn't exist
 2. Prompt for your Telegram bot token if not configured
-3. Start the Convex backend and generate admin key
-4. Deploy Convex functions
-5. Start all services
+3. Prompt for your Telegram bot username if not configured
+4. Start the Convex backend and generate admin key
+5. Deploy Convex functions
+6. Start all services
 
 The script provides feedback at each step and will notify you when setup is complete.
 
@@ -47,13 +49,47 @@ curl http://localhost:3211/api/health
 
 ### 2. Test Telegram Bot
 
-1. Send a message to your Telegram bot
-2. Check the logs: `docker compose logs telegram-bot`
-3. Verify the message was saved by checking: `curl "http://localhost:3211/api/telegram/messages"`
+1. **Access your bot**: If you configured the bot username during setup, you can access your bot at:
+   ```
+   https://t.me/your_bot_username_here
+   ```
+   Or search for `@your_bot_username_here` in Telegram
+
+2. **Send a message** to your Telegram bot
+3. **Check the logs**: `docker compose logs telegram-bot`
+4. **Verify the message was saved**: `curl "http://localhost:3211/api/telegram/messages"`
 
 ### 3. Access Convex Dashboard
 
 Open your browser and go to: http://localhost:6791
+
+### 4. Monitor with Docker Desktop
+
+1. **Open Docker Desktop** application on your computer
+2. **Navigate to the 'Containers' tab**
+3. **Look for your containers**:
+   - `go-convex-telegram-turborepo-convex-backend-1`
+   - `go-convex-telegram-turborepo-telegram-bot-1`
+4. **Use Docker Desktop to**:
+   - View real-time logs
+   - Restart containers
+   - Monitor resource usage
+   - Stop/start services
+
+## 🗄️ Database Management
+
+Your Convex database provides a powerful web interface for:
+
+- **Real-time data viewing and editing**
+- **Data import/export capabilities**
+- **Database backup creation**
+- **Schema management**
+- **Performance monitoring**
+
+**Access Information:**
+- **Dashboard URL**: http://localhost:6791
+- **Deployment URL**: http://localhost:3210
+- **Admin Key**: Generated during setup (saved in `apps/docker-convex/admin-key/`)
 
 ## 📊 API Endpoints
 

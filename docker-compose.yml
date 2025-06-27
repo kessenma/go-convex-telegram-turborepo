@@ -1,5 +1,7 @@
 version: '3.8'
 
+name: telegram-bot
+
 services:
   # Convex Backend Service
   convex-backend:
@@ -68,6 +70,23 @@ services:
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3211}
       - CONVEX_INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
+    depends_on:
+      convex-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - telegram-bot-network
+
+  # Next.js Web Dashboard Service
+  web-dashboard:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    ports:
+      - "${WEB_DASHBOARD_PORT:-3000}:3000"
+    environment:
+      - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
+      - NODE_ENV=production
     depends_on:
       convex-backend:
         condition: service_healthy

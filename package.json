@@ -2,12 +2,13 @@
   "name": "go-convex-telegram-turborepo",
   "private": true,
   "scripts": {
+    "setup-init": "./setup.sh",
+    
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "setup-init": "./setup.sh",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
