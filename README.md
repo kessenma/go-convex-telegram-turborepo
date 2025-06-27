@@ -2,11 +2,9 @@
 
 A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Telegram bot 🤖 with a self-hosted Convex database backend, and a next.js web app.
 
-## 🏗️ Architecture
-
-This project consists of:
+## 🧱 The building blocks ⚙️
 - **🕸️ Turborepo** - A monorepo that orchestrates the project
-- **🔌 a central Docker compose** - Used to define and run multi-container Docker applications (every app in the apps folder has a dockerfile inside it)
+- **🔌 a central Docker compose** - Used to define and run multi-container Docker applications (every app in the apps folder has a dockerfile 🧩 inside it)
 - **🛜 a docker network** - Used to connect the containers securely (managed in the docker-compose.yaml)
 - **🤖 Golang Telegram Bot** (`apps/golang-telegram-bot/`) - Receives messages and saves them to Convex
 - **🗄️ Convex Backend** (`apps/docker-convex/`) - Self-hosted typescript-based database with HTTP API endpoints
@@ -43,10 +41,10 @@ This project consists of:
 
 - [Docker](https://docs.docker.com/get-docker/) 
 - [Node.js 18+](https://nodejs.org/en) and [pnpm](https://pnpm.io/installation)
-- Telegram Bot Token and Telegram bot username from [@BotFather](https://t.me/botfather)
+- Telegram Bot _Token_ and Telegram bot _username_ from [@BotFather](https://t.me/botfather)
 
 
-### three-Command Setup
+### Three-Command Setup
 
 1.
 ```bash
