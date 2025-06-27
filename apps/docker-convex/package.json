@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Self-hosted Convex database boilerplate with Docker",
   "scripts": {
+    "dev": "pnpm run self-hosted:setup && pnpm run deploy-functions",
+    "build": "pnpm run deploy-functions",
+    "start": "pnpm run self-hosted:setup",
+    "clean": "docker compose down && docker system prune -af --volumes",
     "docker:up": "docker compose --env-file .env.docker up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",

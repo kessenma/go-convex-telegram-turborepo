@@ -81,11 +81,11 @@ services:
   web-dashboard:
     build:
       context: .
-      dockerfile: ./apps/web/Dockerfile
+      dockerfile: ./apps/web/Dockerfile  # Fixed path
     ports:
       - "${WEB_DASHBOARD_PORT:-3000}:3000"
     environment:
-      - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
+      - NEXT_PUBLIC_CONVEX_URL=http://convex-backend:3210  # Fixed internal URL
       - NODE_ENV=production
     depends_on:
       convex-backend:

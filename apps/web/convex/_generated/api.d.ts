@@ -23,26 +23,14 @@ import type * as telegram from "../../../docker-convex/convex/telegram.js";
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-declare const api: FilterApi<
-  ApiFromModules<{
-    telegram: typeof telegram;
-  }>,
+declare const fullApi: ApiFromModules<{
+  telegram: typeof telegram;
+}>;
+export declare const api: FilterApi<
+  typeof fullApi,
   FunctionReference<any, "public">
 >;
-export { api };
-
-/**
- * A utility for referencing Convex functions in your app's API.
- *
- * Usage for example:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
-declare const internal: FilterApi<
-  ApiFromModules<{
-    telegram: typeof telegram;
-  }>,
+export declare const internal: FilterApi<
+  typeof fullApi,
   FunctionReference<any, "internal">
 >;
-export { internal };

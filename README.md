@@ -12,8 +12,7 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 - **🖥️ Next.js web app** (`apps/web/`) - Next.js frontend that displays messages from the Telegram bot
 - **📦 Shared Packages** (`packages/`) - Shared UI components and configurations
 
-<table>
-
+<table>  
 <tr>
 <td><img src="https://turborepo.com/api/og" width="200" alt="Turborepo Logo"></td>
 <td><img src="https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/97_Docker_logo_logos-512.png" width="100" alt="Docker Logo"></td>
@@ -23,29 +22,25 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 </table>
 
 <table>
-
 <tr>
 <td><img src="https://docs.convex.dev/img/convex-dark.svg" width="150" alt="Convex Logo"></td>
-<td><img src="https://cdn.worldvectorlogo.com/logos/typescript.svg" width="100" alt="TypeScript Logo"></td>
-<td><img src="https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_LightBlue.png" width="100" alt="Golang Logo"></td>
-<td><img src="https://camo.githubusercontent.com/c3635f27439ecdbf20e3cbf969c156f4040f10a0c8c836cf307d916dd8f806d4/68747470733a2f2f6173736574732e76657263656c2e636f6d2f696d6167652f75706c6f61642f76313636323133303535392f6e6578746a732f49636f6e5f6461726b5f6261636b67726f756e642e706e67" width="100" alt="Next.js Logo"></td>
-<td><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="100" alt="Telegram Logo"></td>
+<td><img src="https://cdn.worldvectorlogo.com/logos/typescript.svg" width="87.5" alt="TypeScript Logo"></td>
+<td><img src="https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_LightBlue.png" width="87.5" alt="Golang Logo"></td>
+<td><img src="https://camo.githubusercontent.com/c3635f27439ecdbf20e3cbf969c156f4040f10a0c8c836cf307d916dd8f806d4/68747470733a2f2f6173736574732e76657263656c2e636f6d2f696d6167652f75706c6f61642f76313636323133303535392f6e6578746a732f49636f6e5f6461726b5f6261636b67726f756e642e706e67" width="87.5" alt="Next.js Logo"></td>
+<td><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="87.5" alt="Telegram Logo"></td>
 </tr>
 </table>
 
 
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Docker) 🐳
 
 ### Prerequisites
-
 - [Docker](https://docs.docker.com/get-docker/) 
 - [Node.js 18+](https://nodejs.org/en) and [pnpm](https://pnpm.io/installation)
 - Telegram Bot _Token_ and Telegram bot _username_ from [@BotFather](https://t.me/botfather)
 
-
 ### Three-Command Setup
-
 1.
 ```bash
 # Clone and setup everything
@@ -61,6 +56,49 @@ pnpm install
 pnpm setup-init
 ```
 
+## ⚡ Turborepo & Build Caching
+
+This project uses **Turborepo** for optimized monorepo management and intelligent build caching:
+
+### Key Benefits
+- **⚡ Lightning Fast Builds**: Skip rebuilding unchanged code
+- **🔄 Incremental Development**: Only rebuild what you've modified
+- **🚀 Parallel Execution**: Run tasks across all apps simultaneously
+- **🧠 Smart Dependencies**: Automatic task dependency resolution
+- **☁️ Remote Caching**: Share build cache across team and CI/CD
+
+### How It Works
+```bash
+# First build - everything builds from scratch
+pnpm run build
+
+# Second build - only changed apps rebuild (near-instant!)
+pnpm run build
+
+# View what would be cached/rebuilt
+pnpm turbo run build --dry-run
+```
+
+### Cache Configuration
+- **Global dependencies**: `.env`, `.env.local`, `.env.example`
+- **Environment tracking**: Automatic cache invalidation on env changes
+- **Input tracking**: Source files, configs, dependencies, and more
+- **Output caching**: Build artifacts, generated files, test results
+
+## 🏃‍♂️ Local Development (Without Docker)
+
+For local development without Docker containers, see our comprehensive guide:
+
+📖 **[Local Setup Guide](./LOCAL-SETUP-GUIDE.md)**
+
+This includes:
+- Setting up each service individually
+- Running development servers locally
+- Building and testing without containers
+- Turborepo commands for local development
+
+## 🐳 Docker Development
+
 The setup script will:
 1. Create `.env` file from template
 2. Start Convex backend
@@ -70,66 +108,9 @@ The setup script will:
 
 see [SETUP.md](./SETUP.md) for detailed setup instructions.
 
+## Environmnent variable management
+Every app in this repo contains a readme file to run the app independently from the monorepo. However, **‼️ in order to run the apps independently locally they will need their own env file in the corresponding app folder ‼️** Getting environment variables to play nice across monorepo's can be tricky, so I prefer to use a central .env file that can be used across the monorepo. 
 
-# Docker management
-```bash
-pnpm docker:up          # Start all services
-```
-
-```bash
-pnpm docker:down        # Stop all services
-```
-
-```bash
-pnpm docker:logs        # View logs
-```
-
-```bash
-pnpm docker:restart-bot # Restart just the bot
-```
-
-```bash
-pnpm docker:build       # Rebuild and start
-```
-
-```bash
-pnpm docker:reset       # Reset everything
-```
-
-# Convex functions
-```bash
-pnpm convex:deploy      # Deploy Convex functions (Convex as a database runs off typescript functions, which is one way how it is different than a traditional SQL database. you can add more functions as you need and i think of them as the "database schema".)
-```
-
-# Testing
-```bash
-pnpm test:api           # Test API endpoints
-```
-
-# Traditional Turborepo commands
-```bash
-pnpm build              # Build all packages
-```
-
-```bash
-pnpm dev                # Start development servers
-```
-```bash
-pnpm lint               # Lint all packages
-```
-
-```bash
-pnpm format             # Format code
-```
-
-## 🔴----🔫 API Endpoints
-
-Your Convex backend exposes these HTTP endpoints:
-
-- `POST /api/telegram/messages` - Save a new message
-- `GET /api/telegram/messages` - Get all messages
-- `GET /api/telegram/messages?chatId=123` - Get messages for specific chat
-- `GET /api/health` - Health check
 
 ## 🗂️ Project Structure
 
@@ -155,6 +136,66 @@ Your Convex backend exposes these HTTP endpoints:
 └── SETUP.md                    # Detailed setup guide
 ```
 
+## Docker management
+```bash
+pnpm docker:up          # Start all services
+```
+
+```bash
+pnpm docker:down        # Stop all services
+```
+
+```bash
+pnpm docker:logs        # View logs
+```
+
+```bash
+pnpm docker:restart-bot # Restart just the bot
+```
+
+```bash
+pnpm docker:build       # Rebuild and start
+```
+
+```bash
+pnpm docker:reset       # Reset everything
+```
+
+## Convex functions
+```bash
+pnpm convex:deploy      # Deploy Convex functions (Convex as a database runs off typescript functions, which is one way how it is different than a traditional SQL database. you can add more functions as you need and i think of them as the "database schema".)
+```
+
+## Testing
+```bash
+pnpm test:api           # Test API endpoints
+```
+
+## Traditional Turborepo commands
+```bash
+pnpm build              # Build all packages
+```
+
+```bash
+pnpm dev                # Start development servers
+```
+```bash
+pnpm lint               # Lint all packages
+```
+
+```bash
+pnpm format             # Format code
+```
+
+## 🔴----🔫 API Endpoints
+
+The Convex backend exposes these HTTP endpoints:
+
+- `POST /api/telegram/messages` - Save a new message
+- `GET /api/telegram/messages` - Get all messages
+- `GET /api/telegram/messages?chatId=123` - Get messages for specific chat
+- `GET /api/health` - Health check
+  
 ## 🗄️ Database Schema
 
 The `telegram_messages` table stores:
@@ -184,7 +225,7 @@ curl http://localhost:3210/api/telegram/messages
 
 ## 🚨 Troubleshooting
 
-Common issues and solutions:
+Common issues:
 
 1. **Bot not connecting to Convex**:
    - Check if Convex is healthy: `curl http://localhost:3210/api/health`
