@@ -27,11 +27,11 @@ This project consists of:
 <table>
 
 <tr>
-<td><img src="https://camo.githubusercontent.com/a72f086b878c2e74b90d5dbd3360e7a4aa132a219a662f4d83b7c243298fea4d/68747470733a2f2f7261772e6769746875622e636f6d2f676f6c616e672d73616d706c65732f676f706865722d766563746f722f6d61737465722f676f706865722e706e67" width="120" alt="Golang Logo"></td>
+<td><img src="https://docs.convex.dev/img/convex-dark.svg" width="150" alt="Convex Logo"></td>
 <td><img src="https://cdn.worldvectorlogo.com/logos/typescript.svg" width="100" alt="TypeScript Logo"></td>
-<td><img src="https://docs.convex.dev/img/convex-dark.svg" width="120" alt="Convex Logo"></td>
+<td><img src="https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_LightBlue.png" width="100" alt="Golang Logo"></td>
 <td><img src="https://camo.githubusercontent.com/c3635f27439ecdbf20e3cbf969c156f4040f10a0c8c836cf307d916dd8f806d4/68747470733a2f2f6173736574732e76657263656c2e636f6d2f696d6167652f75706c6f61642f76313636323133303535392f6e6578746a732f49636f6e5f6461726b5f6261636b67726f756e642e706e67" width="100" alt="Next.js Logo"></td>
-<td><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="50" alt="Telegram Logo"></td>
+<td><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="100" alt="Telegram Logo"></td>
 </tr>
 </table>
 
@@ -124,7 +124,7 @@ pnpm lint               # Lint all packages
 pnpm format             # Format code
 ```
 
-## 📊 API Endpoints
+## 🔴----🔫 API Endpoints
 
 Your Convex backend exposes these HTTP endpoints:
 
