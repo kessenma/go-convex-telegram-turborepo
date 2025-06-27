@@ -7,12 +7,12 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 This project consists of:
 
 - **🤖 Golang Telegram Bot** (`apps/golang-telegram-bot/`) - Receives messages and saves them to Convex
-![Alt text](https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg)
+<img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="50" alt="Telegram Logo">
 - **🗄️ Convex Backend** (`apps/docker-convex/`) - Self-hosted typescript-based database with HTTP API endpoints
 - **📚 Convex console Next.js web app** (`apps/docker-convex/convex/`) - a Convex database manager app
-![Alt text](https://docs.convex.dev/img/convex-light.svg)
+<img src="https://docs.convex.dev/img/convex-light.svg" width="120" alt="Convex Logo">
 - **🖥️ Next.js web app** (`apps/web/`) - Next.js frontend that displays messages from the Telegram bot
-![Alt text](https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Nextjs-logo.svg/788px-Nextjs-logo.svg.png)
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Nextjs-logo.svg/788px-Nextjs-logo.svg.png" width="100" alt="Next.js Logo">
 - **📦 Shared Packages** (`packages/`) - Shared UI components and configurations
 
 ## 🚀 Quick Start
@@ -20,12 +20,12 @@ This project consists of:
 ### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) 
-![Alt text](https://www.docker.com/app/uploads/2023/08/logo-guide-logos-2.svg)
+<img src="https://www.docker.com/app/uploads/2023/08/logo-guide-logos-2.svg" width="120" alt="Docker Logo">
 - [Node.js 18+](https://nodejs.org/en) and [pnpm](https://pnpm.io/installation)
-![Alt text](https://nodejs.org/static/logos/nodejsStackedDark.svg)
-![Alt text](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Pnpm_logo.svg/800px-Pnpm_logo.svg.png)
+<img src="https://nodejs.org/static/logos/nodejsStackedDark.svg" width="80" alt="Node.js Logo">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Pnpm_logo.svg/800px-Pnpm_logo.svg.png" width="80" alt="pnpm Logo">
 - Telegram Bot Token and Telegram bot username from [@BotFather](https://t.me/botfather)
-![Alt text](https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg)
+<img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="50" alt="Telegram Logo">
 
 ### One-Command Setup
 
