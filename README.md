@@ -6,18 +6,19 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 
 This project consists of:
 - **🕸️ Turborepo** - A monorepo that orchestrates the project
-- **🔌 Docker** - Used to define and run multi-container Docker applications
+- **🔌 a central Docker compose** - Used to define and run multi-container Docker applications (every app in the monorepo has a dockerfile inside it)
+- **🛜 a docker network** - Used to connect the containers securely
 - **🤖 Golang Telegram Bot** (`apps/golang-telegram-bot/`) - Receives messages and saves them to Convex
 - **🗄️ Convex Backend** (`apps/docker-convex/`) - Self-hosted typescript-based database with HTTP API endpoints
 - **📚 Convex console Next.js web app** (`apps/docker-convex/convex/`) - a Convex database manager app
 - **🖥️ Next.js web app** (`apps/web/`) - Next.js frontend that displays messages from the Telegram bot
 - **📦 Shared Packages** (`packages/`) - Shared UI components and configurations
 
-<img src="https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/97_Docker_logo_logos-512.png" width="120" alt="Docker Logo">
-<img src="https://camo.githubusercontent.com/a72f086b878c2e74b90d5dbd3360e7a4aa132a219a662f4d83b7c243298fea4d/68747470733a2f2f7261772e6769746875622e636f6d2f676f6c616e672d73616d706c65732f676f706865722d766563746f722f6d61737465722f676f706865722e706e67" width="120" alt="Golang Logo">
 <img src="https://turborepo.com/api/og" width="150" alt="Turborepo Logo">
-<img src="https://camo.githubusercontent.com/c3635f27439ecdbf20e3cbf969c156f4040f10a0c8c836cf307d916dd8f806d4/68747470733a2f2f6173736574732e76657263656c2e636f6d2f696d6167652f75706c6f61642f76313636323133303535392f6e6578746a732f49636f6e5f6461726b5f6261636b67726f756e642e706e67" width="100" alt="Next.js Logo">
+<img src="https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/97_Docker_logo_logos-512.png" width="120" alt="Docker Logo">
 <img src="https://docs.convex.dev/img/convex-dark.svg" width="120" alt="Convex Logo">
+<img src="https://camo.githubusercontent.com/a72f086b878c2e74b90d5dbd3360e7a4aa132a219a662f4d83b7c243298fea4d/68747470733a2f2f7261772e6769746875622e636f6d2f676f6c616e672d73616d706c65732f676f706865722d766563746f722f6d61737465722f676f706865722e706e67" width="120" alt="Golang Logo">
+<img src="https://camo.githubusercontent.com/c3635f27439ecdbf20e3cbf969c156f4040f10a0c8c836cf307d916dd8f806d4/68747470733a2f2f6173736574732e76657263656c2e636f6d2f696d6167652f75706c6f61642f76313636323133303535392f6e6578746a732f49636f6e5f6461726b5f6261636b67726f756e642e706e67" width="100" alt="Next.js Logo">
 <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="50" alt="Telegram Logo">
 
 
