@@ -13,17 +13,21 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as telegram from "../../../docker-convex/convex/telegram.js";
+import type * as example from "../example.js";
+import type * as http from "../http.js";
+import type * as telegram from "../telegram.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
  *
- * Usage for example:
+ * Usage:
  * ```js
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  example: typeof example;
+  http: typeof http;
   telegram: typeof telegram;
 }>;
 export declare const api: FilterApi<

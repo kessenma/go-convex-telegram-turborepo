@@ -140,7 +140,8 @@ docker compose up convex-backend -d
 
 # Wait for backend to be healthy
 echo "⏳ Waiting for Convex backend to be healthy..."
-for i in {15..1}; do
+echo "(you can increase + decrease this amount as needed)"
+for i in {5..1}; do
     echo -ne "\r⏳ $i seconds remaining...";
     sleep 1;
 done

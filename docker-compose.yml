@@ -82,10 +82,12 @@ services:
     build:
       context: .
       dockerfile: ./apps/web/Dockerfile  # Fixed path
+      args:
+        - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
     ports:
       - "${WEB_DASHBOARD_PORT:-3000}:3000"
     environment:
-      - NEXT_PUBLIC_CONVEX_URL=http://convex-backend:3210  # Fixed internal URL
+      - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
       - NODE_ENV=production
     depends_on:
       convex-backend:

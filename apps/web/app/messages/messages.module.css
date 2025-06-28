@@ -27,6 +27,17 @@
   color: #666;
 }
 
+.error {
+  text-align: center;
+  padding: 4rem;
+  font-size: 1.2rem;
+  color: #dc3545;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  margin: 2rem 0;
+}
+
 .messagesList {
   display: flex;
   flex-direction: column;

@@ -32,6 +32,9 @@ RUN npm install -g pnpm@latest
 
 # Build the application
 WORKDIR /app/apps/web
+# Accept build argument for Convex URL
+ARG NEXT_PUBLIC_CONVEX_URL
+ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
 RUN pnpm build
 
 # Production image
@@ -52,7 +55,7 @@ COPY --from=builder /app/apps/web/public ./public
 RUN mkdir .next && chown nextjs:nodejs .next
 
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
 USER nextjs
 EXPOSE 3000
