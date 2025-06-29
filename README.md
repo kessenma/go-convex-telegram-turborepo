@@ -3,8 +3,8 @@
 A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Telegram bot 🤖 with a self-hosted Convex database backend, and a next.js web app.
 
 ## 🧱 The building blocks ⚙️
-- **🕸️ Turborepo** - A monorepo that orchestrates the project
-- **🔌 a central Docker compose** - Used to define and run multi-container Docker applications (every app in the apps folder has a dockerfile 🧩 inside it)
+- **🕸️ Turborepo** - A monorepo management tool that orchestrates the project from a central package.json and .env
+- **🔌 a central Docker compose** - Used to define and run multi-container Docker applications (🧩every app in the apps folder has a dockerfile  inside it)
 - **🛜 a docker network** - Used to connect the containers securely (managed in the docker-compose.yaml)
 - **🤖 Golang Telegram Bot** (`apps/golang-telegram-bot/`) - Receives messages and saves them to Convex
 - **🗄️ Convex Backend** (`apps/docker-convex/`) - Self-hosted typescript-based database with HTTP API endpoints
@@ -37,10 +37,10 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 
 ### Prerequisites
 - [Docker](https://docs.docker.com/get-docker/) 
-- [Node.js 18+](https://nodejs.org/en) and [pnpm](https://pnpm.io/installation)
+- [Node.js 18+](https://nodejs.org/en) and [pnpm](https://pnpm.io/installation) (use homebrew if on mac)
 - Telegram Bot _Token_ and Telegram bot _username_ from [@BotFather](https://t.me/botfather)
-
-### Three-Command Setup
+- [Go](https://go.dev/doc/install) installed 
+### Three-Command (Docker) Setup
 1.
 ```bash
 # Clone and setup everything
@@ -56,18 +56,16 @@ pnpm install
 pnpm setup-init
 ```
 
-## ⚡ Turborepo & Build Caching
+## Turborepo & Build Caching
 
-This project uses **Turborepo** for optimized monorepo management and intelligent build caching:
+This project uses **Turborepo** for monorepo management and intelligent build caching:
 
 ### Key Benefits
-- **⚡ Lightning Fast Builds**: Skip rebuilding unchanged code
 - **🔄 Incremental Development**: Only rebuild what you've modified
 - **🚀 Parallel Execution**: Run tasks across all apps simultaneously
-- **🧠 Smart Dependencies**: Automatic task dependency resolution
-- **☁️ Remote Caching**: Share build cache across team and CI/CD
+- **🧠 Smart Dependencies**: Automatic task dependency resolution 
 
-### How It Works
+### How It Works locally 
 ```bash
 # First build - everything builds from scratch
 pnpm run build
@@ -87,7 +85,7 @@ pnpm turbo run build --dry-run
 
 ## 🏃‍♂️ Local Development (Without Docker)
 
-For local development without Docker containers, see our comprehensive guide:
+For local development without Docker containers, see guide:
 
 📖 **[Local Setup Guide](./LOCAL-SETUP-GUIDE.md)**
 
@@ -136,7 +134,7 @@ Every app in this repo contains a readme file to run the app independently from 
 └── SETUP.md                    # Detailed setup guide
 ```
 
-## Docker management
+## Docker commands 
 ```bash
 pnpm docker:up          # Start all services
 ```
@@ -210,7 +208,7 @@ See [schema.ts](./apps/docker-convex/convex/schema.ts) for full details.
 
 ```bash
 # View service status
-docker compose ps
+docker compose ps -a
 
 # Check specific service logs
 docker compose logs telegram-bot
