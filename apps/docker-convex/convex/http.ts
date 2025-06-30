@@ -1,6 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { saveMessageAPI, getMessagesAPI } from "./telegram";
+import { api } from "./_generated/api";
+import { saveMessageAPI, getMessagesAPI, saveMessageToThreadAPI } from "./api";
 
 const http = httpRouter();
 
@@ -15,6 +16,13 @@ http.route({
   path: "/api/telegram/messages",
   method: "GET",
   handler: getMessagesAPI,
+});
+
+// New endpoint for saving messages to specific threads
+http.route({
+  path: "/api/telegram/messages/thread",
+  method: "POST",
+  handler: saveMessageToThreadAPI,
 });
 
 // Health check endpoint
@@ -37,5 +45,8 @@ http.route({
   method: "GET",
   handler: healthCheck,
 });
+
+// Note: Message sending is now handled directly by Next.js app using node-telegram-bot-api
+// The Next.js app will send messages to Telegram and then save them to the database
 
 export default http;

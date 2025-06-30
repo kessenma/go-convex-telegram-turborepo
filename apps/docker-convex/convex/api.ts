@@ -1,4 +1,3 @@
-// apps/docker-convex/convex/telegram.ts
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
 
@@ -21,8 +20,8 @@ export const saveMessageAPI = httpAction(async (ctx, request) => {
   }
 
   try {
-    // Save the message using the mutation from messages module
-    const messageId = await ctx.runMutation(api.messages.saveMessage, {
+    // Save the message using the enhanced mutation with better thread handling
+    const messageId = await ctx.runMutation(api.messagesThread.saveMessageWithThreadHandling, {
       messageId: body.messageId,
       chatId: body.chatId,
       userId: body.userId,
@@ -52,6 +51,67 @@ export const saveMessageAPI = httpAction(async (ctx, request) => {
     return new Response(
       JSON.stringify({ 
         error: "Failed to save message",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+});
+
+// HTTP API endpoint for saving messages to specific threads
+export const saveMessageToThreadAPI = httpAction(async (ctx, request) => {
+  // Parse the request body
+  const body = await request.json();
+  
+  // Validate required fields
+  if (!body.messageId || !body.chatId || !body.text || !body.threadDocId) {
+    return new Response(
+      JSON.stringify({ 
+        error: "Missing required fields: messageId, chatId, text, threadDocId" 
+      }),
+      { 
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+
+  try {
+    // Save the message directly to the specified thread
+    const messageId = await ctx.runMutation(api.messagesThread.saveMessageToThread, {
+      messageId: body.messageId,
+      chatId: body.chatId,
+      userId: body.userId,
+      username: body.username,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      text: body.text,
+      messageType: body.messageType || "bot_message",
+      timestamp: body.timestamp || Date.now(),
+      messageThreadId: body.messageThreadId,
+      threadDocId: body.threadDocId,
+      replyToMessageId: body.replyToMessageId,
+    });
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        messageId: messageId,
+        message: "Message saved to thread successfully" 
+      }),
+      { 
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  } catch (error) {
+    console.error("Error saving message to thread:", error);
+    return new Response(
+      JSON.stringify({ 
+        error: "Failed to save message to thread",
         details: error instanceof Error ? error.message : "Unknown error"
       }),
       { 
