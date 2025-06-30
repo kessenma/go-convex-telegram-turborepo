@@ -3,6 +3,9 @@
   "private": true,
   "scripts": {
     "setup-init": "./setup.sh",
+    "docker:manage": "./docker-manager.sh",
+    "get-admin-key": "docker compose exec convex-backend ./generate_admin_key.sh",
+    "docker:reset": "docker compose down -v && docker system prune -af",
     
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -26,13 +29,12 @@
     "install:all": "pnpm install && cd apps/golang-telegram-bot && make install",
     "clean:all": "turbo run clean && cd apps/golang-telegram-bot && make clean",
     
-    "docker:reset": "docker compose down -v && docker system prune -af",
+  
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:restart-bot": "docker compose restart telegram-bot",
     "docker:build": "docker compose up --build -d",
-    "get-admin-key": "docker compose exec convex-backend ./generate_admin_key.sh",
     "convex:deploy": "cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages"
   },

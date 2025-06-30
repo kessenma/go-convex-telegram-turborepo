@@ -39,6 +39,7 @@ services:
       - S3_STORAGE_FILES_BUCKET=${S3_STORAGE_FILES_BUCKET:-}
       - S3_STORAGE_SEARCH_BUCKET=${S3_STORAGE_SEARCH_BUCKET:-}
       - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
     healthcheck:
       test: curl -f http://localhost:3210/version
       interval: 5s
@@ -84,11 +85,17 @@ services:
       dockerfile: ./apps/web/Dockerfile  # Fixed path
       args:
         - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
+        - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
     ports:
       - "${WEB_DASHBOARD_PORT:-3000}:3000"
     environment:
       - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}
+      - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+      - CONVEX_URL=http://convex-backend:3211
       - NODE_ENV=production
+      - NEXT_PUBLIC_CONVEX_DASHBOARD_PORT=${CONVEX_DASHBOARD_PORT:-6791}
+      - NEXT_PUBLIC_CONVEX_PORT=${CONVEX_PORT:-3210}
     depends_on:
       convex-backend:
         condition: service_healthy

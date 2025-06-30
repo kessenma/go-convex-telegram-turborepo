@@ -2,14 +2,14 @@
 
 A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Telegram bot 🤖 with a self-hosted Convex database backend, and a next.js web app.
 
-## 🧱 The building blocks ⚙️
+## 🧱 The building blocks 
 - **🕸️ Turborepo** - A monorepo management tool that orchestrates the project from a central package.json and .env
 - **🔌 a central Docker compose** - Used to define and run multi-container Docker applications (🧩every app in the apps folder has a dockerfile  inside it)
 - **🛜 a docker network** - Used to connect the containers securely (managed in the docker-compose.yaml)
 - **🤖 Golang Telegram Bot** (`apps/golang-telegram-bot/`) - Receives messages and saves them to Convex
 - **🗄️ Convex Backend** (`apps/docker-convex/`) - Self-hosted typescript-based database with HTTP API endpoints
-- **📚 Convex console Next.js web app** (`apps/docker-convex/convex/`) - a Convex database manager app
-- **🖥️ Next.js web app** (`apps/web/`) - Next.js frontend that displays messages from the Telegram bot
+- **📚 Convex console Next.js web app** (`apps/docker-convex/convex/`) - a Convex database manager app that requires an admin key to login with
+- **🖥️ Next.js web app** (`apps/web/`) - Next.js frontend that displays messages from the Telegram bot and allows you to send messages back to the bot.
 - **📦 Shared Packages** (`packages/`) - Shared UI components and configurations
 
 <table>  
@@ -50,6 +50,7 @@ git clone https://github.com/kessenma/go-convex-telegram-turborepo
 ```bash
 cd go-convex-telegram-turborepo
 pnpm install
+chmod +x docker-manager.sh
 ```
 3.
 ```bash
@@ -105,6 +106,14 @@ The setup script will:
 5. Start all services
 
 see [SETUP.md](./SETUP.md) for detailed setup instructions.
+
+# Manage individual services interactively
+once you have the docker containers running you can manage them with this script: 
+
+```bash
+chmod +x docker-manager.sh
+pnpm docker:manage
+```
 
 ## Environmnent variable management
 Every app in this repo contains a readme file to run the app independently from the monorepo. However, **‼️ in order to run the apps independently locally they will need their own env file in the corresponding app folder ‼️** Getting environment variables to play nice across monorepo's can be tricky, so I prefer to use a central .env file that can be used across the monorepo. 

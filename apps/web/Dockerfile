@@ -32,9 +32,11 @@ RUN npm install -g pnpm@latest
 
 # Build the application
 WORKDIR /app/apps/web
-# Accept build argument for Convex URL
+# Accept build arguments
 ARG NEXT_PUBLIC_CONVEX_URL
+ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
+ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 RUN pnpm build
 
 # Production image

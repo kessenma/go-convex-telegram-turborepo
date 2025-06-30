@@ -2,83 +2,65 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import Image from "next/image";
-import Link from "next/link";
-import styles from "./page.module.css";
+import { BackgroundBeams } from "./components/ui/background-beams";
+import { Hero } from "./components/ui/hero";
+import { StatCard } from "./components/ui/card";
+import { Button } from "./components/ui/button";
+import { MessageSquareCode, MessagesSquare, MessageSquareShare } from "lucide-react";
 
-type Props = Omit<React.ComponentProps<typeof Image>, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
 
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
 
-  return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
 
 export default function Home() {
-  const messages = useQuery(api.telegram.getAllMessages, { limit: 5 });
+  const messages = useQuery(api.messages.getAllMessages, { limit: 5 });
   const messageCount = messages?.length || 0;
 
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        
-        <div className={styles.hero}>
-          <h1>Telegram Bot + Convex Dashboard</h1>
-          <p>Monitor and view your Telegram bot messages in real-time</p>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20 relative">
+      <BackgroundBeams />
+      <main className="max-w-4xl mx-auto text-center relative z-10">
+        <Hero 
+          title="Telegram Next.js Bot Boilerplate"
+          subtitle="Monitor and view your Telegram bot messages in real-time"
+        >
+          {process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME && (
+            <p className="text-lg mb-8">
+              Bot URL: <a 
+                href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:text-purple-600 font-medium transition-colors"
+              >
+                t.me/{process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
+              </a>
+            </p>
+          )}
+        </Hero>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          <StatCard 
+            title="Total Messages" 
+            value={messages === undefined ? "Loading..." : messageCount} 
+          />
+          <StatCard 
+            title="Database Status" 
+            value={messages === undefined ? "Connecting..." : "Connected"} 
+          />
         </div>
 
-        <div className={styles.stats}>
-          <div className={styles.statCard}>
-            <h3>Total Messages</h3>
-            <p className={styles.statNumber}>
-              {messages === undefined ? "Loading..." : messageCount}
-            </p>
-          </div>
-          <div className={styles.statCard}>
-            <h3>Database Status</h3>
-            <p className={styles.statStatus}>
-              {messages === undefined ? "Connecting..." : "Connected"}
-            </p>
-          </div>
-        </div>
-
-        <div className={styles.ctas}>
-          <Link href="/messages" className={styles.primary}>
-            <span>📱 View All Messages</span>
-          </Link>
-          <a
-            className={styles.secondary}
-            href="http://localhost:6791"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span>🗄️ Convex Dashboard</span>
-          </a>
-          <a
-            href="http://localhost:3211/api/health"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            <span>🔍 API Health Check</span>
-          </a>
+        <div className="flex flex-wrap gap-4 justify-center">
+          <Button href="/messages" variant="secondary">
+            <MessageSquareCode className="w-4 h-4 mr-2" />
+            View Messages
+          </Button>
+          <Button href="/threads" variant="secondary">
+            <MessagesSquare className="w-4 h-4 mr-2" />
+            Browse Threads
+          </Button>
+          <Button href="/send" variant="secondary">
+            <MessageSquareShare className="w-4 h-4 mr-2" />
+            Send Message
+          </Button>
         </div>
       </main>
     </div>

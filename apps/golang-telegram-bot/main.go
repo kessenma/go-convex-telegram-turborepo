@@ -19,15 +19,17 @@ import (
 
 // TelegramMessage represents the structure for saving messages to Convex
 type TelegramMessage struct {
-	MessageID   int    `json:"messageId"`
-	ChatID      int64  `json:"chatId"`
-	UserID      *int64 `json:"userId,omitempty"`
-	Username    string `json:"username,omitempty"`
-	FirstName   string `json:"firstName,omitempty"`
-	LastName    string `json:"lastName,omitempty"`
-	Text        string `json:"text"`
-	MessageType string `json:"messageType"`
-	Timestamp   int64  `json:"timestamp"`
+	MessageID        int    `json:"messageId"`
+	ChatID           int64  `json:"chatId"`
+	UserID           *int64 `json:"userId,omitempty"`
+	Username         string `json:"username,omitempty"`
+	FirstName        string `json:"firstName,omitempty"`
+	LastName         string `json:"lastName,omitempty"`
+	Text             string `json:"text"`
+	MessageType      string `json:"messageType"`
+	Timestamp        int64  `json:"timestamp"`
+	MessageThreadID  *int   `json:"messageThreadId,omitempty"`
+	ReplyToMessageID *int   `json:"replyToMessageId,omitempty"`
 }
 
 // ConvexResponse represents the response from Convex API
@@ -99,7 +101,7 @@ func saveMessageToConvex(ctx context.Context, msg *models.Message) error {
 		ChatID:      msg.Chat.ID,
 		Text:        msg.Text,
 		MessageType: "text",
-		Timestamp:   int64(msg.Date),
+		Timestamp:   int64(msg.Date) * 1000, // Convert to milliseconds
 	}
 
 	// Add user information if available
@@ -108,6 +110,22 @@ func saveMessageToConvex(ctx context.Context, msg *models.Message) error {
 		telegramMsg.Username = msg.From.Username
 		telegramMsg.FirstName = msg.From.FirstName
 		telegramMsg.LastName = msg.From.LastName
+	}
+
+	// Add thread information if available - THIS IS THE KEY FIX
+	if msg.MessageThreadID != 0 {
+		threadID := msg.MessageThreadID
+		telegramMsg.MessageThreadID = &threadID
+		log.Printf("🧵 Message is part of thread ID: %d", threadID)
+	} else {
+		log.Printf("💬 Message is not part of a thread (regular chat message)")
+	}
+
+	// Add reply information if available
+	if msg.ReplyToMessage != nil {
+		replyID := msg.ReplyToMessage.ID
+		telegramMsg.ReplyToMessageID = &replyID
+		log.Printf("↩️ Message is replying to message ID: %d", replyID)
 	}
 
 	// Convert to JSON
@@ -181,9 +199,15 @@ func messageHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		update.Message.Chat.ID, 
 		update.Message.Chat.Type)
 
+	// Enhanced logging to show thread information
+	threadInfo := ""
+	if update.Message.MessageThreadID != 0 {
+		threadInfo = fmt.Sprintf(" | Thread ID: %d", update.Message.MessageThreadID)
+	}
+
 	// Log incoming message with detailed information
-	log.Printf("📨 Message received from %s | %s | Text: '%s'", 
-		userInfo, chatInfo, update.Message.Text)
+	log.Printf("📨 Message received from %s | %s%s | Text: '%s'", 
+		userInfo, chatInfo, threadInfo, update.Message.Text)
 
 	// Save message to Convex database
 	if err := saveMessageToConvex(ctx, update.Message); err != nil {
@@ -194,11 +218,20 @@ func messageHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// Create response message
 	responseText := fmt.Sprintf("Message received and saved: %s", update.Message.Text)
 
-	// Send response back to the chat
-	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+	// Prepare response parameters
+	sendParams := &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   responseText,
-	})
+	}
+
+	// If the original message was in a thread, reply in the same thread
+	if update.Message.MessageThreadID != 0 {
+		sendParams.MessageThreadID = update.Message.MessageThreadID
+		log.Printf("🧵 Replying in thread ID: %d", update.Message.MessageThreadID)
+	}
+
+	// Send response back to the chat
+	_, err := b.SendMessage(ctx, sendParams)
 	
 	if err != nil {
 		log.Printf("❌ Failed to send message to %s: %v", userInfo, err)
