@@ -25,11 +25,11 @@ export default function Home() {
         >
           {process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME && (
             <p className="text-lg mb-8">
-              Bot URL: <a 
+              Bot username: <a
                 href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-500 hover:text-purple-600 font-medium transition-colors"
+                className="text-blue-500 hover:text-blue-300 font-medium transition-colors"
               >
                 t.me/{process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
               </a>

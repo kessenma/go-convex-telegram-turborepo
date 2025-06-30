@@ -6,11 +6,11 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { TelegramMessage } from "../../models/telegram";
 import { Hero } from "../../components/ui/hero";
 import { Card } from "../../components/ui/card";
-import { StatefulButton } from "../../components/ui/stateful-button";
 import Link from 'next/link';
 import { ArrowLeft, Send, Bot, Clock, MessageSquare, User, Hash } from 'lucide-react';
 import { cn } from "../../lib/utils";
 import React, { useState } from 'react';
+import {Button} from "../../components/ui/button";
 
 interface ThreadDetailPageProps {
   params: Promise<{ threadId: string }>;
@@ -137,131 +137,137 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
   }
 
   return (
-    <div className="relative min-h-screen">
-      <div className="relative z-20 min-h-screen flex flex-col items-center justify-center px-4 pt-24 pb-20">
-        <div className="max-w-4xl w-full mx-auto">
-          <div className="mb-6">
-            <Link href="/threads" className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Threads
-            </Link>
-          </div>
-          
-          <Hero 
-            title={thread?.title || `Thread ${thread?.threadId || 'Unknown'}`}
-            subtitle={`Chat: ${messages[0].chatId} • ${messages.length} messages • ${thread?.isActive ? 'Active' : 'Inactive'}`}
-            whiteText
-          />
-          
-          <div className="flex flex-wrap items-center gap-4 text-sm mb-6">
-            <span className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full font-medium">
-              <Hash className="w-4 h-4" />
+      <div className="relative min-h-screen">
+        <div className="relative z-20 min-h-screen flex flex-col items-center justify-center px-4 pt-24 pb-20">
+          <div className="max-w-4xl w-full mx-auto">
+            <div className="mb-6">
+              <Link href="/threads"
+                    className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors gap-2">
+                <ArrowLeft className="w-4 h-4"/>
+                Back to Threads
+              </Link>
+            </div>
+
+            <Hero
+                title={thread?.title || `Thread ${thread?.threadId || 'Unknown'}`}
+                subtitle={`Chat: ${messages[0].chatId} • ${messages.length} messages • ${thread?.isActive ? 'Active' : 'Inactive'}`}
+                whiteText
+            />
+
+            <div className="flex flex-wrap items-center gap-4 text-sm mb-6">
+            <span
+                className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full font-medium">
+              <Hash className="w-4 h-4"/>
               {messages[0].chatId}
             </span>
-            <span className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full font-medium">
-              <MessageSquare className="w-4 h-4" />
-              {messages.length} messages
+              <span
+                  className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full font-medium">
+              <MessageSquare className="w-4 h-4"/>
+                {messages.length} messages
             </span>
-            {thread && (
-              <span className={cn(
-                "inline-flex items-center gap-2 px-3 py-1 rounded-full font-medium",
-                thread.isActive 
-                  ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' 
-                  : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-              )}>
+              {thread && (
+                  <span className={cn(
+                      "inline-flex items-center gap-2 px-3 py-1 rounded-full font-medium",
+                      thread.isActive
+                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                          : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                  )}>
                 <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  thread.isActive ? "bg-green-500" : "bg-red-500"
-                )} />
-                {thread.isActive ? 'Active' : 'Inactive'}
+                    "w-2 h-2 rounded-full",
+                    thread.isActive ? "bg-green-500" : "bg-red-500"
+                )}/>
+                    {thread.isActive ? 'Active' : 'Inactive'}
               </span>
-            )}
-          </div>
+              )}
+            </div>
 
-          <div className="space-y-4">
-            {messages?.map((message: TelegramMessage) => (
-              <Card key={message._id} className="bg-gray-900/90 border-gray-700/50 hover:shadow-lg transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      {message.messageType === 'bot_message' ? (
-                        <Bot className="w-5 h-5 text-purple-400" />
-                      ) : (
-                        <User className="w-5 h-5 text-blue-400" />
-                      )}
-                      {message.firstName && (
-                        <span className="font-semibold text-gray-200">
+            <div className="space-y-4">
+              {messages?.map((message: TelegramMessage) => (
+                  <Card key={message._id}
+                        className="bg-gray-900/90 border-gray-700/50 hover:shadow-lg transition-shadow">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          {message.messageType === 'bot_message' ? (
+                              <Bot className="w-5 h-5 text-purple-400"/>
+                          ) : (
+                              <User className="w-5 h-5 text-blue-400"/>
+                          )}
+                          {message.firstName && (
+                              <span className="font-semibold text-gray-200">
                           {message.firstName} {message.lastName}
                         </span>
-                      )}
-                    </div>
-                    {message.username && (
-                      <span className="text-blue-400 font-medium">@{message.username}</span>
-                    )}
-                    {message.messageType === 'bot_message' && (
-                      <span className="inline-flex items-center gap-2 px-2 py-1 bg-purple-900/50 text-purple-200 text-xs font-medium rounded-full">
-                        <Bot className="w-3 h-3" />
+                          )}
+                        </div>
+                        {message.username && (
+                            <span className="text-blue-400 font-medium">@{message.username}</span>
+                        )}
+                        {message.messageType === 'bot_message' && (
+                            <span
+                                className="inline-flex items-center gap-2 px-2 py-1 bg-purple-900/50 text-purple-200 text-xs font-medium rounded-full">
+                        <Bot className="w-3 h-3"/>
                         Bot
                       </span>
-                    )}
-                  </div>
-                  <div className="inline-flex items-center gap-2 text-sm text-gray-400">
-                    <Clock className="w-4 h-4" />
-                    {new Date(message.timestamp).toLocaleString()}
-                  </div>
-                </div>
-                <div className="mb-3">
-                  <p className="text-gray-200 leading-relaxed">{message.text}</p>
-                </div>
-                <div className="flex justify-between items-center text-xs text-gray-400">
+                        )}
+                      </div>
+                      <div className="inline-flex items-center gap-2 text-sm text-gray-400">
+                        <Clock className="w-4 h-4"/>
+                        {new Date(message.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <p className="text-gray-200 leading-relaxed">{message.text}</p>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-gray-400">
                   <span className="inline-flex items-center gap-2">
-                    <Hash className="w-3 h-3" />
+                    <Hash className="w-3 h-3"/>
                     {message.messageId}
                   </span>
-                  <span className="inline-flex items-center gap-2 px-2 py-1 bg-gray-800 rounded-full">
-                    <MessageSquare className="w-3 h-3" />
-                    {message.messageType}
+                      <span className="inline-flex items-center gap-2 px-2 py-1 bg-gray-800 rounded-full">
+                    <MessageSquare className="w-3 h-3"/>
+                        {message.messageType}
                   </span>
-                </div>
-              </Card>
-            ))}
-          </div>
+                    </div>
+                  </Card>
+              ))}
+            </div>
 
-          {thread && thread.isActive && (
-            <Card className="mt-6 bg-gray-900/90 border-gray-700/50">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Send className="w-5 h-5 text-blue-400" />
-                Send Message to Thread
-              </h3>
-              <form onSubmit={handleSendMessage} className="space-y-4">
-                <div>
+            {thread && thread.isActive && (
+                <Card className="mt-6 bg-gray-900/90 border-gray-700/50">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Send className="w-5 h-5 text-blue-400"/>
+                    Send Message to Thread
+                  </h3>
+                  <form onSubmit={handleSendMessage} className="space-y-4">
+                    <div>
                   <textarea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message here..."
-                    className="w-full px-4 py-3 border-2 border-gray-700 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-gray-800 text-white resize-vertical placeholder-gray-400"
-                    rows={3}
-                    disabled={isLoading}
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type your message here..."
+                      className="w-full px-4 py-3 border-2 border-gray-700 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-gray-800 text-white resize-vertical placeholder-gray-400"
+                      rows={3}
+                      disabled={isLoading}
                   />
-                </div>
-                {error && (
-                  <div className="p-4 rounded-xl font-medium bg-red-900/50 text-red-200 border border-red-700/50 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500" />
-                    {error}
-                  </div>
-                )}
-                <StatefulButton
-                  onClick={handleSendMessage}
-                  disabled={isLoading || !newMessage.trim()}
-                  className="w-full bg-blue-600 hover:bg-blue-700 hover:ring-blue-500"
-                >
-                  Send Message
-                </StatefulButton>
-              </form>
-            </Card>
-          )}
+                    </div>
+                    {error && (
+                        <div
+                            className="p-4 rounded-xl font-medium bg-red-900/50 text-red-200 border border-red-700/50 flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-red-500"/>
+                          {error}
+                        </div>
+                    )}
+                    <Button
+                        onClick={handleSendMessage}
+                        disabled={isLoading || !newMessage.trim()}
+                        className="w-full bg-blue-600 hover:bg-blue-700 hover:ring-blue-500"
+                    >
+                      Send Message
+                    </Button>
+                  </form>
+                </Card>
+            )}
+          </div>
         </div>
       </div>
-    </div>
   );
 }

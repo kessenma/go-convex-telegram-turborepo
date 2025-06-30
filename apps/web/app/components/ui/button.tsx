@@ -14,7 +14,7 @@ interface ButtonProps {
 }
 
 const buttonVariants = {
-  primary: "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5",
+  primary: "bg-gradient-to-br from-blue-300 to-blue-800 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5",
   secondary: "bg-white/25 border border-gray-200/25 text-gray-900 hover:bg-gray-50/25 hover:border-blue-500/25 hover:-translate-y-0.5 dark:bg-gray-900/25 dark:border-gray-700/25 dark:text-white dark:hover:bg-gray-800/25 backdrop-blur-sm"
 };
 
