@@ -31,7 +31,52 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 </tr>
 </table>
 
+## 📱 App Screenshots
 
+Here's what the application looks like in action:
+
+<table>
+<tr>
+<td align="center">
+<img src="./app-screenshots/NextJS-home.png" width="300" alt="Next.js Home Page">
+<br><b>Next.js Home Page</b>
+</td>
+<td align="center">
+<img src="./app-screenshots/nextJS-messages.png" width="300" alt="Messages View">
+<br><b>Messages Dashboard</b>
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="./app-screenshots/nextJS-threads.png" width="300" alt="Threads View">
+<br><b>Threads Overview</b>
+</td>
+<td align="center">
+<img src="./app-screenshots/nextJS-thread.png" width="300" alt="Thread Detail">
+<br><b>Thread Detail View</b>
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="./app-screenshots/convex-console.png" width="300" alt="Convex Console">
+<br><b>Convex Database Console</b>
+</td>
+<td align="center">
+<img src="./app-screenshots/telegram-chat.png" width="300" alt="Telegram Chat">
+<br><b>Telegram Bot Chat</b>
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="./app-screenshots/telegram-bot-father.png" width="300" alt="Bot Father Setup">
+<br><b>Bot Father Configuration</b>
+</td>
+<td align="center">
+<img src="./app-screenshots/docker-container.png" width="300" alt="Docker Container">
+<br><b>Docker Container Status</b>
+</td>
+</tr>
+</table>
 
 ## 🚀 Quick Start (Docker) 🐳
 
