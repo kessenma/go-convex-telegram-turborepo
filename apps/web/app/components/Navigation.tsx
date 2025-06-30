@@ -2,18 +2,30 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { Tabs } from "./ui/tabs";
-import { Bot, HouseWifi, MessageSquareCode, MessagesSquare, MessageSquareShare, Database } from "lucide-react";
+import { Bot, HouseWifi, MessageSquareCode, MessagesSquare, MessageSquareShare, DatabaseZapIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const navItems = [
     { href: "/", label: "Home", icon: HouseWifi },
     { href: "/messages", label: "Messages", icon: MessageSquareCode },
     { href: "/threads", label: "Threads", icon: MessagesSquare },
     { href: "/send", label: "Send Message", icon: MessageSquareShare },
-    { href: "/convex-web-console-directions", label: "Console", icon: Database },
+    { href: "/convex-web-console-directions", label: "Console", icon: DatabaseZapIcon },
   ];
 
   // Convert nav items to tabs format
@@ -23,7 +35,7 @@ export default function Navigation() {
       title: (
         <div className="flex items-center gap-2">
           <IconComponent className="w-4 h-4" />
-          <span className="hidden md:inline">{item.label}</span>
+          <span className={`hidden md:inline ${isScrolled && item.href !== pathname ? 'lg:hidden' : ''}`}>{item.label}</span>
         </div>
       ),
       value: item.href,
@@ -40,11 +52,11 @@ export default function Navigation() {
   const activeTabIndex = navItems.findIndex(item => item.href === pathname);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md border-b border-white/10">
+    <nav className="fixed top-0 left-0 right-0 z-50 ">
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
         <div className="flex items-center gap-2 font-semibold text-blue-500">
           <Bot className="w-6 h-6" />
-          <span className="text-lg font-bold bg-gradient-to-r from-blue-500 to-blue-100 bg-clip-text text-transparent hidden sm:inline">
+          <span className={`text-lg font-bold bg-gradient-to-r from-blue-500 to-blue-100 bg-clip-text text-transparent hidden ${isScrolled ? 'sm:hidden' : 'sm:inline'}`}>
             Bot Manager
           </span>
         </div>

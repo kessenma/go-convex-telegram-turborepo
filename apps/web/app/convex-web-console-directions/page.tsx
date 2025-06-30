@@ -50,7 +50,7 @@ export default function ConvexWebConsoleDirections() {
             </h3>
           </div>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-             First, navigate to your project root directory (where you cloned the repo) and generate an admin key:
+             First, navigate to your project root directory (where you cloned the repo) and generate an admin key (when your docker convex app is running):
            </p>
            <div className="space-y-3 mb-4">
              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
@@ -63,7 +63,7 @@ export default function ConvexWebConsoleDirections() {
              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
                <div className="flex items-center justify-between">
                  <code className="text-sm text-gray-800 dark:text-gray-200 flex-1">
-                   npm run get-admin-key
+                   pnpm run get-admin-key
                  </code>
                  <button
                    onClick={() => {
@@ -326,19 +326,32 @@ export default function ConvexWebConsoleDirections() {
               <AccordionContent>
                 <div className="text-left space-y-3 pt-4">
                   <p className="text-gray-900 dark:text-white">
-                    <strong>Important:</strong> These directions only work if you have the complete Docker setup running. The Convex dashboard requires both containers to be active:
+                    <strong>Important:</strong> These directions only work if you have the complete Docker setup running. The Convex dashboard requires both Convex containers to be active:
                   </p>
                   <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300 ml-4">
                     <li><strong>Convex Backend Container</strong> - The self-hosted Convex database (port {convexPort})</li>
                     <li><strong>Convex Dashboard Container</strong> - The web-based management interface (port {dashboardPort})</li>
                   </ul>
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mt-4">
+                  <div className="rounded-lg p-4 mt-4">
                     <p className="text-sm text-gray-900 dark:text-white mb-2">
                       <strong>To start the required services:</strong>
                     </p>
-                    <code className="text-sm text-gray-800 dark:text-gray-200 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
-                      setup-init
-                    </code>
+                    <div className="flex items-center justify-between">
+                        <code className="text-sm text-gray-800 dark:text-gray-200 flex-1 bg-gray-100 dark:bg-gray-800">
+                        pnpm setup-init
+                        </code>
+                        <button
+                        onClick={() => {
+                            navigator.clipboard.writeText('npm run get-admin-key');
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className="ml-2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                        title="Copy command"
+                        >
+                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                    </div>
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                       Run this command from the project root directory to start all Docker containers.
                     </p>
@@ -394,24 +407,24 @@ export default function ConvexWebConsoleDirections() {
 
         <Card className="text-left mt-6 max-w-2xl mx-auto mb-12">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-              Why the Convex Dashboard is Powerful
+              Why Convex is Powerful
             </h4>
             <div className="space-y-3">
               <div className="flex items-start">
                 <ArrowRight className="w-5 h-5 text-curious-blue-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="font-medium text-gray-900 dark:text-white">Real-time Data Management</p>
+                  <p className="font-medium text-gray-900 dark:text-white">Data Management</p>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    Convex is different than other databases because you do not need to setup a web socket to enable real time data updates and it comes built in.
+                    Convex comes with a built in dashboard to manage your data without an external daatabase viewer.
                   </p>
                 </div>
               </div>
               <div className="flex items-start">
                 <ArrowRight className="w-5 h-5 text-curious-blue-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="font-medium text-gray-900 dark:text-white">Function Monitoring</p>
+                  <p className="font-medium text-gray-900 dark:text-white">Real Time Data Loading</p>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    Track function execution, view logs, and debug issues in real-time
+                    Convex comes with a built in web socket for react apps so you do not have to build one to enable real time stateful data loading.
                   </p>
                 </div>
               </div>

@@ -60,7 +60,7 @@ export const AuroraBackground = ({
               backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
             }}
             transition={{
-              duration: 15,
+              duration: 60,
               ease: "linear",
               repeat: Infinity,
             }}

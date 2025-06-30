@@ -9,7 +9,7 @@ interface ButtonProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   href?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
 }
 

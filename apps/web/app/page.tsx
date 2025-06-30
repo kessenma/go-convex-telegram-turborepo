@@ -6,7 +6,7 @@ import { BackgroundBeams } from "./components/ui/background-beams";
 import { Hero } from "./components/ui/hero";
 import { StatCard } from "./components/ui/card";
 import { Button } from "./components/ui/button";
-import { MessageSquareCode, MessagesSquare, MessageSquareShare } from "lucide-react";
+import { MessageSquareCode, MessagesSquare, MessageSquareShare, DatabaseZapIcon } from "lucide-react";
 
 
 
@@ -60,6 +60,10 @@ export default function Home() {
           <Button href="/send" variant="secondary">
             <MessageSquareShare className="w-4 h-4 mr-2" />
             Send Message
+          </Button>
+          <Button href="/convex-web-console-directions" variant="secondary">
+            <DatabaseZapIcon className="w-4 h-4 mr-2" />
+            Convex Console
           </Button>
         </div>
       </main>
