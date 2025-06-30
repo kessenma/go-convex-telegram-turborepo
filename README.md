@@ -96,6 +96,7 @@ git clone https://github.com/kessenma/go-convex-telegram-turborepo
 cd go-convex-telegram-turborepo
 pnpm install
 chmod +x docker-manager.sh
+chmod +x setup-init.sh
 ```
 3.
 ```bash
