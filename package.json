@@ -33,9 +33,9 @@
     "clean:all": "turbo run clean && cd apps/golang-telegram-bot && make clean",
     
   
+    "mobile:setup-env": "cd apps/mobile && pnpm setup-env",
     "mobile:setup-ios": "cd apps/mobile && pnpm setup-ios",
     "mobile:setup-ios-system": "cd apps/mobile && pnpm setup-ios-system",
-    "mobile:setup-env": "cd apps/mobile && pnpm setup-env",
     "mobile:ios": "cd apps/mobile && pnpm ios",
     "mobile:uninstall-pods": "cd apps/mobile && pnpm uninstall-pods",
     

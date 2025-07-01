@@ -4,7 +4,7 @@ module.exports = {
     "@babel/plugin-proposal-function-bind",
     "@babel/plugin-transform-flow-strip-types",
     ["@babel/plugin-proposal-decorators", { legacy: true }],
-    ["@babel/plugin-proposal-class-properties", { loose: true }],
+    ["@babel/plugin-transform-class-properties", { loose: true }],
     [
       "@babel/plugin-transform-runtime",
       {
@@ -12,9 +12,9 @@ module.exports = {
         regenerator: true,
       },
     ],
-    "@babel/plugin-proposal-export-namespace-from",
-    "@babel/plugin-proposal-numeric-separator",
-    "@babel/plugin-proposal-optional-chaining",
+    "@babel/plugin-transform-export-namespace-from",
+    "@babel/plugin-transform-numeric-separator",
+    "@babel/plugin-transform-optional-chaining",
     [
       "module-resolver",
       {
