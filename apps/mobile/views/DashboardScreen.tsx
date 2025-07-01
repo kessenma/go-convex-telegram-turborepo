@@ -1,16 +1,27 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { useAuth } from "../utils/authContext"
 import { useNavigation } from "@react-navigation/native"
+import type { CompositeNavigationProp } from "@react-navigation/native"
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs"
 import type { StackNavigationProp } from "@react-navigation/stack"
 
-// Define the navigation param list type
+// Define the navigation param list types
 type RootStackParamList = {
-    LandingPage: undefined
+    MainTabs: undefined
     LoginScreen: undefined
-    Dashboard: undefined
 }
 
-type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList, "Dashboard">
+type TabParamList = {
+    Home: undefined
+    Dashboard: undefined
+    TelegramManager: undefined
+    About: undefined
+}
+
+type DashboardScreenNavigationProp = CompositeNavigationProp<
+    BottomTabNavigationProp<TabParamList, "Dashboard">,
+    StackNavigationProp<RootStackParamList>
+>
 
 const DashboardScreen = () => {
     const { user, logout } = useAuth()
@@ -24,6 +35,8 @@ const DashboardScreen = () => {
             console.error("Logout error:", error)
         }
     }
+
+
 
     return (
         <View style={styles.container}>
@@ -77,6 +90,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#666",
     },
+
     logoutButton: {
         backgroundColor: "#ff8c00",
         paddingVertical: 12,

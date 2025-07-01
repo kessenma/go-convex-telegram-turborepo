@@ -18,11 +18,11 @@ import type { StackNavigationProp } from "@react-navigation/stack"
 import { Eye, EyeOff } from "../components/Icons"
 import { useAuth } from "../utils/authContext"
 
+
 // Define the navigation param list type
 type RootStackParamList = {
-    LandingPage: undefined
+    MainTabs: undefined
     LoginScreen: undefined
-    Dashboard: undefined
 }
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginScreen">
@@ -80,7 +80,7 @@ const LoginScreen = () => {
         try {
             await login(email, password)
             // Navigate to main app screen
-            navigation.navigate("Dashboard")
+            navigation.navigate("MainTabs")
         } catch (error: any) {
             console.error("Login error:", error)
             setErrors({
@@ -97,11 +97,15 @@ const LoginScreen = () => {
     }
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <View style={styles.formContainer}>
-                    <Text style={styles.title}>Welcome Back</Text>
-                    <Text style={styles.subtitle}>Sign in to your account</Text>
+        <View style={styles.container}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardContainer}>
+                <ScrollView contentContainerStyle={styles.scrollContainer}>
+                    <View style={styles.formContainer}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                            <Text style={styles.backButtonText}>← Back</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.title}>Welcome Back</Text>
+                        <Text style={styles.subtitle}>Sign in to your account</Text>
 
                     {errors.general ? (
                         <View style={styles.errorContainer}>
@@ -145,19 +149,20 @@ const LoginScreen = () => {
                         <Text style={styles.forgotPasswordText}>Forgot password?</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={isLoading}>
-                        {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Login</Text>}
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                        <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={isLoading}>
+                            {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Login</Text>}
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#f8f9fa",
     },
     scrollContainer: {
         flexGrow: 1,
@@ -166,6 +171,17 @@ const styles = StyleSheet.create({
     formContainer: {
         paddingHorizontal: 24,
         paddingVertical: 32,
+    },
+    backButton: {
+        alignSelf: 'flex-start',
+        marginBottom: 20,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+    },
+    backButtonText: {
+        fontSize: 16,
+        color: '#ff8c00',
+        fontWeight: '500',
     },
     title: {
         fontSize: 28,
