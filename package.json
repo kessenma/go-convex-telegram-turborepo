@@ -16,18 +16,33 @@
     "dev:web": "cd apps/web && pnpm dev",
     "dev:convex": "cd apps/docker-convex && pnpm self-hosted:setup && pnpm deploy-functions",
     "dev:bot": "cd apps/golang-telegram-bot && make dev",
+    "dev:mobile": "cd apps/mobile && pnpm start",
     "dev:all": "turbo run dev --parallel",
     
     "start:web": "cd apps/web && pnpm start",
     "start:convex": "cd apps/docker-convex && pnpm self-hosted:setup",
     "start:bot": "cd apps/golang-telegram-bot && make start",
+    "start:mobile": "cd apps/mobile && pnpm start",
     
     "build:web": "cd apps/web && pnpm build",
     "build:convex": "cd apps/docker-convex && pnpm deploy-functions",
     "build:bot": "cd apps/golang-telegram-bot && make build",
+    "build:mobile": "cd apps/mobile && echo 'Mobile build not applicable for development'",
     
     "install:all": "pnpm install && cd apps/golang-telegram-bot && make install",
     "clean:all": "turbo run clean && cd apps/golang-telegram-bot && make clean",
+    
+  
+    "mobile:setup-ios": "cd apps/mobile && pnpm setup-ios",
+    "mobile:setup-ios-system": "cd apps/mobile && pnpm setup-ios-system",
+    "mobile:setup-env": "cd apps/mobile && pnpm setup-env",
+    "mobile:ios": "cd apps/mobile && pnpm ios",
+    "mobile:uninstall-pods": "cd apps/mobile && pnpm uninstall-pods",
+    
+    "mobile:android": "cd apps/mobile && pnpm android",
+    "mobile:ios-boot": "cd apps/mobile && pnpm ios-boot",
+    "mobile:lint": "cd apps/mobile && pnpm lint",
+    "mobile:test": "cd apps/mobile && pnpm test",
     
   
     "docker:up": "docker compose up -d",

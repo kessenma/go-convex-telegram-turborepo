@@ -36,3 +36,16 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Mobile App Specific
+apps/mobile/.env
+apps/mobile/.env.local
+apps/mobile/ios/Pods/
+apps/mobile/ios/.xcode.env.local
+apps/mobile/vendor/bundle/
+apps/mobile/.bundle/
+apps/mobile/android/app/build/
+apps/mobile/android/build/
+apps/mobile/android/.gradle/
+apps/mobile/ios/build/
+apps/mobile/ios/DerivedData/

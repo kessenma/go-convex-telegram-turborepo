@@ -19,9 +19,16 @@
         "app/**",
         "convex/**",
         "public/**",
+        "components/**",
+        "views/**",
+        "api/**",
+        "utils/**",
+        "config/**",
         "*.config.*",
         "tsconfig.json",
-        "package.json"
+        "package.json",
+        "App.tsx",
+        "index.js"
       ],
       "outputs": [
         ".next/**",
@@ -55,9 +62,15 @@
         "src/**",
         "app/**",
         "convex/**",
+        "components/**",
+        "views/**",
+        "api/**",
+        "utils/**",
+        "config/**",
         "*.config.*",
         ".eslintrc*",
-        "eslint.config.*"
+        "eslint.config.*",
+        "App.tsx"
       ],
       "outputs": []
     },
@@ -68,8 +81,14 @@
         "src/**",
         "app/**",
         "convex/**",
+        "components/**",
+        "views/**",
+        "api/**",
+        "utils/**",
+        "config/**",
         "tsconfig.json",
-        "*.d.ts"
+        "*.d.ts",
+        "App.tsx"
       ],
       "outputs": []
     },
@@ -80,9 +99,15 @@
         "src/**",
         "app/**",
         "convex/**",
+        "components/**",
+        "views/**",
+        "api/**",
+        "utils/**",
+        "config/**",
         "__tests__/**",
         "*.test.*",
-        "*.spec.*"
+        "*.spec.*",
+        "App.tsx"
       ],
       "outputs": ["coverage/**"]
     },

@@ -1,4 +1,12 @@
 [//]: # (apps/mobile/ios/README.md)
-### cd into this directory and run 
+### iOS Setup
 
-'''pod install --verboose'''
+To install CocoaPods dependencies, run the setup script from the mobile app root:
+
+```bash
+# From apps/mobile directory
+pnpm setup-ios
+
+# OR manually:
+bundle exec pod install --verbose
+```

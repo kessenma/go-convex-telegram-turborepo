@@ -217,6 +217,39 @@ cd ../..
 
 echo "✅ Web dashboard prepared"
 
+# Optional: Setup mobile app environment
+echo ""
+echo "📱 Mobile App Environment Setup"
+echo "==============================="
+echo "Do you want to set up the mobile app environment now?"
+echo "This will create a .env file for the mobile app from .env.example"
+read -p "Setup mobile environment? (y/n): " -n 1 -r
+echo ""
+
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "📱 Setting up mobile app environment..."
+    cd apps/mobile
+    
+    # Check if .env.example exists
+    if [ ! -f ".env.example" ]; then
+        echo "❌ .env.example not found in mobile app directory"
+        echo "   Skipping mobile environment setup"
+    else
+        # Create .env from .env.example
+        cp .env.example .env
+        echo "✅ Mobile app .env file created from .env.example"
+        echo "📝 Mobile environment configured with default settings"
+        echo "💡 You can edit apps/mobile/.env to customize mobile app settings"
+    fi
+    
+    cd ../..
+else
+    echo "⏭️  Skipping mobile environment setup"
+    echo "💡 You can set it up later with: pnpm mobile:setup-env"
+fi
+
+echo ""
+
 # Start all services
 echo "🚀 Starting all services..."
 docker compose up -d
@@ -286,3 +319,12 @@ echo ""
 echo "🔍 Test the API:"
 echo "   curl http://localhost:3211/api/health"
 echo "   curl http://localhost:3211/api/telegram/messages"
+echo ""
+echo "📱 Mobile App Commands:"
+echo "======================"
+echo "   Setup mobile environment: pnpm mobile:setup-env"
+echo "   Setup iOS dependencies: pnpm mobile:setup-ios"
+echo "   Run iOS app: pnpm mobile:ios"
+echo "   Start Metro bundler: pnpm dev:mobile"
+echo "   Mobile app directory: apps/mobile/"
+echo "   Mobile README: apps/mobile/README.md"
