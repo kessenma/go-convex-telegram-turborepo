@@ -3,14 +3,14 @@
 A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Telegram bot 🤖 with a self-hosted Convex database backend, and a next.js web app.
 
 ## 🧱 The building blocks 
-- **🕸️ Turborepo** - A monorepo management tool that orchestrates the project from a central package.json and .env
-- **🔌 a central Docker compose** - Used to define and run multi-container Docker applications (every app in the apps folder has a dockerfile  inside it)
-- **🛜 a docker network** - Used to connect the containers securely (managed in the docker-compose.yaml)
-- **🤖 Golang Telegram Bot** (`apps/golang-telegram-bot/`) - Receives messages and saves them to Convex
-- **🗄️ Convex Backend** (`apps/docker-convex/`) - Self-hosted typescript-based database with HTTP API endpoints
-- **📚 Convex console Next.js web app** (`apps/docker-convex/convex/`) - a Convex database manager app that requires an admin key to login with
-- **🖥️ Next.js web app** (`apps/web/`) - Next.js frontend that displays messages from the Telegram bot and allows you to send messages back to the bot.
-- **📦 Shared Packages** (`packages/`) - Shared UI components and configurations
+- ** Turborepo** - A monorepo management tool that orchestrates the project from a central package.json and .env
+- **a central Docker compose** - Used to define and run multi-container Docker applications (🧩every app in the apps folder has a dockerfile  inside it🧩)
+- ** a docker network** - Used to connect the containers securely (managed in the docker-compose.yaml)
+- **Golang Telegram Bot** (`apps/golang-telegram-bot/`) - Receives messages and saves them to Convex
+- **Convex Backend** (`apps/docker-convex/`) - Self-hosted typescript-based database with HTTP API endpoints
+- **Convex console Next.js web app** (`apps/docker-convex/convex/`) - a Convex database manager app that requires an admin key to login with. the command is: `get-admin-key` (only can run when the convex backend is running in docker)
+- **Next.js web app** (`apps/web/`) - Next.js frontend that displays messages from the Telegram bot and allows you to send messages back to the bot.
+- **Shared Packages** (`packages/`) - Shared UI components and configurations
 
 <table>  
 <tr>
@@ -33,7 +33,7 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 
 ## App Screenshots
 
-Here's what the application looks like in action:
+What the combined Infrastrcture looks like:
 
 <table>
 <tr>
@@ -106,37 +106,32 @@ pnpm setup-init
 
 This project uses **Turborepo** for monorepo management and intelligent build caching:
 
-### Key Benefits
-- **🔄 Incremental Development**: Only rebuild what you've modified
-- **🚀 Parallel Execution**: Run tasks across all apps simultaneously
-- **🧠 Smart Dependencies**: Automatic task dependency resolution 
+### TurboRepo Benefits (compared to multiple repos)
+- **Incremental Development**: Only rebuild what you've modified
+- **Parallel Execution**: Run tasks across all apps simultaneously
+- **One central .env file** instead of each repo using its own .env 
 
 ### How It Works locally 
 ```bash
 # First build - everything builds from scratch
 pnpm run build
 
-# Second build - only changed apps rebuild (near-instant!)
+# Second build - only changed apps rebuild
 pnpm run build
 
 # View what would be cached/rebuilt
 pnpm turbo run build --dry-run
 ```
 
-### Cache Configuration
-- **Global dependencies**: `.env`, `.env.local`, `.env.example`
-- **Environment tracking**: Automatic cache invalidation on env changes
-- **Input tracking**: Source files, configs, dependencies, and more
-- **Output caching**: Build artifacts, generated files, test results
 
-## 🏃‍♂️ Local Development (Without Docker)
+## Local Development (Without Docker)
 
 For local development without Docker containers, see guide:
 
 📖 **[Local Setup Guide](./LOCAL-SETUP-GUIDE.md)**
 
 This includes:
-- Setting up each service individually
+- Setting up each service individually (generally speaking I only run the web app locally)
 - Running development servers locally
 - Building and testing without containers
 - Turborepo commands for local development
@@ -157,7 +152,7 @@ The setup script will:
 see [SETUP.md](./SETUP.md) for detailed setup instructions.
 
 # Manage individual services interactively
-once you have the docker containers running you can manage them with this script: 
+once you have the docker containers running you can manage them with this custom helper script: 
 
 ```bash
 chmod +x docker-manager.sh
@@ -165,7 +160,7 @@ pnpm docker:manage
 ```
 
 ## Environmnent variable management
-Every app in this repo contains a readme file to run the app independently from the monorepo. However, **‼️ in order to run the apps independently locally they will need their own env file in the corresponding app folder ‼️** Getting environment variables to play nice across monorepo's can be tricky, so I prefer to use a central .env file that can be used across the monorepo. 
+Every app in this repo contains a readme file to run the app independently from the monorepo. However, **‼️ in order to run the apps independently locally they will need their own env file in the corresponding app folder ‼️** Getting environment variables to play nice across monorepo's can be tricky, so I prefer to use a central .env file that can be used across the monorepo and relying on turborepo to centrally deploy apps from the central package.json. 
 
 
 ## 🗂️ Project Structure
@@ -263,13 +258,20 @@ The Convex backend exposes these HTTP endpoints:
   
 ## 🗄️ Database Schema
 
-The `telegram_messages` table stores:
+The Convex backend uses a structured schema with two main tables:
+
+### `telegram_messages`
 - Message content and metadata
 - User information (ID, username, name)
 - Chat information
 - Timestamps
 
-See [schema.ts](./apps/docker-convex/convex/schema.ts) for full details.
+### `telegram_threads`
+- Thread metadata and status
+- Creator information
+- Message counts and timestamps
+
+For detailed documentation of the schema, API endpoints, and real-time features, see the [Convex Backend Documentation](./apps/docker-convex/convex/README.md).
 
 ## 🔍 Monitoring & Debugging
 
