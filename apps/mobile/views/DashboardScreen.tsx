@@ -30,7 +30,7 @@ const DashboardScreen = () => {
     const handleLogout = async () => {
         try {
             await logout()
-            navigation.navigate("LandingPage")
+            navigation.navigate('LoginScreen')
         } catch (error) {
             console.error("Logout error:", error)
         }

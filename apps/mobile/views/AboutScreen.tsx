@@ -31,14 +31,14 @@ const AboutScreen = () => {
             
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Mission</Text>
-                <Text style={styles.text}>
+                <Text style={styles.description}>
                     We're building the future of seamless communication through innovative mobile technology.
                 </Text>
             </View>
             
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Features</Text>
-                <Text style={styles.text}>
+                <Text style={styles.description}>
                     • Secure messaging{"\n"}
                     • Real-time notifications{"\n"}
                     • Cross-platform compatibility{"\n"}
@@ -48,7 +48,7 @@ const AboutScreen = () => {
             
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Contact</Text>
-                <Text style={styles.text}>
+                <Text style={styles.description}>
                     Have questions or feedback? We'd love to hear from you!
                 </Text>
             </View>

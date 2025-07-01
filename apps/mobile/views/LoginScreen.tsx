@@ -98,7 +98,7 @@ const LoginScreen = () => {
 
     return (
         <View style={styles.container}>
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardContainer}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
                 <ScrollView contentContainerStyle={styles.scrollContainer}>
                     <View style={styles.formContainer}>
                         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>

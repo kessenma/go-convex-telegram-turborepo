@@ -21,9 +21,9 @@ const LandingPage = () => {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Welcome to mobile</Text>
-            <Text style={styles.subtitle}>Your gateway to seamless communication</Text>
+            <Text>Your gateway to seamless communication</Text>
             
-            <View style={styles.buttonContainer}>
+            <View style={{ marginTop: 20 }}>
                 <TouchableOpacity style={styles.button} onPress={handleLoginPress}>
                     <Text style={styles.buttonText}>Get Started</Text>
                 </TouchableOpacity>
@@ -44,6 +44,18 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         marginBottom: 20,
+    },
+    button: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+    },
+    buttonText: {
+        color: '#ffffff',
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 });
 
