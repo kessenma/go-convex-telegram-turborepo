@@ -5,7 +5,7 @@
   "scripts": {
     "android": "react-native run-android",
     "ios-boot": "xcrun simctl boot 'iPhone SE (3rd generation)'",
-    "ios": "react-native run-ios --simulator='iPhone SE (3rd generation)'",
+    "ios": "REACT_NATIVE_PACKAGER_HOSTNAME='127.0.0.1' react-native run-ios --simulator='iPhone SE (3rd generation)' --no-packager",
     "uninstall-pods": "rm -rf ios/Pods ios/Podfile.lock",
     "setup-ios": "./scripts/setup-ios.sh",
     "setup-ios-system": "./scripts/setup-ios-system.sh",
@@ -25,6 +25,7 @@
     "@react-navigation/native": "^7.1.14",
     "@react-navigation/stack": "^7.4.2",
     "axios": "^1.10.0",
+    "convex": "^1.25.2",
     "invariant": "^2.2.4",
     "react": "^19.1.0",
     "react-native": "0.80.1",
@@ -68,6 +69,7 @@
     "jest": "^30.0.3",
     "metro-react-native-babel-preset": "^0.77.0",
     "prettier": "2.8.8",
+    "react-native-dotenv": "^3.4.11",
     "react-test-renderer": "^19.1.0",
     "typescript": "5.0.4"
   },

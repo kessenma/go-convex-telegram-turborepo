@@ -3,6 +3,8 @@ import { createStackNavigator } from "@react-navigation/stack"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import Icon from 'react-native-vector-icons/Feather'
+import { ConvexProvider, ConvexReactClient } from "convex/react"
+import { CONVEX_URL } from "@env"
 import { AuthProvider } from "./utils/authContext"
 import LandingPage from "./views/LandingPage"
 import LoginScreen from "./views/LoginScreen"
@@ -92,17 +94,24 @@ const MainTabs = () => {
     )
 }
 
+// Create Convex client
+const convex = new ConvexReactClient(CONVEX_URL || "http://localhost:3210", {
+    unsavedChangesWarning: false,
+});
+
 const App = () => {
     return (
         <SafeAreaProvider>
-            <AuthProvider>
-                <NavigationContainer>
-                    <Stack.Navigator initialRouteName="MainTabs">
-                        <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
-                        <Stack.Screen name="LoginScreen" component={LoginScreen} options={{ headerShown: false }} />
-                    </Stack.Navigator>
-                </NavigationContainer>
-            </AuthProvider>
+            <ConvexProvider client={convex}>
+                <AuthProvider>
+                    <NavigationContainer>
+                        <Stack.Navigator initialRouteName="MainTabs">
+                            <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+                            <Stack.Screen name="LoginScreen" component={LoginScreen} options={{ headerShown: false }} />
+                        </Stack.Navigator>
+                    </NavigationContainer>
+                </AuthProvider>
+            </ConvexProvider>
         </SafeAreaProvider>
     )
 }

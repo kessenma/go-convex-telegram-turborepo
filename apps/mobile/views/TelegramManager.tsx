@@ -4,6 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { useQuery } from 'convex/react';
+import { api } from '../convex/_generated/api';
 
 // Define the navigation param list types
 type RootStackParamList = {
@@ -57,10 +59,11 @@ const ActionButton: React.FC<ActionButtonProps> = ({ title, icon, onPress }) => 
 const TelegramManager = () => {
     const navigation = useNavigation<TelegramManagerNavigationProp>();
 
-    // Mock data - in real app this would come from API/Convex
-    const messageCount = 42;
-    const databaseStatus = "Connected";
-    const botUsername = "your_bot_username";
+    // Fetch real data from Convex
+    const messages = useQuery(api.messages.getAllMessages, { limit: 5 });
+    const messageCount = messages?.length || 0;
+    const databaseStatus = messages === undefined ? "Connecting..." : "Connected";
+    const botUsername = "your_bot_username"; // This could also come from env or Convex
 
     const handleViewMessages = () => {
         // TODO: Navigate to messages screen
@@ -110,7 +113,10 @@ const TelegramManager = () => {
 
             {/* Stats Cards */}
             <View style={styles.statsContainer}>
-                <StatCard title="Total Messages" value={messageCount} />
+                <StatCard 
+                    title="Total Messages" 
+                    value={messages === undefined ? "Loading..." : messageCount} 
+                />
                 <StatCard title="Database Status" value={databaseStatus} />
             </View>
 
