@@ -4,7 +4,7 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 
 ## 🧱 The building blocks 
 - **🕸️ Turborepo** - A monorepo management tool that orchestrates the project from a central package.json and .env
-- **🔌 a central Docker compose** - Used to define and run multi-container Docker applications (🧩every app in the apps folder has a dockerfile  inside it)
+- **🔌 a central Docker compose** - Used to define and run multi-container Docker applications (every app in the apps folder has a dockerfile  inside it)
 - **🛜 a docker network** - Used to connect the containers securely (managed in the docker-compose.yaml)
 - **🤖 Golang Telegram Bot** (`apps/golang-telegram-bot/`) - Receives messages and saves them to Convex
 - **🗄️ Convex Backend** (`apps/docker-convex/`) - Self-hosted typescript-based database with HTTP API endpoints
@@ -31,7 +31,7 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 </tr>
 </table>
 
-## 📱 App Screenshots
+## App Screenshots
 
 Here's what the application looks like in action:
 
@@ -69,11 +69,11 @@ Here's what the application looks like in action:
 <tr>
 <td align="center">
 <img src="./app-screenshots/telegram-bot-father.png" width="300" alt="Bot Father Setup">
-<br><b>Bot Father Configuration</b>
+<br><b>Telegram API Key retrieval</b>
 </td>
 <td align="center">
 <img src="./app-screenshots/docker-container.png" width="300" alt="Docker Container">
-<br><b>Docker Container Status</b>
+<br><b>Simultaneous Docker Containers</b>
 </td>
 </tr>
 </table>
@@ -83,7 +83,7 @@ Here's what the application looks like in action:
 ### Prerequisites
 - [Docker](https://docs.docker.com/get-docker/) 
 - [Node.js 18+](https://nodejs.org/en) and [pnpm](https://pnpm.io/installation) (use homebrew if on mac)
-- Telegram Bot _Token_ and Telegram bot _username_ from [@BotFather](https://t.me/botfather)
+- Telegram Bot _Token_ and Telegram bot _username_ from messaging [@BotFather](https://t.me/botfather)
 - [Go](https://go.dev/doc/install) installed 
 ### Three-Command (Docker) Setup
 1.
@@ -95,7 +95,6 @@ git clone https://github.com/kessenma/go-convex-telegram-turborepo
 ```bash
 cd go-convex-telegram-turborepo
 pnpm install
-chmod +x docker-manager.sh
 chmod +x setup-init.sh
 ```
 3.
@@ -143,6 +142,10 @@ This includes:
 - Turborepo commands for local development
 
 ## 🐳 Docker Development
+Run 
+```bash 
+pnpm setup-init
+```
 
 The setup script will:
 1. Create `.env` file from template
@@ -178,12 +181,19 @@ Every app in this repo contains a readme file to run the app independently from 
 │   ├── golang-telegram-bot/    # Telegram bot
 │   │   ├── main.go             # Bot implementation
 │   │   └── Dockerfile          # Bot container
-│   └── web/                    # Next.js app (not integrated yet)
-├── packages/                   # Shared packages
-│   ├── ui/                     # Shared UI components
-│   ├── eslint-config/          # ESLint configurations
-│   └── typescript-config/      # TypeScript configurations
-├── docker-compose.yml          # Centralized Docker setup
+│   └── web/                    # Next.js app
+│   │   └── package.json        # Next.js web dev scripts
+│   │   └── Dockerfile          # How the web app connects to the central docker-compose.yaml and central .env
+│   │   └── home
+│   │   └── messages
+│   │   └── message threads
+│   │   └── send message
+│   │   └── convex dashboard connection steps
+├── packages/                   # Shared packages (not used really)
+│   ├── ui/                     # Shared UI components (not used)
+│   ├── eslint-config/          # ESLint configurations (idk if used)
+│   └── typescript-config/      # TypeScript configurations (idk if used)
+├── docker-compose.yml          # Centralized Docker setup to control all the docekrfile's
 ├── .env.example                # Environment template
 ├── setup.sh                    # Automated setup script
 └── SETUP.md                    # Detailed setup guide
@@ -215,11 +225,13 @@ pnpm docker:reset       # Reset everything
 ```
 
 ## Convex functions
+Deploy Convex functions (Convex as a database runs off typescript functions, which is one way how it is different than a traditional SQL database. you can add more functions as you need and i think of them as the "database schema".):
 ```bash
-pnpm convex:deploy      # Deploy Convex functions (Convex as a database runs off typescript functions, which is one way how it is different than a traditional SQL database. you can add more functions as you need and i think of them as the "database schema".)
+pnpm convex:deploy      
 ```
 
 ## Testing
+(there are no tests yet)
 ```bash
 pnpm test:api           # Test API endpoints
 ```
@@ -244,7 +256,7 @@ pnpm format             # Format code
 
 The Convex backend exposes these HTTP endpoints:
 
-- `POST /api/telegram/messages` - Save a new message
+- `POST /api/telegram/messages/thread` - Save a new message + create thread if new telegram thread.
 - `GET /api/telegram/messages` - Get all messages
 - `GET /api/telegram/messages?chatId=123` - Get messages for specific chat
 - `GET /api/health` - Health check
