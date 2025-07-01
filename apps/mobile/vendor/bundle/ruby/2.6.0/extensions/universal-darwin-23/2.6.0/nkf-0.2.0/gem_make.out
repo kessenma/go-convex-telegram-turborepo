@@ -1,0 +1,17 @@
+current directory: /Users/kyleessenmacher/WS/mono-mobile/apps/mobile/vendor/bundle/ruby/2.6.0/gems/nkf-0.2.0/ext/nkf
+/System/Library/Frameworks/Ruby.framework/Versions/2.6/usr/bin/ruby -I /Library/Ruby/Site/2.6.0 -r ./siteconf20250227-3876-10atvy4.rb extconf.rb
+creating Makefile
+
+current directory: /Users/kyleessenmacher/WS/mono-mobile/apps/mobile/vendor/bundle/ruby/2.6.0/gems/nkf-0.2.0/ext/nkf
+make "DESTDIR=" clean
+
+current directory: /Users/kyleessenmacher/WS/mono-mobile/apps/mobile/vendor/bundle/ruby/2.6.0/gems/nkf-0.2.0/ext/nkf
+make "DESTDIR="
+compiling nkf.c
+linking shared-object nkf.bundle
+ld: warning: -multiply_defined is obsolete
+ld: warning: search path '/AppleInternal/Library/BuildRoots/11aa8fb2-5f4b-11ee-bc7f-926038f30c31/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.1.Internal.sdk/usr/local/lib' not found
+
+current directory: /Users/kyleessenmacher/WS/mono-mobile/apps/mobile/vendor/bundle/ruby/2.6.0/gems/nkf-0.2.0/ext/nkf
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 nkf.bundle ./.gem.20250227-3876-1mm5pqr
