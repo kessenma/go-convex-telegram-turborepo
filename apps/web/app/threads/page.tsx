@@ -8,7 +8,7 @@ import { Card } from "../components/ui/card";
 import ThreadModal from '../components/ThreadModal';
 import { useState } from 'react';
 
-export default function ThreadsPage() {
+export default function ThreadsPage(): React.ReactElement {
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const threads = useQuery(api.threads.getAllActiveThreads, { limit: 50 });
 

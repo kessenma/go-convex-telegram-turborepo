@@ -1,0 +1,243 @@
+"use client";
+
+import React, { useState, useRef } from "react";
+import { Upload, FileText, Type, BarChart3, Calendar, FileIcon, Hash, CheckCircle, AlertCircle, Loader2, Trash2 } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { Hero } from "../components/ui/hero";
+import { Card } from "../components/ui/card";
+import { BackgroundGradient } from "../components/ui/background-gradient";
+import { UploadForm } from "./components/UploadForm";
+import { DocumentStats } from "./components/DocumentStats";
+import { RecentDocuments } from "./components/RecentDocuments";
+import { ThreeJSUploadIcon } from "./components/ThreeJSUploadIcon";
+
+interface Document {
+  _id: string;
+  title: string;
+  content: string;
+  contentType: 'markdown' | 'text';
+  fileSize: number;
+  uploadDate: number;
+  wordCount: number;
+  tags?: string[];
+  summary?: string;
+}
+
+interface UploadedDocument {
+  _id: string;
+  title: string;
+  contentType: string;
+  fileSize: number;
+  wordCount: number;
+  uploadedAt: number;
+  summary?: string;
+}
+
+export default function RAGUploadPage(): React.ReactElement | null {
+  const [uploadMethod, setUploadMethod] = useState<'file' | 'text'>('file');
+  const [textContent, setTextContent] = useState('');
+  const [title, setTitle] = useState('');
+  const [summary, setSummary] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [uploadMessage, setUploadMessage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Query documents for the recent uploads section
+  const documentsQuery = useQuery(api.documents.getAllDocuments, { limit: 5 });
+  const statsQuery = useQuery(api.documents.getDocumentStats, {});
+
+  const handleFileUpload = async (file: File) => {
+    if (!file.name.endsWith('.md') && !file.name.endsWith('.txt')) {
+      setUploadStatus('error');
+      setUploadMessage('Please upload only .md or .txt files');
+      return;
+    }
+
+    if (file.size > 1024 * 1024) { // 1MB limit
+      setUploadStatus('error');
+      setUploadMessage('File size must be less than 1MB');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadStatus('idle');
+
+    try {
+      const content = await file.text();
+      const contentType = file.name.endsWith('.md') ? 'markdown' : 'text';
+      const documentTitle = title || file.name.replace(/\.[^/.]+$/, '');
+
+      const response = await fetch('/api/RAG/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: documentTitle,
+          content,
+          contentType,
+          summary: summary || undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setUploadStatus('success');
+        setUploadMessage(`Document "${documentTitle}" uploaded successfully!`);
+        setTitle('');
+        setSummary('');
+        setTextContent('');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } else {
+        setUploadStatus('error');
+        setUploadMessage(result.error || 'Upload failed');
+      }
+    } catch (error) {
+      setUploadStatus('error');
+      setUploadMessage('Network error. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleTextUpload = async () => {
+    if (!textContent.trim()) {
+      setUploadStatus('error');
+      setUploadMessage('Please enter some text content');
+      return;
+    }
+
+    if (!title.trim()) {
+      setUploadStatus('error');
+      setUploadMessage('Please enter a title for your document');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadStatus('idle');
+
+    try {
+      const response = await fetch('/api/RAG/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          content: textContent,
+          contentType: 'text',
+          summary: summary || undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setUploadStatus('success');
+        setUploadMessage(`Document "${title}" uploaded successfully!`);
+        setTitle('');
+        setSummary('');
+        setTextContent('');
+      } else {
+        setUploadStatus('error');
+        setUploadMessage(result.error || 'Upload failed');
+      }
+    } catch (error) {
+      setUploadStatus('error');
+      setUploadMessage('Network error. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return (
+    <div className="pt-20 pb-8 min-h-screen bg-gray-900">
+      <div className="px-4 mx-auto max-w-4xl">
+        {/* Header */}
+        <Hero 
+          title="Retrieval-Augmented Generation"
+          subtitle="Build your knowledge base for AI-powered search and retrieval"
+          whiteText={true}
+        >
+          <p className="mx-auto mb-6 max-w-3xl text-gray-300">
+            Retrieval-Augmented Generation (RAG) enhances large language models by incorporating an information-retrieval mechanism. 
+            Upload documents to create a searchable knowledge base that AI can reference to provide more accurate and contextually relevant responses.
+          </p>
+          <div className="flex justify-center mt-8">
+            <ThreeJSUploadIcon width={250} height={250} className="drop-shadow-lg" />
+          </div>
+        </Hero>
+
+        {/* Stats Cards */}
+        <DocumentStats statsQuery={statsQuery} />
+
+        {/* Upload Form */}
+        {isUploading ? (
+          <BackgroundGradient className="mb-6">
+            <UploadForm
+              uploadMethod={uploadMethod}
+              setUploadMethod={setUploadMethod}
+              title={title}
+              setTitle={setTitle}
+              summary={summary}
+              setSummary={setSummary}
+              textContent={textContent}
+              setTextContent={setTextContent}
+              isUploading={isUploading}
+              uploadStatus={uploadStatus}
+              uploadMessage={uploadMessage}
+              fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
+              handleFileUpload={handleFileUpload}
+              handleTextUpload={handleTextUpload}
+            />
+          </BackgroundGradient>
+        ) : (
+          <Card className="mb-6 border-gray-700 bg-gray-800/50">
+            <UploadForm
+              uploadMethod={uploadMethod}
+              setUploadMethod={setUploadMethod}
+              title={title}
+              setTitle={setTitle}
+              summary={summary}
+              setSummary={setSummary}
+              textContent={textContent}
+              setTextContent={setTextContent}
+              isUploading={isUploading}
+              uploadStatus={uploadStatus}
+              uploadMessage={uploadMessage}
+              fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
+              handleFileUpload={handleFileUpload}
+              handleTextUpload={handleTextUpload}
+            />
+          </Card>
+        )}
+
+        {/* Recent Documents */}
+        <RecentDocuments documentsQuery={documentsQuery} />
+      </div>
+    </div>
+  );
+}

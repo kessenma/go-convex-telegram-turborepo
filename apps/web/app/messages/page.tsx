@@ -22,7 +22,7 @@ interface TelegramMessage {
   replyToMessageId?: number
 }
 
-export default function MessagesPage() {
+export default function MessagesPage(): React.ReactElement {
   const messages = useQuery(api.messages.getAllMessages, { limit: 100 })
 
   if (messages === undefined) {

@@ -2,6 +2,7 @@
 import React from "react";
 import { cn } from "../../lib/utils";
 import Link from "next/link";
+import { fixComponentReturnType } from "../../lib/icon-utils";
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -32,7 +33,7 @@ export const Button = ({
   href, 
   onClick, 
   disabled = false 
-}: ButtonProps) => {
+}: ButtonProps): React.ReactElement | null => {
   const baseClasses = cn(
     "inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-200 min-w-48 gap-2",
     buttonVariants[variant],
@@ -42,11 +43,7 @@ export const Button = ({
   );
 
   if (href) {
-    return (
-      <Link href={href} className={baseClasses}>
-        {children}
-      </Link>
-    );
+    return React.createElement(Link as any, { href, className: baseClasses }, children);
   }
 
   return (

@@ -21,7 +21,7 @@ interface Thread {
   messageCount: number;
 }
 
-export default function SendMessagePage() {
+export default function SendMessagePage(): React.ReactElement {
   const [form, setForm] = useState<SendMessageForm>({
     chatId: "",
     message: "",

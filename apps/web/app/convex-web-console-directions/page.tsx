@@ -11,7 +11,7 @@ import { cn } from "../lib/utils";
 import { Database, ExternalLink, Info, ArrowRight, Terminal, Key, Eye, EyeOff, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 
-export default function ConvexWebConsoleDirections() {
+export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
   const [showAdminKey, setShowAdminKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showAurora, setShowAurora] = useState(true);

@@ -26,7 +26,7 @@ export const Tabs = ({
   tabClassName?: string;
   contentClassName?: string;
   onTabChange?: (tab: Tab) => void;
-}) => {
+}): React.ReactElement | null => {
   // Use activeTabIndex prop or default to first tab
   const currentActiveIndex = activeTabIndex !== undefined && activeTabIndex >= 0 ? activeTabIndex : 0;
   const [active, setActive] = useState<Tab>(() => {
@@ -60,7 +60,7 @@ export const Tabs = ({
     <>
       <div
         className={cn(
-          "flex flex-row items-center justify-start [perspective:1000px] relative overflow-auto sm:overflow-visible no-visible-scrollbar max-w-full w-full",
+          "flex overflow-auto relative flex-row justify-start items-center w-full max-w-full [perspective:1000px] sm:overflow-visible no-visible-scrollbar",
           containerClassName
         )}
       >
@@ -80,13 +80,13 @@ export const Tabs = ({
                 layoutId="clickedbutton"
                 transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
                 className={cn(
-                  "absolute inset-0 bg-gray-200 dark:bg-zinc-800 rounded-full ",
+                  "absolute inset-0 bg-gray-200 rounded-full dark:bg-zinc-800",
                   activeTabClassName
                 )}
               />
             )}
 
-            <span className="relative block text-black dark:text-white">
+            <span className="block relative text-black dark:text-white">
               {tab.title}
             </span>
           </button>
@@ -111,7 +111,7 @@ export const FadeInDiv = ({
   key?: string;
   active: Tab;
   hovering?: boolean;
-}) => {
+}): React.ReactElement => {
   return (
     <div className="relative w-full h-full">
       <div className={cn("w-full h-full", className)}>
