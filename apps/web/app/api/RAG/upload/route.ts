@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward request to Convex HTTP API
-    const convexResponse = await fetch(`${convexUrl}/api/documents`, {
+    const convexResponse = await fetch(`${convexUrl}/http/api/documents`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     if (search) queryParams.set('search', search);
 
     // Forward request to Convex HTTP API
-    const convexResponse = await fetch(`${convexUrl}/api/documents?${queryParams}`, {
+    const convexResponse = await fetch(`${convexUrl}/http/api/documents?${queryParams}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

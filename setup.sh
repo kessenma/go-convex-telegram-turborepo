@@ -217,35 +217,39 @@ cd ../..
 
 echo "✅ Web dashboard prepared"
 
-# Optional: Setup mobile app environment
+# Setup mobile app environment if not already configured
 echo ""
 echo "📱 Mobile App Environment Setup"
 echo "==============================="
-echo "Do you want to set up the mobile app environment now?"
-echo "This will create a .env file for the mobile app from .env.example"
-read -p "Setup mobile environment? (y/n): " -n 1 -r
-echo ""
 
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "📱 Setting up mobile app environment..."
-    cd apps/mobile
-    
+# Check if mobile .env already exists
+if [ -f "apps/mobile/.env" ]; then
+    echo "✅ Mobile app environment already configured"
+    echo "💡 You can edit apps/mobile/.env to customize mobile app settings"
+else
     # Check if .env.example exists
-    if [ ! -f ".env.example" ]; then
+    if [ ! -f "apps/mobile/.env.example" ]; then
         echo "❌ .env.example not found in mobile app directory"
         echo "   Skipping mobile environment setup"
     else
-        # Create .env from .env.example
-        cp .env.example .env
-        echo "✅ Mobile app .env file created from .env.example"
-        echo "📝 Mobile environment configured with default settings"
-        echo "💡 You can edit apps/mobile/.env to customize mobile app settings"
+        echo "Mobile app environment not configured."
+        echo "This will create a .env file for the mobile app from .env.example"
+        read -p "Setup mobile environment? (y/n): " -n 1 -r
+        echo ""
+
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "📱 Setting up mobile app environment..."
+            cd apps/mobile
+            cp .env.example .env
+            echo "✅ Mobile app .env file created from .env.example"
+            echo "📝 Mobile environment configured with default settings"
+            echo "💡 You can edit apps/mobile/.env to customize mobile app settings"
+            cd ../..
+        else
+            echo "⏭️  Skipping mobile environment setup"
+            echo "💡 You can set it up later with: pnpm mobile:setup-env"
+        fi
     fi
-    
-    cd ../..
-else
-    echo "⏭️  Skipping mobile environment setup"
-    echo "💡 You can set it up later with: pnpm mobile:setup-env"
 fi
 
 echo ""

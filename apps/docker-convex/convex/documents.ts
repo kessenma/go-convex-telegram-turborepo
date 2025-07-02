@@ -1,3 +1,4 @@
+// apps/docker-convex/convex/documents.ts
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -47,11 +48,81 @@ export const getAllDocuments = query({
       .withIndex("by_active_and_date", (q) => q.eq("isActive", true))
       .order("desc")
       .paginate({
-        cursor: args.cursor || null,
+        cursor: args.cursor ?? null,
         numItems: limit,
       });
 
     return documents;
+  },
+});
+
+// Get a specific document by ID
+export const getDocument = query({
+  args: { documentId: v.id("rag_documents") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.documentId);
+  },
+});
+
+// Update document content
+export const updateDocument = mutation({
+  args: {
+    documentId: v.id("rag_documents"),
+    title: v.optional(v.string()),
+    content: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    summary: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { documentId, ...updates } = args;
+    const now = Date.now();
+    
+    const updateData: any = {
+      ...updates,
+      lastModified: now,
+    };
+
+    // Recalculate word count and file size if content is updated
+    if (updates.content) {
+      updateData.wordCount = updates.content.split(/\s+/).filter(word => word.length > 0).length;
+      updateData.fileSize = new TextEncoder().encode(updates.content).length;
+      updateData.embedding = undefined; // Reset embedding when content changes
+    }
+
+    await ctx.db.patch(documentId, updateData);
+    return documentId;
+  },
+});
+
+// Delete a document (soft delete by setting isActive to false)
+export const deleteDocument = mutation({
+  args: { documentId: v.id("rag_documents") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.documentId, {
+      isActive: false,
+      lastModified: Date.now(),
+    });
+    return args.documentId;
+  },
+});
+
+// Search documents by content
+export const searchDocuments = query({
+  args: {
+    searchTerm: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 10;
+    
+    const results = await ctx.db
+      .query("rag_documents")
+      .withSearchIndex("search_content", (q) =>
+        q.search("content", args.searchTerm).eq("isActive", true)
+      )
+      .take(limit);
+
+    return results;
   },
 });
 

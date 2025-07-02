@@ -1,8 +1,8 @@
 'use client'
 
-// import { useQuery } from "convex/react";
-// import { api } from "../../convex/_generated/api";
-// import { Id } from "../../convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
 import { TelegramMessage } from "../models/telegram";
 import React, { useState } from 'react';
 import { Card } from "../components/ui/card";
@@ -24,33 +24,15 @@ export default function ThreadModal({ threadId, isOpen, onClose }: ThreadModalPr
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Note: Telegram-related API functions are not available in this web app's schema
-  // These queries are commented out to fix build errors
-  // const messages = useQuery(
-  //   api.messages.getMessagesByThreadDoc, 
-  //   threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
-  // );
+  const messages = useQuery(
+    api.messages.getMessagesByThreadDoc, 
+    threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
+  );
 
-  // const thread = useQuery(
-  //   api.threads.getThreadById,
-  //   threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
-  // );
-  
-  // Placeholder data for now
-  const messages: any[] = [];
-  const thread: {
-    title?: string;
-    threadId?: string;
-    chatId?: string;
-    messageCount?: number;
-    isActive?: boolean;
-  } | null = {
-    title: 'Sample Thread',
-    threadId: threadId,
-    chatId: 'sample-chat',
-    messageCount: 0,
-    isActive: true
-  };
+  const thread = useQuery(
+    api.threads.getThreadById,
+    threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
+  );
 
   const handleSendMessage = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

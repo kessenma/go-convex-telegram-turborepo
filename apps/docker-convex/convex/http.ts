@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
 import { saveMessageAPI, getMessagesAPI, saveMessageToThreadAPI } from "./api";
+  import { saveDocumentAPI, getDocumentsAPI, getDocumentStatsAPI } from "./documentApi";
 
 const http = httpRouter();
 
@@ -23,6 +23,25 @@ http.route({
   path: "/api/telegram/messages/thread",
   method: "POST",
   handler: saveMessageToThreadAPI,
+});
+
+// RAG document API endpoints
+http.route({
+  path: "/api/documents",
+  method: "POST",
+  handler: saveDocumentAPI,
+});
+
+http.route({
+  path: "/api/documents",
+  method: "GET",
+  handler: getDocumentsAPI,
+});
+
+http.route({
+  path: "/api/documents/stats",
+  method: "GET",
+  handler: getDocumentStatsAPI,
 });
 
 // Health check endpoint

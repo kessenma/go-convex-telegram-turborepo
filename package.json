@@ -4,6 +4,7 @@
   "scripts": {
     "setup-init": "./setup.sh",
     "docker:reset": "docker compose down -v && docker system prune -af",
+    "docker:reset-web": "./reset-web-only.sh",
 
     "docker:manage": "./docker-manager.sh",
     

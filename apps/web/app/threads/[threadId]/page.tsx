@@ -28,33 +28,15 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
     params.then(p => setThreadId(p.threadId));
   }, [params]);
 
-  // Note: Telegram-related API functions are not available in this web app's schema
-  // These queries are commented out to fix build errors
-  // const messages = useQuery(
-  //   api.messages.getMessagesByThreadDoc, 
-  //   threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
-  // );
+  const messages = useQuery(
+    api.messages.getMessagesByThreadDoc, 
+    threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
+  );
 
-  // const thread = useQuery(
-  //   api.threads.getThreadById,
-  //   threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
-  // );
-  
-  // Placeholder data for now
-  const messages: any[] = [];
-  const thread: {
-    title?: string;
-    threadId?: string;
-    chatId?: string;
-    messageCount?: number;
-    isActive?: boolean;
-  } | null = {
-    title: 'Sample Thread',
-    threadId: threadId,
-    chatId: 'sample-chat',
-    messageCount: 0,
-    isActive: true
-  };
+  const thread = useQuery(
+    api.threads.getThreadById,
+    threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
+  );
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,7 +155,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
 
             <Hero
                 title={thread?.title || `Thread ${thread?.threadId || 'Unknown'}`}
-                subtitle={`Chat: Unknown • ${messages.length} messages • ${thread?.isActive ? 'Active' : 'Inactive'}`}
+                subtitle={`Chat: ${thread?.chatId || 'Unknown'} • ${messages?.length || 0} messages • ${thread?.isActive ? 'Active' : 'Inactive'}`}
                 whiteText
             />
 
@@ -181,12 +163,12 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
             <span
                 className="inline-flex gap-2 items-center px-3 py-1 font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-200">
               {renderIcon(Hash, { className: "w-4 h-4" })}
-              Unknown
+              {thread?.chatId || 'Unknown'}
             </span>
               <span
                   className="inline-flex gap-2 items-center px-3 py-1 font-medium text-gray-800 bg-gray-100 rounded-full dark:bg-gray-700 dark:text-gray-200">
               {renderIcon(MessageSquare, { className: "w-4 h-4" })}
-                {messages.length} messages
+                {messages?.length || 0} messages
             </span>
               {thread && (
                   <span className={cn(
