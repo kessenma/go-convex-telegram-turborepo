@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 
 interface ThreeJSUploadIconProps {
@@ -19,6 +19,7 @@ export function ThreeJSUploadIcon({
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const animationIdRef = useRef<number | null>(null);
   const uploadIconRef = useRef<THREE.Group | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -103,6 +104,11 @@ export function ThreeJSUploadIcon({
 
     scene.add(uploadIcon);
 
+    // Trigger fade-in after a short delay
+    setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+
     // Animation loop
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
@@ -139,7 +145,7 @@ export function ThreeJSUploadIcon({
   return (
     <div 
       ref={mountRef} 
-      className={`inline-block ${className}`}
+      className={`inline-block transition-opacity duration-1000 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'} ${className}`}
       style={{ width, height }}
     />
   );

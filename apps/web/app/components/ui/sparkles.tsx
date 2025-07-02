@@ -1,5 +1,5 @@
 "use client";
-import React, { useId, useMemo } from "react";
+import React, { useId } from "react";
 import { useEffect, useState } from "react";
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import type { Container, SingleOrMultiple } from "@tsparticles/engine";
@@ -46,7 +46,8 @@ export const SparklesCore = (props: ParticlesProps) => {
       controls.start({
         opacity: 1,
         transition: {
-          duration: 1,
+          duration: 2,
+          ease: "easeInOut"
         },
       });
     }
@@ -54,7 +55,11 @@ export const SparklesCore = (props: ParticlesProps) => {
 
   const generatedId = useId();
   return (
-    <motion.div animate={controls} className={cn("opacity-0", className)}>
+    <motion.div 
+      animate={controls} 
+      initial={{ opacity: 0 }}
+      className={cn(className)}
+    >
       {init && (
         <ParticlesComponent
           id={id || generatedId}
@@ -70,7 +75,6 @@ export const SparklesCore = (props: ParticlesProps) => {
               enable: false,
               zIndex: 1,
             },
-
             fpsLimit: 120,
             interactivity: {
               events: {
@@ -207,7 +211,7 @@ export const SparklesCore = (props: ParticlesProps) => {
                 size: false,
                 speed: {
                   min: 0.1,
-                  max: 1,
+                  max: 0.5, // Reduced max speed for longer-lasting particles
                 },
                 spin: {
                   acceleration: 0,
@@ -237,12 +241,12 @@ export const SparklesCore = (props: ParticlesProps) => {
               opacity: {
                 value: {
                   min: 0.1,
-                  max: 1,
+                  max: 0.8, // Reduced max opacity for subtler effect
                 },
                 animation: {
                   count: 0,
                   enable: true,
-                  speed: speed || 4,
+                  speed: speed || 2, // Reduced speed for longer fade transitions
                   decay: 0,
                   delay: 0,
                   sync: false,
@@ -295,67 +299,6 @@ export const SparklesCore = (props: ParticlesProps) => {
                 sizeRate: 1,
                 velocityRate: 1,
               },
-              destroy: {
-                bounds: {},
-                mode: "none",
-                split: {
-                  count: 1,
-                  factor: {
-                    value: 3,
-                  },
-                  rate: {
-                    value: {
-                      min: 4,
-                      max: 9,
-                    },
-                  },
-                  sizeOffset: true,
-                },
-              },
-              roll: {
-                darken: {
-                  enable: false,
-                  value: 0,
-                },
-                enable: false,
-                enlighten: {
-                  enable: false,
-                  value: 0,
-                },
-                mode: "vertical",
-                speed: 25,
-              },
-              tilt: {
-                value: 0,
-                animation: {
-                  enable: false,
-                  speed: 0,
-                  decay: 0,
-                  sync: false,
-                },
-                direction: "clockwise",
-                enable: false,
-              },
-              twinkle: {
-                lines: {
-                  enable: false,
-                  frequency: 0.05,
-                  opacity: 1,
-                },
-                particles: {
-                  enable: false,
-                  frequency: 0.05,
-                  opacity: 1,
-                },
-              },
-              wobble: {
-                distance: 5,
-                enable: false,
-                speed: {
-                  angle: 50,
-                  move: 10,
-                },
-              },
               life: {
                 count: 0,
                 delay: {
@@ -363,7 +306,7 @@ export const SparklesCore = (props: ParticlesProps) => {
                   sync: false,
                 },
                 duration: {
-                  value: 0,
+                  value: 2, // Increased particle lifetime
                   sync: false,
                 },
               },

@@ -3,6 +3,7 @@
 import React, { RefObject } from "react";
 import { Upload, FileText, Type, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface UploadFormProps {
   uploadMethod: 'file' | 'text';
@@ -50,7 +51,7 @@ export function UploadForm({
           }`}
         >
           {renderIcon(FileText, { className: "w-4 h-4" })}
-          Upload .md File
+          Upload
         </button>
         <button
           onClick={() => setUploadMethod('text')}
@@ -61,7 +62,7 @@ export function UploadForm({
           }`}
         >
           {renderIcon(Type, { className: "w-4 h-4" })}
-          Paste Text
+          Paste
         </button>
       </div>
 
@@ -106,7 +107,11 @@ export function UploadForm({
               accept=".md,.txt"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleFileUpload(file);
+                if (file) {
+                  // Set the title to the filename without extension before upload
+                  setTitle(file.name.replace(/\.[^/.]+$/, ''));
+                  handleFileUpload(file);
+                }
               }}
               className="hidden"
             />
@@ -161,20 +166,39 @@ export function UploadForm({
       )}
 
       {/* Status Message */}
-      {uploadStatus !== 'idle' && (
-        <div className={`mt-4 p-4 rounded-lg flex items-center gap-2 ${
-          uploadStatus === 'success' ? 'bg-green-900 border border-green-700' : 'bg-red-900 border border-red-700'
-        }`}>
-          {uploadStatus === 'success' ? (
-            renderIcon(CheckCircle, { className: "w-5 h-5 text-green-400" })
-          ) : (
-            renderIcon(AlertCircle, { className: "w-5 h-5 text-red-400" })
-          )}
-          <span className={uploadStatus === 'success' ? 'text-green-300' : 'text-red-300'}>
-            {uploadMessage}
-          </span>
-        </div>
-      )}
+      <AnimatePresence>
+        {uploadStatus !== 'idle' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className={`mt-4 p-4 rounded-lg flex items-center gap-2 ${
+              uploadStatus === 'success' ? 'bg-green-900 border border-green-700' : 'bg-red-900 border border-red-700'
+            }`}
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            >
+              {uploadStatus === 'success' ? (
+                renderIcon(CheckCircle, { className: "w-5 h-5 text-green-400" })
+              ) : (
+                renderIcon(AlertCircle, { className: "w-5 h-5 text-red-400" })
+              )}
+            </motion.div>
+            <motion.span
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className={uploadStatus === 'success' ? 'text-green-300' : 'text-red-300'}
+            >
+              {uploadMessage}
+            </motion.span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
