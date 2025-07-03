@@ -34,7 +34,7 @@ export default function Home(): React.ReactNode {
       <main className="flex relative z-10 flex-col justify-center items-center px-4 mx-auto w-full max-w-4xl h-full">
         <div className="p-4 mb-4 w-full max-w-3xl rounded-lg">
           <Hero 
-            title="Telegram Next.js Bot Boilerplate"
+            title="RAG Telegram Bot"
             subtitle="Monitor and view your Telegram bot messages in real-time"
             whiteText={true}
             className="my-2"
@@ -45,7 +45,7 @@ export default function Home(): React.ReactNode {
                 href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-slate-900 transition-colors hover:text-cyan-800 transition-colors"
+                className="font-medium transition-colors text-slate-900 hover:text-cyan-800"
               >
                 t.me/{process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
               </a>
@@ -74,7 +74,7 @@ export default function Home(): React.ReactNode {
             </Button>
           </div>
           <div className="flex justify-center mt-3">
-            <Button href="/convex-web-console-directions" variant="secondary" size="sm" className="flex items-center gap-2">
+            <Button href="/convex-web-console-directions" variant="secondary" size="sm" className="flex gap-2 items-center">
               <DatabaseZapIcon className="w-4 h-4" />
               <span className="hidden sm:inline">Convex</span> Console
               <StatusIndicator 
@@ -87,28 +87,28 @@ export default function Home(): React.ReactNode {
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-4 w-full max-w-3xl md:grid-cols-4">
-          <div className="flex items-center p-3 rounded-lg bg-black/20 backdrop-blur-sm">
+          <div className="flex items-center p-3 rounded-lg backdrop-blur-sm bg-black/20">
             <StatCard 
               title="Messages" 
               value={messages === undefined ? "..." : messageCount.toString()} 
               className="w-full text-center"
             />
           </div>
-          <div className="flex items-center p-3 rounded-lg bg-black/20 backdrop-blur-sm">
+          <div className="flex items-center p-3 rounded-lg backdrop-blur-sm bg-black/20">
             <StatCard 
               title="Threads" 
               value={threadStats === undefined ? "..." : (threadStats.totalThreads || 0).toString()} 
               className="w-full text-center"
             />
           </div>
-          <div className="flex items-center p-3 rounded-lg bg-black/20 backdrop-blur-sm">
+          <div className="flex items-center p-3 rounded-lg backdrop-blur-sm bg-black/20">
             <StatCard 
               title="Documents" 
               value={documentStats === undefined ? "..." : (documentStats.totalDocuments || 0).toString()} 
               className="w-full text-center"
             />
           </div>
-          <div className="flex items-center p-3 rounded-lg bg-black/20 backdrop-blur-sm">
+          <div className="flex items-center p-3 rounded-lg backdrop-blur-sm bg-black/20">
             <StatCard 
               title="RAG Size" 
               value={documentStats === undefined ? "..." : formatFileSize(documentStats.totalSize || 0)} 

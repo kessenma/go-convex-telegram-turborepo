@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { cn } from "../../lib/utils";
 
 export const BackgroundBeams = React.memo(
-  ({ className }: { className?: string }) => {
+  ({ className, animationEnabled = true }: { className?: string; animationEnabled?: boolean }) => {
     const paths = [
       "M-380 -189C-380 -189 -312 216 152 343C616 470 684 875 684 875",
       "M-373 -197C-373 -197 -305 208 159 335C623 462 691 867 691 867",
@@ -99,18 +99,18 @@ export const BackgroundBeams = React.memo(
                   y1: "0%",
                   y2: "0%",
                 }}
-                animate={{
+                animate={animationEnabled ? {
                   x1: ["0%", "100%"],
                   x2: ["0%", "95%"],
                   y1: ["0%", "100%"],
                   y2: ["0%", `${93 + Math.random() * 8}%`],
-                }}
-                transition={{
+                } : {}}
+                transition={animationEnabled ? {
                   duration: Math.random() * 10 + 10,
                   ease: "easeInOut",
                   repeat: Infinity,
                   delay: Math.random() * 10,
-                }}
+                } : {}}
               >
                 <stop stopColor="#18CCFC" stopOpacity="0"></stop>
                 <stop stopColor="#18CCFC"></stop>

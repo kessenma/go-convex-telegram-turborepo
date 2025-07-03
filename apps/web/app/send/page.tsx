@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useAnimationSettings } from "../hooks/use-animation-settings";
 import { Hero } from "../components/ui/hero";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -23,6 +24,7 @@ interface Thread {
 }
 
 export default function SendMessagePage(): React.ReactElement {
+  const { animationEnabled } = useAnimationSettings();
   const [form, setForm] = useState<SendMessageForm>({
     chatId: "",
     message: "",
@@ -139,7 +141,7 @@ export default function SendMessagePage(): React.ReactElement {
 
   return (
     <div className="relative min-h-screen">
-      <BackgroundBeams />
+      <BackgroundBeams animationEnabled={animationEnabled} />
       <div className="relative z-10 max-w-4xl mx-auto p-6">
         <Hero 
           title="Send Telegram Message" 

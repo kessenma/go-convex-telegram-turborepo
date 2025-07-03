@@ -6,12 +6,14 @@ import { motion } from "motion/react";
 interface AuroraBackgroundProps extends React.HTMLProps<HTMLDivElement> {
   children: ReactNode;
   showRadialGradient?: boolean;
+  animationEnabled?: boolean;
 }
 
 export const AuroraBackground = ({
   className,
   children,
   showRadialGradient = true,
+  animationEnabled = true,
   ...props
 }: AuroraBackgroundProps) => {
   return (
@@ -56,14 +58,14 @@ export const AuroraBackground = ({
               showRadialGradient &&
                 "[mask-image:radial-gradient(ellipse_at_100%_0%,black_10%,var(--transparent)_70%)]",
             )}
-            animate={{
+            animate={animationEnabled ? {
               backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-            }}
-            transition={{
+            } : {}}
+            transition={animationEnabled ? {
               duration: 60,
               ease: "linear",
               repeat: Infinity,
-            }}
+            } : {}}
           />
         </div>
         {children}

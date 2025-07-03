@@ -5,9 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { StatusIndicator } from "./ui/status-indicator";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, ChevronDown, ExternalLink, Info, MessageSquareShare, MessageSquareText } from "lucide-react";
+import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, ChevronDown, ExternalLink, Info, MessageSquareShare, MessageSquareText, BotMessageSquare } from "lucide-react";
 import { renderIcon } from "../lib/icon-utils";
 import { motion } from "motion/react";
+import { Settings } from "./Settings";
 
 export default function Navigation(): React.ReactNode {
   const pathname = usePathname();
@@ -35,6 +36,7 @@ interface NavItem {
   const messages = useQuery(api.messages.getAllMessages, { limit: 1 });
   const allMessages = useQuery(api.messages.getAllMessages, { limit: 1000 });
   const threads = useQuery(api.threads.getAllActiveThreads, { limit: 1000 });
+  const documentStats = useQuery(api.documents.getDocumentStats);
   
   const messageCount = allMessages?.length || 0;
   const threadCount = threads?.length || 0;
@@ -53,7 +55,14 @@ interface NavItem {
         { href: "/send", label: "Send Message", icon: MessageSquareShare as React.FC<{ className?: string }> }
       ]
     },
-    { href: "/RAG-upload", label: "RAG Upload", icon: Upload as React.FC<{ className?: string }> },
+    { 
+      label: "RAG", 
+      icon: Layers as React.FC<{ className?: string }>,
+      dropdown: [
+        { href: "/RAG-upload", label: "Upload", icon: Upload as React.FC<{ className?: string }> },
+        { href: "/RAG-chat", label: "Chat", icon: BotMessageSquare as React.FC<{ className?: string }> }
+      ]
+    },
     { 
       label: "Console", 
       icon: DatabaseZapIcon as React.FC<{ className?: string }>,
@@ -103,6 +112,7 @@ interface NavItem {
             const IconComponent = item.icon;
             const isConsole = item.label === "Console";
             const isMessages = item.label === "Messages";
+            const isRAG = item.label === "RAG";
              const hasDropdown = Boolean(item.dropdown);
             const isActive = isActiveItem(item);
             const isHovered = hoveredItem === item.label;
@@ -114,8 +124,8 @@ interface NavItem {
                  onMouseEnter={() => setHoveredItem(item.label)}
                  onMouseLeave={(e) => {
                    // Only hide if we're not moving to the dropdown
-                   const relatedTarget = e.relatedTarget as HTMLElement;
-                   if (!relatedTarget || !relatedTarget.closest('[data-dropdown]')) {
+                   const relatedTarget = e.relatedTarget as HTMLElement | null;
+                   if (!relatedTarget?.closest?.('[data-dropdown]')) {
                      setHoveredItem(null);
                    }
                  }}
@@ -135,7 +145,7 @@ interface NavItem {
                     <motion.div
                       layoutId="activeNavItem"
                       transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
-                      className="absolute inset-0 bg-slate-900 rounded-lg"
+                      className="absolute inset-0 rounded-lg bg-slate-900"
                     />
                   )}
                   
@@ -147,6 +157,11 @@ interface NavItem {
                     {isMessages && messageCount > 0 && (
                       <span className="ml-1 px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
                         {messageCount}
+                      </span>
+                    )}
+                    {isRAG && documentStats?.totalDocuments > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
+                        {documentStats.totalDocuments}
                       </span>
                     )}
                     {isConsole && (
@@ -161,7 +176,7 @@ interface NavItem {
                 </button>
                 
                 {/* Dropdown with buffer zone */}
-                 {(isMessages || item.label === "Console") && isHovered && item.dropdown && (
+                 {(isMessages || item.label === "Console" || isRAG) && isHovered && item.dropdown && (
                    <>
                      {/* Invisible buffer zone */}
                      <div className="absolute left-0 top-full z-40 w-48 h-4" />
@@ -185,7 +200,7 @@ interface NavItem {
                              index === item.dropdown!.length - 1 ? 'rounded-b-lg' : ''
                            }`}
                          >
-                           <div className="flex items-center gap-2">
+                           <div className="flex gap-2 items-center">
                              {dropdownItem.icon && renderIcon(dropdownItem.icon as any, { className: "w-3 h-3" })}
                              {dropdownItem.label}
                            </div>
@@ -199,6 +214,11 @@ interface NavItem {
                                {threadCount}
                              </span>
                            )}
+                           {isRAG && dropdownItem.href === "/RAG-upload" && documentStats?.totalDocuments > 0 && (
+                             <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
+                               {documentStats.totalDocuments}
+                             </span>
+                           )}
                          </button>
                        ))}
                      </motion.div>
@@ -210,7 +230,7 @@ interface NavItem {
         </div>
 
         <div className="flex items-center">
-          {/* Spacer for layout balance */}
+          <Settings />
         </div>
       </div>
     </nav>

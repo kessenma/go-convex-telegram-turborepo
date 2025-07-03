@@ -1,0 +1,198 @@
+"use client";
+
+import React, { useState, useRef, useEffect } from "react";
+import { MessageCircle, Send, Bot, User, Loader2, ArrowLeft } from "lucide-react";
+import { renderIcon } from "../../lib/icon-utils";
+import { Document, ChatMessage } from "../types";
+
+interface ChatInterfaceProps {
+  selectedDocuments: Document[];
+  onBackToSelection: () => void;
+}
+
+export function ChatInterface({ selectedDocuments, onBackToSelection }: ChatInterfaceProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputMessage.trim(),
+      timestamp: Date.now(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputMessage.trim();
+    setInputMessage('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/RAG/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: currentInput,
+          documentIds: selectedDocuments.map(doc => doc._id),
+          conversationHistory: messages.slice(-10).map(msg => ({
+            role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
+            content: msg.content
+          }))
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        const assistantMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: result.response,
+          timestamp: Date.now(),
+          sources: result.sources
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      } else {
+        throw new Error(result.error || 'Chat request failed');
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-[600px]">
+      {/* Header */}
+      <div className="flex justify-between items-center p-4 border-b border-gray-700">
+        <div>
+          <h2 className="text-xl font-bold text-white">Chat with Documents</h2>
+          <p className="text-sm text-gray-300">
+            Chatting with: {selectedDocuments.map(d => d.title).join(', ')}
+          </p>
+        </div>
+        <button
+          onClick={onBackToSelection}
+          className="flex gap-2 items-center px-3 py-2 text-gray-300 rounded-lg border border-gray-600 transition-colors hover:bg-gray-700"
+        >
+          {renderIcon(ArrowLeft, { className: "w-4 h-4" })}
+          Back to Selection
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+        {messages.length === 0 && (
+          <div className="text-center text-gray-400">
+            <div className="mb-4">
+              {renderIcon(MessageCircle, { className: "mx-auto w-12 h-12" })}
+            </div>
+            <p>Start a conversation by asking a question about your documents.</p>
+          </div>
+        )}
+
+        {messages.map((message) => (
+          <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] rounded-lg p-3 ${
+              message.type === 'user' 
+                ? 'bg-curious-cyan-600 text-white' 
+                : 'bg-gray-700 text-gray-100'
+            }`}>
+              <div className="flex gap-2 items-start">
+                {message.type === 'assistant' && renderIcon(Bot, { className: "w-4 h-4 mt-1 text-curious-cyan-400" })}
+                {message.type === 'user' && renderIcon(User, { className: "w-4 h-4 mt-1" })}
+                <div className="flex-1">
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  
+                  {message.sources && message.sources.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs font-semibold text-gray-300">Sources:</p>
+                      {message.sources.map((source, index) => (
+                        <div key={index} className="p-2 text-xs rounded bg-gray-800">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-curious-cyan-400">{source.title}</span>
+                            <span className="text-gray-400">{(source.score * 100).toFixed(1)}% match</span>
+                          </div>
+                          <p className="text-gray-300">{source.snippet}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] p-3 rounded-lg bg-gray-700">
+              <div className="flex gap-2 items-center">
+                {renderIcon(Bot, { className: "w-4 h-4 text-curious-cyan-400" })}
+                {renderIcon(Loader2, { className: "w-4 h-4 animate-spin" })}
+                <span className="text-gray-300">Thinking...</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="p-4 border-t border-gray-700">
+        <div className="flex gap-2">
+          <textarea
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Ask a question about your documents..."
+            className="flex-1 px-3 py-2 placeholder-gray-400 text-white bg-gray-700 rounded-lg border border-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-curious-cyan-500 focus:border-transparent"
+            rows={2}
+            disabled={isLoading}
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={!inputMessage.trim() || isLoading}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              !inputMessage.trim() || isLoading
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-curious-cyan-600 text-white hover:bg-curious-cyan-700'
+            }`}
+          >
+            {renderIcon(Send, { className: "w-4 h-4" })}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

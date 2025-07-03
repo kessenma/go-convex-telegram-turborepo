@@ -1,7 +1,8 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { saveMessageAPI, getMessagesAPI, saveMessageToThreadAPI } from "./api";
-  import { saveDocumentAPI, getDocumentsAPI, getDocumentStatsAPI } from "./documentApi";
+import { saveDocumentAPI, getDocumentsAPI, getDocumentStatsAPI } from "./documentApi";
+import { generateDocumentEmbeddingAPI, searchDocumentsVectorAPI, batchGenerateEmbeddingsAPI } from "./embeddingApi";
 
 const http = httpRouter();
 
@@ -42,6 +43,25 @@ http.route({
   path: "/api/documents/stats",
   method: "GET",
   handler: getDocumentStatsAPI,
+});
+
+// Embedding API endpoints
+http.route({
+  path: "/api/documents/embedding",
+  method: "POST",
+  handler: generateDocumentEmbeddingAPI,
+});
+
+http.route({
+  path: "/api/documents/search",
+  method: "GET",
+  handler: searchDocumentsVectorAPI,
+});
+
+http.route({
+  path: "/api/documents/embeddings/batch",
+  method: "POST",
+  handler: batchGenerateEmbeddingsAPI,
 });
 
 // Health check endpoint

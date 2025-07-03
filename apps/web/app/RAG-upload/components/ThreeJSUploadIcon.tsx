@@ -7,13 +7,15 @@ interface ThreeJSUploadIconProps {
   width?: number;
   height?: number;
   className?: string;
+  animationEnabled?: boolean;
 }
 
 export function ThreeJSUploadIcon({ 
   width = 600, 
   height = 300, 
-  className = ''
-}: ThreeJSUploadIconProps): React.ReactNode {
+  className = '',
+  animationEnabled = true
+}: ThreeJSUploadIconProps): JSX.Element {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -187,138 +189,11 @@ export function ThreeJSUploadIcon({
       setIsVisible(true);
     }, 100);
 
-    // Animation loop with performance optimizations
-    const animate = (time: number) => {
-      animationIdRef.current = requestAnimationFrame(animate);
-      
-      const deltaTime = time - lastTimeRef.current;
-      lastTimeRef.current = time;
-      
-      // Handle document appearance/disappearance
-      documentTimersRef.current.forEach((docTimer, index) => {
-        docTimer.timer -= deltaTime;
-        
-        if (docTimer.timer <= 0) {
-          if (!docTimer.isVisible) {
-            // Show document with scale animation
-            docTimer.isVisible = true;
-            docTimer.timer = 3000 + Math.random() * 2000; // Visible for 3-5 seconds
-            docTimer.fadeOpacity = 1; // Reset fade opacity
-            
-            // Reset material opacity when showing
-            docTimer.group.traverse((child) => {
-              if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
-                child.material.opacity = 0.8; // Reset to original opacity
-              }
-            });
-            
-            // Show corresponding stream
-            if (dataStreamsRef.current[index]) {
-              const streamMaterial = (dataStreamsRef.current[index].children[0] as THREE.Line).material as THREE.LineBasicMaterial;
-              streamMaterial.opacity = 0.6;
-            }
-          } else {
-            // Start fade out
-            docTimer.fadeOpacity -= 0.02;
-            if (docTimer.fadeOpacity <= 0) {
-              docTimer.isVisible = false;
-              docTimer.timer = 3000 + index * 1500 + Math.random() * 2000; // Staggered hidden timing
-              docTimer.group.scale.setScalar(0);
-              docTimer.fadeOpacity = 1;
-              
-              // Hide corresponding stream
-              if (dataStreamsRef.current[index]) {
-                const streamMaterial = (dataStreamsRef.current[index].children[0] as THREE.Line).material as THREE.LineBasicMaterial;
-                streamMaterial.opacity = 0;
-              }
-            } else {
-              // Apply fade opacity to document
-              docTimer.group.traverse((child) => {
-                if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
-                  child.material.opacity = 0.8 * docTimer.fadeOpacity;
-                }
-              });
-            }
-          }
-        }
-        
-        // Animate visible documents
-        if (docTimer.isVisible && docTimer.group.scale.x < 1) {
-          docTimer.group.scale.setScalar(Math.min(docTimer.group.scale.x + 0.02, 1));
-        }
-        
-        // Enhanced 3D float animation for visible documents
-        if (docTimer.isVisible && documentPositions[index]) {
-          const originalY = documentPositions[index].y;
-          const originalX = documentPositions[index].x;
-          
-          // Complex 3D movement patterns
-          docTimer.group.position.y = originalY + Math.sin(time * 0.002 + index) * 0.15;
-          docTimer.group.position.x = originalX + Math.cos(time * 0.0015 + index) * 0.1;
-          docTimer.group.position.z = Math.sin(time * 0.0018 + index * 0.5) * 0.3;
-          
-          // Multi-axis rotation for true 3D effect
-          docTimer.group.rotation.x = Math.sin(time * 0.001 + index) * 0.1;
-          docTimer.group.rotation.y = Math.cos(time * 0.0012 + index) * 0.15;
-          docTimer.group.rotation.z = Math.sin(time * 0.0008 + index) * 0.08;
-        }
-      });
-      
-      // Animate upward flowing particles
-      if (particles && particles.geometry.attributes.position && particles.geometry.attributes.velocity) {
-        const positionAttribute = particles.geometry.attributes.position;
-        const velocityAttribute = particles.geometry.attributes.velocity;
-        
-        if (positionAttribute.array && velocityAttribute.array) {
-          const positions = positionAttribute.array as Float32Array;
-          const velocities = velocityAttribute.array as Float32Array;
-          
-          for (let i = 0; i < particleCount; i++) {
-             const xIndex = i * 3;
-             const yIndex = i * 3 + 1;
-             const zIndex = i * 3 + 2;
-             
-             // Move particles upward with type safety
-             if (positions[xIndex] !== undefined && velocities[xIndex] !== undefined) {
-               positions[xIndex] += velocities[xIndex]; // X
-             }
-             if (positions[yIndex] !== undefined && velocities[yIndex] !== undefined) {
-               positions[yIndex] += velocities[yIndex]; // Y (upward)
-             }
-             if (positions[zIndex] !== undefined && velocities[zIndex] !== undefined) {
-               positions[zIndex] += velocities[zIndex]; // Z
-             }
-             
-             // Reset particles that have moved too high
-             if (positions[yIndex] !== undefined && positions[yIndex] > 4) {
-               positions[xIndex] = (Math.random() - 0.5) * 6;
-               positions[yIndex] = -3 + Math.random() * 2;
-               positions[zIndex] = (Math.random() - 0.5) * 2;
-             }
-           }
-          
-          particles.geometry.attributes.position.needsUpdate = true;
-        }
-      }
-      
-      // Animate data streams with wave-like pulse effect
-      dataStreamsRef.current.forEach((streamGroup, index) => {
-        if (documentTimersRef.current[index]?.isVisible) {
-          const stream = streamGroup.children[0] as THREE.Line;
-          const material = stream.material as THREE.LineBasicMaterial;
-          
-          // Create wave-like pulsing effect on line width (simulated with opacity variation)
-          const pulseIntensity = 0.3 + Math.sin(time * 0.003 + index) * 0.3;
-          material.opacity = Math.max(0.2, pulseIntensity);
-        }
-      });
-      
-      renderer.render(scene, camera);
-    };
-
-    // Start animation immediately
-    lastTimeRef.current = performance.now();
-    animate(lastTimeRef.current);
+    // Start animation if enabled
+    if (animationEnabled) {
+      // Animation will be handled by the separate useEffect
+      lastTimeRef.current = performance.now();
+    }
 
     // Cleanup function
     return () => {
@@ -353,6 +228,163 @@ export function ThreeJSUploadIcon({
       documentTimersRef.current = [];
     };
   }, [width, height]);
+
+  // Separate useEffect for animation control to avoid dependency array size changes
+  useEffect(() => {
+    if (!animationEnabled && animationIdRef.current) {
+      cancelAnimationFrame(animationIdRef.current);
+      animationIdRef.current = null;
+    } else if (animationEnabled && !animationIdRef.current && sceneRef.current && rendererRef.current) {
+      // Restart animation if it was stopped
+      const animate = (time: number) => {
+        if (animationEnabled) {
+          animationIdRef.current = requestAnimationFrame(animate);
+        }
+        
+        const deltaTime = time - lastTimeRef.current;
+        lastTimeRef.current = time;
+        
+        // Handle document appearance/disappearance
+        documentTimersRef.current.forEach((docTimer, index) => {
+          docTimer.timer -= deltaTime;
+          
+          if (docTimer.timer <= 0) {
+            if (!docTimer.isVisible) {
+              // Show document with scale animation
+              docTimer.isVisible = true;
+              docTimer.timer = 3000 + Math.random() * 2000; // Visible for 3-5 seconds
+              docTimer.fadeOpacity = 1; // Reset fade opacity
+              
+              // Reset material opacity when showing
+              docTimer.group.traverse((child) => {
+                if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+                  child.material.opacity = 0.8; // Reset to original opacity
+                }
+              });
+              
+              // Show corresponding stream
+              if (dataStreamsRef.current[index]) {
+                const streamMaterial = (dataStreamsRef.current[index].children[0] as THREE.Line).material as THREE.LineBasicMaterial;
+                streamMaterial.opacity = 0.6;
+              }
+            } else {
+              // Start fade out
+              docTimer.fadeOpacity -= 0.02;
+              if (docTimer.fadeOpacity <= 0) {
+                docTimer.isVisible = false;
+                docTimer.timer = 3000 + index * 1500 + Math.random() * 2000; // Staggered hidden timing
+                docTimer.group.scale.setScalar(0);
+                docTimer.fadeOpacity = 1;
+                
+                // Hide corresponding stream
+                if (dataStreamsRef.current[index]) {
+                  const streamMaterial = (dataStreamsRef.current[index].children[0] as THREE.Line).material as THREE.LineBasicMaterial;
+                  streamMaterial.opacity = 0;
+                }
+              } else {
+                // Apply fade opacity to document
+                docTimer.group.traverse((child) => {
+                  if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+                    child.material.opacity = 0.8 * docTimer.fadeOpacity;
+                  }
+                });
+              }
+            }
+          }
+          
+          // Animate visible documents
+          if (docTimer.isVisible && docTimer.group.scale.x < 1) {
+            docTimer.group.scale.setScalar(Math.min(docTimer.group.scale.x + 0.02, 1));
+          }
+          
+          // Enhanced 3D float animation for visible documents
+          if (docTimer.isVisible) {
+            const documentPositions = [
+              { x: -2, y: 0.5 },
+              { x: -1, y: -0.5 },
+              { x: 0, y: 1 },
+              { x: 1, y: -0.2 },
+              { x: 2, y: 0.8 }
+            ];
+            
+            if (documentPositions[index]) {
+              const originalY = documentPositions[index].y;
+              const originalX = documentPositions[index].x;
+              
+              // Complex 3D movement patterns
+              docTimer.group.position.y = originalY + Math.sin(time * 0.002 + index) * 0.15;
+              docTimer.group.position.x = originalX + Math.cos(time * 0.0015 + index) * 0.1;
+              docTimer.group.position.z = Math.sin(time * 0.0018 + index * 0.5) * 0.3;
+              
+              // Multi-axis rotation for true 3D effect
+              docTimer.group.rotation.x = Math.sin(time * 0.001 + index) * 0.1;
+              docTimer.group.rotation.y = Math.cos(time * 0.0012 + index) * 0.15;
+              docTimer.group.rotation.z = Math.sin(time * 0.0008 + index) * 0.08;
+            }
+          }
+        });
+        
+        // Animate upward flowing particles
+        if (particlesRef.current && particlesRef.current.geometry.attributes.position && particlesRef.current.geometry.attributes.velocity) {
+          const positionAttribute = particlesRef.current.geometry.attributes.position;
+          const velocityAttribute = particlesRef.current.geometry.attributes.velocity;
+          
+          if (positionAttribute.array && velocityAttribute.array) {
+            const positions = positionAttribute.array as Float32Array;
+            const velocities = velocityAttribute.array as Float32Array;
+            const particleCount = 60;
+            
+            for (let i = 0; i < particleCount; i++) {
+               const xIndex = i * 3;
+               const yIndex = i * 3 + 1;
+               const zIndex = i * 3 + 2;
+               
+               // Move particles upward with type safety
+               if (positions[xIndex] !== undefined && velocities[xIndex] !== undefined) {
+                 positions[xIndex] += velocities[xIndex]; // X
+               }
+               if (positions[yIndex] !== undefined && velocities[yIndex] !== undefined) {
+                 positions[yIndex] += velocities[yIndex]; // Y (upward)
+               }
+               if (positions[zIndex] !== undefined && velocities[zIndex] !== undefined) {
+                 positions[zIndex] += velocities[zIndex]; // Z
+               }
+               
+               // Reset particles that have moved too high
+               if (positions[yIndex] !== undefined && positions[yIndex] > 4) {
+                 positions[xIndex] = (Math.random() - 0.5) * 6;
+                 positions[yIndex] = -3 + Math.random() * 2;
+                 positions[zIndex] = (Math.random() - 0.5) * 2;
+               }
+             }
+            
+            particlesRef.current.geometry.attributes.position.needsUpdate = true;
+          }
+        }
+        
+        // Animate data streams with wave-like pulse effect
+        dataStreamsRef.current.forEach((streamGroup, index) => {
+          if (documentTimersRef.current[index]?.isVisible) {
+            const stream = streamGroup.children[0] as THREE.Line;
+            const material = stream.material as THREE.LineBasicMaterial;
+            
+            // Create wave-like pulsing effect on line width (simulated with opacity variation)
+            const pulseIntensity = 0.3 + Math.sin(time * 0.003 + index) * 0.3;
+            material.opacity = Math.max(0.2, pulseIntensity);
+          }
+        });
+        
+        if (rendererRef.current && sceneRef.current) {
+          const camera = new THREE.PerspectiveCamera(60, width / height, 1, 50);
+          camera.position.z = 6;
+          rendererRef.current.render(sceneRef.current, camera);
+        }
+      };
+      
+      lastTimeRef.current = performance.now();
+      animate(lastTimeRef.current);
+    }
+  }, [animationEnabled, width, height]);
 
   return (
     <div 

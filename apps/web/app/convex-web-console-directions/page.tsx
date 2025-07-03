@@ -13,8 +13,10 @@ import { useState, useEffect } from "react";
 import { StatusIndicator } from "../components/ui/status-indicator";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useAnimationSettings } from "../hooks/use-animation-settings";
 
 export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
+  const { animationEnabled } = useAnimationSettings();
   const [showAdminKey, setShowAdminKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showAurora, setShowAurora] = useState(true);
@@ -270,6 +272,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
          <AuroraBackground 
            showRadialGradient={true}
            className="fixed inset-0 z-0"
+           animationEnabled={animationEnabled}
            style={{
              transform: `translateY(${-scrollY * 0.3}px)`,
              opacity: typeof window !== 'undefined' 

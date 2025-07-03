@@ -16,6 +16,8 @@ import type {
 import type * as api_ from "../api.js";
 import type * as documentApi from "../documentApi.js";
 import type * as documents from "../documents.js";
+import type * as embeddingApi from "../embeddingApi.js";
+import type * as embeddings from "../embeddings.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as messagesThread from "../messagesThread.js";
@@ -34,6 +36,8 @@ declare const fullApi: ApiFromModules<{
   api: typeof api_;
   documentApi: typeof documentApi;
   documents: typeof documents;
+  embeddingApi: typeof embeddingApi;
+  embeddings: typeof embeddings;
   http: typeof http;
   messages: typeof messages;
   messagesThread: typeof messagesThread;
