@@ -15,7 +15,7 @@ export const Hero = ({ title, subtitle, children, className, whiteText = false }
     <div className={cn("my-8 text-center", className)}>
       <h1 className={cn(
         "text-2xl md:text-5xl font-bold mb-4 font-bitcount",
-        whiteText ? "text-white" : "bg-gradient-to-br from-blue-100 to-blue-500 bg-clip-text text-transparent"
+        whiteText ? "text-white" : "bg-gradient-to-br from-cyan-100 to-cyan-500 bg-clip-text text-transparent"
       )}>
         {title}
       </h1>

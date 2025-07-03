@@ -6,6 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { Hero } from "../components/ui/hero";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { BackgroundBeams } from "../components/ui/background-beams";
 
 interface SendMessageForm {
   chatId: string;
@@ -137,11 +138,13 @@ export default function SendMessagePage(): React.ReactElement {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <Hero 
-        title="Send Telegram Message" 
-        subtitle="Send a message to any chat through your Telegram bot"
-      />
+    <div className="relative min-h-screen">
+      <BackgroundBeams />
+      <div className="relative z-10 max-w-4xl mx-auto p-6">
+        <Hero 
+          title="Send Telegram Message" 
+          subtitle="Send a message to any chat through your Telegram bot"
+        />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
@@ -157,7 +160,7 @@ export default function SendMessagePage(): React.ReactElement {
                 value={form.chatId}
                 onChange={handleInputChange}
                 placeholder="Enter chat ID (e.g., 123456789)"
-                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-cyan-500 focus:outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 disabled={isLoading}
               />
               <small className="block text-gray-500 dark:text-gray-400 text-sm mt-1">
@@ -176,7 +179,7 @@ export default function SendMessagePage(): React.ReactElement {
                 value={form.threadId}
                 onChange={handleInputChange}
                 placeholder="Enter thread ID (optional, for group threads)"
-                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-cyan-500 focus:outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 disabled={isLoading}
               />
               <small className="block text-gray-500 dark:text-gray-400 text-sm mt-1">
@@ -194,7 +197,7 @@ export default function SendMessagePage(): React.ReactElement {
                     .map((thread: Thread) => (
                       <div 
                         key={thread._id} 
-                        className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                        className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:border-cyan-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                         onClick={() => {
                           setForm(prev => ({
                             ...prev,
@@ -225,7 +228,7 @@ export default function SendMessagePage(): React.ReactElement {
                 value={form.message}
                 onChange={handleInputChange}
                 placeholder="Type your message here..."
-                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-vertical"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-cyan-500 focus:outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-vertical"
                 rows={4}
                 disabled={isLoading}
               />
@@ -265,23 +268,24 @@ export default function SendMessagePage(): React.ReactElement {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">💡 Tips</h3>
           <ul className="space-y-3 text-gray-600 dark:text-gray-400">
             <li className="flex items-start gap-2">
-              <span className="text-blue-500 mt-1">•</span>
+              <span className="text-cyan-500 mt-1">•</span>
               <span>Make sure your bot has permission to send messages to the chat</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-blue-500 mt-1">•</span>
+              <span className="text-cyan-500 mt-1">•</span>
               <span>For group chats, add your bot to the group first</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-blue-500 mt-1">•</span>
+              <span className="text-cyan-500 mt-1">•</span>
               <span>You can find chat IDs in the Messages page</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-blue-500 mt-1">•</span>
+              <span className="text-cyan-500 mt-1">•</span>
               <span>Test with your own user ID first (send a message to your bot to get your chat ID)</span>
             </li>
           </ul>
         </Card>
+      </div>
       </div>
     </div>
   );

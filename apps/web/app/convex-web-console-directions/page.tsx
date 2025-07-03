@@ -10,6 +10,9 @@ import { AuroraBackground } from "../components/ui/aurora-background";
 import { cn } from "../lib/utils";
 import { Database, ExternalLink, Info, ArrowRight, Terminal, Key, Eye, EyeOff, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
+import { StatusIndicator } from "../components/ui/status-indicator";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
   const [showAdminKey, setShowAdminKey] = useState(false);
@@ -20,6 +23,11 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
   const convexPort = process.env.NEXT_PUBLIC_CONVEX_PORT || '3210';
   const dashboardUrl = `http://localhost:${dashboardPort}`;
   const deploymentUrl = `http://localhost:${convexPort}`;
+  
+  // Check connection status
+  const messages = useQuery(api.messages.getAllMessages, { limit: 1 });
+  const isConnected = messages !== undefined;
+  const connectionStatus = isConnected ? "connected" : "connecting";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,7 +52,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
         <Card className="bg-gray-900/90 border-gray-700/50">
         <div className="text-left">
           <div className="flex items-center mb-4">
-            <Terminal className="w-6 h-6 text-curious-blue-500 mr-2" />
+            <Terminal className="w-6 h-6 text-curious-cyan-500 mr-2" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
               Get Admin Key
             </h3>
@@ -154,7 +162,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                 <Button 
                   href={dashboardUrl}
                   variant="secondary" 
-                  className="w-full bg-curious-blue-600 hover:bg-curious-blue-700 text-white border-curious-blue-600"
+                  className="w-full bg-curious-cyan-600 hover:bg-curious-cyan-700 text-white border-curious-cyan-600"
                 >
                   <Key className="w-4 h-4 mr-2" />
                   Log In
@@ -178,7 +186,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
           <div className="max-w-2xl mx-auto">
             <BackgroundGradient className="rounded-[22px] p-6 bg-white dark:bg-zinc-900">
               {/* Dashboard Header */}
-              <Card className="mb-4 bg-curious-blue-950 border-curious-blue-800">
+              <Card className="mb-4 bg-curious-cyan-950 border-curious-cyan-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <img 
@@ -188,14 +196,14 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                     />
                     <span className="text-white font-semibold">Convex Dashboard</span>
                   </div>
-                  <div className="text-curious-blue-300 text-sm">Health: ✓</div>
+                  <div className="text-curious-cyan-300 text-sm">Health: ✓</div>
                 </div>
               </Card>
               
               {/* Navigation Tabs */}
               <Card className="mb-4">
                 <div className="flex flex-wrap gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-                  <div className="bg-curious-blue-600 text-white px-3 py-1 rounded text-sm font-medium">Tables</div>
+                  <div className="bg-curious-cyan-600 text-white px-3 py-1 rounded text-sm font-medium">Tables</div>
                   <div className="text-gray-600 dark:text-gray-400 px-3 py-1 rounded text-sm">Data</div>
                   <div className="text-gray-600 dark:text-gray-400 px-3 py-1 rounded text-sm">Functions</div>
                   <div className="text-gray-600 dark:text-gray-400 px-3 py-1 rounded text-sm">Files</div>
@@ -209,21 +217,21 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center min-w-0 flex-1">
-                      <Database className="w-4 h-4 text-curious-blue-500 mr-2 flex-shrink-0" />
+                      <Database className="w-4 h-4 text-curious-cyan-500 mr-2 flex-shrink-0" />
                       <span className="font-medium text-gray-900 dark:text-white truncate">telegram_messages</span>
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">5 documents</span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center min-w-0 flex-1">
-                      <Database className="w-4 h-4 text-curious-blue-500 mr-2 flex-shrink-0" />
+                      <Database className="w-4 h-4 text-curious-cyan-500 mr-2 flex-shrink-0" />
                       <span className="font-medium text-gray-900 dark:text-white truncate">telegram_threads</span>
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">1 document</span>
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <div className="flex items-center min-w-0 flex-1">
-                      <Database className="w-4 h-4 text-curious-blue-500 mr-2 flex-shrink-0" />
+                      <Database className="w-4 h-4 text-curious-cyan-500 mr-2 flex-shrink-0" />
                       <span className="font-medium text-gray-900 dark:text-white truncate">+ Create Table</span>
                     </div>
                     <ArrowRight className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
@@ -233,18 +241,18 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
               
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-3">
-                <Card className="bg-curious-blue-50 dark:bg-curious-blue-950 border-curious-blue-200 dark:border-curious-blue-800">
+                <Card className="bg-curious-cyan-50 dark:bg-curious-cyan-950 border-curious-cyan-200 dark:border-curious-cyan-800">
                   <div className="text-center">
-                    <Database className="w-6 h-6 text-curious-blue-600 dark:text-curious-blue-400 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-curious-blue-900 dark:text-curious-blue-100">Browse Data</p>
-                    <p className="text-xs text-curious-blue-700 dark:text-curious-blue-300">View & edit records</p>
+                    <Database className="w-6 h-6 text-curious-cyan-600 dark:text-curious-cyan-400 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-curious-cyan-900 dark:text-curious-cyan-100">Browse Data</p>
+                    <p className="text-xs text-curious-cyan-700 dark:text-curious-cyan-300">View & edit records</p>
                   </div>
                 </Card>
-                <Card className="bg-curious-blue-50 dark:bg-curious-blue-950 border-curious-blue-200 dark:border-curious-blue-800">
+                <Card className="bg-curious-cyan-50 dark:bg-curious-cyan-950 border-curious-cyan-200 dark:border-curious-cyan-800">
                   <div className="text-center">
-                    <Terminal className="w-6 h-6 text-curious-blue-600 dark:text-curious-blue-400 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-curious-blue-900 dark:text-curious-blue-100">Function Logs</p>
-                    <p className="text-xs text-curious-blue-700 dark:text-curious-blue-300">Monitor activity</p>
+                    <Terminal className="w-6 h-6 text-curious-cyan-600 dark:text-curious-cyan-400 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-curious-cyan-900 dark:text-curious-cyan-100">Function Logs</p>
+                    <p className="text-xs text-curious-cyan-700 dark:text-curious-cyan-300">Monitor activity</p>
                   </div>
                 </Card>
               </div>
@@ -317,9 +325,9 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
               <AccordionTrigger className="text-left hover:no-underline group">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center">
-                    <Info className="w-5 h-5 text-curious-blue-600 dark:text-curious-blue-400 mr-3" />
+                    <Info className="w-5 h-5 text-curious-cyan-600 dark:text-curious-cyan-400 mr-3" />
                     <span className="text-lg font-semibold text-gray-900 dark:text-white">Prerequisites</span>
-                    <div className="ml-3 h-px bg-gray-300 dark:bg-gray-600 flex-1 max-w-[100px] group-hover:bg-curious-blue-400 transition-colors"></div>
+                    <div className="ml-3 h-px bg-gray-300 dark:bg-gray-600 flex-1 max-w-[100px] group-hover:bg-curious-cyan-400 transition-colors"></div>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -366,13 +374,13 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card className="text-left">
             <div className="flex items-center mb-4">
-              <Info className="w-6 h-6 text-curious-blue-500 mr-2" />
+              <Info className="w-6 h-6 text-curious-cyan-500 mr-2" />
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Dashboard Access
               </h3>
             </div>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              The Convex Dashboard is available on port <span className="font-mono bg-curious-blue-100 dark:bg-curious-blue-900 px-2 py-1 rounded text-curious-blue-800 dark:text-curious-blue-200">{dashboardPort}</span>
+              The Convex Dashboard is available on port <span className="font-mono bg-curious-cyan-100 dark:bg-curious-cyan-900 px-2 py-1 rounded text-curious-cyan-800 dark:text-curious-cyan-200">{dashboardPort}</span>
             </p>
             <Button 
               href={dashboardUrl} 
@@ -386,14 +394,30 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
 
           <Card className="text-left">
             <div className="flex items-center mb-4">
-              <Database className="w-6 h-6 text-curious-blue-500 mr-2" />
+              <Database className="w-6 h-6 text-curious-cyan-500 mr-2" />
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Deployment URL
               </h3>
             </div>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Your Convex deployment is running on port <span className="font-mono bg-curious-blue-100 dark:bg-curious-blue-900 px-2 py-1 rounded text-curious-blue-800 dark:text-curious-blue-200">{convexPort}</span>
-            </p>
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <StatusIndicator 
+                  status={connectionStatus} 
+                  size="sm"
+                  showLabel={false}
+                />
+                <span className={`text-sm font-bold ${
+                  isConnected 
+                    ? 'text-green-600 dark:text-green-400' 
+                    : 'text-yellow-600 dark:text-yellow-400'
+                }`}>
+                  {isConnected ? 'Connected' : 'Connecting...'}
+                </span>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300">
+                Your Convex deployment is running on port <span className="font-mono bg-curious-cyan-100 dark:bg-curious-cyan-900 px-2 py-1 rounded text-curious-cyan-800 dark:text-curious-cyan-200">{convexPort}</span>
+              </p>
+            </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
               <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                 {deploymentUrl}
@@ -411,7 +435,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
             </h4>
             <div className="space-y-3">
               <div className="flex items-start">
-                <ArrowRight className="w-5 h-5 text-curious-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                <ArrowRight className="w-5 h-5 text-curious-cyan-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="font-medium text-gray-900 dark:text-white">Data Management</p>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
@@ -420,7 +444,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                 </div>
               </div>
               <div className="flex items-start">
-                <ArrowRight className="w-5 h-5 text-curious-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                <ArrowRight className="w-5 h-5 text-curious-cyan-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="font-medium text-gray-900 dark:text-white">Real Time Data Loading</p>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
@@ -429,7 +453,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                 </div>
               </div>
               <div className="flex items-start">
-                <ArrowRight className="w-5 h-5 text-curious-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+                <ArrowRight className="w-5 h-5 text-curious-cyan-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="font-medium text-gray-900 dark:text-white">Schema Visualization</p>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
@@ -440,15 +464,15 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
             </div>
           </Card>
 
-        <div className="bg-curious-blue-50 dark:bg-curious-blue-950 border border-curious-blue-200 dark:border-curious-blue-800 rounded-xl p-6">
+        <div className="bg-curious-cyan-50 dark:bg-curious-cyan-950 border border-curious-cyan-200 dark:border-curious-cyan-800 rounded-xl p-6">
           <div className="flex items-center justify-center mb-2">
-            <Info className="w-5 h-5 text-curious-blue-600 dark:text-curious-blue-400 mr-2" />
-            <h4 className="font-semibold text-curious-blue-900 dark:text-curious-blue-100">
+            <Info className="w-5 h-5 text-curious-cyan-600 dark:text-curious-cyan-400 mr-2" />
+            <h4 className="font-semibold text-curious-cyan-900 dark:text-curious-cyan-100">
               Need Help?
             </h4>
           </div>
-          <p className="text-curious-blue-700 dark:text-curious-blue-300 text-sm">
-            Visit the <a href="https://docs.convex.dev" target="_blank" rel="noopener noreferrer" className="underline hover:text-curious-blue-600 dark:hover:text-curious-blue-200">Convex Documentation</a> for detailed guides and tutorials.
+          <p className="text-curious-cyan-700 dark:text-curious-cyan-300 text-sm">
+            Visit the <a href="https://docs.convex.dev" target="_blank" rel="noopener noreferrer" className="underline hover:text-curious-cyan-600 dark:hover:text-curious-cyan-200">Convex Documentation</a> for detailed guides and tutorials.
           </p>
         </div>
         </main>

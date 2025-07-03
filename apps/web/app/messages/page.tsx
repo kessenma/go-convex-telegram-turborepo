@@ -105,9 +105,9 @@ export default function MessagesPage(): React.ReactElement {
                        </div>
                       <div className="flex flex-col gap-3">
                         {threadMessages.map((message: TelegramMessage) => (
-                            <Card key={message._id} className="ml-4 border-l-4 border-blue-500 bg-white dark:bg-gray-900">
+                            <Card key={message._id} className="ml-4 border-l-4 border-cyan-500 bg-white dark:bg-gray-900">
                               <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
-                                <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">{getUserDisplay(message)}</span>
+                                <span className="bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 px-3 py-1 rounded-full text-sm font-medium">{getUserDisplay(message)}</span>
                                 <span className="text-gray-500 dark:text-gray-400 text-sm font-mono">{formatDate(message.timestamp)}</span>
                                 {message.replyToMessageId && (
                                     <span className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-1 rounded-full text-xs italic">↳ Reply to {message.replyToMessageId}</span>
@@ -134,7 +134,7 @@ export default function MessagesPage(): React.ReactElement {
                       {standaloneMessages.map((message: TelegramMessage) => (
                           <Card key={message._id}>
                             <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
-                              <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">{getUserDisplay(message)}</span>
+                              <span className="bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 px-3 py-1 rounded-full text-sm font-medium">{getUserDisplay(message)}</span>
                               <span className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-sm">Chat: {message.chatId}</span>
                               <span className="text-gray-500 dark:text-gray-400 text-sm font-mono">{formatDate(message.timestamp)}</span>
                               {message.replyToMessageId && (

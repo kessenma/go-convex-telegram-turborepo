@@ -21,8 +21,8 @@ export const saveMessageAPI = httpAction(async (ctx, request) => {
   }
 
   try {
-    // Save the message using the mutation from messages module
-    const messageId = await ctx.runMutation(api.messages.saveMessage, {
+    // Save the message using the mutation from messagesThread module
+    const messageId = await ctx.runMutation(api.messagesThread.saveMessageWithThreadHandling, {
       messageId: body.messageId,
       chatId: body.chatId,
       userId: body.userId,

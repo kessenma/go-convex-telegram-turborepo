@@ -10,7 +10,7 @@ export default {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
-        'curious-blue': {
+        'curious-cyan': {
           '50': '#f1f9fe',
           '100': '#e3f1fb',
           '200': '#c0e3f7',

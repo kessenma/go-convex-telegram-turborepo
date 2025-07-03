@@ -2,14 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Tabs } from "./ui/tabs";
-import { Bot, HouseWifi, MessageSquareCode, MessagesSquare, MessageSquareShare, DatabaseZapIcon, Upload } from "lucide-react";
+import { StatusIndicator } from "./ui/status-indicator";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, ChevronDown, ExternalLink, Info, MessageSquareShare, MessageSquareText } from "lucide-react";
 import { renderIcon } from "../lib/icon-utils";
+import { motion } from "motion/react";
 
 export default function Navigation(): React.ReactNode {
   const pathname = usePathname();
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,69 +26,191 @@ export default function Navigation(): React.ReactNode {
   }, []);
 
 interface NavItem {
-  href: string;
+  href?: string;
   label: string;
   icon: React.FC<{ className?: string }>;
+  dropdown?: { href: string; label: string; external?: boolean; icon?: React.FC<{ className?: string }> }[];
 }
+
+  const messages = useQuery(api.messages.getAllMessages, { limit: 1 });
+  const allMessages = useQuery(api.messages.getAllMessages, { limit: 1000 });
+  const threads = useQuery(api.threads.getAllActiveThreads, { limit: 1000 });
+  
+  const messageCount = allMessages?.length || 0;
+  const threadCount = threads?.length || 0;
+  
+  const dashboardPort = process.env.NEXT_PUBLIC_CONVEX_DASHBOARD_PORT || '6791';
+  const dashboardUrl = `http://localhost:${dashboardPort}`;
 
   const navItems: NavItem[] = [
     { href: "/", label: "Home", icon: HouseWifi as React.FC<{ className?: string }> },
-    { href: "/messages", label: "Messages", icon: MessageSquareCode as React.FC<{ className?: string }> },
-    { href: "/threads", label: "Threads", icon: MessagesSquare as React.FC<{ className?: string }> },
-    { href: "/send", label: "Send Message", icon: MessageSquareShare as React.FC<{ className?: string }> },
+    { 
+      label: "Messages", 
+      icon: MessagesSquare as React.FC<{ className?: string }>,
+      dropdown: [
+        { href: "/messages", label: "All Messages", icon: MessageSquareText as React.FC<{ className?: string }> },
+        { href: "/threads", label: "Message Threads", icon: MessagesSquare as React.FC<{ className?: string }> },
+        { href: "/send", label: "Send Message", icon: MessageSquareShare as React.FC<{ className?: string }> }
+      ]
+    },
     { href: "/RAG-upload", label: "RAG Upload", icon: Upload as React.FC<{ className?: string }> },
-    { href: "/convex-web-console-directions", label: "Console", icon: DatabaseZapIcon as React.FC<{ className?: string }> },
+    { 
+      label: "Console", 
+      icon: DatabaseZapIcon as React.FC<{ className?: string }>,
+      dropdown: [
+        { href: "/convex-web-console-directions", label: "Connection Guide", icon: Info as React.FC<{ className?: string }> },
+        { href: dashboardUrl, label: "Open Console", external: true, icon: ExternalLink as React.FC<{ className?: string }> }
+      ]
+    },
   ];
 
-  // Convert nav items to tabs format
-  const tabs = navItems.map((item) => {
-    const IconComponent = item.icon;
-    return {
-      title: (
-        <div className="flex gap-2 items-center">
-          {renderIcon(IconComponent as any, { className: "w-4 h-4" })}
-          <span className={`hidden md:inline ${isScrolled && item.href !== pathname ? 'lg:hidden' : ''}`}>{item.label}</span>
-        </div>
-      ),
-      value: item.href,
-      content: (
-        <div className="flex gap-2 items-center">
-          {renderIcon(IconComponent as any, { className: "w-4 h-4" })}
-          <span className="hidden md:inline">{item.label}</span>
-        </div>
-      ),
-    };
-  });
+  // Check if current path matches any nav item
+  const isActiveItem = (item: NavItem) => {
+    if (item.href === pathname) return true;
+    if (item.dropdown) {
+      return item.dropdown.some(dropdownItem => dropdownItem.href === pathname);
+    }
+    return false;
+  };
 
-  // Find current active tab based on pathname
-  const activeTabIndex = navItems.findIndex(item => item.href === pathname);
+  const handleItemClick = (item: NavItem) => {
+    if (item.href) {
+      router.push(item.href);
+    }
+  };
+
+  const handleDropdownClick = (href: string, external?: boolean) => {
+    if (external) {
+      window.open(href, '_blank');
+    } else {
+      router.push(href);
+    }
+    setHoveredItem(null);
+  };
 
   return (
     <nav className="fixed top-0 right-0 left-0 z-50">
       <div className="flex justify-between items-center px-4 mx-auto max-w-6xl h-16">
-        <div className="flex gap-2 items-center font-semibold text-blue-500">
+        <div className="flex gap-2 items-center font-semibold text-cyan-500">
           {renderIcon(Bot, { className: "w-6 h-6" })}
-          <span className={`text-lg font-bold bg-gradient-to-r from-blue-500 to-blue-100 bg-clip-text text-transparent hidden ${isScrolled ? 'sm:hidden' : 'sm:inline'}`}>
+          <span className={`text-lg font-bold bg-gradient-to-r from-cyan-500 to-cyan-100 bg-clip-text text-transparent hidden ${isScrolled ? 'sm:hidden' : 'sm:inline'}`}>
             Bot Manager
           </span>
         </div>
         
-        <div className="flex items-center">
-          {React.createElement(Tabs as any, {
-            tabs: tabs,
-            activeTabIndex: activeTabIndex,
-            containerClassName: "flex-1 justify-center",
-            activeTabClassName: "bg-blue-500 text-white rounded-lg",
-            tabClassName: "text-white/80 hover:text-blue-300 transition-colors duration-200 font-medium px-3 py-2 rounded-lg",
-            contentClassName: "hidden",
-            onTabChange: (tab: any) => {
-              router.push(tab.value);
-            }
+        <div className="flex gap-1 items-center">
+          {navItems.map((item) => {
+            const IconComponent = item.icon;
+            const isConsole = item.label === "Console";
+            const isMessages = item.label === "Messages";
+             const hasDropdown = Boolean(item.dropdown);
+            const isActive = isActiveItem(item);
+            const isHovered = hoveredItem === item.label;
+            
+            return (
+              <div 
+                 key={item.label}
+                 className="relative"
+                 onMouseEnter={() => setHoveredItem(item.label)}
+                 onMouseLeave={(e) => {
+                   // Only hide if we're not moving to the dropdown
+                   const relatedTarget = e.relatedTarget as HTMLElement;
+                   if (!relatedTarget || !relatedTarget.closest('[data-dropdown]')) {
+                     setHoveredItem(null);
+                   }
+                 }}
+               >
+                <button
+                  onClick={() => handleItemClick(item)}
+                  className={`relative px-3 py-2 rounded-lg transition-colors duration-200 font-medium flex items-center gap-2 ${
+                    isActive 
+                      ? 'text-cyan-500 bg-slate-900' 
+                      : 'text-white/80 hover:text-cyan-300'
+                  }`}
+                  style={{
+                    transformStyle: "preserve-3d",
+                  }}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeNavItem"
+                      transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
+                      className="absolute inset-0 bg-slate-900 rounded-lg"
+                    />
+                  )}
+                  
+                  <span className="flex relative gap-2 items-center">
+                    {renderIcon(IconComponent as any, { className: "w-4 h-4" })}
+                    <span className={`hidden md:inline ${isScrolled && !isActive ? 'lg:hidden' : ''}`}>
+                      {item.label}
+                    </span>
+                    {isMessages && messageCount > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
+                        {messageCount}
+                      </span>
+                    )}
+                    {isConsole && (
+                      <StatusIndicator 
+                        status={messages === undefined ? "connecting" : "connected"} 
+                        size="sm"
+                        showLabel={false}
+                      />
+                    )}
+                    {hasDropdown && renderIcon(ChevronDown, { className: "w-3 h-3" })}
+                  </span>
+                </button>
+                
+                {/* Dropdown with buffer zone */}
+                 {(isMessages || item.label === "Console") && isHovered && item.dropdown && (
+                   <>
+                     {/* Invisible buffer zone */}
+                     <div className="absolute left-0 top-full z-40 w-48 h-4" />
+                     <motion.div
+                       initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                       animate={{ opacity: 1, scale: 1, y: 0 }}
+                       exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                       transition={{ duration: 0.2 }}
+                       className="absolute left-0 top-full z-50 mt-4 w-48 rounded-lg border shadow-lg backdrop-blur-sm bg-black/90 border-white/10"
+                       data-dropdown
+                       onMouseEnter={() => setHoveredItem(item.label)}
+                       onMouseLeave={() => setHoveredItem(null)}
+                     >
+                       {item.dropdown.map((dropdownItem, index) => (
+                         <button
+                           key={dropdownItem.href}
+                           onClick={() => handleDropdownClick(dropdownItem.href, dropdownItem.external)}
+                           className={`flex items-center justify-between px-4 py-2 w-full text-left transition-colors text-white/80 hover:text-white hover:bg-white/10 ${
+                             index === 0 ? 'rounded-t-lg' : ''
+                           } ${
+                             index === item.dropdown!.length - 1 ? 'rounded-b-lg' : ''
+                           }`}
+                         >
+                           <div className="flex items-center gap-2">
+                             {dropdownItem.icon && renderIcon(dropdownItem.icon as any, { className: "w-3 h-3" })}
+                             {dropdownItem.label}
+                           </div>
+                           {isMessages && dropdownItem.href === "/messages" && messageCount > 0 && (
+                             <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
+                               {messageCount}
+                             </span>
+                           )}
+                           {isMessages && dropdownItem.href === "/threads" && threadCount > 0 && (
+                             <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
+                               {threadCount}
+                             </span>
+                           )}
+                         </button>
+                       ))}
+                     </motion.div>
+                   </>
+                 )}
+              </div>
+            );
           })}
         </div>
 
         <div className="flex items-center">
-          {/* Database icon moved to nav items */}
+          {/* Spacer for layout balance */}
         </div>
       </div>
     </nav>

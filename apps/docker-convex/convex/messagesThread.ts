@@ -45,7 +45,9 @@ export const saveMessageToThread = mutation({
       messageType: args.messageType,
       timestamp: args.timestamp,
       messageThreadId: args.messageThreadId,
-      threadDocId: args.threadDocId, // Link to the specific thread
+      threadDocId: args.threadDocId,
+      replyToMessageId: args.replyToMessageId,
+      isActive: true,
       createdAt: Date.now(),
     });
 
@@ -173,6 +175,8 @@ export const saveMessageWithThreadHandling = mutation({
       timestamp: args.timestamp,
       messageThreadId: args.messageThreadId,
       threadDocId: threadDocId, // Link to the thread
+      replyToMessageId: args.replyToMessageId,
+      isActive: true,
       createdAt: Date.now(),
     });
 

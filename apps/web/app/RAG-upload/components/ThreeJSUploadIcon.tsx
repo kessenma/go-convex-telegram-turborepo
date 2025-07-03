@@ -20,30 +20,34 @@ export function ThreeJSUploadIcon({
   const animationIdRef = useRef<number | null>(null);
   const uploadIconRef = useRef<THREE.Group | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const lastTimeRef = useRef<number>(0);
+  const orbitRotationRef = useRef({ z: 0, y: 0 });
 
   useEffect(() => {
     if (!mountRef.current) return;
+
+    // Clear any existing content to prevent duplication
+    while (mountRef.current.firstChild) {
+      mountRef.current.removeChild(mountRef.current.firstChild);
+    }
 
     // Scene setup
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    // Camera setup
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      width / height,
-      0.1,
-      1000
-    );
-    camera.position.z = 5;
+    // Camera setup with optimized FOV
+    const camera = new THREE.PerspectiveCamera(60, width / height, 1, 50);
+    camera.position.z = 6;
 
-    // Renderer setup
+    // Renderer setup with optimizations
     const renderer = new THREE.WebGLRenderer({ 
       antialias: true, 
-      alpha: true 
+      alpha: true,
+      powerPreference: 'high-performance'
     });
     renderer.setSize(width, height);
-    renderer.setClearColor(0x000000, 0); // Transparent background
+    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     rendererRef.current = renderer;
     mountRef.current.appendChild(renderer.domElement);
 
@@ -51,46 +55,37 @@ export function ThreeJSUploadIcon({
     const uploadIcon = new THREE.Group();
     uploadIconRef.current = uploadIcon;
 
-    // Create arrow shaft (cylinder)
-    const shaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
-    const shaftMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0x3b82f6, // Blue color
-      transparent: true,
-      opacity: 0.8
-    });
-    const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
+    // Reusable material creation
+    const createMaterial = (color: number, opacity: number) => (
+      new THREE.MeshBasicMaterial({ 
+        color,
+        transparent: true,
+        opacity
+      })
+    );
+
+    // Create arrow shaft with optimized geometry
+    const shaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 2, 6);
+    const shaft = new THREE.Mesh(shaftGeometry, createMaterial(0x3b82f6, 0.8));
     shaft.position.y = -0.5;
     uploadIcon.add(shaft);
 
-    // Create arrow head (cone)
-    const headGeometry = new THREE.ConeGeometry(0.3, 0.8, 8);
-    const headMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0x1d4ed8, // Darker blue
-      transparent: true,
-      opacity: 0.9
-    });
-    const head = new THREE.Mesh(headGeometry, headMaterial);
+    // Create arrow head with optimized geometry
+    const headGeometry = new THREE.ConeGeometry(0.3, 0.8, 6);
+    const head = new THREE.Mesh(headGeometry, createMaterial(0x1d4ed8, 0.9));
     head.position.y = 1;
     uploadIcon.add(head);
 
-    // Create base platform (cylinder)
-    const baseGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 16);
-    const baseMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0xf1f9fe, // blue-50
-      transparent: true,
-      opacity: 0.6
-    });
-    const base = new THREE.Mesh(baseGeometry, baseMaterial);
+    // Create base platform with optimized geometry
+    const baseGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 12);
+    const base = new THREE.Mesh(baseGeometry, createMaterial(0xf1f9fe, 0.6));
     base.position.y = -1.8;
     uploadIcon.add(base);
 
-    // Add some orbital elements for visual interest
-    const orbitGeometry = new THREE.TorusGeometry(1.2, 0.05, 8, 16);
-    const orbitMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0xf1f9fe, // blue-50
-      transparent: true,
-      opacity: 0.4
-    });
+    // Create orbital elements with optimized geometry
+    const orbitGeometry = new THREE.TorusGeometry(1.2, 0.05, 6, 12);
+    const orbitMaterial = createMaterial(0xf1f9fe, 0.4);
+    
     const orbit1 = new THREE.Mesh(orbitGeometry, orbitMaterial);
     orbit1.rotation.x = Math.PI / 2;
     orbit1.position.y = -1.8;
@@ -109,36 +104,52 @@ export function ThreeJSUploadIcon({
       setIsVisible(true);
     }, 100);
 
-    // Animation loop
-    const animate = () => {
+    // Animation loop with performance optimizations
+    const animate = (time: number) => {
       animationIdRef.current = requestAnimationFrame(animate);
       
+      const deltaTime = time - lastTimeRef.current;
+      lastTimeRef.current = time;
+      
       if (uploadIcon) {
-        // Rotate the entire upload icon
-        uploadIcon.rotation.y += 0.01;
+        // Smooth rotation based on deltaTime
+        uploadIcon.rotation.y += (0.001 * deltaTime);
+        uploadIcon.position.y = Math.sin(time * 0.002) * 0.1;
         
-        // Add some subtle bobbing motion
-        uploadIcon.position.y = Math.sin(Date.now() * 0.002) * 0.1;
+        // Update stored rotation values
+        orbitRotationRef.current.z += 0.002 * deltaTime;
+        orbitRotationRef.current.y += 0.0015 * deltaTime;
         
-        // Rotate the orbital rings independently
-        if (orbit1) orbit1.rotation.z += 0.02;
-        if (orbit2) orbit2.rotation.y += 0.015;
+        // Apply rotations
+        if (orbit1) orbit1.rotation.z = orbitRotationRef.current.z;
+        if (orbit2) orbit2.rotation.y = orbitRotationRef.current.y;
       }
       
       renderer.render(scene, camera);
     };
 
-    animate();
+    // Start animation immediately
+    lastTimeRef.current = performance.now();
+    animate(lastTimeRef.current);
 
     // Cleanup function
     return () => {
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
+        animationIdRef.current = null;
       }
-      if (mountRef.current && renderer.domElement) {
+      if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
         mountRef.current.removeChild(renderer.domElement);
       }
+      // Dispose of geometries and materials
+      [shaftGeometry, headGeometry, baseGeometry, orbitGeometry].forEach(geometry => geometry.dispose());
+      [shaft.material, head.material, base.material, orbitMaterial].forEach(material => material.dispose());
       renderer.dispose();
+      
+      // Clear refs
+      sceneRef.current = null;
+      rendererRef.current = null;
+      uploadIconRef.current = null;
     };
   }, [width, height]);
 

@@ -34,3 +34,13 @@ export const getThreadStats = query({
     };
   },
 });
+
+// Get thread by document ID
+export const getThreadById = query({
+  args: {
+    threadDocId: v.id("telegram_threads"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.threadDocId);
+  },
+});

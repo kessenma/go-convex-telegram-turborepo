@@ -7,7 +7,7 @@
     "docker:reset-web": "./reset-web-only.sh",
 
     "docker:manage": "./docker-manager.sh",
-    
+
     "get-admin-key": "docker compose exec convex-backend ./generate_admin_key.sh",
     "convex:dev:bot": "docker compose up convex-backend convex-dashboard telegram-bot -d && cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     

@@ -123,7 +123,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
             <div className="mb-6">
               {React.createElement(Link as any, {
                 href: "/threads",
-                className: "inline-flex gap-2 items-center font-medium text-blue-600 transition-colors dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                className: "inline-flex gap-2 items-center font-medium text-cyan-600 transition-colors dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300"
               }, [
                 renderIcon(ArrowLeft, { className: "w-4 h-4" }),
                 " Back to Threads"
@@ -146,7 +146,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
             <div className="mb-6">
               {React.createElement(Link as any, {
                 href: "/threads",
-                className: "inline-flex gap-2 items-center font-medium text-blue-600 transition-colors dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                className: "inline-flex gap-2 items-center font-medium text-cyan-600 transition-colors dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300"
               }, [
                 renderIcon(ArrowLeft, { className: "w-4 h-4" }),
                 " Back to Threads"
@@ -161,7 +161,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
 
             <div className="flex flex-wrap gap-4 items-center mb-6 text-sm">
             <span
-                className="inline-flex gap-2 items-center px-3 py-1 font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-200">
+                className="inline-flex gap-2 items-center px-3 py-1 font-medium text-cyan-800 bg-cyan-100 rounded-full dark:bg-cyan-900 dark:text-cyan-200">
               {renderIcon(Hash, { className: "w-4 h-4" })}
               {thread?.chatId || 'Unknown'}
             </span>
@@ -196,7 +196,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
                           {message.messageType === 'bot_message' ? (
                               renderIcon(Bot, { className: "w-5 h-5 text-purple-400" })
                           ) : (
-                              renderIcon(User, { className: "w-5 h-5 text-blue-400" })
+                              renderIcon(User, { className: "w-5 h-5 text-cyan-400" })
                           )}
                           {message.firstName && (
                               <span className="font-semibold text-gray-200">
@@ -205,7 +205,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
                           )}
                         </div>
                         {message.username && (
-                            <span className="font-medium text-blue-400">@{message.username}</span>
+                            <span className="font-medium text-cyan-400">@{message.username}</span>
                         )}
                         {message.messageType === 'bot_message' && (
                             <span
@@ -240,7 +240,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
             {thread && thread.isActive && (
                 <Card className="mt-6 bg-gray-900/90 border-gray-700/50">
                   <h3 className="flex gap-2 items-center mb-4 text-lg font-semibold text-white">
-                    {renderIcon(Send, { className: "w-5 h-5 text-blue-400" })}
+                    {renderIcon(Send, { className: "w-5 h-5 text-cyan-400" })}
                     Send Message to Thread
                   </h3>
                   <form onSubmit={handleSendMessage} className="space-y-4">
@@ -249,7 +249,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Type your message here..."
-                      className="px-4 py-3 w-full placeholder-gray-400 text-white bg-gray-800 rounded-xl border-2 border-gray-700 transition-colors focus:border-blue-500 focus:outline-none resize-vertical"
+                      className="px-4 py-3 w-full placeholder-gray-400 text-white bg-gray-800 rounded-xl border-2 border-gray-700 transition-colors focus:border-cyan-500 focus:outline-none resize-vertical"
                       rows={3}
                       disabled={isLoading}
                   />
@@ -264,7 +264,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
                     <Button
                         onClick={handleSendMessage}
                         disabled={isLoading || !newMessage.trim()}
-                        className="w-full bg-blue-600 hover:bg-blue-700 hover:ring-blue-500"
+                        className="w-full bg-cyan-600 hover:bg-cyan-700 hover:ring-cyan-500"
                     >
                       Send Message
                     </Button>

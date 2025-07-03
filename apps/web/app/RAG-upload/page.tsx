@@ -175,7 +175,7 @@ export default function RAGUploadPage(): React.ReactElement | null {
   };
 
   return (
-    <div className="pt-20 pb-8 min-h-screen bg-gray-900">
+    <div className="pt-20 pb-8 min-h-screen">
       <div className="px-4 mx-auto max-w-4xl">
         {/* Header */}
         <Hero 
@@ -190,10 +190,10 @@ export default function RAGUploadPage(): React.ReactElement | null {
           </p>
            {/* Sparkles Effect */}
         <div className="overflow-hidden relative -mb-40 w-full h-40 rounded-md">
-          <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-blue-200 to-transparent h-[2px] w-3/4 blur-sm" />
-          <div className="absolute top-0 inset-x-20 w-3/4 h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent" />
-          <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-blue-500 to-transparent h-[5px] w-1/4 blur-sm" />
-          <div className="absolute top-0 inset-x-60 w-1/4 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
+          <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-cyan-200 to-transparent h-[2px] w-3/4 blur-sm" />
+          <div className="absolute top-0 inset-x-20 w-3/4 h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent" />
+          <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-cyan-500 to-transparent h-[5px] w-1/4 blur-sm" />
+          <div className="absolute top-0 inset-x-60 w-1/4 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
           
           <SparklesCore
             id="tsparticles"
@@ -201,17 +201,18 @@ export default function RAGUploadPage(): React.ReactElement | null {
             minSize={0.4}
             maxSize={1}
             particleDensity={1200}
-            className="w-full h-full"
+            className="z-20 w-full h-full"
             particleColor="#FFFFFF"
           />
           
-          <div className="absolute inset-0 w-full h-full bg-gray-900 [mask-image:radial-gradient(350px_200px_at_top,transparent_20%,white)]"></div>
+          <div className="absolute inset-0 w-full h-full bg-slate-950 [mask-image:radial-gradient(350px_200px_at_top,transparent_20%,white)]"></div>
         </div>
-          <div className="flex relative z-10 justify-center mt-8">
-            <ThreeJSUploadIcon width={250} height={250} className="drop-shadow-lg" />
-          </div>
         </Hero>
 
+        {/* Three.js Upload Animation */}
+        <div className="flex relative z-10 justify-center -mt-20 mb-12">
+          <ThreeJSUploadIcon width={250} height={250} className="drop-shadow-lg" />
+        </div>
        
 
         {/* Stats Cards */}

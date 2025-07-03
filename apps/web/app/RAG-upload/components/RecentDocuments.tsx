@@ -1,8 +1,11 @@
 "use client";
 
 import React from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, Trash2 } from 'lucide-react';
 import { renderIcon } from '../../lib/icon-utils';
+import { useMutation } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import { useRouter } from 'next/navigation';
 
 interface UploadedDocument {
   _id: string;
@@ -12,6 +15,7 @@ interface UploadedDocument {
   wordCount: number;
   uploadedAt: number;
   summary?: string;
+  isActive: boolean;
 }
 
 interface RecentDocumentsProps {
@@ -21,6 +25,8 @@ interface RecentDocumentsProps {
 }
 
 export function RecentDocuments({ documentsQuery }: RecentDocumentsProps): React.ReactElement | null {
+  const router = useRouter();
+  const deleteDocument = useMutation(api.documents.deleteDocument);
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -48,10 +54,13 @@ export function RecentDocuments({ documentsQuery }: RecentDocumentsProps): React
       <h2 className="mb-4 text-xl font-semibold text-white">Recent Documents</h2>
       <div className="space-y-3">
         {documentsQuery.page.map((doc: UploadedDocument) => (
-          <div key={doc._id} className="flex justify-between items-center p-3 bg-gray-700 rounded-lg">
-            <div className="flex gap-3 items-center">
+          <div key={doc._id} className="flex justify-between items-center p-3 bg-gray-700 rounded-lg transition-colors hover:bg-gray-600">
+            <button 
+              onClick={() => router.push(`/RAG-upload/${doc._id}`)}
+              className="flex gap-3 items-center flex-grow bg-transparent border-none cursor-pointer text-left p-0"
+            >
               <div className={`p-2 rounded-lg ${
-                doc.contentType === 'markdown' ? 'bg-curious-blue-900 text-curious-blue-300' : 'bg-gray-600 text-gray-300'
+                doc.contentType === 'markdown' ? 'bg-curious-cyan-900 text-curious-cyan-300' : 'bg-gray-600 text-gray-300'
               }`}>
                 {renderIcon(FileText, { className: "w-4 h-4" })}
               </div>
@@ -64,15 +73,27 @@ export function RecentDocuments({ documentsQuery }: RecentDocumentsProps): React
                   <p className="mt-1 text-sm text-gray-500">{doc.summary}</p>
                 )}
               </div>
-            </div>
+            </button>
             <div className="flex gap-2 items-center">
               <span className={`px-2 py-1 text-xs rounded-full ${
                 doc.contentType === 'markdown' 
-                  ? 'bg-curious-blue-900 text-curious-blue-300' 
+                  ? 'bg-curious-cyan-900 text-curious-cyan-300' 
                   : 'bg-gray-600 text-gray-300'
               }`}>
                 {doc.contentType}
               </span>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (confirm('Are you sure you want to delete this document?')) {
+                    deleteDocument({ documentId: doc._id });
+                  }
+                }}
+                className="p-1 text-gray-400 transition-colors hover:text-red-400"
+                title="Delete document"
+              >
+                {renderIcon(Trash2, { className: "w-4 h-4" })}
+              </button>
             </div>
           </div>
         ))}

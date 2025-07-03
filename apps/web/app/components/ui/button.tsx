@@ -6,7 +6,7 @@ import { fixComponentReturnType } from "../../lib/icon-utils";
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "tertiary";
   size?: "sm" | "md" | "lg";
   className?: string;
   href?: string;
@@ -15,8 +15,9 @@ interface ButtonProps {
 }
 
 const buttonVariants = {
-  primary: "bg-gradient-to-br from-blue-300 to-blue-800 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5",
-  secondary: "bg-white/25 border border-gray-200/25 text-gray-900 hover:bg-gray-50/25 hover:border-blue-500/25 hover:-translate-y-0.5 dark:bg-gray-900/25 dark:border-gray-700/25 dark:text-white dark:hover:bg-gray-800/25 backdrop-blur-sm"
+  primary: "bg-gradient-to-br from-cyan-300 to-cyan-800 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5",
+  secondary: "bg-white/25 border border-gray-200/25 text-gray-900 hover:bg-gray-50/25 hover:border-cyan-500/25 hover:-translate-y-0.5 dark:bg-gray-900/25 dark:border-gray-700/25 dark:text-white dark:hover:bg-gray-800/25 backdrop-blur-sm",
+  tertiary: "bg-black text-cyan-900 hover:bg-cyan-50/25 hover:-translate-y-0.5 dark:bg-gray-900/40 dark:text-white dark:hover:bg-gray-800/50 backdrop-blur-sm",
 };
 
 const buttonSizes = {

@@ -3,7 +3,8 @@
 import React, { RefObject } from "react";
 import { Upload, FileText, Type, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { Button as MovingButton } from "../../components/ui/moving-border";
+import { StickyBanner } from "../../components/ui/sticky-banner";
 
 interface UploadFormProps {
   uploadMethod: 'file' | 'text';
@@ -46,7 +47,7 @@ export function UploadForm({
           onClick={() => setUploadMethod('file')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
             uploadMethod === 'file'
-              ? 'bg-curious-blue-600 border-curious-blue-500 text-white'
+              ? 'bg-curious-cyan-600 border-curious-cyan-500 text-white'
               : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
           }`}
         >
@@ -57,7 +58,7 @@ export function UploadForm({
           onClick={() => setUploadMethod('text')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
             uploadMethod === 'text'
-              ? 'bg-curious-blue-600 border-curious-blue-500 text-white'
+              ? 'bg-curious-cyan-600 border-curious-cyan-500 text-white'
               : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
           }`}
         >
@@ -77,7 +78,7 @@ export function UploadForm({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={uploadMethod === 'file' ? 'Optional: Override filename' : 'Enter document title'}
-            className="px-3 py-2 w-full placeholder-gray-400 text-white bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-curious-blue-500 focus:border-transparent"
+            className="px-3 py-2 w-full placeholder-gray-400 text-white bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-curious-cyan-500 focus:border-transparent"
           />
         </div>
         <div>
@@ -89,7 +90,7 @@ export function UploadForm({
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             placeholder="Brief description of the document content"
-            className="px-3 py-2 w-full placeholder-gray-400 text-white bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-curious-blue-500 focus:border-transparent"
+            className="px-3 py-2 w-full placeholder-gray-400 text-white bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-curious-cyan-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -97,7 +98,7 @@ export function UploadForm({
       {/* File Upload */}
       {uploadMethod === 'file' && (
         <div className="space-y-4">
-          <div className="p-8 text-center rounded-lg border-2 border-gray-600 border-dashed transition-colors hover:border-curious-blue-500">
+          <div className="p-8 text-center rounded-lg border-2 border-gray-600 border-dashed transition-colors hover:border-curious-cyan-500">
             {renderIcon(Upload, { className: "mx-auto mb-4 w-12 h-12 text-gray-400" })}
             <p className="mb-2 text-gray-300">Drop your .md file here or click to browse</p>
             <p className="mb-4 text-sm text-gray-500">Supports .md and .txt files up to 1MB</p>
@@ -108,17 +109,18 @@ export function UploadForm({
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  // Set the title to the filename without extension before upload
                   setTitle(file.name.replace(/\.[^/.]+$/, ''));
                   handleFileUpload(file);
                 }
               }}
               className="hidden"
             />
-            <button
+            <MovingButton
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="px-6 py-2 text-white rounded-lg transition-colors bg-curious-blue-600 hover:bg-curious-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-slate-900/[0.8] text-white"
+              containerClassName="w-auto min-w-[120px]"
+              borderClassName="bg-[radial-gradient(#0ea5e9_40%,transparent_60%)]"
             >
               {isUploading ? (
                 <span className="flex gap-2 items-center">
@@ -128,7 +130,7 @@ export function UploadForm({
               ) : (
                 'Choose File'
               )}
-            </button>
+            </MovingButton>
           </div>
         </div>
       )}
@@ -145,13 +147,15 @@ export function UploadForm({
               onChange={(e) => setTextContent(e.target.value)}
               placeholder="Paste your text content here..."
               rows={12}
-              className="px-3 py-2 w-full placeholder-gray-400 text-white bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-curious-blue-500 focus:border-transparent resize-vertical"
+              className="px-3 py-2 w-full placeholder-gray-400 text-white bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-curious-cyan-500 focus:border-transparent resize-vertical"
             />
           </div>
-          <button
+          <MovingButton
             onClick={handleTextUpload}
             disabled={isUploading || !textContent.trim() || !title.trim()}
-            className="px-6 py-2 text-white rounded-lg transition-colors bg-curious-blue-600 hover:bg-curious-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-slate-900/[0.8] text-white"
+            containerClassName="w-auto min-w-[120px]"
+            borderClassName="bg-[radial-gradient(#0ea5e9_40%,transparent_60%)]"
           >
             {isUploading ? (
               <span className="flex gap-2 items-center">
@@ -161,44 +165,25 @@ export function UploadForm({
             ) : (
               'Upload Text'
             )}
-          </button>
+          </MovingButton>
         </div>
       )}
 
       {/* Status Message */}
-      <AnimatePresence>
-        {uploadStatus !== 'idle' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className={`mt-4 p-4 rounded-lg flex items-center gap-2 ${
-              uploadStatus === 'success' ? 'bg-green-900 border border-green-700' : 'bg-red-900 border border-red-700'
-            }`}
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            >
-              {uploadStatus === 'success' ? (
-                renderIcon(CheckCircle, { className: "w-5 h-5 text-green-400" })
-              ) : (
-                renderIcon(AlertCircle, { className: "w-5 h-5 text-red-400" })
-              )}
-            </motion.div>
-            <motion.span
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-              className={uploadStatus === 'success' ? 'text-green-300' : 'text-red-300'}
-            >
+      {uploadStatus !== 'idle' && (
+        <StickyBanner className={uploadStatus === 'success' ? 'bg-green-900/90' : 'bg-red-900/90'}>
+          <div className="flex gap-2 items-center px-4 py-2">
+            {uploadStatus === 'success' ? (
+              renderIcon(CheckCircle, { className: "w-5 h-5 text-green-400" })
+            ) : (
+              renderIcon(AlertCircle, { className: "w-5 h-5 text-red-400" })
+            )}
+            <span className={uploadStatus === 'success' ? 'text-green-300' : 'text-red-300'}>
               {uploadMessage}
-            </motion.span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </span>
+          </div>
+        </StickyBanner>
+      )}
     </div>
   );
 }

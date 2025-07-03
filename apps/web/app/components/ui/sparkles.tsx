@@ -59,6 +59,12 @@ export const SparklesCore = (props: ParticlesProps) => {
       animate={controls} 
       initial={{ opacity: 0 }}
       className={cn(className)}
+      style={{
+        maskImage: 'linear-gradient(to bottom, black, transparent), radial-gradient(ellipse at top, black 50%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, black, transparent), radial-gradient(ellipse at top, black 50%, transparent 100%)',
+        maskComposite: 'intersect',
+        WebkitMaskComposite: 'source-in'
+      }}
     >
       {init && (
         <ParticlesComponent
@@ -211,7 +217,7 @@ export const SparklesCore = (props: ParticlesProps) => {
                 size: false,
                 speed: {
                   min: 0.1,
-                  max: 0.5, // Reduced max speed for longer-lasting particles
+                  max: 0.5,
                 },
                 spin: {
                   acceleration: 0,
@@ -241,12 +247,12 @@ export const SparklesCore = (props: ParticlesProps) => {
               opacity: {
                 value: {
                   min: 0.1,
-                  max: 0.8, // Reduced max opacity for subtler effect
+                  max: 0.8,
                 },
                 animation: {
                   count: 0,
                   enable: true,
-                  speed: speed || 2, // Reduced speed for longer fade transitions
+                  speed: speed || 2,
                   decay: 0,
                   delay: 0,
                   sync: false,
@@ -306,7 +312,7 @@ export const SparklesCore = (props: ParticlesProps) => {
                   sync: false,
                 },
                 duration: {
-                  value: 2, // Increased particle lifetime
+                  value: 2,
                   sync: false,
                 },
               },

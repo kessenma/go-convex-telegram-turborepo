@@ -1,16 +1,16 @@
 'use client'
 
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
-import { TelegramMessage } from "../models/telegram";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
+import { TelegramMessage } from "../../models/telegram";
 import React, { useState } from 'react';
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import { Card } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 import { X, MessagesSquare, Users, Clock, Bot, Send, AlertCircle } from "lucide-react";
-import { cn } from "../lib/utils";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../components/ui/accordion";
-import { renderIcon } from "../lib/icon-utils";
+import { cn } from "../../lib/utils";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../../components/ui/accordion";
+import { renderIcon } from "../../lib/icon-utils";
 
 
 interface ThreadModalProps {
@@ -84,7 +84,7 @@ export default function ThreadModal({ threadId, isOpen, onClose }: ThreadModalPr
       <Card className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-white dark:bg-gray-900 shadow-2xl">
         <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex gap-3 items-center">
-            {renderIcon(MessagesSquare, { className: "w-6 h-6 text-curious-blue-500" })}
+            {renderIcon(MessagesSquare, { className: "w-6 h-6 text-curious-cyan-500" })}
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               {thread?.title || `Thread ${thread?.threadId || 'Unknown'}`}
             </h2>
@@ -141,7 +141,7 @@ export default function ThreadModal({ threadId, isOpen, onClose }: ThreadModalPr
           {messages === undefined ? (
             <div className="flex justify-center items-center h-48 text-gray-500 dark:text-gray-400">
               <div className="flex gap-2 items-center">
-                <div className="w-5 h-5 rounded-full border-b-2 animate-spin border-curious-blue-500"></div>
+                <div className="w-5 h-5 rounded-full border-b-2 animate-spin border-curious-cyan-500"></div>
                 Loading messages...
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function ThreadModal({ threadId, isOpen, onClose }: ThreadModalPr
                     )}>
                       <Card className={cn(
                         "p-4 bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:border-gray-700",
-                        isUserMessage ? "bg-curious-blue-50 dark:bg-curious-blue-900/30" : ""
+                        isUserMessage ? "bg-curious-cyan-50 dark:bg-curious-cyan-900/30" : ""
                       )}>
                         <div className="flex gap-3 items-center mb-2">
                           <div className="flex gap-2 items-center">
@@ -180,7 +180,7 @@ export default function ThreadModal({ threadId, isOpen, onClose }: ThreadModalPr
                             )}
                           </div>
                           {message.messageType === 'bot_message' && (
-                            <div className="flex gap-1 items-center px-2 py-1 text-xs font-medium rounded-full bg-curious-blue-100 dark:bg-curious-blue-900/30 text-curious-blue-800 dark:text-curious-blue-300">
+                            <div className="flex gap-1 items-center px-2 py-1 text-xs font-medium rounded-full bg-curious-cyan-100 dark:bg-curious-cyan-900/30 text-curious-cyan-800 dark:text-curious-cyan-300">
                               {renderIcon(Bot, { className: "w-3 h-3" })}
                               Bot
                             </div>
@@ -212,7 +212,7 @@ export default function ThreadModal({ threadId, isOpen, onClose }: ThreadModalPr
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type your message here..."
-                    className="px-4 py-3 pr-12 w-full placeholder-gray-500 text-gray-900 bg-white rounded-lg border border-gray-300 transition-colors resize-none dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-curious-blue-500 focus:border-curious-blue-500"
+                    className="px-4 py-3 pr-12 w-full placeholder-gray-500 text-gray-900 bg-white rounded-lg border border-gray-300 transition-colors resize-none dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-curious-cyan-500 focus:border-curious-cyan-500"
                     rows={2}
                     disabled={isLoading}
                     aria-label="Message input"

@@ -31,9 +31,9 @@ export default defineSchema({
       filterFields: ["isActive", "contentType"]
     }),
 
-  // Telegram threads table - represents conversation threads
+  // Telegram threads table - stores conversation threads
   telegram_threads: defineTable({
-    threadId: v.number(), // Telegram's message_thread_id
+    threadId: v.number(), // Telegram's message_thread_id or userId for user-based threads
     chatId: v.number(), // Chat where this thread exists
     title: v.optional(v.string()), // Thread title if available
     creatorUserId: v.optional(v.number()), // User who created the thread
@@ -74,11 +74,14 @@ export default defineSchema({
     replyToMessageId: v.optional(v.number()), // ID of message this is replying to
     // Reference to our thread record
     threadDocId: v.optional(v.id("telegram_threads")), // Reference to telegram_threads table
+    isActive: v.boolean(), // Whether message is active
   })
     .index("by_chat_id", ["chatId"])
     .index("by_user_id", ["userId"])
     .index("by_timestamp", ["timestamp"])
     .index("by_thread", ["chatId", "messageThreadId"])
     .index("by_thread_doc", ["threadDocId"])
-    .index("by_reply", ["replyToMessageId"]),
+    .index("by_reply", ["replyToMessageId"])
+    .index("by_active", ["isActive"])
+    .index("by_chat_and_timestamp", ["chatId", "timestamp"]),
 });
