@@ -45,6 +45,7 @@ export default function RAGUploadPage(): React.ReactElement | null {
   const [uploadMessage, setUploadMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+
   // Query documents for the recent uploads section
   const documentsQuery = useQuery(api.documents.getAllDocuments, { limit: 5 });
   const statsQuery = useQuery(api.documents.getDocumentStats, {});
@@ -94,6 +95,7 @@ export default function RAGUploadPage(): React.ReactElement | null {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+
       } else {
         setUploadStatus('error');
         setUploadMessage(result.error || 'Upload failed');
@@ -144,6 +146,7 @@ export default function RAGUploadPage(): React.ReactElement | null {
         setTitle('');
         setSummary('');
         setTextContent('');
+
       } else {
         setUploadStatus('error');
         setUploadMessage(result.error || 'Upload failed');
@@ -180,14 +183,9 @@ export default function RAGUploadPage(): React.ReactElement | null {
         {/* Header */}
         <Hero 
           title="Retrieval-Augmented Generation"
-          subtitle="Build your knowledge base for AI-powered search and retrieval"
+          subtitle="Upload your knowledge base for AI-powered search and retrieval"
           whiteText={true}
         >
-            
-          <p className="mx-auto mb-6 max-w-3xl text-gray-300">
-            Retrieval-Augmented Generation (RAG) enhances large language models by incorporating an information-retrieval mechanism. 
-            Upload documents to create a searchable knowledge base that AI can reference to provide more accurate and contextually relevant responses.
-          </p>
            {/* Sparkles Effect */}
         <div className="overflow-hidden relative -mb-40 w-full h-40 rounded-md">
           <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-cyan-200 to-transparent h-[2px] w-3/4 blur-sm" />
@@ -211,12 +209,10 @@ export default function RAGUploadPage(): React.ReactElement | null {
 
         {/* Three.js Upload Animation */}
         <div className="flex relative z-10 justify-center -mt-20 mb-12">
-          <ThreeJSUploadIcon width={250} height={250} className="drop-shadow-lg" />
+          <ThreeJSUploadIcon 
+            className="mx-auto"
+          />
         </div>
-       
-
-        {/* Stats Cards */}
-        <DocumentStats statsQuery={statsQuery} />
 
         {/* Upload Form */}
         {isUploading ? (
@@ -258,6 +254,9 @@ export default function RAGUploadPage(): React.ReactElement | null {
             />
           </Card>
         )}
+
+        {/* Stats Cards */}
+        <DocumentStats statsQuery={statsQuery} />
 
         {/* Recent Documents */}
         <RecentDocuments documentsQuery={documentsQuery} />

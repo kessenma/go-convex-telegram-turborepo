@@ -45,7 +45,7 @@ export default function Home(): React.ReactNode {
                 href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-cyan-500 transition-colors hover:text-cyan-300"
+                className="font-medium text-slate-900 transition-colors hover:text-cyan-800 transition-colors"
               >
                 t.me/{process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
               </a>

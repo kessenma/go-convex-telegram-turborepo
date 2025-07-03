@@ -10,18 +10,20 @@ interface ThreeJSUploadIconProps {
 }
 
 export function ThreeJSUploadIcon({ 
-  width = 200, 
-  height = 200, 
-  className = '' 
+  width = 600, 
+  height = 300, 
+  className = ''
 }: ThreeJSUploadIconProps): React.ReactNode {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const animationIdRef = useRef<number | null>(null);
-  const uploadIconRef = useRef<THREE.Group | null>(null);
+  const documentsRef = useRef<THREE.Group[]>([]);
+  const dataStreamsRef = useRef<THREE.Group[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const lastTimeRef = useRef<number>(0);
-  const orbitRotationRef = useRef({ z: 0, y: 0 });
+  const particlesRef = useRef<THREE.Points | null>(null);
+  const documentTimersRef = useRef<{ group: THREE.Group; timer: number; isVisible: boolean; fadeOpacity: number }[]>([]);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -51,10 +53,6 @@ export function ThreeJSUploadIcon({
     rendererRef.current = renderer;
     mountRef.current.appendChild(renderer.domElement);
 
-    // Create upload icon group
-    const uploadIcon = new THREE.Group();
-    uploadIconRef.current = uploadIcon;
-
     // Reusable material creation
     const createMaterial = (color: number, opacity: number) => (
       new THREE.MeshBasicMaterial({ 
@@ -64,40 +62,125 @@ export function ThreeJSUploadIcon({
       })
     );
 
-    // Create arrow shaft with optimized geometry
-    const shaftGeometry = new THREE.CylinderGeometry(0.1, 0.1, 2, 6);
-    const shaft = new THREE.Mesh(shaftGeometry, createMaterial(0x3b82f6, 0.8));
-    shaft.position.y = -0.5;
-    uploadIcon.add(shaft);
-
-    // Create arrow head with optimized geometry
-    const headGeometry = new THREE.ConeGeometry(0.3, 0.8, 6);
-    const head = new THREE.Mesh(headGeometry, createMaterial(0x1d4ed8, 0.9));
-    head.position.y = 1;
-    uploadIcon.add(head);
-
-    // Create base platform with optimized geometry
-    const baseGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 12);
-    const base = new THREE.Mesh(baseGeometry, createMaterial(0xf1f9fe, 0.6));
-    base.position.y = -1.8;
-    uploadIcon.add(base);
-
-    // Create orbital elements with optimized geometry
-    const orbitGeometry = new THREE.TorusGeometry(1.2, 0.05, 6, 12);
-    const orbitMaterial = createMaterial(0xf1f9fe, 0.4);
+    // Function to create a simple rotating cube document
+    const createDocument = (x: number, y: number, index: number) => {
+      const documentGroup = new THREE.Group();
+      
+      // Simple cube geometry with consistent sizing
+      const cubeSize = 0.6 + Math.random() * 0.2; // 0.6 to 0.8
+      const docGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+      
+      // All documents use cyan color
+       const docColor = 0x06b6d4; // #06b6d4 (cyan-500)
+       
+       // Create edges geometry to show only cube borders (no cross-hatch)
+       const edgesGeometry = new THREE.EdgesGeometry(docGeometry);
+       const edgesMaterial = new THREE.LineBasicMaterial({ 
+         color: docColor,
+         transparent: true,
+         opacity: 0.8
+       });
+       
+       const document = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+      
+      // Simple initial rotation
+      const randomRotationX = (Math.random() - 0.5) * 0.4;
+      const randomRotationY = (Math.random() - 0.5) * 0.4;
+      const randomRotationZ = (Math.random() - 0.5) * 0.4;
+      document.rotation.set(randomRotationX, randomRotationY, randomRotationZ);
+      
+      documentGroup.add(document);
+      documentGroup.position.set(x, y, 0);
+      documentGroup.scale.setScalar(0);
+      scene.add(documentGroup);
+      
+      return documentGroup;
+    };
     
-    const orbit1 = new THREE.Mesh(orbitGeometry, orbitMaterial);
-    orbit1.rotation.x = Math.PI / 2;
-    orbit1.position.y = -1.8;
-    uploadIcon.add(orbit1);
+    // Create multiple documents at different positions
+    const documentPositions = [
+      { x: -2, y: 0.5 },
+      { x: -1, y: -0.5 },
+      { x: 0, y: 1 },
+      { x: 1, y: -0.2 },
+      { x: 2, y: 0.8 }
+    ];
+    
+    documentPositions.forEach((pos, index) => {
+      const doc = createDocument(pos.x, pos.y, index);
+      documentsRef.current.push(doc);
+      documentTimersRef.current.push({
+        group: doc,
+        timer: 2000 + index * 3000 + Math.random() * 3000, // Staggered timing: 1-2.5s, 3-4.5s, 5-6.5s, etc.
+        isVisible: false,
+        fadeOpacity: 1
+      });
+    });
 
-    const orbit2 = new THREE.Mesh(orbitGeometry, orbitMaterial);
-    orbit2.rotation.x = Math.PI / 4;
-    orbit2.rotation.z = Math.PI / 3;
-    orbit2.position.y = -1.8;
-    uploadIcon.add(orbit2);
+    // Create upward flowing particles
+    const particleCount = 60; // Reduced from 100
+    const particleGeometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+    const velocities = new Float32Array(particleCount * 3);
+    
+    for (let i = 0; i < particleCount; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 6; // X
+      positions[i * 3 + 1] = -3 + Math.random() * 6; // Y
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 2; // Z
+      
+      velocities[i * 3] = (Math.random() - 0.5) * 0.005; // X velocity (reduced)
+      velocities[i * 3 + 1] = 0.005 + Math.random() * 0.01; // Y velocity (reduced)
+      velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.005; // Z velocity (reduced)
+      
+      colors[i * 3] = 0.2 + Math.random() * 0.8; // R
+      colors[i * 3 + 1] = 0.5 + Math.random() * 0.5; // G
+      colors[i * 3 + 2] = 1; // B
+    }
+    
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    particleGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+    
+    const particleMaterial = new THREE.PointsMaterial({
+      size: 0.08,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending
+    });
+    
+    const particles = new THREE.Points(particleGeometry, particleMaterial);
+    particlesRef.current = particles;
+    scene.add(particles);
 
-    scene.add(uploadIcon);
+    // Create upload streams for each document position
+    documentPositions.forEach((pos, index) => {
+      const streamGroup = new THREE.Group();
+      const points = [];
+      
+      // Create upward stream from document position
+      for (let j = 0; j <= 30; j++) {
+        const t = j / 30;
+        const x = pos.x + Math.sin(t * Math.PI * 2) * 0.1;
+        const y = pos.y + t * 3; // Go upward
+        const z = Math.cos(t * Math.PI * 3) * 0.05;
+        points.push(new THREE.Vector3(x, y, z));
+      }
+      
+      const streamGeometry = new THREE.BufferGeometry().setFromPoints(points);
+      const streamMaterial = new THREE.LineBasicMaterial({
+        color: 0x06b6d4,
+        transparent: true,
+        opacity: 0,
+        linewidth: 1
+      });
+      
+      const stream = new THREE.Line(streamGeometry, streamMaterial);
+      streamGroup.add(stream);
+      dataStreamsRef.current.push(streamGroup);
+      scene.add(streamGroup);
+    });
 
     // Trigger fade-in after a short delay
     setTimeout(() => {
@@ -111,19 +194,124 @@ export function ThreeJSUploadIcon({
       const deltaTime = time - lastTimeRef.current;
       lastTimeRef.current = time;
       
-      if (uploadIcon) {
-        // Smooth rotation based on deltaTime
-        uploadIcon.rotation.y += (0.001 * deltaTime);
-        uploadIcon.position.y = Math.sin(time * 0.002) * 0.1;
+      // Handle document appearance/disappearance
+      documentTimersRef.current.forEach((docTimer, index) => {
+        docTimer.timer -= deltaTime;
         
-        // Update stored rotation values
-        orbitRotationRef.current.z += 0.002 * deltaTime;
-        orbitRotationRef.current.y += 0.0015 * deltaTime;
+        if (docTimer.timer <= 0) {
+          if (!docTimer.isVisible) {
+            // Show document with scale animation
+            docTimer.isVisible = true;
+            docTimer.timer = 3000 + Math.random() * 2000; // Visible for 3-5 seconds
+            docTimer.fadeOpacity = 1; // Reset fade opacity
+            
+            // Reset material opacity when showing
+            docTimer.group.traverse((child) => {
+              if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+                child.material.opacity = 0.8; // Reset to original opacity
+              }
+            });
+            
+            // Show corresponding stream
+            if (dataStreamsRef.current[index]) {
+              const streamMaterial = (dataStreamsRef.current[index].children[0] as THREE.Line).material as THREE.LineBasicMaterial;
+              streamMaterial.opacity = 0.6;
+            }
+          } else {
+            // Start fade out
+            docTimer.fadeOpacity -= 0.02;
+            if (docTimer.fadeOpacity <= 0) {
+              docTimer.isVisible = false;
+              docTimer.timer = 3000 + index * 1500 + Math.random() * 2000; // Staggered hidden timing
+              docTimer.group.scale.setScalar(0);
+              docTimer.fadeOpacity = 1;
+              
+              // Hide corresponding stream
+              if (dataStreamsRef.current[index]) {
+                const streamMaterial = (dataStreamsRef.current[index].children[0] as THREE.Line).material as THREE.LineBasicMaterial;
+                streamMaterial.opacity = 0;
+              }
+            } else {
+              // Apply fade opacity to document
+              docTimer.group.traverse((child) => {
+                if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+                  child.material.opacity = 0.8 * docTimer.fadeOpacity;
+                }
+              });
+            }
+          }
+        }
         
-        // Apply rotations
-        if (orbit1) orbit1.rotation.z = orbitRotationRef.current.z;
-        if (orbit2) orbit2.rotation.y = orbitRotationRef.current.y;
+        // Animate visible documents
+        if (docTimer.isVisible && docTimer.group.scale.x < 1) {
+          docTimer.group.scale.setScalar(Math.min(docTimer.group.scale.x + 0.02, 1));
+        }
+        
+        // Enhanced 3D float animation for visible documents
+        if (docTimer.isVisible && documentPositions[index]) {
+          const originalY = documentPositions[index].y;
+          const originalX = documentPositions[index].x;
+          
+          // Complex 3D movement patterns
+          docTimer.group.position.y = originalY + Math.sin(time * 0.002 + index) * 0.15;
+          docTimer.group.position.x = originalX + Math.cos(time * 0.0015 + index) * 0.1;
+          docTimer.group.position.z = Math.sin(time * 0.0018 + index * 0.5) * 0.3;
+          
+          // Multi-axis rotation for true 3D effect
+          docTimer.group.rotation.x = Math.sin(time * 0.001 + index) * 0.1;
+          docTimer.group.rotation.y = Math.cos(time * 0.0012 + index) * 0.15;
+          docTimer.group.rotation.z = Math.sin(time * 0.0008 + index) * 0.08;
+        }
+      });
+      
+      // Animate upward flowing particles
+      if (particles && particles.geometry.attributes.position && particles.geometry.attributes.velocity) {
+        const positionAttribute = particles.geometry.attributes.position;
+        const velocityAttribute = particles.geometry.attributes.velocity;
+        
+        if (positionAttribute.array && velocityAttribute.array) {
+          const positions = positionAttribute.array as Float32Array;
+          const velocities = velocityAttribute.array as Float32Array;
+          
+          for (let i = 0; i < particleCount; i++) {
+             const xIndex = i * 3;
+             const yIndex = i * 3 + 1;
+             const zIndex = i * 3 + 2;
+             
+             // Move particles upward with type safety
+             if (positions[xIndex] !== undefined && velocities[xIndex] !== undefined) {
+               positions[xIndex] += velocities[xIndex]; // X
+             }
+             if (positions[yIndex] !== undefined && velocities[yIndex] !== undefined) {
+               positions[yIndex] += velocities[yIndex]; // Y (upward)
+             }
+             if (positions[zIndex] !== undefined && velocities[zIndex] !== undefined) {
+               positions[zIndex] += velocities[zIndex]; // Z
+             }
+             
+             // Reset particles that have moved too high
+             if (positions[yIndex] !== undefined && positions[yIndex] > 4) {
+               positions[xIndex] = (Math.random() - 0.5) * 6;
+               positions[yIndex] = -3 + Math.random() * 2;
+               positions[zIndex] = (Math.random() - 0.5) * 2;
+             }
+           }
+          
+          particles.geometry.attributes.position.needsUpdate = true;
+        }
       }
+      
+      // Animate data streams with wave-like pulse effect
+      dataStreamsRef.current.forEach((streamGroup, index) => {
+        if (documentTimersRef.current[index]?.isVisible) {
+          const stream = streamGroup.children[0] as THREE.Line;
+          const material = stream.material as THREE.LineBasicMaterial;
+          
+          // Create wave-like pulsing effect on line width (simulated with opacity variation)
+          const pulseIntensity = 0.3 + Math.sin(time * 0.003 + index) * 0.3;
+          material.opacity = Math.max(0.2, pulseIntensity);
+        }
+      });
       
       renderer.render(scene, camera);
     };
@@ -141,15 +329,28 @@ export function ThreeJSUploadIcon({
       if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
         mountRef.current.removeChild(renderer.domElement);
       }
+      
       // Dispose of geometries and materials
-      [shaftGeometry, headGeometry, baseGeometry, orbitGeometry].forEach(geometry => geometry.dispose());
-      [shaft.material, head.material, base.material, orbitMaterial].forEach(material => material.dispose());
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach(material => material.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+      
       renderer.dispose();
       
       // Clear refs
       sceneRef.current = null;
       rendererRef.current = null;
-      uploadIconRef.current = null;
+      documentsRef.current = [];
+      dataStreamsRef.current = [];
+      particlesRef.current = null;
+      documentTimersRef.current = [];
     };
   }, [width, height]);
 
