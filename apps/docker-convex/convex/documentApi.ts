@@ -129,6 +129,67 @@ export const getDocumentsAPI = httpAction(async (ctx, request) => {
   }
 });
 
+// Get a single document by ID
+export const getDocumentByIdAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    // Extract document ID from the path after /api/documents/
+    const pathParts = url.pathname.split('/');
+    const documentsIndex = pathParts.indexOf('documents');
+    const documentId = documentsIndex >= 0 && documentsIndex < pathParts.length - 1 
+      ? pathParts[documentsIndex + 1] 
+      : pathParts[pathParts.length - 1];
+
+    if (!documentId) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Document ID is required" 
+        }),
+        { 
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    const document = await ctx.runQuery(api.documents.getDocument, {
+      documentId: documentId as any,
+    });
+
+    if (!document) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Document not found" 
+        }),
+        { 
+          status: 404,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify(document),
+      { 
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching document:", error);
+    return new Response(
+      JSON.stringify({ 
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+});
+
 // Get document statistics
 export const getDocumentStatsAPI = httpAction(async (ctx, request) => {
   try {

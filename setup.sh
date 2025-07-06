@@ -217,40 +217,22 @@ cd ../..
 
 echo "✅ Web dashboard prepared"
 
-# Setup mobile app environment if not already configured
+# Call mobile app setup script
 echo ""
 echo "📱 Mobile App Environment Setup"
 echo "==============================="
+./setup-mobile.sh
 
-# Check if mobile .env already exists
-if [ -f "apps/mobile/.env" ]; then
-    echo "✅ Mobile app environment already configured"
-    echo "💡 You can edit apps/mobile/.env to customize mobile app settings"
-else
-    # Check if .env.example exists
-    if [ ! -f "apps/mobile/.env.example" ]; then
-        echo "❌ .env.example not found in mobile app directory"
-        echo "   Skipping mobile environment setup"
-    else
-        echo "Mobile app environment not configured."
-        echo "This will create a .env file for the mobile app from .env.example"
-        read -p "Setup mobile environment? (y/n): " -n 1 -r
-        echo ""
+# Vector Convert LLM Service Setup
+echo ""
+echo "🧠 Vector Convert LLM Service Setup"
+echo "==================================="
 
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            echo "📱 Setting up mobile app environment..."
-            cd apps/mobile
-            cp .env.example .env
-            echo "✅ Mobile app .env file created from .env.example"
-            echo "📝 Mobile environment configured with default settings"
-            echo "💡 You can edit apps/mobile/.env to customize mobile app settings"
-            cd ../..
-        else
-            echo "⏭️  Skipping mobile environment setup"
-            echo "💡 You can set it up later with: pnpm mobile:setup-env"
-        fi
-    fi
-fi
+echo "📦 Vector Convert LLM service will be built during Docker Compose startup..."
+echo "   This service provides sentence embeddings using Hugging Face transformers"
+echo "   Model: sentence-transformers/all-distilroberta-v1"
+
+echo "✅ Vector Convert LLM service configured"
 
 echo ""
 
@@ -295,6 +277,7 @@ echo "2. Navigate to the 'Containers' tab"
 echo "3. Look for containers with names like:"
 echo "   - telegram-bot-convex-backend-1"
 echo "   - telegram-bot-telegram-bot-1"
+echo "   - telegram-bot-vector-convert-llm-1"
 echo "   - telegram-bot-web-dashboard-1"
 echo "4. You can view logs, restart, or stop containers from there"
 echo ""
@@ -317,12 +300,16 @@ echo "📋 Useful commands:"
 echo "   View logs: docker compose logs -f"
 echo "   Stop services: docker compose down"
 echo "   Restart bot: docker compose restart telegram-bot"
+echo "   Restart LLM service: docker compose restart vector-convert-llm"
 echo "   Restart dashboard: docker compose restart web-dashboard"
 echo "   View dashboard logs: docker compose logs -f web-dashboard"
+echo "   View LLM service logs: docker compose logs -f vector-convert-llm"
 echo ""
-echo "🔍 Test the API:"
-echo "   curl http://localhost:3211/api/health"
-echo "   curl http://localhost:3211/api/telegram/messages"
+echo "🔍 Test the APIs:"
+echo "   Convex API: curl http://localhost:3211/api/health"
+echo "   Messages API: curl http://localhost:3211/api/telegram/messages"
+echo "   Vector LLM API: curl http://localhost:8081/health"
+echo "   Text Embedding: curl -X POST http://localhost:8081/embed -H 'Content-Type: application/json' -d '{\"text\":\"Hello world\"}'"
 echo ""
 echo "📱 Mobile App Commands:"
 echo "======================"

@@ -102,6 +102,39 @@ export const searchDocumentsVectorAPI = httpAction(async (ctx, request) => {
   }
 });
 
+// Check LLM service status and readiness
+export const checkLLMServiceStatusAPI = httpAction(async (ctx, request) => {
+  try {
+    const result = await ctx.runAction(api.embeddings.checkLLMServiceStatus, {});
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        ...result
+      }),
+      { 
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  } catch (error) {
+    console.error("Error checking LLM service status:", error);
+    return new Response(
+      JSON.stringify({ 
+        success: false,
+        status: "error",
+        ready: false,
+        message: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+});
+
 // Batch generate embeddings for all documents without embeddings
 export const batchGenerateEmbeddingsAPI = httpAction(async (ctx, request) => {
   try {

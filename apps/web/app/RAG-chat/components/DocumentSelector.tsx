@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FileText, CheckCircle, AlertCircle, MessageCircle } from "lucide-react";
+import { FileText, CheckCircle, AlertCircle, BotMessageSquare } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
 import { Card } from "../../components/ui/card";
 import { Button as MovingButton } from "../../components/ui/moving-border";
@@ -110,7 +110,7 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
               borderClassName="bg-[radial-gradient(#0ea5e9_40%,transparent_60%)]"
             >
               <span className="flex gap-2 items-center">
-                {renderIcon(MessageCircle, { className: "w-4 h-4" })}
+                {renderIcon(BotMessageSquare, { className: "w-4 h-4" })}
                 Start Chat ({selectedDocuments.length} selected)
               </span>
             </MovingButton>

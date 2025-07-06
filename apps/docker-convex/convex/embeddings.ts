@@ -3,33 +3,26 @@ import { action, mutation, internalQuery } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
 
-// Internal function to generate embeddings
+// Internal function to generate embeddings using vector-convert-llm service
 const generateEmbeddingInternal = async (text: string): Promise<number[]> => {
-  const openaiApiKey = process.env.OPENAI_API_KEY;
-  if (!openaiApiKey) {
-    throw new Error("OPENAI_API_KEY environment variable is not set");
-  }
-
   try {
-    const response = await fetch("https://api.openai.com/v1/embeddings", {
+    const response = await fetch("http://vector-convert-llm:8081/embed", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openaiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "text-embedding-ada-002",
-        input: text,
+        text: text,
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} - ${error}`);
+      throw new Error(`Vector LLM service error: ${response.status} - ${error}`);
     }
 
     const data = await response.json();
-    return data.data[0].embedding;
+    return data.embedding;
   } catch (error) {
     console.error("Error generating embedding:", error);
     throw error;
@@ -170,6 +163,44 @@ export const processDocumentWithChunking = action({
     } catch (error) {
       console.error("Error processing document with chunking:", error);
       throw error;
+    }
+  },
+});
+
+// Check LLM service status and readiness
+export const checkLLMServiceStatus = action({
+  args: {},
+  handler: async (ctx, args) => {
+    try {
+      const response = await fetch("http://vector-convert-llm:8081/health", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        return {
+          status: "error",
+          ready: false,
+          message: `Service unavailable: ${response.status}`,
+        };
+      }
+
+      const data = await response.json();
+      return {
+        status: "healthy",
+        ready: data.model_loaded || true,
+        message: data.message || "Service is running",
+        model: data.model || "sentence-transformers/all-distilroberta-v1",
+      };
+    } catch (error) {
+      console.error("Error checking LLM service status:", error);
+      return {
+        status: "error",
+        ready: false,
+        message: "Cannot connect to LLM service",
+      };
     }
   },
 });

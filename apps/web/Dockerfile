@@ -1,17 +1,17 @@
-# Enhanced version of your current Dockerfile
+# Optimized Dockerfile for faster builds
 FROM node:20-alpine AS base
 
-# Security updates (from Reddit suggestion)
-RUN apk update && apk upgrade --no-cache
-RUN apk add --no-cache libc6-compat bash
+# Install system dependencies and pnpm in one layer
+RUN apk update && apk upgrade --no-cache && \
+    apk add --no-cache libc6-compat bash && \
+    npm install -g pnpm@latest && \
+    rm -rf /var/cache/apk/*
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm@latest
-
+# Install pnpm is already done in base
 # Copy workspace configuration
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages ./packages
@@ -21,14 +21,11 @@ COPY apps/web ./apps/web
 RUN --mount=type=cache,target=/root/.pnpm-store \
     pnpm install --frozen-lockfile
 
-# Rebuild the source code only when needed
+# Build the application
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Install pnpm
-RUN npm install -g pnpm@latest
 
 # Build the application
 WORKDIR /app/apps/web
@@ -39,23 +36,24 @@ ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
 ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 RUN pnpm build
 
-# Production image
-FROM base AS runner
+# Production image - minimal runtime
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+# Set production environment variables
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0"
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Create non-root user and setup directories in one layer
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    mkdir .next && \
+    chown nextjs:nodejs .next
 
-# Copy built application
-COPY --from=builder /app/apps/web/public ./public
-RUN mkdir .next && chown nextjs:nodejs .next
-
+# Copy built application with proper ownership
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 

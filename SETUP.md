@@ -8,6 +8,8 @@ The setup includes:
 - **Convex Backend**: Self-hosted Convex database with HTTP API endpoints
 - **Convex Dashboard**: Web interface for managing your database
 - **Golang Telegram Bot**: Bot that receives messages and saves them to Convex
+- **Vector Convert LLM**: Python service providing text embeddings using Hugging Face transformers
+- **Web Dashboard**: Next.js web interface for viewing messages and data
 - **Centralized Docker Compose**: Single file to manage all services
 
 ## 📋 Prerequisites
@@ -68,13 +70,24 @@ Open your browser and go to: http://localhost:6791
 1. **Open Docker Desktop** application on your computer
 2. **Navigate to the 'Containers' tab**
 3. **Look for your containers**:
-   - `go-convex-telegram-turborepo-convex-backend-1`
-   - `go-convex-telegram-turborepo-telegram-bot-1`
+   - `telegram-bot-convex-backend-1`
+   - `telegram-bot-telegram-bot-1`
+   - `telegram-bot-vector-convert-llm-1`
+   - `telegram-bot-web-dashboard-1`
 4. **Use Docker Desktop to**:
    - View real-time logs
    - Restart containers
    - Monitor resource usage
    - Stop/start services
+
+### 5. Vector Convert LLM Service Setup
+
+The `setup.sh` script now includes the Vector Convert LLM service that provides text embeddings using Hugging Face transformers. This service will be available within your Docker Compose setup.
+
+To ensure the Vector Convert LLM service is built and ready:
+- The service uses the `sentence-transformers/all-distilroberta-v1` model for generating 768-dimensional embeddings
+- Verify the service is running using `docker compose ps` and look for `vector-convert-llm`
+- Test the service: `curl http://localhost:8081/health`
 
 ## 🗄️ Database Management
 
@@ -93,12 +106,17 @@ Your Convex database provides a powerful web interface for:
 
 ## 📊 API Endpoints
 
-Your Convex backend exposes these HTTP endpoints:
-
+### Convex Backend (Port 3211)
 - `POST /api/telegram/messages` - Save a new message
 - `GET /api/telegram/messages` - Get all messages
 - `GET /api/telegram/messages?chatId=123` - Get messages for specific chat
 - `GET /api/health` - Health check
+
+### Vector Convert LLM Service (Port 8081)
+- `GET /health` - Health check
+- `POST /embed` - Generate text embeddings
+- `POST /similarity` - Calculate text similarity
+- `POST /search` - Perform semantic search
 
 ## 🗂️ Database Schema
 
@@ -120,9 +138,13 @@ The `telegram_messages` table includes:
 # View logs for specific service
 docker compose logs -f telegram-bot
 docker compose logs -f convex-backend
+docker compose logs -f vector-convert-llm
+docker compose logs -f web-dashboard
 
 # Restart a specific service
 docker compose restart telegram-bot
+docker compose restart vector-convert-llm
+docker compose restart web-dashboard
 
 # Stop all services
 docker compose down
@@ -152,6 +174,12 @@ docker system prune -af
 2. Test API directly: `curl -X POST http://localhost:3211/api/telegram/messages -H "Content-Type: application/json" -d '{"messageId":1,"chatId":123,"text":"test"}'`
 3. Verify schema is deployed: Check dashboard at http://localhost:6791
 
+### Vector Convert LLM Service Issues
+1. Check Vector Convert LLM service logs: `docker compose logs vector-convert-llm`
+2. Verify Vector Convert LLM service health: `curl http://localhost:8081/health`
+3. Test text embedding: `curl -X POST http://localhost:8081/embed -H "Content-Type: application/json" -d '{"text":"Hello world"}'`
+4. Check if the model is loading properly (may take time on first startup)
+
 ## 🔒 Security Notes
 
 - Change `CONVEX_INSTANCE_SECRET` in production
@@ -172,8 +200,19 @@ docker system prune -af
 │   │   │   ├── telegram.ts     # Telegram-related functions
 │   │   │   └── http.ts         # HTTP API routes
 │   │   └── docker-compose.yml  # Original Convex setup
-│   └── golang-telegram-bot/    # Telegram bot
-│       ├── main.go             # Bot implementation
-│       └── Dockerfile          # Bot container
+│   ├── vector-convert-llm/     # Vector Convert LLM Service
+│   │   ├── main.py             # Python Flask API for embeddings
+│   │   ├── requirements.txt    # Python dependencies
+│   │   └── Dockerfile          # LLM service container
+│   ├── golang-telegram-bot/    # Telegram bot
+│   │   ├── main.go             # Bot implementation
+│   │   └── Dockerfile          # Bot container
+│   └── web/                    # Next.js Web Dashboard
+│       ├── app/                # Next.js app directory
+│       └── Dockerfile          # Web dashboard container
+│   └── Mobile/                 # React Native app (without Expo)
+│       ├── ios
+│       └── android
+├── setup-mobile.sh             # Mobile app setup script
 └── SETUP.md                    # This file
 ```

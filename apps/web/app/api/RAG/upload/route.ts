@@ -28,10 +28,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Convex URL from environment
-    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    // Get Convex URL from environment (use CONVEX_URL for server-side requests)
+    const convexUrl = process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || 'http://localhost:3211';
     if (!convexUrl) {
-      console.error('NEXT_PUBLIC_CONVEX_URL not configured');
+      console.error('CONVEX_URL not configured');
       return NextResponse.json(
         { error: 'Server configuration error' },
         { status: 500 }
@@ -88,10 +88,10 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get('cursor');
     const search = searchParams.get('search');
 
-    // Get Convex URL from environment
-    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    // Get Convex URL from environment (use CONVEX_URL for server-side requests)
+    const convexUrl = process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || 'http://localhost:3211';
     if (!convexUrl) {
-      console.error('NEXT_PUBLIC_CONVEX_URL not configured');
+      console.error('CONVEX_URL not configured');
       return NextResponse.json(
         { error: 'Server configuration error' },
         { status: 500 }

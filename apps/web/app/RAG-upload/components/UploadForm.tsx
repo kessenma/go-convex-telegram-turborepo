@@ -21,6 +21,9 @@ interface UploadFormProps {
   fileInputRef: RefObject<HTMLInputElement>;
   handleFileUpload: (file: File) => void;
   handleTextUpload: () => void;
+  isGeneratingEmbeddings: boolean;
+  handleGenerateEmbeddings: () => Promise<void>;
+  embeddingMessage: string;
 }
 
 export function UploadForm({
@@ -38,6 +41,9 @@ export function UploadForm({
   fileInputRef,
   handleFileUpload,
   handleTextUpload,
+  isGeneratingEmbeddings,
+  handleGenerateEmbeddings,
+  embeddingMessage,
 }: UploadFormProps): React.ReactElement | null {
   return (
     <div className="p-6">
@@ -131,6 +137,8 @@ export function UploadForm({
                 'Choose File'
               )}
             </MovingButton>
+
+
           </div>
         </div>
       )}

@@ -3,13 +3,16 @@
   "private": true,
   "scripts": {
     "setup-init": "./setup.sh",
-    "docker:reset": "docker compose down -v && docker system prune -af",
+    "docker:reset": "docker compose down -v && docker network prune -f && docker system prune -af && echo 'docker containters:' && docker ps -a",
     "docker:reset-web": "./reset-web-only.sh",
+    "docker:deploy-convex": "./deploy-convex.sh",
 
     "docker:manage": "./docker-manager.sh",
 
     "get-admin-key": "docker compose exec convex-backend ./generate_admin_key.sh",
     "convex:dev:bot": "docker compose up convex-backend convex-dashboard telegram-bot -d && cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
+    "docker:restart-web-convex": "docker compose stop web-dashboard convex-backend convex-dashboard && docker compose up web-dashboard convex-backend convex-dashboard -d",
+    "docker:llm-only": "docker compose up vector-convert-llm -d",
     
     "build": "turbo run build",
     "dev": "turbo run dev",

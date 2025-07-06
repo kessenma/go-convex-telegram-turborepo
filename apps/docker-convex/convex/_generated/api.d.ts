@@ -22,6 +22,7 @@ import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as messagesThread from "../messagesThread.js";
 import type * as telegram from "../telegram.js";
+import type * as threadApi from "../threadApi.js";
 import type * as threads from "../threads.js";
 
 /**
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   messages: typeof messages;
   messagesThread: typeof messagesThread;
   telegram: typeof telegram;
+  threadApi: typeof threadApi;
   threads: typeof threads;
 }>;
 export declare const api: FilterApi<

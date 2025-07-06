@@ -1,9 +1,5 @@
-'use client'
-
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
-import { TelegramMessage } from "../../models/telegram";
+"use client";
+import { TelegramMessage, TelegramThread } from "../../models/telegram";
 import { Hero } from "../../components/ui/hero";
 import { Card } from "../../components/ui/card";
 import Link from 'next/link';
@@ -11,6 +7,8 @@ import { ArrowLeft, Send, Bot, Clock, MessageSquare, User, Hash } from 'lucide-r
 import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
 import React, { useState } from 'react';
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import {Button} from "../../components/ui/button";
 
 interface ThreadDetailPageProps {
@@ -28,15 +26,8 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
     params.then(p => setThreadId(p.threadId));
   }, [params]);
 
-  const messages = useQuery(
-    api.messages.getMessagesByThreadDoc, 
-    threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
-  );
-
-  const thread = useQuery(
-    api.threads.getThreadById,
-    threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
-  );
+  const thread = useQuery(api.threads.getThreadById, threadId ? { threadId } : "skip");
+  const messages = useQuery(api.messages.getMessagesByThreadDoc, threadId ? { threadDocId: threadId } : "skip");
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,15 +98,17 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
     );
   }
 
-  if (messages === undefined) {
+  const loading = thread === undefined || messages === undefined;
+
+  if (loading) {
     return (
       <div className="p-6 mx-auto max-w-4xl">
-        <div className="text-center text-gray-500 animate-pulse dark:text-gray-400">Loading thread messages...</div>
+        <div className="text-center text-gray-500 animate-pulse dark:text-gray-400">Loading thread...</div>
       </div>
     );
   }
 
-  if (messages.length === 0) {
+  if (!messages || messages.length === 0) {
     return (
       <div className="relative min-h-screen">
         <div className="flex relative z-20 flex-col justify-center items-center px-4 pt-24 pb-20 min-h-screen">

@@ -3,7 +3,8 @@
   "node": {
     "externalPackages": [
       "@node-rs/argon2",
-      "@node-rs/bcrypt"
+      "@node-rs/bcrypt",
+      "sharp"
     ]
   }
 }

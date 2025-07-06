@@ -1,16 +1,18 @@
-'use client'
-
+"use client";
+import React, { useState } from 'react';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { TelegramThread } from "../models/telegram";
 import { Hero } from "../components/ui/hero";
 import { Card } from "../components/ui/card";
 import ThreadModal from './components/ThreadModal';
-import { useState } from 'react';
 
 export default function ThreadsPage(): React.ReactElement {
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const threads = useQuery(api.threads.getAllActiveThreads, { limit: 50 });
+  const [error, setError] = useState<string | null>(null);
+  
+  const loading = threads === undefined;
 
   const handleThreadClick = (threadId: string) => {
     setSelectedThreadId(threadId);
@@ -20,17 +22,35 @@ export default function ThreadsPage(): React.ReactElement {
     setSelectedThreadId(null);
   };
 
-  if (threads === undefined) {
+  if (loading) {
     return (
       <div className="p-6 mx-auto max-w-6xl">
-        <div className="py-16 text-center">
-          <div className="text-xl text-gray-600 dark:text-gray-300">Loading threads...</div>
-        </div>
+        <Hero title="Telegram Threads" subtitle="Loading threads..." />
+        <Card className="py-12 text-center">
+          <p className="text-gray-600 dark:text-gray-400">Loading threads...</p>
+        </Card>
       </div>
     );
   }
 
-  if (threads.length === 0) {
+  if (error) {
+    return (
+      <div className="p-6 mx-auto max-w-6xl">
+        <Hero title="Telegram Threads" subtitle="Error loading threads" />
+        <Card className="py-12 text-center">
+          <p className="mb-2 text-red-600 dark:text-red-400">Error: {error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            Try again
+          </button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!threads || threads.length === 0) {
     return (
       <div className="p-6 mx-auto max-w-6xl">
         <Hero title="Telegram Threads" subtitle="Manage your group conversations" />
@@ -44,9 +64,9 @@ export default function ThreadsPage(): React.ReactElement {
 
   return (
     <div className="p-6 mx-auto max-w-6xl">
-      <Hero title="Telegram Threads" subtitle={`${threads.length} active threads`} />
+      <Hero title="Telegram Threads" subtitle={`${threads?.length || 0} active threads`} />
       <div className="flex flex-col gap-4">
-        {threads.map((thread: TelegramThread) => (
+        {threads?.map((thread: TelegramThread) => (
           <div 
             key={thread._id} 
             className="transition-all duration-200 cursor-pointer hover:shadow-lg hover:-translate-y-1"

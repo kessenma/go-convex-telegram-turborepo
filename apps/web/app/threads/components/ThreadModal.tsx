@@ -1,10 +1,8 @@
-'use client'
-
+"use client";
+import { TelegramMessage, TelegramThread } from "../../models/telegram";
+import React, { useState } from 'react';
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
-import { TelegramMessage } from "../../models/telegram";
-import React, { useState } from 'react';
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { X, MessagesSquare, Users, Clock, Bot, Send, AlertCircle } from "lucide-react";
@@ -24,15 +22,8 @@ export default function ThreadModal({ threadId, isOpen, onClose }: ThreadModalPr
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const messages = useQuery(
-    api.messages.getMessagesByThreadDoc, 
-    threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
-  );
-
-  const thread = useQuery(
-    api.threads.getThreadById,
-    threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip"
-  );
+  const thread = useQuery(api.threads.getThreadById, threadId ? { threadId } : "skip");
+  const messages = useQuery(api.messages.getMessagesByThreadDoc, threadId ? { threadDocId: threadId } : "skip");
 
   const handleSendMessage = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

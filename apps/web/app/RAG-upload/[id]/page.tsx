@@ -1,17 +1,18 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
+// TODO: Replace with HTTP API calls when backend is ready
 import { FileText, ArrowLeft } from 'lucide-react';
 import { renderIcon } from '../../lib/icon-utils';
 import { useRouter } from 'next/navigation';
+import { Document } from '../../models/telegram';
 
 export default function DocumentReader() {
   const { id } = useParams();
   const router = useRouter();
-  const document = useQuery(api.documents.getDocument, { documentId: id as string });
+  // TODO: Replace with HTTP API call to fetch document by ID
+  const [document] = useState<Document | null>(null);
 
   if (!document) {
     return (

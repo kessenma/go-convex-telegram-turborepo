@@ -1,20 +1,22 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { Upload, FileText, Type, BarChart3, Calendar, FileIcon, Hash, CheckCircle, AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { renderIcon } from "../lib/icon-utils";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { useAnimationSettings } from "../hooks/use-animation-settings";
-import { Hero } from "../components/ui/hero";
+import { Hero, TextAnimationType } from "../components/ui/hero";
 import { Card } from "../components/ui/card";
-import { BackgroundGradient } from "../components/ui/background-gradient";
+import { BackgroundGradient } from "../components/ui/backgrounds/background-gradient";
 import { SparklesCore } from "../components/ui/sparkles";
 import { UploadForm } from "./components/UploadForm";
 import { DocumentStats } from "./components/DocumentStats";
 import { DocumentHistory } from "./components/DocumentHistory";
 import { ThreeJSUploadIcon } from "./components/ThreeJSUploadIcon";
-import { VectorSearch } from "./components/VectorSearch";
+
+import { LLMStatusIndicator } from "../components/ui/llm-status-indicator";
+import { useLLMStatus } from "../hooks/use-llm-status";
 
 interface Document {
   _id: string;
@@ -40,6 +42,7 @@ interface UploadedDocument {
 
 export default function RAGUploadPage(): React.ReactElement | null {
   const { animationEnabled } = useAnimationSettings();
+  const { llmStatus } = useLLMStatus();
   const [uploadMethod, setUploadMethod] = useState<'file' | 'text'>('file');
   const [textContent, setTextContent] = useState('');
   const [title, setTitle] = useState('');
@@ -51,10 +54,16 @@ export default function RAGUploadPage(): React.ReactElement | null {
   const [embeddingMessage, setEmbeddingMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-
-  // Query documents for the recent uploads section
+  // Use Convex hooks for real-time data
   const documentsQuery = useQuery(api.documents.getAllDocuments, { limit: 5 });
-  const statsQuery = useQuery(api.documents.getDocumentStats, {});
+  const stats = useQuery(api.documents.getDocumentStats);
+  const saveDocument = useMutation(api.documents.saveDocument);
+  
+  const documents = documentsQuery?.page || [];
+  const loadingDocuments = documentsQuery === undefined;
+  const loadingStats = stats === undefined;
+
+  // Data is now loaded automatically via Convex hooks
 
   const handleFileUpload = async (file: File) => {
     if (!file.name.endsWith('.md') && !file.name.endsWith('.txt')) {
@@ -77,38 +86,25 @@ export default function RAGUploadPage(): React.ReactElement | null {
       const contentType = file.name.endsWith('.md') ? 'markdown' : 'text';
       const documentTitle = title || file.name.replace(/\.[^/.]+$/, '');
 
-      const response = await fetch('/api/RAG/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: documentTitle,
-          content,
-          contentType,
-          summary: summary || undefined,
-        }),
+      await saveDocument({
+        title: documentTitle,
+        content,
+        contentType,
+        summary: summary || undefined,
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
-        setUploadStatus('success');
-        setUploadMessage(`Document "${documentTitle}" uploaded successfully!`);
-        setTitle('');
-        setSummary('');
-        setTextContent('');
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-
-      } else {
-        setUploadStatus('error');
-        setUploadMessage(result.error || 'Upload failed');
+      setUploadStatus('success');
+      setUploadMessage(`Document "${documentTitle}" uploaded successfully!`);
+      setTitle('');
+      setSummary('');
+      setTextContent('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     } catch (error) {
       setUploadStatus('error');
-      setUploadMessage('Network error. Please try again.');
+      setUploadMessage('Upload failed. Please try again.');
+      console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
     }
@@ -119,7 +115,7 @@ export default function RAGUploadPage(): React.ReactElement | null {
     setEmbeddingMessage('');
 
     try {
-      const response = await fetch('/api/RAG/embeddings/batch', {
+      const response = await fetch('/api/batch-generate-embeddings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,35 +153,22 @@ export default function RAGUploadPage(): React.ReactElement | null {
     setUploadStatus('idle');
 
     try {
-      const response = await fetch('/api/RAG/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          content: textContent,
-          contentType: 'text',
-          summary: summary || undefined,
-        }),
+      await saveDocument({
+        title,
+        content: textContent,
+        contentType: 'text',
+        summary: summary || undefined,
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
-        setUploadStatus('success');
-        setUploadMessage(`Document "${title}" uploaded successfully!`);
-        setTitle('');
-        setSummary('');
-        setTextContent('');
-
-      } else {
-        setUploadStatus('error');
-        setUploadMessage(result.error || 'Upload failed');
-      }
+      setUploadStatus('success');
+      setUploadMessage(`Document "${title}" uploaded successfully!`);
+      setTitle('');
+      setSummary('');
+      setTextContent('');
     } catch (error) {
       setUploadStatus('error');
-      setUploadMessage('Network error. Please try again.');
+      setUploadMessage('Upload failed. Please try again.');
+      console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
     }
@@ -251,6 +234,18 @@ export default function RAGUploadPage(): React.ReactElement | null {
           />
         </div>
 
+        {/* LLM Status Indicator */}
+        <div className="mb-6">
+          <LLMStatusIndicator
+          status={llmStatus.status}
+          ready={llmStatus.ready}
+          message={llmStatus.message}
+          model={llmStatus.model}
+          details={llmStatus.details}
+          className="mx-auto max-w-md"
+        />
+        </div>
+
         {/* Upload Form */}
         {isUploading ? (
           <BackgroundGradient className="mb-6">
@@ -269,6 +264,9 @@ export default function RAGUploadPage(): React.ReactElement | null {
               fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
               handleFileUpload={handleFileUpload}
               handleTextUpload={handleTextUpload}
+              isGeneratingEmbeddings={isGeneratingEmbeddings}
+              handleGenerateEmbeddings={handleGenerateEmbeddings}
+              embeddingMessage={embeddingMessage}
             />
           </BackgroundGradient>
         ) : (
@@ -288,58 +286,20 @@ export default function RAGUploadPage(): React.ReactElement | null {
               fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
               handleFileUpload={handleFileUpload}
               handleTextUpload={handleTextUpload}
+              isGeneratingEmbeddings={isGeneratingEmbeddings}
+              handleGenerateEmbeddings={handleGenerateEmbeddings}
+              embeddingMessage={embeddingMessage}
             />
           </Card>
         )}
 
         {/* Stats Cards */}
-        <DocumentStats statsQuery={statsQuery} />
+        <DocumentStats stats={stats} loading={loadingStats} />
 
-        {/* Generate Embeddings Section */}
-        <Card className="mb-6 border-gray-700 bg-gray-800/50">
-          <div className="p-6">
-            <h3 className="mb-4 text-xl font-semibold text-white">Vector Embeddings</h3>
-            <p className="mb-4 text-sm text-gray-300">
-              Generate AI embeddings for your documents to enable semantic search. This process converts your text into vector representations for similarity matching.
-            </p>
-            <div className="flex gap-4 items-center">
-              <button
-                onClick={handleGenerateEmbeddings}
-                disabled={isGeneratingEmbeddings}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                  isGeneratingEmbeddings
-                    ? 'text-gray-400 bg-gray-600 border-gray-500 cursor-not-allowed'
-                    : 'text-white bg-curious-cyan-600 border-curious-cyan-500 hover:bg-curious-cyan-700'
-                }`}
-              >
-                {isGeneratingEmbeddings ? (
-                  <>
-                    {renderIcon(Loader2, { className: "w-4 h-4 animate-spin" })}
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    {renderIcon(BarChart3, { className: "w-4 h-4" })}
-                    Generate Embeddings
-                  </>
-                )}
-              </button>
-              {embeddingMessage && (
-                <span className={`text-sm ${
-                  embeddingMessage.includes('Successfully') ? 'text-green-400' : 'text-red-400'
-                }`}>
-                  {embeddingMessage}
-                </span>
-              )}
-            </div>
-          </div>
-        </Card>
 
-        {/* Vector Search */}
-        <VectorSearch className="mb-6" />
 
         {/* Document History */}
-        <DocumentHistory documentsQuery={documentsQuery} />
+        <DocumentHistory documents={documents} loading={loadingDocuments} />
       </div>
     </div>
   );

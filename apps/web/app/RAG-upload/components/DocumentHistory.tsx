@@ -3,9 +3,7 @@
 import React, { useState } from 'react';
 import { FileText, Trash2 } from 'lucide-react';
 import { renderIcon } from '../../lib/icon-utils';
-import { useMutation } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
-import DocumentViewer from './DocumentViewer';
+import DocumentViewer from '../../RAG-data/components/DocumentViewer';
 
 interface UploadedDocument {
   _id: string;
@@ -19,14 +17,36 @@ interface UploadedDocument {
 }
 
 interface DocumentHistoryProps {
-  documentsQuery: {
-    page: UploadedDocument[];
-  } | undefined;
+  documents: UploadedDocument[];
+  loading: boolean;
 }
 
-export function DocumentHistory({ documentsQuery }: DocumentHistoryProps): React.ReactElement | null {
+export function DocumentHistory({ documents, loading }: DocumentHistoryProps): React.ReactElement | null {
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-  const deleteDocument = useMutation(api.documents.deleteDocument);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+
+  const handleDeleteDocument = async (documentId: string) => {
+    setDeletingIds(prev => new Set(prev).add(documentId));
+    try {
+      const response = await fetch(`/api/RAG/documents/${documentId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        // Document will be removed from the list on next refetch
+        window.location.reload(); // Simple refresh for now
+      } else {
+        console.error('Failed to delete document');
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+    } finally {
+      setDeletingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(documentId);
+        return newSet;
+      });
+    }
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -46,18 +66,50 @@ export function DocumentHistory({ documentsQuery }: DocumentHistoryProps): React
     });
   };
 
-  if (!documentsQuery || documentsQuery.page.length === 0) {
-    return null;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-white">Recent Documents</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="p-4 bg-gray-800 rounded-lg border border-gray-700 animate-pulse">
+              <div className="flex gap-3 items-center">
+                <div className="w-10 h-10 bg-gray-600 rounded-lg"></div>
+                <div className="flex-1">
+                  <div className="mb-2 w-32 h-4 bg-gray-600 rounded"></div>
+                  <div className="w-48 h-3 bg-gray-600 rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!documents || documents.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-white">Recent Documents</h2>
+        <div className="p-8 text-center rounded-lg border border-gray-600 bg-gray-800/50">
+          <div className="mb-4">
+            {renderIcon(FileText, { className: "mx-auto w-12 h-12 text-gray-500" })}
+          </div>
+          <p className="text-gray-400">No documents uploaded yet.</p>
+          <p className="text-sm text-gray-500">Upload your first document to see it here.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-white">Recent Documents</h2>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {documentsQuery.page.map((doc) => (
+        {documents.map((doc) => (
           <div
             key={doc._id}
-            className="p-4 bg-gray-800 rounded-lg border cursor-pointer transition-colors border-gray-700 hover:border-curious-cyan-500"
+            className="p-4 bg-gray-800 rounded-lg border border-gray-700 transition-colors cursor-pointer hover:border-curious-cyan-500"
             onClick={() => setSelectedDocumentId(doc._id)}
           >
             <div className="flex justify-between items-start">
@@ -75,9 +127,14 @@ export function DocumentHistory({ documentsQuery }: DocumentHistoryProps): React
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteDocument({ documentId: doc._id });
+                  handleDeleteDocument(doc._id);
                 }}
-                className="p-2 text-gray-400 rounded-lg transition-colors hover:text-red-400 hover:bg-gray-700"
+                disabled={deletingIds.has(doc._id)}
+                className={`p-2 rounded-lg transition-colors ${
+                  deletingIds.has(doc._id)
+                    ? 'text-gray-500 cursor-not-allowed'
+                    : 'text-gray-400 hover:text-red-400 hover:bg-gray-700'
+                }`}
                 aria-label="Delete document"
               >
                 {renderIcon(Trash2, { className: "w-4 h-4" })}

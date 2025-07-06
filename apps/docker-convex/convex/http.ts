@@ -1,8 +1,9 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { saveMessageAPI, getMessagesAPI, saveMessageToThreadAPI } from "./api";
-import { saveDocumentAPI, getDocumentsAPI, getDocumentStatsAPI } from "./documentApi";
-import { generateDocumentEmbeddingAPI, searchDocumentsVectorAPI, batchGenerateEmbeddingsAPI } from "./embeddingApi";
+import { saveDocumentAPI, getDocumentsAPI, getDocumentStatsAPI, getDocumentByIdAPI } from "./documentApi";
+import { generateDocumentEmbeddingAPI, searchDocumentsVectorAPI, batchGenerateEmbeddingsAPI, checkLLMServiceStatusAPI } from "./embeddingApi";
+import { getActiveThreadsAPI, getThreadStatsAPI, getThreadByIdAPI } from "./threadApi";
 
 const http = httpRouter();
 
@@ -24,6 +25,25 @@ http.route({
   path: "/api/telegram/messages/thread",
   method: "POST",
   handler: saveMessageToThreadAPI,
+});
+
+// Thread API endpoints
+http.route({
+  path: "/api/threads",
+  method: "GET",
+  handler: getActiveThreadsAPI,
+});
+
+http.route({
+  path: "/api/threads/stats",
+  method: "GET",
+  handler: getThreadStatsAPI,
+});
+
+http.route({
+  path: "/api/threads/by-id",
+  method: "GET",
+  handler: getThreadByIdAPI,
 });
 
 // RAG document API endpoints
@@ -62,6 +82,19 @@ http.route({
   path: "/api/documents/embeddings/batch",
   method: "POST",
   handler: batchGenerateEmbeddingsAPI,
+});
+
+// Parameterized route should come last - using pathPrefix for dynamic routing
+http.route({
+  pathPrefix: "/api/documents/",
+  method: "GET",
+  handler: getDocumentByIdAPI,
+});
+
+http.route({
+  path: "/api/llm/status",
+  method: "GET",
+  handler: checkLLMServiceStatusAPI,
 });
 
 // Health check endpoint

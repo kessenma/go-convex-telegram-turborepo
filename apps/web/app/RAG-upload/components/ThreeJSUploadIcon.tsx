@@ -15,7 +15,7 @@ export function ThreeJSUploadIcon({
   height = 300, 
   className = '',
   animationEnabled = true
-}: ThreeJSUploadIconProps): JSX.Element {
+}: ThreeJSUploadIconProps): React.ReactElement {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);

@@ -16,6 +16,33 @@ export const getAllActiveThreads = query({
   },
 });
 
+// Get threads in a specific chat
+export const getThreadsInChat = query({
+  args: {
+    chatId: v.number(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 50;
+    return await ctx.db
+      .query("telegram_threads")
+      .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .order("desc")
+      .take(limit);
+  },
+});
+
+// Get thread by ID
+export const getThreadById = query({
+  args: {
+    threadDocId: v.id("telegram_threads"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.threadDocId);
+  },
+});
+
 // Get thread statistics
 export const getThreadStats = query({
   args: {},

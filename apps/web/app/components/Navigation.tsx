@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { StatusIndicator } from "./ui/status-indicator";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, ChevronDown, ExternalLink, Info, MessageSquareShare, MessageSquareText, BotMessageSquare } from "lucide-react";
+import { StatusIndicator } from "./ui/status-indicator";
+import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, ChevronDown, ExternalLink, Info, MessageSquareShare, MessageSquareText, BotMessageSquare, Library } from "lucide-react";
 import { renderIcon } from "../lib/icon-utils";
 import { motion } from "motion/react";
 import { Settings } from "./Settings";
@@ -33,13 +33,13 @@ interface NavItem {
   dropdown?: { href: string; label: string; external?: boolean; icon?: React.FC<{ className?: string }> }[];
 }
 
-  const messages = useQuery(api.messages.getAllMessages, { limit: 1 });
-  const allMessages = useQuery(api.messages.getAllMessages, { limit: 1000 });
-  const threads = useQuery(api.threads.getAllActiveThreads, { limit: 1000 });
+  // Fetch real data from Convex
+  const messages = useQuery(api.messages.getAllMessages, { limit: 100 });
+  const threadStats = useQuery(api.threads.getThreadStats);
   const documentStats = useQuery(api.documents.getDocumentStats);
   
-  const messageCount = allMessages?.length || 0;
-  const threadCount = threads?.length || 0;
+  const messageCount = messages?.length || 0;
+  const threadCount = threadStats?.totalThreads || 0;
   
   const dashboardPort = process.env.NEXT_PUBLIC_CONVEX_DASHBOARD_PORT || '6791';
   const dashboardUrl = `http://localhost:${dashboardPort}`;
@@ -60,6 +60,7 @@ interface NavItem {
       icon: Layers as React.FC<{ className?: string }>,
       dropdown: [
         { href: "/RAG-upload", label: "Upload", icon: Upload as React.FC<{ className?: string }> },
+        { href: "/RAG-data", label: "Data", icon: Library as React.FC<{ className?: string }> },
         { href: "/RAG-chat", label: "Chat", icon: BotMessageSquare as React.FC<{ className?: string }> }
       ]
     },
@@ -159,14 +160,14 @@ interface NavItem {
                         {messageCount}
                       </span>
                     )}
-                    {isRAG && documentStats?.totalDocuments > 0 && (
+                    {isRAG && (documentStats?.totalDocuments || 0) > 0 && (
                       <span className="ml-1 px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
-                        {documentStats.totalDocuments}
+                        {documentStats?.totalDocuments || 0}
                       </span>
                     )}
                     {isConsole && (
                       <StatusIndicator 
-                        status={messages === undefined ? "connecting" : "connected"} 
+                        status="connected" 
                         size="sm"
                         showLabel={false}
                       />
@@ -194,7 +195,11 @@ interface NavItem {
                          <button
                            key={dropdownItem.href}
                            onClick={() => handleDropdownClick(dropdownItem.href, dropdownItem.external)}
-                           className={`flex items-center justify-between px-4 py-2 w-full text-left transition-colors text-white/80 hover:text-white hover:bg-white/10 ${
+                           className={`flex items-center justify-between px-4 py-2 w-full text-left transition-colors ${
+                             dropdownItem.href === pathname 
+                               ? 'text-cyan-500 bg-slate-900/50' 
+                               : 'text-white/80 hover:text-white hover:bg-white/10'
+                           } ${
                              index === 0 ? 'rounded-t-lg' : ''
                            } ${
                              index === item.dropdown!.length - 1 ? 'rounded-b-lg' : ''
@@ -214,9 +219,9 @@ interface NavItem {
                                {threadCount}
                              </span>
                            )}
-                           {isRAG && dropdownItem.href === "/RAG-upload" && documentStats?.totalDocuments > 0 && (
+                           {isRAG && (dropdownItem.href === "/RAG-upload" || dropdownItem.href === "/RAG-data") && (documentStats?.totalDocuments || 0) > 0 && (
                              <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
-                               {documentStats.totalDocuments}
+                               {documentStats?.totalDocuments || 0}
                              </span>
                            )}
                          </button>

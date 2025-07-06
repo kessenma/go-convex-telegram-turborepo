@@ -27,7 +27,7 @@ export default defineSchema({
     })
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
-      dimensions: 1536, // OpenAI embedding dimensions
+      dimensions: 768, // sentence-transformers/all-distilroberta-v1 embedding dimensions
       filterFields: ["isActive", "contentType"]
     }),
 

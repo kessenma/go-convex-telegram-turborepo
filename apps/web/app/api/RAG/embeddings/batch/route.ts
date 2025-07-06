@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward request to Convex HTTP API
-    const convexResponse = await fetch(`${convexUrl}/http/api/documents/embeddings/batch`, {
+    const convexResponse = await fetch(`${convexUrl}/api/documents/embeddings/batch`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

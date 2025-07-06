@@ -4,15 +4,13 @@ import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Hero } from "../components/ui/hero";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../components/ui/accordion";
-import { BackgroundGradient } from "../components/ui/background-gradient";
+import { BackgroundGradient } from "../components/ui/backgrounds/background-gradient";
 import { Timeline } from "../components/ui/timeline";
-import { AuroraBackground } from "../components/ui/aurora-background";
+import { AuroraBackground } from "../components/ui/backgrounds/aurora-background";
 import { cn } from "../lib/utils";
 import { Database, ExternalLink, Info, ArrowRight, Terminal, Key, Eye, EyeOff, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { StatusIndicator } from "../components/ui/status-indicator";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { useAnimationSettings } from "../hooks/use-animation-settings";
 
 export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
@@ -26,10 +24,9 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
   const dashboardUrl = `http://localhost:${dashboardPort}`;
   const deploymentUrl = `http://localhost:${convexPort}`;
   
-  // Check connection status
-  const messages = useQuery(api.messages.getAllMessages, { limit: 1 });
-  const isConnected = messages !== undefined;
-  const connectionStatus = isConnected ? "connected" : "connecting";
+  // TODO: Replace with HTTP API call
+  const isConnected = true;
+  const connectionStatus = "connected";
 
   useEffect(() => {
     const handleScroll = () => {
