@@ -50,6 +50,63 @@ export const generateDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
   }
 });
 
+// Get all documents that have embeddings
+export const getEmbeddedDocumentsAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const limit = parseInt(url.searchParams.get("limit") || "100");
+    const offset = parseInt(url.searchParams.get("offset") || "0");
+
+    // Get all documents
+    const documents = await ctx.runQuery(api.documents.getAllDocuments, { 
+      limit: limit + offset 
+    });
+    
+    // Filter documents that have embeddings
+    const embeddedDocuments = documents.page.filter(doc => 
+      doc.embedding && doc.embedding.length > 0
+    ).slice(offset, offset + limit);
+
+    // Get total count of embedded documents
+    const allDocuments = await ctx.runQuery(api.documents.getAllDocuments, { 
+      limit: 1000 
+    });
+    const totalEmbedded = allDocuments.page.filter(doc => 
+      doc.embedding && doc.embedding.length > 0
+    ).length;
+
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        documents: embeddedDocuments,
+        pagination: {
+          total: totalEmbedded,
+          limit,
+          offset,
+          hasMore: offset + limit < totalEmbedded
+        },
+        message: `Found ${embeddedDocuments.length} embedded documents`
+      }),
+      { 
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  } catch (error) {
+    console.error("Error getting embedded documents:", error);
+    return new Response(
+      JSON.stringify({ 
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+ });
+
 // Search documents using vector similarity
 export const searchDocumentsVectorAPI = httpAction(async (ctx, request) => {
   try {

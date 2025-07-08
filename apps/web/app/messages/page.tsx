@@ -1,10 +1,10 @@
 // apps/web/app/messages/page.tsx
 "use client"
-import React, { useState } from "react"
+import React from "react"
 import { useQuery } from "convex/react"
 import { api } from "../../convex/_generated/api"
-import { Hero } from "../components/ui/hero"
-import { Card } from "../components/ui/card"
+import { Hero } from "../../components/ui/hero"
+import { Card } from "../../components/ui/card"
 
 interface TelegramMessage {
   _id: string
@@ -24,7 +24,6 @@ interface TelegramMessage {
 
 export default function MessagesPage(): React.ReactElement {
   const messages = useQuery(api.messages.getAllMessages, { limit: 100 })
-  const [error, setError] = useState<string | null>(null)
 
   // Messages are now loaded automatically via useQuery hook
   // No need for manual fetching
@@ -43,25 +42,7 @@ export default function MessagesPage(): React.ReactElement {
     )
   }
 
-  if (error) {
-    return (
-      <div className="p-6 mx-auto max-w-6xl">
-        <Hero 
-          title="Telegram Messages" 
-          subtitle="Error loading messages"
-        />
-        <Card className="py-12 text-center">
-          <p className="mb-2 text-red-600 dark:text-red-400">Error: {error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Try again
-          </button>
-        </Card>
-      </div>
-    )
-  }
+
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString()

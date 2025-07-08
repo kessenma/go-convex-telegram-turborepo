@@ -196,6 +196,21 @@ cd ../..
 
 echo "✅ Convex functions deployed"
 
+# Run docker:deploy-convex to sync generated files
+echo "📁 Syncing Convex generated files to all apps..."
+pnpm run docker:deploy-convex
+echo "✅ Convex generated files synced"
+
+# Ensure web app has the latest generated files
+echo "🔄 Ensuring web app has latest Convex generated files..."
+if [ -d "apps/docker-convex/convex/_generated" ]; then
+    mkdir -p apps/web/convex/_generated
+    cp -r apps/docker-convex/convex/_generated/* apps/web/convex/_generated/ 2>/dev/null || true
+    echo "✅ Generated files copied to web app"
+else
+    echo "⚠️  Warning: No generated files found in docker-convex. They will be created during deployment."
+fi
+
 # Build Next.js web dashboard
 echo "🌐 Building Next.js web dashboard..."
 cd apps/web
@@ -212,6 +227,36 @@ if [ ! -d "node_modules" ]; then
     echo "📦 Installing web dashboard dependencies..."
     pnpm install
 fi
+
+# Configure .env.local for web app (for local development with pnpm run dev)
+echo "⚙️ Configuring web app environment for local development..."
+cp .env.local.example .env.local
+
+# Update Convex URLs for local development
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    sed -i '' "s#NEXT_PUBLIC_CONVEX_URL=.*#NEXT_PUBLIC_CONVEX_URL=http://localhost:3210#" .env.local
+    sed -i '' "s#CONVEX_HTTP_URL=.*#CONVEX_HTTP_URL=http://localhost:3211#" .env.local
+    sed -i '' "s#CONVEX_URL=.*#CONVEX_URL=http://localhost:3210#" .env.local
+    sed -i '' "s#TELEGRAM_BOT_TOKEN=.*#TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}#" .env.local
+    sed -i '' "s#VECTOR_CONVERT_LLM_URL=.*#VECTOR_CONVERT_LLM_URL=http://localhost:8081#" .env.local
+    if [ ! -z "$TELEGRAM_BOT_USERNAME" ]; then
+        sed -i '' "s#NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=.*#NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}#" .env.local
+    fi
+else
+    # Linux
+    sed -i "s#NEXT_PUBLIC_CONVEX_URL=.*#NEXT_PUBLIC_CONVEX_URL=http://localhost:3210#" .env.local
+    sed -i "s#CONVEX_HTTP_URL=.*#CONVEX_HTTP_URL=http://localhost:3211#" .env.local
+    sed -i "s#CONVEX_URL=.*#CONVEX_URL=http://localhost:3210#" .env.local
+    sed -i "s#TELEGRAM_BOT_TOKEN=.*#TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}#" .env.local
+    sed -i "s#VECTOR_CONVERT_LLM_URL=.*#VECTOR_CONVERT_LLM_URL=http://localhost:8081#" .env.local
+    if [ ! -z "$TELEGRAM_BOT_USERNAME" ]; then
+        sed -i "s#NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=.*#NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}#" .env.local
+    fi
+fi
+
+echo "✅ Web app .env.local configured with your bot credentials for local development"
+echo "💡 You can now run 'cd apps/web && pnpm run dev' for local development with hot reloading"
 
 cd ../..
 
@@ -236,12 +281,23 @@ echo "✅ Vector Convert LLM service configured"
 
 echo ""
 
+# Rebuild web-dashboard to ensure it has the latest Convex generated files
+echo "🔨 Rebuilding web dashboard with latest Convex files..."
+docker compose build web-dashboard
+
 # Start all services
 echo "🚀 Starting all services..."
 docker compose up -d
 
 # Wait a moment for services to start
 sleep 5
+
+# Restart web-dashboard to ensure it picks up the latest environment and generated files
+echo "🔄 Restarting web dashboard to apply latest changes..."
+docker compose restart web-dashboard
+
+# Wait for restart
+sleep 3
 
 # Check service status
 echo "📊 Service Status:"
@@ -319,3 +375,10 @@ echo "   Run iOS app: pnpm mobile:ios"
 echo "   Start Metro bundler: pnpm dev:mobile"
 echo "   Mobile app directory: apps/mobile/"
 echo "   Mobile README: apps/mobile/README.md"
+echo ""
+echo "🔧 Local Development Commands:"
+echo "=============================="
+echo "   Start web app locally: cd apps/web && pnpm run dev"
+echo "   Local web app URL: http://localhost:3001 (or next available port)"
+echo "   Note: .env.local has been configured with your bot credentials"
+echo "   Hot reloading enabled for faster development"

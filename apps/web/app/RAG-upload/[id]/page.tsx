@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 // TODO: Replace with HTTP API calls when backend is ready
 import { FileText, ArrowLeft } from 'lucide-react';
-import { renderIcon } from '../../lib/icon-utils';
+import { renderIcon } from '../../../lib/icon-utils';
 import { useRouter } from 'next/navigation';
-import { Document } from '../../models/telegram';
+import { Document } from '../../../models/telegram';
 
 export default function DocumentReader() {
   const { id } = useParams();

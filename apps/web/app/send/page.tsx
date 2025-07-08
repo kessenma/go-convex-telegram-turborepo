@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useAnimationSettings } from "../hooks/use-animation-settings";
-import { Hero } from "../components/ui/hero";
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { BackgroundBeams } from "../components/ui/backgrounds/background-beams";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useAnimationSettings } from "../../hooks/use-animation-settings";
+import { Hero } from "../../components/ui/hero";
+import { Card } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { BackgroundBeams } from "../../components/ui/backgrounds/background-beams";
 
 interface SendMessageForm {
   chatId: string;
@@ -34,8 +36,8 @@ export default function SendMessagePage(): React.ReactElement {
     message: string;
   } | null>(null);
 
-  // TODO: Replace with HTTP API call
-  const threads: Thread[] = [];
+  // Get available threads from Convex
+  const threads = useQuery(api.threads.getAllActiveThreads, { limit: 50 }) || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
-import { FileText, CheckCircle, AlertCircle, BotMessageSquare } from "lucide-react";
-import { renderIcon } from "../../lib/icon-utils";
-import { Card } from "../../components/ui/card";
-import { Button as MovingButton } from "../../components/ui/moving-border";
+import React, { useState } from "react";
+import { FileText, CheckCircle, AlertCircle, BotMessageSquare, Filter, Zap, ZapOff } from "lucide-react";
+import { renderIcon } from "../../../lib/icon-utils";
+import { Card } from "../../../components/ui/card";
+import { Button as MovingButton } from "../../../components/ui/moving-border";
 import { Document } from "../types";
 
 interface DocumentSelectorProps {
@@ -15,6 +15,8 @@ interface DocumentSelectorProps {
 }
 
 export function DocumentSelector({ documents, selectedDocuments, onDocumentToggle, onStartChat }: DocumentSelectorProps) {
+  const [showOnlyEmbedded, setShowOnlyEmbedded] = useState(false);
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -31,6 +33,12 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
     });
   };
 
+  const filteredDocuments = showOnlyEmbedded 
+    ? documents.filter(doc => doc.embedding && doc.embedding.length > 0)
+    : documents;
+
+  const embeddedCount = documents.filter(doc => doc.embedding && doc.embedding.length > 0).length;
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -38,12 +46,36 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
         <p className="text-gray-300">
           Choose one or more documents from your knowledge base to start a conversation.
         </p>
+        <div className="flex gap-4 justify-center items-center mt-4">
+          <div className="flex gap-2 items-center text-sm text-gray-400">
+            {renderIcon(Zap, { className: "w-4 h-4 text-green-400" })}
+            <span>{embeddedCount} embedded</span>
+          </div>
+          <div className="flex gap-2 items-center text-sm text-gray-400">
+            {renderIcon(ZapOff, { className: "w-4 h-4 text-yellow-400" })}
+            <span>{documents.length - embeddedCount} not embedded</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <button
+          onClick={() => setShowOnlyEmbedded(!showOnlyEmbedded)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+            showOnlyEmbedded 
+              ? 'border-curious-cyan-500 bg-curious-cyan-900/20 text-curious-cyan-400' 
+              : 'text-gray-300 border-gray-600 bg-gray-800/50 hover:border-gray-500'
+          }`}
+        >
+          {renderIcon(Filter, { className: "w-4 h-4" })}
+          {showOnlyEmbedded ? 'Show All Documents' : 'Show Only Embedded'}
+        </button>
       </div>
 
       {documents && documents.length > 0 ? (
         <>
           <div className="grid gap-4">
-            {documents.map((doc) => {
+            {filteredDocuments.map((doc) => {
               const isSelected = selectedDocuments.includes(doc._id);
               const hasEmbedding = doc.embedding && doc.embedding.length > 0;
               
@@ -62,8 +94,19 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
                       <div className="flex gap-2 items-center mb-2">
                         {renderIcon(FileText, { className: "w-4 h-4 text-curious-cyan-400" })}
                         <h3 className="font-semibold text-white">{doc.title}</h3>
-                        {hasEmbedding && renderIcon(CheckCircle, { className: "w-4 h-4 text-green-400" })}
-                        {!hasEmbedding && renderIcon(AlertCircle, { className: "w-4 h-4 text-yellow-400" })}
+                        <div className="flex gap-1 items-center">
+                          {hasEmbedding ? (
+                            <>
+                              {renderIcon(Zap, { className: "w-4 h-4 text-green-400" })}
+                              <span className="text-xs font-medium text-green-400">Embedded</span>
+                            </>
+                          ) : (
+                            <>
+                              {renderIcon(ZapOff, { className: "w-4 h-4 text-yellow-400" })}
+                              <span className="text-xs font-medium text-yellow-400">Not Embedded</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                       
                       {doc.summary && (

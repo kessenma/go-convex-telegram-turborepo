@@ -2,7 +2,8 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { saveMessageAPI, getMessagesAPI, saveMessageToThreadAPI } from "./api";
 import { saveDocumentAPI, getDocumentsAPI, getDocumentStatsAPI, getDocumentByIdAPI } from "./documentApi";
-import { generateDocumentEmbeddingAPI, searchDocumentsVectorAPI, batchGenerateEmbeddingsAPI, checkLLMServiceStatusAPI } from "./embeddingApi";
+import { generateDocumentEmbeddingAPI, searchDocumentsVectorAPI, batchGenerateEmbeddingsAPI, checkLLMServiceStatusAPI, getEmbeddedDocumentsAPI } from "./embeddingApi";
+import { createConversionJobAPI, updateConversionJobAPI, getConversionJobsAPI, getConversionJobStatsAPI, getConversionJobByIdAPI } from "./conversionJobApi";
 import { getActiveThreadsAPI, getThreadStatsAPI, getThreadByIdAPI } from "./threadApi";
 
 const http = httpRouter();
@@ -84,6 +85,13 @@ http.route({
   handler: batchGenerateEmbeddingsAPI,
 });
 
+// Embedded documents API endpoint
+http.route({
+  path: "/api/documents/embedded",
+  method: "GET",
+  handler: getEmbeddedDocumentsAPI,
+});
+
 // Parameterized route should come last - using pathPrefix for dynamic routing
 http.route({
   pathPrefix: "/api/documents/",
@@ -97,6 +105,38 @@ http.route({
   handler: checkLLMServiceStatusAPI,
 });
 
+// Conversion job API endpoints
+http.route({
+  path: "/api/conversion-jobs",
+  method: "POST",
+  handler: createConversionJobAPI,
+});
+
+http.route({
+  path: "/api/conversion-jobs",
+  method: "PUT",
+  handler: updateConversionJobAPI,
+});
+
+http.route({
+  path: "/api/conversion-jobs",
+  method: "GET",
+  handler: getConversionJobsAPI,
+});
+
+http.route({
+  path: "/api/conversion-jobs/stats",
+  method: "GET",
+  handler: getConversionJobStatsAPI,
+});
+
+// Parameterized route for getting job by ID
+http.route({
+  pathPrefix: "/api/conversion-jobs/",
+  method: "GET",
+  handler: getConversionJobByIdAPI,
+});
+
 // Health check endpoint
 const healthCheck = httpAction(async () => {
   return new Response(
@@ -107,7 +147,12 @@ const healthCheck = httpAction(async () => {
     }),
     { 
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      }
     }
   );
 });

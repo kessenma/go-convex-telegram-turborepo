@@ -1,15 +1,15 @@
 "use client";
-import { TelegramMessage, TelegramThread } from "../../models/telegram";
-import { Hero } from "../../components/ui/hero";
-import { Card } from "../../components/ui/card";
+import { TelegramMessage } from "../../../models/telegram";
+import { Hero } from "../../../components/ui/hero";
+import { Card } from "../../../components/ui/card";
 import Link from 'next/link';
 import { ArrowLeft, Send, Bot, Clock, MessageSquare, User, Hash } from 'lucide-react';
-import { renderIcon } from "../../lib/icon-utils";
-import { cn } from "../../lib/utils";
+import { renderIcon } from "../../../lib/icon-utils";
+import { cn } from "../../../lib/utils";
 import React, { useState } from 'react';
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import {Button} from "../../components/ui/button";
+import {Button} from "../../../components/ui/button";
 
 interface ThreadDetailPageProps {
   params: Promise<{ threadId: string }>;
@@ -26,7 +26,7 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
     params.then(p => setThreadId(p.threadId));
   }, [params]);
 
-  const thread = useQuery(api.threads.getThreadById, threadId ? { threadId } : "skip");
+  const thread = useQuery(api.threads.getThreadById, threadId ? { threadDocId: threadId } : "skip");
   const messages = useQuery(api.messages.getMessagesByThreadDoc, threadId ? { threadDocId: threadId } : "skip");
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -114,13 +114,14 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
         <div className="flex relative z-20 flex-col justify-center items-center px-4 pt-24 pb-20 min-h-screen">
           <div className="mx-auto w-full max-w-4xl">
             <div className="mb-6">
-              {React.createElement(Link as any, {
-                href: "/threads",
-                className: "inline-flex gap-2 items-center font-medium text-cyan-600 transition-colors dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300"
-              }, [
-                renderIcon(ArrowLeft, { className: "w-4 h-4" }),
-                " Back to Threads"
-              ])}
+              {/* @ts-expect-error */}
+              <Link
+                href="/threads"
+                className="inline-flex gap-2 items-center font-medium text-cyan-600 transition-colors dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300"
+              >
+                {renderIcon(ArrowLeft, { className: "w-4 h-4" })}
+                Back to Threads
+              </Link>
             </div>
             <Hero title="Thread Not Found" whiteText />
             <Card className="bg-gray-900/90 border-gray-700/50">
@@ -137,13 +138,14 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
         <div className="flex relative z-20 flex-col justify-center items-center px-4 pt-24 pb-20 min-h-screen">
           <div className="mx-auto w-full max-w-4xl">
             <div className="mb-6">
-              {React.createElement(Link as any, {
-                href: "/threads",
-                className: "inline-flex gap-2 items-center font-medium text-cyan-600 transition-colors dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300"
-              }, [
-                renderIcon(ArrowLeft, { className: "w-4 h-4" }),
-                " Back to Threads"
-              ])}
+              {/* @ts-expect-error */}
+              <Link
+                href="/threads"
+                className="inline-flex gap-2 items-center font-medium text-cyan-600 transition-colors dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300"
+              >
+                {renderIcon(ArrowLeft, { className: "w-4 h-4" })}
+                Back to Threads
+              </Link>
             </div>
 
             <Hero

@@ -71,8 +71,11 @@ services:
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3211}
       - CONVEX_INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
+      - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:8081
     depends_on:
       convex-backend:
+        condition: service_healthy
+      vector-convert-llm:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -87,6 +90,7 @@ services:
       - "8081:8081"
     environment:
       - PORT=8081
+      - CONVEX_URL=http://convex-backend:3211
     depends_on:
       convex-backend:
         condition: service_healthy
@@ -115,6 +119,7 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}
       - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
       - CONVEX_URL=http://convex-backend:3211
+      - CONVEX_HTTP_URL=http://convex-backend:3211
       - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:8081
       - NODE_ENV=production
       - NEXT_PUBLIC_CONVEX_DASHBOARD_PORT=${CONVEX_DASHBOARD_PORT:-6791}

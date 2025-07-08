@@ -3,20 +3,19 @@
 import React, { useState, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Upload, FileText, Type, BarChart3, Calendar, FileIcon, Hash, CheckCircle, AlertCircle, Loader2, Trash2 } from "lucide-react";
-import { renderIcon } from "../lib/icon-utils";
-import { useAnimationSettings } from "../hooks/use-animation-settings";
-import { Hero, TextAnimationType } from "../components/ui/hero";
-import { Card } from "../components/ui/card";
-import { BackgroundGradient } from "../components/ui/backgrounds/background-gradient";
-import { SparklesCore } from "../components/ui/sparkles";
+import { renderIcon } from "../../lib/icon-utils";
+import { useAnimationSettings } from "../../hooks/use-animation-settings";
+import { Hero, TextAnimationType } from "../../components/ui/hero";
+import { Card } from "../../components/ui/card";
+import { BackgroundGradient } from "../../components/ui/backgrounds/background-gradient";
+import { SparklesCore } from "../../components/ui/sparkles";
 import { UploadForm } from "./components/UploadForm";
 import { DocumentStats } from "./components/DocumentStats";
-import { DocumentHistory } from "./components/DocumentHistory";
+import { DocumentHistory } from "../../components/rag/DocumentHistory";
 import { ThreeJSUploadIcon } from "./components/ThreeJSUploadIcon";
 
-import { LLMStatusIndicator } from "../components/ui/llm-status-indicator";
-import { useLLMStatus } from "../hooks/use-llm-status";
+import { LLMStatusIndicator } from "../../components/rag/llm-status-indicator";
+import { useLLMStatus } from "../../hooks/use-llm-status";
 
 interface Document {
   _id: string;

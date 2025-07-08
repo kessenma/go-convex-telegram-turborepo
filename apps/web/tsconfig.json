@@ -13,7 +13,7 @@
     "next-env.d.ts",
     "next.config.js",
     ".next/types/**/*.ts",
-    "app/lib/react-19-fixes.d.ts"
+    "lib/react-19-fixes.d.ts"
   ],
   "exclude": [
     "node_modules"

@@ -2,9 +2,9 @@
 
 import React, { RefObject } from "react";
 import { Upload, FileText, Type, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { renderIcon } from "../../lib/icon-utils";
-import { Button as MovingButton } from "../../components/ui/moving-border";
-import { StickyBanner } from "../../components/ui/sticky-banner";
+import { renderIcon } from "../../../lib/icon-utils";
+import { Button as MovingButton } from "../../../components/ui/moving-border";
+import { StickyBanner } from "../../../components/ui/sticky-banner";
 
 interface UploadFormProps {
   uploadMethod: 'file' | 'text';

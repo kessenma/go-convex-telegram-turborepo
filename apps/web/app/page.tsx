@@ -2,13 +2,13 @@
 import React from "react";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Hero, TextAnimationType } from "./components/ui/hero";
-import { StatCard } from "./components/ui/card";
-import { Button } from "./components/ui/button";
-import { StatusIndicator } from "./components/ui/status-indicator";
+import { Hero, TextAnimationType } from "../components/ui/hero";
+import { StatCard } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { StatusIndicator } from "../components/ui/status-indicator";
 import { MessageSquareCode, MessagesSquare, MessageSquareShare, DatabaseZap, FileSearch } from "lucide-react";
-import { LampDemo } from "./components/ui/lamps";
-import { renderIcon } from "./lib/icon-utils";
+import { LampDemo } from "../components/ui/lamps";
+import { renderIcon } from "../lib/icon-utils";
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -42,7 +42,6 @@ export default function Home(): React.ReactNode {
             className="my-2"
             titleAnimation={TextAnimationType.Decrypt}
             animationSpeed={75}
-            subtitleAnimation={TextAnimationType.Decrypt}
           >
           </Hero>
         </div>

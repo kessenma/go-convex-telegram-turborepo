@@ -31,22 +31,43 @@ export async function GET() {
 
     const healthData = await response.json();
     
-    // Determine actual status based on model loading state
-    const isModelLoaded = healthData.model_loaded !== false;
-    const actualStatus = healthData.status === 'healthy' && isModelLoaded ? 'healthy' : 
-                        (healthData.status === 'healthy' && !isModelLoaded ? 'loading' : 'error');
+    // Map the Python service status to our frontend status
+    let actualStatus: string;
+    let ready = healthData.ready || false;
+    
+    switch (healthData.status) {
+      case 'healthy':
+        actualStatus = 'healthy';
+        ready = true;
+        break;
+      case 'loading':
+        actualStatus = 'loading';
+        ready = false;
+        break;
+      case 'starting':
+        actualStatus = 'starting';
+        ready = false;
+        break;
+      case 'error':
+        actualStatus = 'error';
+        ready = false;
+        break;
+      default:
+        actualStatus = 'connecting';
+        ready = false;
+    }
     
     // Transform the health response to our expected format
     return NextResponse.json({
       success: true,
       status: actualStatus,
-      ready: healthData.ready || false,
-      message: healthData.message || 
-               (actualStatus === 'loading' ? 'Model is loading, please wait...' : 'LLM service is running'),
+      ready: ready,
+      message: healthData.message || 'LLM service status unknown',
       model: healthData.model,
       details: {
         service_status: healthData.status || 'unknown',
         model_loaded: healthData.model_loaded !== false,
+        model_loading: healthData.model_loading || false,
         uptime: healthData.uptime?.toString(),
         error: healthData.error || null
       }
@@ -60,16 +81,17 @@ export async function GET() {
     
     return NextResponse.json({
       success: false,
-      status: 'error',
+      status: 'connecting',
       ready: false,
       message: `Cannot connect to LLM service: ${errorMessage}`,
       details: {
         service_status: 'disconnected',
         model_loaded: false,
+        model_loading: false,
         error: errorMessage,
         uptime: null
       }
-    }, { status: 200 }); // Return 200 but with error status in body
+    }, { status: 200 }); // Return 200 but with connecting status in body
   }
 }
 

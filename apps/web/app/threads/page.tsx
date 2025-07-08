@@ -2,15 +2,14 @@
 import React, { useState } from 'react';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { TelegramThread } from "../models/telegram";
-import { Hero } from "../components/ui/hero";
-import { Card } from "../components/ui/card";
+import { TelegramThread } from "../../models/telegram";
+import { Hero } from "../../components/ui/hero";
+import { Card } from "../../components/ui/card";
 import ThreadModal from './components/ThreadModal';
 
 export default function ThreadsPage(): React.ReactElement {
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const threads = useQuery(api.threads.getAllActiveThreads, { limit: 50 });
-  const [error, setError] = useState<string | null>(null);
   
   const loading = threads === undefined;
 
@@ -33,22 +32,7 @@ export default function ThreadsPage(): React.ReactElement {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-6 mx-auto max-w-6xl">
-        <Hero title="Telegram Threads" subtitle="Error loading threads" />
-        <Card className="py-12 text-center">
-          <p className="mb-2 text-red-600 dark:text-red-400">Error: {error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Try again
-          </button>
-        </Card>
-      </div>
-    );
-  }
+
 
   if (!threads || threads.length === 0) {
     return (

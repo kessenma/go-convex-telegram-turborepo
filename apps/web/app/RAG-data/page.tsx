@@ -1,16 +1,17 @@
 "use client";
 
 import React from "react";
-import { Hero, TextAnimationType } from "../components/ui/hero";
-import { Card } from "../components/ui/card";
-import { SparklesCore } from "../components/ui/sparkles";
+import { Hero, TextAnimationType } from "../../components/ui/hero";
+import { Card } from "../../components/ui/card";
+import { SparklesCore } from "../../components/ui/sparkles";
 import { DocumentStats } from "./components/DocumentStats";
-import { DocumentHistory } from "../RAG-data/components/DocumentHistory";
+import { DocumentHistory } from "../../components/rag/DocumentHistory";
+import ConversionHistory from "../../components/rag/ConversionHistory";
 import { VectorEmbedding } from "../RAG-data/components/VectorEmbedding";
 import { VectorSearch } from "../RAG-data/components/VectorSearch";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useAnimationSettings } from "../hooks/use-animation-settings";
+import { useAnimationSettings } from "../../hooks/use-animation-settings";
 
 export default function RAGDataPage(): React.ReactElement | null {
   const { animationEnabled } = useAnimationSettings();
@@ -69,6 +70,9 @@ export default function RAGDataPage(): React.ReactElement | null {
 
         {/* Document History */}
         <DocumentHistory documents={documents} loading={loadingDocuments} />
+
+        {/* Conversion History */}
+        <ConversionHistory />
       </div>
     </div>
   );

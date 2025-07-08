@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { MessageCircle, Send, Bot, User, Loader2, ArrowLeft } from "lucide-react";
-import { renderIcon } from "../../lib/icon-utils";
+import { renderIcon } from "../../../lib/icon-utils";
 import { Document, ChatMessage } from "../types";
 
 interface ChatInterfaceProps {

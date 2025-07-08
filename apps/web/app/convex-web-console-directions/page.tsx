@@ -1,17 +1,17 @@
 "use client";
 
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Hero } from "../components/ui/hero";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../components/ui/accordion";
-import { BackgroundGradient } from "../components/ui/backgrounds/background-gradient";
-import { Timeline } from "../components/ui/timeline";
-import { AuroraBackground } from "../components/ui/backgrounds/aurora-background";
-import { cn } from "../lib/utils";
+import { Card } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Hero } from "../../components/ui/hero";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../../components/ui/accordion";
+import { BackgroundGradient } from "../../components/ui/backgrounds/background-gradient";
+import { Timeline } from "../../components/ui/timeline";
+import { AuroraBackground } from "../../components/ui/backgrounds/aurora-background";
+import { cn } from "../../lib/utils";
 import { Database, ExternalLink, Info, ArrowRight, Terminal, Key, Eye, EyeOff, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
-import { StatusIndicator } from "../components/ui/status-indicator";
-import { useAnimationSettings } from "../hooks/use-animation-settings";
+import { StatusIndicator } from "../../components/ui/status-indicator";
+import { useAnimationSettings } from "../../hooks/use-animation-settings";
 
 export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
   const { animationEnabled } = useAnimationSettings();

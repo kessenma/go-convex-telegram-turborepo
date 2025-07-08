@@ -84,4 +84,30 @@ export default defineSchema({
     .index("by_reply", ["replyToMessageId"])
     .index("by_active", ["isActive"])
     .index("by_chat_and_timestamp", ["chatId", "timestamp"]),
+
+  // Conversion jobs table - tracks LLM/embedding conversion history
+  conversion_jobs: defineTable({
+    jobId: v.string(), // Unique job identifier
+    jobType: v.string(), // "embedding", "similarity", "search", "chat"
+    status: v.string(), // "pending", "processing", "completed", "failed"
+    documentId: v.optional(v.id("rag_documents")), // Reference to document if applicable
+    inputText: v.optional(v.string()), // Input text for the job
+    outputData: v.optional(v.string()), // JSON string of output data
+    errorMessage: v.optional(v.string()), // Error message if job failed
+    processingTimeMs: v.optional(v.number()), // Time taken to process in milliseconds
+    llmModel: v.optional(v.string()), // Model used for processing
+    embeddingDimensions: v.optional(v.number()), // Dimensions of embedding if applicable
+    createdAt: v.number(), // When job was created
+    startedAt: v.optional(v.number()), // When job processing started
+    completedAt: v.optional(v.number()), // When job was completed
+    requestSource: v.optional(v.string()), // "web", "telegram", "api"
+    userId: v.optional(v.string()), // User who initiated the job
+  })
+    .index("by_status", ["status"])
+    .index("by_job_type", ["jobType"])
+    .index("by_document", ["documentId"])
+    .index("by_created_at", ["createdAt"])
+    .index("by_user", ["userId"])
+    .index("by_status_and_type", ["status", "jobType"])
+    .index("by_source", ["requestSource"]),
 });

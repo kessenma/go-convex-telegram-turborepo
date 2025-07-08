@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const CONVEX_URL = process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || 'http://localhost:3210';
+const CONVEX_URL = process.env.CONVEX_HTTP_URL || process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || 'http://localhost:3211';
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +17,7 @@ export async function GET(
     }
 
     // Get Convex URL from environment
-    const convexUrl = process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || 'http://localhost:3210';
+    const convexUrl = process.env.CONVEX_HTTP_URL || process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || 'http://localhost:3211';
     if (!convexUrl) {
       console.error('CONVEX_URL not configured');
       return NextResponse.json(
@@ -27,7 +27,7 @@ export async function GET(
     }
 
     // Forward request to Convex HTTP API to get specific document
-    const convexResponse = await fetch(`${convexUrl}/http/api/documents/${documentId}`, {
+    const convexResponse = await fetch(`${convexUrl}/api/documents/${documentId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

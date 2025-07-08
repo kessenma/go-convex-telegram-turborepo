@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Hero, TextAnimationType } from "../components/ui/hero";
-import { Card } from "../components/ui/card";
-import { ParticlesBackground } from "../components/ui/backgrounds/particles-background";
+import { Hero, TextAnimationType } from "../../components/ui/hero";
+import { Card } from "../../components/ui/card";
+import { ParticlesBackground } from "../../components/ui/backgrounds/particles-background";
 import { DocumentSelector } from "./components/DocumentSelector";
 import { ChatInterface } from "./components/ChatInterface";
 import { Document } from "./types";
-import { useAnimationSettings } from "../hooks/use-animation-settings";
+import { useAnimationSettings } from "../../hooks/use-animation-settings";
 
 export default function RAGChatPage(): React.ReactElement | null {
   // TODO: Replace with HTTP API call

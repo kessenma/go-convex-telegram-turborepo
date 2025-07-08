@@ -16,6 +16,11 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages ./packages
 COPY apps/web ./apps/web
+# Copy Convex generated files if they exist
+RUN mkdir -p ./apps/web/convex/_generated
+RUN if [ -d "apps/docker-convex/convex/_generated" ]; then \
+    cp -r apps/docker-convex/convex/_generated/* ./apps/web/convex/_generated/ || true; \
+    else echo "No generated files to copy yet"; fi
 
 # Install dependencies with cache mount
 RUN --mount=type=cache,target=/root/.pnpm-store \
@@ -26,6 +31,11 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Ensure Convex generated files are available
+RUN mkdir -p ./apps/web/convex/_generated
+RUN if [ -d "/app/apps/web/convex/_generated" ]; then \
+    cp -r /app/apps/web/convex/_generated/* ./apps/web/convex/_generated/ || true; \
+    else echo "No generated files to copy from deps"; fi
 
 # Build the application
 WORKDIR /app/apps/web

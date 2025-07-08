@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Navigation from "./components/Navigation";
-import { ConvexClientProvider } from "./providers/ConvexClientProvider";
+import Navigation from "../components/Navigation";
+import { ConvexClientProvider } from "../providers/ConvexClientProvider";
 
 const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
+  src: "../fonts/GeistVF.woff",
   variable: "--font-geist-sans",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
@@ -30,7 +26,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} bg-slate-950 text-white`}>
+      <body className={`${geistSans.variable} bg-slate-950 text-white`}>
         <ConvexClientProvider>
           <Navigation />
           <main style={{ minHeight: "calc(100vh - 64px)" }}>
