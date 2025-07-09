@@ -411,12 +411,24 @@ export const getDocumentsAPI = httpAction(async (ctx, request) => {
 
 export const getDocumentByIdAPI = httpAction(async (ctx, request) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const documentId = searchParams.get("documentId") as Id<"rag_documents">;
-    if (!documentId) {
-      return errorResponse("Missing documentId parameter", 400);
+    const url = new URL(request.url);
+    let documentId: string;
+    
+    // Check if documentId is in query parameters (for /api/documents/by-id route)
+    const queryDocumentId = url.searchParams.get("documentId");
+    if (queryDocumentId) {
+      documentId = queryDocumentId;
+    } else {
+      // Extract from path (for /api/documents/{id} route)
+      const pathParts = url.pathname.split('/');
+      documentId = pathParts[pathParts.length - 1];
     }
-    const document = await ctx.runQuery(api.documents.getDocumentById, { documentId });
+    
+    if (!documentId) {
+      return errorResponse("Missing documentId in path or query parameter", 400);
+    }
+    
+    const document = await ctx.runQuery(api.documents.getDocumentById, { documentId: documentId as Id<"rag_documents"> });
     if (!document) {
       return errorResponse("Document not found", 404);
     }
@@ -429,10 +441,11 @@ export const getDocumentByIdAPI = httpAction(async (ctx, request) => {
 
 export const deleteDocumentAPI = httpAction(async (ctx, request) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const documentId = searchParams.get("documentId") as Id<"rag_documents">;
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const documentId = pathParts[pathParts.length - 1] as Id<"rag_documents">;
     if (!documentId) {
-      return errorResponse("Missing documentId parameter", 400);
+      return errorResponse("Missing documentId in path", 400);
     }
     await ctx.runMutation(api.documents.deleteDocument, { documentId });
     return new Response(JSON.stringify({ success: true }));
@@ -468,7 +481,7 @@ export const generateDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
     if (!documentId) {
       return errorResponse("Missing documentId", 400);
     }
-    await ctx.runAction(api.embeddings.processDocumentEmbedding, { documentId });
+    await ctx.runAction(internal.embeddings.processDocumentEmbedding, { documentId });
     return new Response(JSON.stringify({ success: true }));
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
@@ -506,6 +519,98 @@ export const checkLLMServiceStatusAPI = httpAction(async (ctx, request) => {
   try {
     const status = await ctx.runAction(api.embeddings.checkLLMServiceStatus, {});
     return new Response(JSON.stringify(status));
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return errorResponse("Internal server error", 500, message);
+  }
+});
+
+// =============================================================================
+// CONVERSION JOBS API ENDPOINTS
+// =============================================================================
+
+export const getConversionJobsAPI = httpAction(async (ctx, request) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const status = searchParams.get("status") || undefined;
+    const jobType = searchParams.get("jobType") || undefined;
+    const documentId = searchParams.get("documentId") as Id<"rag_documents"> || undefined;
+    
+    const jobs = await ctx.runQuery(api.conversionJobs.getConversionJobs, {
+      page,
+      limit,
+      status,
+      jobType,
+      documentId
+    });
+    
+    return new Response(JSON.stringify(jobs));
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return errorResponse("Internal server error", 500, message);
+  }
+});
+
+export const createConversionJobAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { jobId, jobType, documentId, inputText, requestSource, userId } = body;
+    
+    if (!jobId || !jobType) {
+      return errorResponse("Missing required fields: jobId, jobType", 400);
+    }
+    
+    const jobData = {
+      jobId,
+      jobType,
+      status: "pending",
+      documentId: documentId as Id<"rag_documents"> || undefined,
+      inputText,
+      requestSource,
+      userId,
+      createdAt: Date.now()
+    };
+    
+    const result = await ctx.runMutation(api.conversionJobs.createJob, jobData);
+    return new Response(JSON.stringify({ success: true, jobId: result }));
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return errorResponse("Internal server error", 500, message);
+  }
+});
+
+export const updateConversionJobAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { jobId, status, outputData, errorMessage, processingTimeMs, llmModel } = body;
+    
+    if (!jobId) {
+      return errorResponse("Missing required field: jobId", 400);
+    }
+    
+    const updateData = {
+      jobId,
+      status,
+      outputData,
+      errorMessage,
+      processingTimeMs,
+      llmModel
+    };
+    
+    await ctx.runMutation(api.conversionJobs.updateJobByJobId, updateData);
+    return new Response(JSON.stringify({ success: true }));
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return errorResponse("Internal server error", 500, message);
+  }
+});
+
+export const getConversionJobStatsAPI = httpAction(async (ctx, request) => {
+  try {
+    const stats = await ctx.runQuery(api.conversionJobs.getJobStats, {});
+    return new Response(JSON.stringify(stats));
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return errorResponse("Internal server error", 500, message);
@@ -563,6 +668,13 @@ http.route({
   handler: getThreadByIdAPI,
 });
 
+// Document by ID with query parameter (for compatibility)
+http.route({
+  path: "/api/documents/by-id",
+  method: "GET",
+  handler: getDocumentByIdAPI,
+});
+
 // DOCUMENT API ENDPOINTS (RAG System)
 http.route({
   path: "/api/documents",
@@ -611,6 +723,31 @@ http.route({
   path: "/api/embeddings/llm-status",
   method: "GET",
   handler: checkLLMServiceStatusAPI,
+});
+
+// CONVERSION JOBS API ENDPOINTS
+http.route({
+  path: "/api/conversion-jobs",
+  method: "GET",
+  handler: getConversionJobsAPI,
+});
+
+http.route({
+  path: "/api/conversion-jobs",
+  method: "POST",
+  handler: createConversionJobAPI,
+});
+
+http.route({
+  path: "/api/conversion-jobs",
+  method: "PUT",
+  handler: updateConversionJobAPI,
+});
+
+http.route({
+  path: "/api/conversion-jobs/stats",
+  method: "GET",
+  handler: getConversionJobStatsAPI,
 });
 
 // PARAMETERIZED ROUTES (Must be placed last to avoid conflicts)

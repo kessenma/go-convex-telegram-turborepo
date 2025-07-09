@@ -45,7 +45,7 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/RAG/documents/${documentId}`);
+        const response = await fetch(`/api/documents/${documentId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch document');
         }
@@ -87,35 +87,36 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
     
     setGeneratingEmbedding(true);
     try {
-      const response = await fetch(`/api/RAG/documents/${documentData._id}/embedding`, {
+      // Call the vector-convert-llm service directly
+      const response = await fetch('/api/vector-convert-llm/process-document', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ documentId: documentData._id }),
+        body: JSON.stringify({ 
+          document_id: documentData._id 
+        }),
       });
       
       if (response.ok) {
-        // Update convex document status directly
-        await fetch(`/api/convex/update-embedding-status`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            documentId: documentData._id,
-            hasEmbedding: true
-          })
-        });
+        const result = await response.json();
+        console.log('Embedding generated successfully:', result);
         
-        // Refresh document data
-        const docResponse = await fetch(`/api/RAG/documents/${documentId}`);
+        // Refresh document data to show updated embedding status
+        const docResponse = await fetch(`/api/documents/${documentId}`);
         if (docResponse.ok) {
           const updatedData = await docResponse.json();
           updatedData.hasEmbedding = updatedData.embedding && updatedData.embedding.length > 0;
           setDocumentData(updatedData);
         }
+      } else {
+        const errorData = await response.json();
+        console.error('Error generating embedding:', errorData);
+        setError(`Failed to generate embedding: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error generating embedding:', error);
+      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setGeneratingEmbedding(false);
     }

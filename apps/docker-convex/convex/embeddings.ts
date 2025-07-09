@@ -1,5 +1,5 @@
 // apps/docker-convex/convex/embeddings.ts
-import { action, mutation, internalQuery } from "./_generated/server";
+import { action, internalAction, internalQuery, mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 
@@ -63,7 +63,7 @@ export const getDocumentInternal = internalQuery({
 });
 
 // Generate and save embedding for a document
-export const processDocumentEmbedding = action({
+export const processDocumentEmbedding = internalAction({
   args: {
     documentId: v.id("rag_documents"),
   },

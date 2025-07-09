@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const llmUrl = process.env.VECTOR_CONVERT_LLM_URL || 'http://localhost:8081';
+    const llmUrl = process.env.VECTOR_CONVERT_LLM_URL || process.env.VECTOR_CONVERT_LLM_INTERNAL_URL || 'http://vector-convert-llm:8081';
     const healthUrl = `${llmUrl}/health`;
     
     const response = await fetch(healthUrl, {

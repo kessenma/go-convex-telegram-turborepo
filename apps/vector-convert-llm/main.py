@@ -86,7 +86,7 @@ def update_conversion_job(job_id, status, output_data=None, error_message=None, 
         update_data = {
             'jobId': job_id,
             'status': status,
-            'llmModel': 'all-distilroberta-v1',
+            'llmModel': 'all-MiniLM-L6-v2',
         }
         
         if output_data is not None:
@@ -109,8 +109,9 @@ def load_model():
         model_loading = True
         model_error = None
         load_start_time = time.time()
-        logger.info("Loading sentence-transformers model: all-distilroberta-v1")
-        model = SentenceTransformer('sentence-transformers/all-distilroberta-v1')
+        logger.info("Loading sentence-transformers model: all-MiniLM-L6-v2")
+        # Use a smaller, more stable model to avoid segmentation faults
+        model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
         model_loaded = True
         model_loading = False
         logger.info("Model loaded successfully")
@@ -175,7 +176,7 @@ def health_check():
         'message': message,
         'model_loaded': model_loaded,
         'model_loading': model_loading,
-        'model': 'sentence-transformers/all-distilroberta-v1' if model_loaded else None,
+        'model': 'sentence-transformers/all-MiniLM-L6-v2' if model_loaded else None,
         'service': 'vector-convert-llm',
         'uptime': uptime,
         'error': model_error
@@ -322,7 +323,7 @@ def embed_text():
         response_data = {
             'embeddings': result,
             'dimension': len(embeddings[0]),
-            'model': 'all-distilroberta-v1',
+            'model': 'all-MiniLM-L6-v2',
             'processing_time_ms': processing_time
         }
         
@@ -390,7 +391,7 @@ def calculate_similarity():
         if job_id:
             output_data = {
                 "text_count": len(texts),
-                "model": "all-distilroberta-v1",
+                "model": "all-MiniLM-L6-v2",
                 "similarity_matrix_size": f"{len(texts)}x{len(texts)}"
             }
             update_conversion_job(job_id, "completed", output_data=output_data, processing_time_ms=processing_time)
@@ -398,7 +399,7 @@ def calculate_similarity():
         return jsonify({
             'similarities': similarities.tolist(),
             'texts': texts,
-            'model': 'all-distilroberta-v1'
+            'model': 'all-MiniLM-L6-v2'
         }), 200
         
     except Exception as e:
@@ -450,16 +451,138 @@ def semantic_search():
         return jsonify({
             'query': query,
             'results': results,
-            'model': 'all-distilroberta-v1'
+            'model': 'all-MiniLM-L6-v2'
         }), 200
         
     except Exception as e:
         logger.error(f"Error in semantic_search: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/process-document', methods=['POST'])
+def process_document_embedding():
+    """Fetch document from Convex, generate embedding, and save back to Convex"""
+    start_time = time.time()
+    job_id = None
+    
+    try:
+        if model is None:
+            return jsonify({'error': 'Model not loaded'}), 500
+        
+        data = request.get_json()
+        if not data or 'document_id' not in data:
+            return jsonify({'error': 'Missing document_id field in request'}), 400
+        
+        document_id = data['document_id']
+        convex_url = data.get('convex_url', os.environ.get('CONVEX_URL'))
+        
+        if not convex_url:
+            return jsonify({'error': 'Convex URL not provided'}), 400
+        
+        logger.info(f"Processing document embedding for ID: {document_id}")
+        
+        # Create conversion job
+        job_id = create_conversion_job(
+            job_type="document_embedding",
+            document_id=document_id,
+            request_source="web_app"
+        )
+        
+        if job_id:
+            update_conversion_job(job_id, "processing")
+        
+        # Fetch document from Convex
+        logger.info(f"Fetching document from Convex: {document_id}")
+        fetch_url = f"{convex_url}/api/documents/{document_id}"
+        fetch_response = requests.get(fetch_url)
+        
+        if fetch_response.status_code != 200:
+            error_msg = f"Failed to fetch document from Convex: {fetch_response.status_code} - {fetch_response.text}"
+            logger.error(error_msg)
+            if job_id:
+                update_conversion_job(job_id, "failed", error_message=error_msg)
+            return jsonify({
+                'error': 'Failed to fetch document from Convex',
+                'convex_status': fetch_response.status_code,
+                'convex_error': fetch_response.text
+            }), 500
+        
+        document_data = fetch_response.json()
+        text = document_data.get('content')
+        
+        if not text:
+            error_msg = "Document content is empty or missing"
+            logger.error(error_msg)
+            if job_id:
+                update_conversion_job(job_id, "failed", error_message=error_msg)
+            return jsonify({'error': error_msg}), 400
+        
+        logger.info(f"Document fetched successfully, content length: {len(text)}")
+        
+        # Generate embedding
+        logger.info("Generating embedding...")
+        embedding = model.encode([text])[0].tolist()
+        logger.info(f"Embedding generated successfully, dimension: {len(embedding)}")
+        
+        # Save embedding back to Convex
+        logger.info("Saving embedding back to Convex...")
+        save_url = f"{convex_url}/api/embeddings?documentId={document_id}"
+        save_payload = {
+            'embedding': embedding
+        }
+        
+        save_response = requests.post(save_url, json=save_payload)
+        
+        processing_time = int((time.time() - start_time) * 1000)
+        
+        if save_response.status_code == 200:
+            logger.info("Embedding saved successfully to Convex")
+            
+            # Update job as completed
+            if job_id:
+                output_data = {
+                    "document_id": document_id,
+                    "embedding_dimension": len(embedding),
+                    "model": "all-MiniLM-L6-v2",
+                    "content_length": len(text)
+                }
+                update_conversion_job(job_id, "completed", output_data=output_data, processing_time_ms=processing_time)
+            
+            return jsonify({
+                'success': True,
+                'document_id': document_id,
+                'embedding_dimension': len(embedding),
+                'model': 'all-MiniLM-L6-v2',
+                'processing_time_ms': processing_time,
+                'content_length': len(text)
+            }), 200
+        else:
+            error_msg = f"Failed to save embedding to Convex: {save_response.status_code} - {save_response.text}"
+            logger.error(error_msg)
+            
+            # Update job as failed
+            if job_id:
+                update_conversion_job(job_id, "failed", error_message=error_msg, processing_time_ms=processing_time)
+            
+            return jsonify({
+                'error': 'Failed to save embedding to Convex',
+                'convex_status': save_response.status_code,
+                'convex_error': save_response.text
+            }), 500
+        
+    except Exception as e:
+        processing_time = int((time.time() - start_time) * 1000)
+        error_msg = f"Error in process_document_embedding: {e}"
+        logger.error(error_msg, exc_info=True)
+        
+        # Update job as failed
+        if job_id:
+            update_conversion_job(job_id, "failed", error_message=str(e), processing_time_ms=processing_time)
+        
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/embed-and-save', methods=['POST'])
 def embed_and_save_to_convex():
-    """Generate embeddings and save them to Convex backend"""
+    """Generate embeddings and save them to Convex backend (legacy endpoint)"""
     try:
         if model is None:
             return jsonify({'error': 'Model not loaded'}), 500
@@ -492,7 +615,7 @@ def embed_and_save_to_convex():
                 'success': True,
                 'document_id': document_id,
                 'embedding_dimension': len(embedding),
-                'model': 'all-distilroberta-v1',
+                'model': 'all-MiniLM-L6-v2',
                 'convex_response': response.json()
             }), 200
         else:
@@ -507,17 +630,10 @@ def embed_and_save_to_convex():
         logger.error(f"Error in embed_and_save_to_convex: {e}")
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    # Start model loading in background thread
-    logger.info("Starting vector-convert-llm service...")
-    model_thread = threading.Thread(target=load_model_async, daemon=True)
-    model_thread.start()
-    
-    # Get port from environment or default to 8081
-    port = int(os.environ.get('PORT', 8081))
-    
-    logger.info(f"Service starting on port {port}, model loading in background...")
-    logger.info(f"Available endpoints: /health, /embed, /similarity, /search, /embed-and-save")
-    
-    # Run the app with threading enabled
-    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+# Start model loading in background thread when module is imported
+logger.info("Starting vector-convert-llm service...")
+model_thread = threading.Thread(target=load_model_async, daemon=True)
+model_thread.start()
+
+logger.info("Service initialized, model loading in background...")
+logger.info("Available endpoints: /health, /embed, /similarity, /search, /process-document, /embed-and-save")

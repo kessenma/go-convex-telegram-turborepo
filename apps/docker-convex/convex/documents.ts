@@ -1,6 +1,6 @@
 // apps/docker-convex/convex/documents.ts
 import { mutation, query } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 
 // Save a new document to the RAG system
@@ -32,7 +32,7 @@ export const saveDocument = mutation({
     });
 
     // Schedule embedding generation (async)
-    await ctx.scheduler.runAfter(0, api.embeddings.processDocumentEmbedding, {
+    await ctx.scheduler.runAfter(0, internal.embeddings.processDocumentEmbedding, {
       documentId: documentId,
     });
 

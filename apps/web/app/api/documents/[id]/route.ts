@@ -14,7 +14,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       );
     }
     
-    const response = await fetch(`${CONVEX_URL}/http/api/documents/${documentId}`, {
+    const response = await fetch(`${CONVEX_URL}/api/documents/${documentId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
     
-    const response = await fetch(`${CONVEX_URL}/http/api/documents/${documentId}`, {
+    const response = await fetch(`${CONVEX_URL}/api/documents/${documentId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

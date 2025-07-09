@@ -4,80 +4,80 @@ This directory contains the Convex backend functions and schema for a Telegram b
 
 ## Architecture Overview
 
-The system is built around two main data entities:
+The system is built around three main data entities:
 - **Messages**: Individual Telegram messages with metadata
 - **Threads**: Conversation threads that group related messages
+- **Documents**: RAG system documents with vector embeddings
 
 ## File Structure
 
-### Core Schema
-- **`schema.ts`** - Defines the database schema with tables for messages and threads
+### Core Schema and Configuration
+- **`schema.ts`** - Defines the database schema with tables for messages, threads, documents, and logs
 - **`tsconfig.json`** - TypeScript configuration for Convex functions
 
 ### Data Access Layer
 - **`messages.ts`** - Mutations and queries for message operations
 - **`threads.ts`** - Mutations and queries for thread management
+- **`documents.ts`** - Document management and RAG system operations
+- **`embeddings.ts`** - Vector embedding generation and similarity search
+- **`conversionJobs.ts`** - Background job tracking for conversions
+- **`requestLogs.ts`** - Request logging and statistics
 
 ### API Layer
-- **`http.ts`** - HTTP router configuration and endpoint definitions
-- **`api.ts`** - HTTP action handlers for external API access
-- **`telegram.ts`** - Duplicate API handlers (legacy, consider consolidating)
+- **`http.ts`** - Centralized HTTP router and API endpoint implementations
+- **`messagesThread.ts`** - Thread-aware message handling logic
 
 ## Detailed File Descriptions
 
 ### `schema.ts`
-Defines two main tables:
+Defines four main tables:
 - `telegram_messages`: Stores individual messages with user info, content, and thread references
 - `telegram_threads`: Manages conversation threads with metadata and message counts
+- `rag_documents`: Stores documents with vector embeddings for semantic search
+- `conversion_jobs`: Tracks background processing jobs
 
-Key indexes support efficient queries by chat, user, thread, and timestamp.
-
-### `messages.ts`
-Provides:
-- `saveMessage`: Mutation to store incoming messages and auto-create/update user threads
-- `getMessagesByChatId`: Query messages by chat ID
-- `getAllMessages`: Query all messages with pagination
-- `getMessagesByThread`: Query messages within a specific thread
-- `getMessagesByThreadDoc`: Query messages using thread document ID
-
-### `threads.ts`
-Provides:
-- `upsertThread`: Create or update thread information
-- `getThreadsInChat`: Get all threads in a specific chat
-- `getAllActiveThreads`: Get active threads across all chats
-- `getThread`: Get specific thread by chat and thread ID
-- `getThreadById`: Get thread by document ID
+Key indexes support efficient queries by chat, user, thread, timestamp, and vector similarity.
 
 ### `http.ts`
-HTTP router that exposes:
-- `POST /api/telegram/messages`: Save incoming messages from Telegram bot
-- `GET /api/telegram/messages`: Retrieve messages with optional filtering
+Centralized HTTP router that exposes all API endpoints:
+
+#### Health & Monitoring
 - `GET /api/health`: Health check endpoint
 
-**Note**: Message sending is now handled directly by the Next.js app using `node-telegram-bot-api` <mcreference link="https://www.npmjs.com/package/node-telegram-bot-api" index="0">0</mcreference>
+#### Telegram Bot API
+- `POST /api/telegram/messages`: Save incoming messages
+- `POST /api/telegram/messages/thread`: Save messages to threads
+- `GET /api/messages`: Retrieve messages with filtering
 
-### `api.ts`
-HTTP action handlers:
-- `saveMessageAPI`: Processes incoming message data from Telegram webhook
-- `getMessagesAPI`: Retrieves messages with optional chat ID and limit filters
+#### Thread Management
+- `GET /api/threads`: Get active threads
+- `GET /api/threads/stats`: Get thread statistics
+- `GET /api/threads/by-id`: Get specific thread
 
-### `telegram.ts`
-⚠️ **Note**: This file duplicates functionality from `api.ts`. Consider consolidating to avoid code duplication.
+#### Document Management (RAG System)
+- `POST /api/documents`: Save new document
+- `GET /api/documents`: List documents
+- `GET /api/documents/stats`: Get document statistics
+
+#### Embedding Operations
+- `POST /api/embeddings`: Save document embeddings
+- `POST /api/embeddings/generate`: Generate embeddings
+- `POST /api/embeddings/search`: Vector similarity search
+- `GET /api/embeddings/llm-status`: Check LLM service status
 
 ## Data Flow
 
 ### Incoming Messages (Telegram → Database)
 1. Telegram bot receives message
 2. Bot calls `POST /api/telegram/messages`
-3. `saveMessageAPI` validates and processes the message
-4. `saveMessage` mutation stores message and manages thread state
-5. Thread is auto-created or updated based on user ID
+3. Message is validated and processed
+4. Thread is auto-created or updated based on context
 
-### Outgoing Messages (Next.js App → Telegram)
-1. Next.js app uses `node-telegram-bot-api` to send message directly to Telegram <mcreference link="https://www.npmjs.com/package/node-telegram-bot-api" index="0">0</mcreference>
-2. After successful send, Next.js app calls `POST /api/telegram/messages` to save message
-3. `saveMessageAPI` stores the sent message in the database
-4. Thread state is automatically updated
+### Document Processing (RAG System)
+1. Document is uploaded via `POST /api/documents`
+2. Background job created for embedding generation
+3. Vector embeddings are generated and stored
+4. Document becomes available for semantic search
 
 ### Message Retrieval
 1. Web dashboard queries messages via Convex queries
@@ -87,15 +87,7 @@ HTTP action handlers:
 ## Environment Variables
 
 - `CONVEX_URL`: Convex deployment URL (configured in deployment)
-- `TELEGRAM_BOT_TOKEN`: Required in Next.js app for sending messages via `node-telegram-bot-api` <mcreference link="https://www.npmjs.com/package/node-telegram-bot-api" index="0">0</mcreference>
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/telegram/messages` | Save incoming Telegram messages |
-| GET | `/api/telegram/messages` | Retrieve messages (with optional filters) |
-| GET | `/api/health` | Health check |
+- `TELEGRAM_BOT_TOKEN`: Required in Next.js app for sending messages
 
 ## Thread Management
 
@@ -110,25 +102,20 @@ Convex provides real-time synchronization:
 - Live message updates across all connected clients
 - Automatic thread state updates
 - Real-time message counts and timestamps
+- Vector search results for document similarity
 
 ## Development Notes
-
-### Code Quality Improvements
-1. **Consolidate duplicate code**: Merge `api.ts` and `telegram.ts`
-2. **Add input validation**: Implement comprehensive request validation
-3. **Error handling**: Add structured error responses
-4. **Type safety**: Ensure all API responses are properly typed
-5. **Documentation**: Add JSDoc comments to all functions
 
 ### Performance Considerations
 1. **Pagination**: All queries include limit parameters
 2. **Indexing**: Database indexes optimize common query patterns
-3. **Caching**: Consider adding caching for frequently accessed data
+3. **Vector Search**: Optimized for semantic similarity queries
+4. **Background Jobs**: Long-running tasks handled asynchronously
 
 ### Security
 1. **Environment variables**: Sensitive tokens are stored securely
 2. **Input validation**: All API endpoints validate required fields
-3. **Error messages**: Avoid exposing internal details in error responses
+3. **Error handling**: Structured error responses without internal details
 
 ## Usage Examples
 
@@ -148,48 +135,20 @@ const threadMessages = await ctx.runQuery(api.messages.getMessagesByThread, {
 });
 ```
 
-### Sending Messages (Next.js App)
+### Managing Documents
 ```typescript
-// In your Next.js API route
-import TelegramBot from 'node-telegram-bot-api';
-
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN!);
-
-// Send message to Telegram
-const telegramResult = await bot.sendMessage(chatId, text, {
-  message_thread_id: messageThreadId // optional
+// Save a new document
+const documentId = await ctx.runMutation(api.documents.saveDocument, {
+  title: "Example Document",
+  content: documentText,
+  contentType: "markdown"
 });
 
-// Then save to Convex database
-const saveResult = await fetch('/api/telegram/messages', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    messageId: telegramResult.message_id,
-    chatId: chatId,
-    text: text,
-    messageType: 'bot_message',
-    timestamp: telegramResult.date * 1000,
-    messageThreadId: messageThreadId
-  })
+// Search documents by similarity
+const results = await ctx.runAction(api.embeddings.searchDocumentsByVector, {
+  queryText: "search query",
+  limit: 5
 });
 ```
 
-### Managing Threads
-```typescript
-// Get all threads in a chat
-const threads = await ctx.runQuery(api.threads.getThreadsInChat, {
-  chatId: 12345,
-  limit: 10
-});
-
-// Create or update a thread
-const threadId = await ctx.runMutation(api.threads.upsertThread, {
-  threadId: 67890,
-  chatId: 12345,
-  title: "Support Discussion",
-  creatorUserId: 11111
-});
-```
-
-This backend provides a robust foundation for a Telegram bot with real-time web dashboard capabilities, supporting both individual messages and threaded conversations.
+This backend provides a robust foundation for a Telegram bot with real-time web dashboard capabilities and integrated RAG system for semantic document search.
