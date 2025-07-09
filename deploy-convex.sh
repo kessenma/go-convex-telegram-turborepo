@@ -10,6 +10,7 @@ echo "🚀 Deploying Convex functions..."
 # Deploy functions from docker-convex
 cd apps/docker-convex
 pnpm run deploy-functions
+pnpm build
 
 echo "📁 Syncing generated files to web app..."
 
@@ -17,7 +18,8 @@ echo "📁 Syncing generated files to web app..."
 mkdir -p ../web/convex/_generated
 
 # Copy generated files to web app
-cp convex/_generated/* ../web/convex/_generated/ || true
+rsync -a convex/_generated/ ../web/convex/_generated/ --delete
+rsync -a convex/_generated/ ../mobile/convex/_generated/ --delete
 
 echo "📁 Syncing generated files to mobile app..."
 

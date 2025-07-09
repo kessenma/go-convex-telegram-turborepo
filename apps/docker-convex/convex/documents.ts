@@ -15,7 +15,7 @@ export const saveDocument = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const wordCount = args.content.split(/\s+/).filter(word => word.length > 0).length;
-    const fileSize = new TextEncoder().encode(args.content).length;
+    const fileSize = args.content.length; // Simple character count for file size
 
     const documentId = await ctx.db.insert("rag_documents", {
       title: args.title,
@@ -37,6 +37,21 @@ export const saveDocument = mutation({
     });
 
     return documentId;
+  },
+});
+
+// Update a document's embedding
+export const updateDocumentEmbedding = mutation({
+  args: {
+    documentId: v.id("rag_documents"),
+    embedding: v.array(v.float64()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.documentId, {
+      embedding: args.embedding,
+      lastModified: Date.now(),
+    });
+    return args.documentId;
   },
 });
 
@@ -63,7 +78,7 @@ export const getAllDocuments = query({
 });
 
 // Get a specific document by ID
-export const getDocument = query({
+export const getDocumentById = query({
   args: { documentId: v.id("rag_documents") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.documentId);
@@ -91,7 +106,7 @@ export const updateDocument = mutation({
     // Recalculate word count and file size if content is updated
     if (updates.content) {
       updateData.wordCount = updates.content.split(/\s+/).filter(word => word.length > 0).length;
-      updateData.fileSize = new TextEncoder().encode(updates.content).length;
+      updateData.fileSize = updates.content.length; // Simple character count for file size
       updateData.embedding = undefined; // Reset embedding when content changes
     }
 
@@ -155,6 +170,33 @@ export const getDocumentStats = query({
       totalWords,
       totalSize,
       contentTypes,
+    };
+  },
+});
+
+// Get document upload statistics based on timestamps
+export const getDocumentUploadStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const oneHourAgo = now - (60 * 60 * 1000);
+    const oneDayAgo = now - (24 * 60 * 60 * 1000);
+    
+    // Get all active documents
+    const allDocs = await ctx.db
+      .query("rag_documents")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .collect();
+    
+    // Calculate upload statistics
+    const totalDocuments = allDocs.length;
+    const uploadsLastHour = allDocs.filter(doc => doc.uploadedAt >= oneHourAgo).length;
+    const uploadsLastDay = allDocs.filter(doc => doc.uploadedAt >= oneDayAgo).length;
+    
+    return {
+      totalDocuments,
+      uploadsLastHour,
+      uploadsLastDay,
     };
   },
 });

@@ -59,6 +59,8 @@ services:
     depends_on:
       convex-backend:
         condition: service_healthy
+      vector-convert-llm:
+        condition: service_healthy
     networks:
       - telegram-bot-network
 
@@ -120,6 +122,7 @@ services:
       - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
       - CONVEX_URL=http://convex-backend:3211
       - CONVEX_HTTP_URL=http://convex-backend:3211
+      - VECTOR_CONVERT_LLM_INTERNAL_URL=http://vector-convert-llm:8081
       - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:8081
       - NODE_ENV=production
       - NEXT_PUBLIC_CONVEX_DASHBOARD_PORT=${CONVEX_DASHBOARD_PORT:-6791}

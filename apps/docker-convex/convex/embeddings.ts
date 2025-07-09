@@ -1,6 +1,6 @@
 // apps/docker-convex/convex/embeddings.ts
 import { action, mutation, internalQuery } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 
 // Internal function to generate embeddings using vector-convert-llm service
@@ -55,7 +55,7 @@ export const updateDocumentEmbedding = mutation({
 });
 
 // Internal query to get document
-const getDocumentInternal = internalQuery({
+export const getDocumentInternal = internalQuery({
   args: { documentId: v.id("rag_documents") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.documentId);
@@ -69,7 +69,7 @@ export const processDocumentEmbedding = action({
   },
   handler: async (ctx, args) => {
     // Get the document
-    const document = await ctx.runQuery(api.documents.getDocument, {
+    const document = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
       documentId: args.documentId,
     });
 
@@ -135,7 +135,7 @@ export const processDocumentWithChunking = action({
     const maxChunkSize = args.maxChunkSize ?? 1000;
     
     // Get the document
-    const document = await ctx.runQuery(api.documents.getDocument, {
+    const document = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
       documentId: args.documentId,
     });
 

@@ -5,8 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { StatusIndicator } from "./ui/status-indicator";
-import { useLLMStatus } from "../hooks/use-llm-status";
-import { useConvexStatus } from "../hooks/use-convex-status";
+import { useLLMStatus } from "../hooks/use-status-operations";
+import { useConvexStatus } from "../hooks/use-status-operations";
 import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, ChevronDown, ExternalLink, Info, MessageSquareShare, MessageSquareText, BotMessageSquare, Library } from "lucide-react";
 import { renderIcon } from "../lib/icon-utils";
 import { motion } from "motion/react";
@@ -39,8 +39,8 @@ interface NavItem {
   const messages = useQuery(api.messages.getAllMessages, { limit: 100 });
   const threadStats = useQuery(api.threads.getThreadStats);
   const documentStats = useQuery(api.documents.getDocumentStats);
-  const { llmStatus } = useLLMStatus();
-  const { convexStatus } = useConvexStatus();
+  const { status: llmStatus } = useLLMStatus();
+  const { status: convexStatus } = useConvexStatus();
   
   const messageCount = messages?.length || 0;
   const threadCount = threadStats?.totalThreads || 0;

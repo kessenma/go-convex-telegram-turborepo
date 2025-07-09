@@ -14,15 +14,13 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as api_ from "../api.js";
-import type * as conversionJobApi from "../conversionJobApi.js";
 import type * as conversionJobs from "../conversionJobs.js";
-import type * as documentApi from "../documentApi.js";
 import type * as documents from "../documents.js";
-import type * as embeddingApi from "../embeddingApi.js";
 import type * as embeddings from "../embeddings.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as messagesThread from "../messagesThread.js";
+import type * as requestLogs from "../requestLogs.js";
 import type * as telegram from "../telegram.js";
 import type * as threadApi from "../threadApi.js";
 import type * as threads from "../threads.js";
@@ -37,15 +35,13 @@ import type * as threads from "../threads.js";
  */
 declare const fullApi: ApiFromModules<{
   api: typeof api_;
-  conversionJobApi: typeof conversionJobApi;
   conversionJobs: typeof conversionJobs;
-  documentApi: typeof documentApi;
   documents: typeof documents;
-  embeddingApi: typeof embeddingApi;
   embeddings: typeof embeddings;
   http: typeof http;
   messages: typeof messages;
   messagesThread: typeof messagesThread;
+  requestLogs: typeof requestLogs;
   telegram: typeof telegram;
   threadApi: typeof threadApi;
   threads: typeof threads;

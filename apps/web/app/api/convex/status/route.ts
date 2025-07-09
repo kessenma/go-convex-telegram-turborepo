@@ -35,12 +35,18 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       status: 'connected',
-      ready: true,
+      ready: healthData.ready || true,
       message: 'Convex database connected',
+      uptime: healthData.uptime,
+      statistics: healthData.statistics,
+      performance: healthData.performance,
       details: {
-        service_status: healthData.status || 'healthy',
+        service_status: healthData.details?.service_status || 'operational',
+        database_status: healthData.details?.database_status || 'connected',
         timestamp: healthData.timestamp || new Date().toISOString(),
-        service: healthData.service || 'convex-backend'
+        service: healthData.service || 'convex-backend',
+        version: healthData.details?.version || '1.0.0',
+        last_check: healthData.details?.last_check || new Date().toISOString()
       }
     });
 

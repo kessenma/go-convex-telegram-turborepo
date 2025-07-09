@@ -14,8 +14,8 @@ import { DocumentStats } from "./components/DocumentStats";
 import { DocumentHistory } from "../../components/rag/DocumentHistory";
 import { ThreeJSUploadIcon } from "./components/ThreeJSUploadIcon";
 
-import { LLMStatusIndicator } from "../../components/rag/llm-status-indicator";
-import { useLLMStatus } from "../../hooks/use-llm-status";
+import { ConvexStatusIndicator } from "../../components/convex/convex-status-indicator";
+import { useConvexStatus } from "../../hooks/use-status-operations";
 
 interface Document {
   _id: string;
@@ -41,7 +41,7 @@ interface UploadedDocument {
 
 export default function RAGUploadPage(): React.ReactElement | null {
   const { animationEnabled } = useAnimationSettings();
-  const { llmStatus } = useLLMStatus();
+  const { status: convexStatus } = useConvexStatus();
   const [uploadMethod, setUploadMethod] = useState<'file' | 'text'>('file');
   const [textContent, setTextContent] = useState('');
   const [title, setTitle] = useState('');
@@ -104,6 +104,75 @@ export default function RAGUploadPage(): React.ReactElement | null {
       setUploadStatus('error');
       setUploadMessage('Upload failed. Please try again.');
       console.error('Upload error:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleBatchFileUpload = async (files: File[]) => {
+    // Validate all files first
+    for (const file of files) {
+      if (!file.name.endsWith('.md') && !file.name.endsWith('.txt')) {
+        setUploadStatus('error');
+        setUploadMessage(`File "${file.name}" is not a .md or .txt file`);
+        return;
+      }
+
+      if (file.size > 1024 * 1024) { // 1MB limit
+        setUploadStatus('error');
+        setUploadMessage(`File "${file.name}" is too large (max 1MB)`);
+        return;
+      }
+    }
+
+    setIsUploading(true);
+    setUploadStatus('idle');
+
+    try {
+      // Prepare documents array
+      const documents = [];
+      
+      for (const file of files) {
+        const content = await file.text();
+        const contentType = file.name.endsWith('.md') ? 'markdown' : 'text';
+        const documentTitle = file.name.replace(/\.[^/.]+$/, '');
+        
+        documents.push({
+          title: documentTitle,
+          content,
+          contentType,
+          summary: summary || undefined,
+        });
+      }
+
+      // Send batch upload request
+      const response = await fetch('/api/RAG/batch-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ documents }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setUploadStatus('success');
+        setUploadMessage(`Batch upload completed: ${result.successful} successful, ${result.failed} failed out of ${result.processed} files`);
+        setTitle('');
+        setSummary('');
+        setTextContent('');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } else {
+        setUploadStatus('error');
+        setUploadMessage(result.error || 'Batch upload failed');
+      }
+    } catch (error) {
+      setUploadStatus('error');
+      setUploadMessage('Batch upload failed. Please try again.');
+      console.error('Batch upload error:', error);
     } finally {
       setIsUploading(false);
     }
@@ -233,16 +302,19 @@ export default function RAGUploadPage(): React.ReactElement | null {
           />
         </div>
 
-        {/* LLM Status Indicator */}
+        {/* Convex Database Status Indicator */}
         <div className="mb-6">
-          <LLMStatusIndicator
-          status={llmStatus.status}
-          ready={llmStatus.ready}
-          message={llmStatus.message}
-          model={llmStatus.model}
-          details={llmStatus.details}
-          className="mx-auto max-w-md"
-        />
+          <ConvexStatusIndicator
+            status={convexStatus.status}
+            ready={convexStatus.ready}
+            message={convexStatus.message}
+            uptime={convexStatus.uptime}
+            statistics={convexStatus.statistics}
+            performance={convexStatus.performance}
+            details={convexStatus.details}
+            className="mx-auto max-w-md"
+            showLogs={true}
+          />
         </div>
 
         {/* Upload Form */}
@@ -262,6 +334,7 @@ export default function RAGUploadPage(): React.ReactElement | null {
               uploadMessage={uploadMessage}
               fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
               handleFileUpload={handleFileUpload}
+              handleBatchFileUpload={handleBatchFileUpload}
               handleTextUpload={handleTextUpload}
               isGeneratingEmbeddings={isGeneratingEmbeddings}
               handleGenerateEmbeddings={handleGenerateEmbeddings}
@@ -284,6 +357,7 @@ export default function RAGUploadPage(): React.ReactElement | null {
               uploadMessage={uploadMessage}
               fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
               handleFileUpload={handleFileUpload}
+              handleBatchFileUpload={handleBatchFileUpload}
               handleTextUpload={handleTextUpload}
               isGeneratingEmbeddings={isGeneratingEmbeddings}
               handleGenerateEmbeddings={handleGenerateEmbeddings}

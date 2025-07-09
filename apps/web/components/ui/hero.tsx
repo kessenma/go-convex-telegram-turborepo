@@ -7,6 +7,7 @@ import GlitchText from "./text-animations/glitch-text";
 import { GradientText } from "./text-animations/gradient-text";
 import ShinyText from "./text-animations/shiny-text";
 import TrueFocus from "./text-animations/true-focus";
+import { TextRoll } from "./text-animations/text-roll";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
 
 export enum TextAnimationType {
@@ -15,7 +16,8 @@ export enum TextAnimationType {
   Glitch = "glitch",
   Gradient = "gradient",
   Shiny = "shiny",
-  TrueFocus = "trueFocus"
+  TrueFocus = "trueFocus",
+  TextRoll = "textRoll"
 }
 
 interface HeroProps {
@@ -116,6 +118,15 @@ export const Hero = ({
                   playOnce={true}
                 />
               );
+            case TextAnimationType.TextRoll:
+              return (
+                <TextRoll
+                  duration={animationSpeed / 1000}
+                  className={textStyle}
+                >
+                  {title}
+                </TextRoll>
+              );
             default:
               return title;
           }
@@ -193,6 +204,15 @@ export const Hero = ({
                   animationDuration={animationSpeed / 100}
                   playOnce={true}
                 />
+              );
+            case TextAnimationType.TextRoll:
+              return (
+                <TextRoll
+                  duration={animationSpeed / 1000}
+                  className={textStyle}
+                >
+                  {subtitle}
+                </TextRoll>
               );
             default:
               return subtitleContent;

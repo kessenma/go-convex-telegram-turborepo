@@ -9,20 +9,19 @@ import { DocumentHistory } from "../../components/rag/DocumentHistory";
 import ConversionHistory from "../../components/rag/ConversionHistory";
 import { VectorEmbedding } from "../RAG-data/components/VectorEmbedding";
 import { VectorSearch } from "../RAG-data/components/VectorSearch";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
+import { useDocumentOperations } from "../../hooks/use-document-operations";
 
 export default function RAGDataPage(): React.ReactElement | null {
   const { animationEnabled } = useAnimationSettings();
   
-  // Use Convex hooks for real-time data
-  const documentsQuery = useQuery(api.documents.getAllDocuments, { limit: 10 });
-  const stats = useQuery(api.documents.getDocumentStats);
-  
-  const documents = documentsQuery?.page || [];
-  const loadingDocuments = documentsQuery === undefined;
-  const loadingStats = stats === undefined;
+  // Use optimized document operations hook
+  const {
+    documents,
+    stats,
+    loadingDocuments,
+    loadingStats
+  } = useDocumentOperations(10);
 
   return (
     <div className="pt-20 pb-8 min-h-screen">

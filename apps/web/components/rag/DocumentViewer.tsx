@@ -10,6 +10,7 @@ interface DocumentViewerProps {
   documentId: string;
   isOpen: boolean;
   onClose: () => void;
+  animationOrigin?: { x: number; y: number };
 }
 
 interface DocumentData {
@@ -25,7 +26,7 @@ interface DocumentData {
   hasEmbedding?: boolean;
 }
 
-export default function DocumentViewer({ documentId, isOpen, onClose }: DocumentViewerProps): React.ReactElement | null {
+export default function DocumentViewer({ documentId, isOpen, onClose, animationOrigin }: DocumentViewerProps): React.ReactElement | null {
   const [documentData, setDocumentData] = useState<DocumentData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +87,7 @@ export default function DocumentViewer({ documentId, isOpen, onClose }: Document
     
     setGeneratingEmbedding(true);
     try {
-      const response = await fetch('/api/RAG/embeddings', {
+      const response = await fetch(`/api/RAG/documents/${documentData._id}/embedding`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +96,17 @@ export default function DocumentViewer({ documentId, isOpen, onClose }: Document
       });
       
       if (response.ok) {
-        // Refresh document data to get updated embedding status
+        // Update convex document status directly
+        await fetch(`/api/convex/update-embedding-status`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            documentId: documentData._id,
+            hasEmbedding: true
+          })
+        });
+        
+        // Refresh document data
         const docResponse = await fetch(`/api/RAG/documents/${documentId}`);
         if (docResponse.ok) {
           const updatedData = await docResponse.json();
@@ -130,6 +141,21 @@ export default function DocumentViewer({ documentId, isOpen, onClose }: Document
 
   if (!isOpen) return null;
 
+  // Calculate animation origin for the modal
+  const getAnimationOrigin = () => {
+    if (!animationOrigin) return { originX: '50%', originY: '50%' };
+    
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    const originX = `${(animationOrigin.x / viewportWidth) * 100}%`;
+    const originY = `${(animationOrigin.y / viewportHeight) * 100}%`;
+    
+    return { originX, originY };
+  };
+
+  const { originX, originY } = getAnimationOrigin();
+
   return (
     <>
       <AnimatePresence>
@@ -147,15 +173,34 @@ export default function DocumentViewer({ documentId, isOpen, onClose }: Document
           <div className="fixed inset-0 grid place-items-center z-[100] p-4">
             <motion.div
               ref={ref}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ 
+                opacity: 0, 
+                scale: 0.1,
+                transformOrigin: `${originX} ${originY}`
+              }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1,
+                transformOrigin: `${originX} ${originY}`
+              }}
+              exit={{ 
+                opacity: 0, 
+                scale: 0.1,
+                transformOrigin: `${originX} ${originY}`
+              }}
+              transition={{
+                type: "spring",
+                damping: 25,
+                stiffness: 300,
+                duration: 0.4,
+                delay: animationOrigin ? 0.35 : 0 // Delay if coming from paper expansion
+              }}
               className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-gray-900 rounded-lg border border-gray-700 overflow-hidden"
             >
               {/* Header */}
               <div className="flex justify-between items-center p-6 border-b border-gray-700">
                 <div className="flex gap-3 items-center">
-                  <div className="p-2 bg-curious-cyan-900 rounded-lg text-curious-cyan-300">
+                  <div className="p-2 rounded-lg bg-curious-cyan-900 text-curious-cyan-300">
                     {renderIcon(FileText, { className: "w-5 h-5" })}
                   </div>
                   <div>
@@ -163,11 +208,11 @@ export default function DocumentViewer({ documentId, isOpen, onClose }: Document
                       {documentData?.title || 'Loading...'}
                     </h2>
                     {documentData && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex gap-2 items-center">
                         <p className="text-sm text-gray-400">
                           {documentData.contentType} • {formatFileSize(documentData.fileSize)}
                         </p>
-                        <div className="flex items-center gap-1">
+                        <div className="flex gap-1 items-center">
                           {documentData.hasEmbedding ? (
                             <>
                               {renderIcon(Zap, { className: "w-4 h-4 text-green-400" })}
@@ -184,12 +229,12 @@ export default function DocumentViewer({ documentId, isOpen, onClose }: Document
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex gap-2 items-center">
                   {documentData && !documentData.hasEmbedding && (
                     <button
                       onClick={generateEmbedding}
                       disabled={generatingEmbedding}
-                      className="px-3 py-1 text-sm bg-curious-cyan-600 text-white rounded-lg hover:bg-curious-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1 text-sm text-white rounded-lg bg-curious-cyan-600 hover:bg-curious-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {generatingEmbedding ? 'Generating...' : 'Generate Embedding'}
                     </button>
@@ -207,7 +252,7 @@ export default function DocumentViewer({ documentId, isOpen, onClose }: Document
               <div className="overflow-y-auto flex-1">
                 {loading && (
                   <div className="flex justify-center items-center p-8">
-                    <div className="w-8 h-8 border-4 border-gray-600 rounded-full border-t-curious-cyan-500 animate-spin"></div>
+                    <div className="w-8 h-8 rounded-full border-4 border-gray-600 animate-spin border-t-curious-cyan-500"></div>
                   </div>
                 )}
 
@@ -282,8 +327,8 @@ export default function DocumentViewer({ documentId, isOpen, onClose }: Document
                     {/* Content */}
                     <div>
                       <h3 className="mb-3 text-lg font-semibold text-white">Content</h3>
-                      <div className="p-4 bg-gray-800 rounded-lg max-h-96 overflow-y-auto">
-                        <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
+                      <div className="overflow-y-auto p-4 max-h-96 bg-gray-800 rounded-lg">
+                        <pre className="font-mono text-sm text-gray-300 whitespace-pre-wrap">
                           {documentData.content}
                         </pre>
                       </div>

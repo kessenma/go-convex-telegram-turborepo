@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { memo } from 'react';
 import CountUp from '../../../components/ui/text-animations/count-up';
 
 interface DocumentStatsProps {
@@ -16,7 +16,7 @@ interface DocumentStatsProps {
   loading: boolean;
 }
 
-export function DocumentStats({ stats, loading }: DocumentStatsProps): React.ReactElement | null {
+const DocumentStats = memo(function DocumentStats({ stats, loading }: DocumentStatsProps): React.ReactElement | null {
 
   if (loading) {
     return (
@@ -87,4 +87,6 @@ export function DocumentStats({ stats, loading }: DocumentStatsProps): React.Rea
       </div>
     </div>
   );
-}
+});
+
+export { DocumentStats };

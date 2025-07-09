@@ -27,7 +27,7 @@ export async function GET(
     }
 
     // Forward request to Convex HTTP API to get specific document
-    const convexResponse = await fetch(`${convexUrl}/api/documents/${documentId}`, {
+    const convexResponse = await fetch(`${convexUrl}/http/api/documents/${documentId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -110,4 +110,22 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_status_and_type", ["status", "jobType"])
     .index("by_source", ["requestSource"]),
+
+  // Request logs table - tracks API requests for statistics
+  request_logs: defineTable({
+    endpoint: v.string(), // API endpoint that was called
+    method: v.string(), // HTTP method (GET, POST, etc.)
+    timestamp: v.number(), // Request timestamp
+    responseStatus: v.number(), // HTTP response status code
+    processingTimeMs: v.optional(v.number()), // Time taken to process request
+    userAgent: v.optional(v.string()), // User agent string
+    ipAddress: v.optional(v.string()), // Client IP address (if available)
+    requestSource: v.optional(v.string()), // "web", "telegram", "api", "health"
+    errorMessage: v.optional(v.string()), // Error message if request failed
+  })
+    .index("by_timestamp", ["timestamp"])
+    .index("by_endpoint", ["endpoint"])
+    .index("by_status", ["responseStatus"])
+    .index("by_source", ["requestSource"])
+    .index("by_endpoint_and_time", ["endpoint", "timestamp"]),
 });

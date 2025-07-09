@@ -1,6 +1,7 @@
 "use client";
 
-import React, { RefObject } from "react";
+import React, { RefObject, useCallback } from "react";
+import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, Type, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { renderIcon } from "../../../lib/icon-utils";
 import { Button as MovingButton } from "../../../components/ui/moving-border";
@@ -18,12 +19,71 @@ interface UploadFormProps {
   isUploading: boolean;
   uploadStatus: 'idle' | 'success' | 'error';
   uploadMessage: string;
-  fileInputRef: RefObject<HTMLInputElement>;
+
   handleFileUpload: (file: File) => void;
+  handleBatchFileUpload: (files: File[]) => void;
   handleTextUpload: () => void;
   isGeneratingEmbeddings: boolean;
   handleGenerateEmbeddings: () => Promise<void>;
   embeddingMessage: string;
+}
+
+interface FileDropzoneProps {
+  isUploading: boolean;
+  onFileAccepted: (file: File) => void;
+  onMultipleFilesAccepted: (files: File[]) => void;
+}
+
+function FileDropzone({ isUploading, onFileAccepted, onMultipleFilesAccepted }: FileDropzoneProps) {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 1 && acceptedFiles[0]) {
+      onFileAccepted(acceptedFiles[0]);
+    } else if (acceptedFiles.length > 1) {
+      onMultipleFilesAccepted(acceptedFiles);
+    }
+  }, [onFileAccepted, onMultipleFilesAccepted]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'text/markdown': ['.md'],
+      'text/plain': ['.txt']
+    },
+    maxSize: 1024 * 1024, // 1MB
+    multiple: true
+  });
+
+  return (
+    <div
+      {...getRootProps({className: `p-8 text-center rounded-lg border-2 ${isDragActive ? 'border-curious-cyan-500 bg-curious-cyan-500/10' : 'border-gray-600'} border-dashed transition-colors hover:border-curious-cyan-500 cursor-pointer`})}
+    >
+      <input {...getInputProps()} />
+      {renderIcon(Upload, { className: "mx-auto mb-4 w-12 h-12 text-gray-400" })}
+      {isDragActive ? (
+        <p className="mb-2 text-gray-300">Drop the files here...</p>
+      ) : (
+        <>
+          <p className="mb-2 text-gray-300">Drop your .md files here or click to browse</p>
+          <p className="mb-4 text-sm text-gray-500">Supports .md and .txt files up to 1MB each. Multiple files supported.</p>
+        </>
+      )}
+      <MovingButton
+        disabled={isUploading}
+        className="bg-slate-900/[0.8] text-white pointer-events-none"
+        containerClassName="w-auto min-w-[120px]"
+        borderClassName="bg-[radial-gradient(#0ea5e9_40%,transparent_60%)]"
+      >
+        {isUploading ? (
+          <span className="flex gap-2 items-center">
+            {renderIcon(Loader2, { className: "w-4 h-4 animate-spin" })}
+            Uploading...
+          </span>
+        ) : (
+          'Choose Files'
+        )}
+      </MovingButton>
+    </div>
+  );
 }
 
 export function UploadForm({
@@ -38,8 +98,9 @@ export function UploadForm({
   isUploading,
   uploadStatus,
   uploadMessage,
-  fileInputRef,
+
   handleFileUpload,
+  handleBatchFileUpload,
   handleTextUpload,
   isGeneratingEmbeddings,
   handleGenerateEmbeddings,
@@ -104,44 +165,20 @@ export function UploadForm({
       {/* File Upload */}
       {uploadMethod === 'file' && (
         <div className="space-y-4">
-          <div className="p-8 text-center rounded-lg border-2 border-gray-600 border-dashed transition-colors hover:border-curious-cyan-500">
-            {renderIcon(Upload, { className: "mx-auto mb-4 w-12 h-12 text-gray-400" })}
-            <p className="mb-2 text-gray-300">Drop your .md file here or click to browse</p>
-            <p className="mb-4 text-sm text-gray-500">Supports .md and .txt files up to 1MB</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".md,.txt"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setTitle(file.name.replace(/\.[^/.]+$/, ''));
-                  handleFileUpload(file);
-                }
-              }}
-              className="hidden"
-            />
-            <MovingButton
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="bg-slate-900/[0.8] text-white"
-              containerClassName="w-auto min-w-[120px]"
-              borderClassName="bg-[radial-gradient(#0ea5e9_40%,transparent_60%)]"
-            >
-              {isUploading ? (
-                <span className="flex gap-2 items-center">
-                  {renderIcon(Loader2, { className: "w-4 h-4 animate-spin" })}
-                  Uploading...
-                </span>
-              ) : (
-                'Choose File'
-              )}
-            </MovingButton>
-
-
-          </div>
+          <FileDropzone
+            isUploading={isUploading}
+            onFileAccepted={(file) => {
+              setTitle(file.name.replace(/\.[^/.]+$/, ''));
+              handleFileUpload(file);
+            }}
+            onMultipleFilesAccepted={(files) => {
+              setTitle(`${files.length} files selected`);
+              handleBatchFileUpload(files);
+            }}
+          />
         </div>
       )}
+    
 
       {/* Text Input */}
       {uploadMethod === 'text' && (

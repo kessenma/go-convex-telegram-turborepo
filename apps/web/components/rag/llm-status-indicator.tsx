@@ -4,23 +4,12 @@ import React, { useState } from "react";
 import { cn } from "../../lib/utils";
 import { renderIcon } from "../../lib/icon-utils";
 import { CheckCircle, AlertCircle, Loader2, Brain, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { useLLMStatus } from "../../hooks/use-status-operations";
 
 interface LLMStatusIndicatorProps {
-  status: 'healthy' | 'error' | 'loading' | 'starting' | 'connecting';
-  ready: boolean;
-  message: string;
-  model?: string;
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
   className?: string;
-  details?: {
-    service_status?: string;
-    model_loaded?: boolean;
-    model_loading?: boolean;
-    uptime?: string;
-    timestamp?: string;
-    error?: string;
-  };
   showLogs?: boolean;
 }
 
@@ -47,16 +36,21 @@ const statusLabels = {
 };
 
 export const LLMStatusIndicator = ({
-  status,
-  ready,
-  message,
-  model,
   size = "md",
   showLabel = true,
   className,
-  details,
   showLogs = true
 }: LLMStatusIndicatorProps) => {
+  const { status: llmStatus, loading } = useLLMStatus();
+  
+  // Extract values from the status object
+  const {
+    status,
+    ready,
+    message,
+    model,
+    details
+  } = llmStatus;
   const [isExpanded, setIsExpanded] = useState(false);
   const getStatusIcon = () => {
     if (status === 'healthy' && ready) {

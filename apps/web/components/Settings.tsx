@@ -3,13 +3,12 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useOutsideClick } from "../hooks/use-outside-clicks";
-import { useLLMStatus } from "../hooks/use-llm-status";
-import { useConvexStatus } from "../hooks/use-convex-status";
+import { useConvexStatus } from "../hooks/use-status-operations";
 import { Settings as SettingsIcon, X } from "lucide-react";
 import { cn, getCookie, setCookie } from "../lib/utils";
 import { renderIcon } from "../lib/icon-utils";
 import { LLMStatusIndicator } from "./rag/llm-status-indicator";
-import { StatusIndicator } from "./ui/status-indicator";
+import { ConvexStatusIndicator } from "./convex/convex-status-indicator";
 
 interface SettingsProps {
   className?: string;
@@ -23,9 +22,7 @@ export function Settings({ className }: SettingsProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const id = useId();
   
-  // Status hooks
-  const { llmStatus } = useLLMStatus();
-  const { convexStatus } = useConvexStatus();
+  // Status hooks not needed anymore since components manage their own state
 
   // Load animation setting from cookie on mount
   useEffect(() => {
@@ -120,46 +117,29 @@ export function Settings({ className }: SettingsProps) {
                 <div className="space-y-6">
                   {/* System Status Section */}
                   <div>
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                    <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
                       System Status
                     </h3>
                     <div className="space-y-3">
                       {/* LLM Status */}
                       <LLMStatusIndicator
-                        status={llmStatus.status}
-                        ready={llmStatus.ready}
-                        message={llmStatus.message}
-                        model={llmStatus.model}
-                        details={llmStatus.details}
                         size="sm"
                         showLogs={false}
                         className="bg-gray-50 dark:bg-gray-800/30"
                       />
                       
                       {/* Convex Status */}
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-3">
-                          <StatusIndicator 
-                            status={convexStatus.status}
-                            size="sm"
-                            showLabel={false}
-                          />
-                          <div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              Convex Database
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {convexStatus.message}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <ConvexStatusIndicator
+                        size="sm"
+                        showLogs={false}
+                        className="bg-gray-50 dark:bg-gray-800/30"
+                      />
                     </div>
                   </div>
                   
                   {/* Settings Section */}
                   <div>
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                    <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
                       Preferences
                     </h3>
                     <div className="space-y-4">

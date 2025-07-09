@@ -41,6 +41,7 @@ export default function Home(): React.ReactNode {
             whiteText={true}
             className="my-2"
             titleAnimation={TextAnimationType.Decrypt}
+            subtitleAnimation={TextAnimationType.TextRoll}
             animationSpeed={75}
           >
           </Hero>
