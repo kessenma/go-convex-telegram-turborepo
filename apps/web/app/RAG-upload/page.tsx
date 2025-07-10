@@ -15,7 +15,9 @@ import { DocumentHistory } from "../../components/rag/DocumentHistory";
 import { ThreeJSUploadIcon } from "./components/ThreeJSUploadIcon";
 
 import { ConvexStatusIndicator } from "../../components/convex/convex-status-indicator";
-import { useConvexStatus } from "../../hooks/use-status-operations";
+import { useStatusOperations } from "../../hooks/use-status-operations";
+import { LLMStatusIndicator } from "../../components/rag/llm-status-indicator";
+import { DockerStatusIndicator } from "../../components/docker-status";
 
 interface Document {
   _id: string;
@@ -41,7 +43,10 @@ interface UploadedDocument {
 
 export default function RAGUploadPage(): React.ReactElement | null {
   const { animationEnabled } = useAnimationSettings();
-  const { status: convexStatus } = useConvexStatus();
+  const statusOperations = useStatusOperations();
+  const convexStatus = statusOperations.convexStatus;
+  const llmStatus = statusOperations.llmStatus;
+  const dockerStatus = statusOperations.dockerStatus;
   const [uploadMethod, setUploadMethod] = useState<'file' | 'text'>('file');
   const [textContent, setTextContent] = useState('');
   const [title, setTitle] = useState('');
@@ -316,6 +321,8 @@ export default function RAGUploadPage(): React.ReactElement | null {
             showLogs={true}
           />
         </div>
+
+
 
         {/* Upload Form */}
         {isUploading ? (

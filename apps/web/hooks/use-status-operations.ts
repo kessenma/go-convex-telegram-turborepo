@@ -12,19 +12,23 @@ export function useStatusOperations() {
   const {
     llmStatus,
     convexStatus,
+    dockerStatus,
     loading,
     lastUpdated,
     consecutiveErrors,
     pollingIntervals,
     setLLMStatus,
     setConvexStatus,
+    setDockerStatus,
     checkLLMStatus,
     checkConvexStatus,
+    checkDockerStatus,
     checkAllStatus,
     getSystemHealth,
     isSystemReady,
     optimisticLLMUpdate,
-    optimisticConvexUpdate
+    optimisticConvexUpdate,
+    optimisticDockerUpdate
   } = useStatusStore();
   
   // Memoized status check functions
@@ -35,6 +39,10 @@ export function useStatusOperations() {
   const handleCheckConvexStatus = useCallback(async () => {
     return await checkConvexStatus();
   }, [checkConvexStatus]);
+  
+  const handleCheckDockerStatus = useCallback(async () => {
+    return await checkDockerStatus();
+  }, [checkDockerStatus]);
   
   const handleCheckAllStatus = useCallback(async () => {
     return await checkAllStatus();
@@ -48,6 +56,10 @@ export function useStatusOperations() {
   const updateConvexStatusOptimistically = useCallback((partialStatus: Partial<typeof convexStatus>) => {
     optimisticConvexUpdate(partialStatus);
   }, [optimisticConvexUpdate]);
+  
+  const updateDockerStatusOptimistically = useCallback((partialStatus: Partial<typeof dockerStatus>) => {
+    optimisticDockerUpdate(partialStatus);
+  }, [optimisticDockerUpdate]);
   
   // Auto-polling effect for LLM status
   useEffect(() => {
@@ -75,6 +87,17 @@ export function useStatusOperations() {
     return () => clearInterval(interval);
   }, [handleCheckConvexStatus, pollingIntervals.convex]);
   
+  // Auto-polling effect for Docker status
+  useEffect(() => {
+    if (!pollingIntervals.docker) return;
+    
+    const interval = setInterval(() => {
+      handleCheckDockerStatus();
+    }, pollingIntervals.docker);
+    
+    return () => clearInterval(interval);
+  }, [pollingIntervals.docker, handleCheckDockerStatus]);
+  
   // Derived state
   const systemHealth = getSystemHealth();
   const systemReady = isSystemReady();
@@ -95,10 +118,17 @@ export function useStatusOperations() {
       pollingInterval: pollingIntervals.convex,
       loading: loading.convex
     },
+    docker: {
+      ...dockerStatus,
+      lastUpdated: lastUpdated.docker,
+      consecutiveErrors: consecutiveErrors.docker,
+      pollingInterval: pollingIntervals.docker,
+      loading: loading.docker
+    },
     system: {
       health: systemHealth,
       ready: systemReady,
-      overallLoading: loading.llm || loading.convex
+      overallLoading: loading.llm || loading.convex || loading.docker
     }
   };
   
@@ -106,6 +136,7 @@ export function useStatusOperations() {
     // Status data
     llmStatus,
     convexStatus,
+    dockerStatus,
     statusSummary,
     
     // Loading states
@@ -123,15 +154,18 @@ export function useStatusOperations() {
     // Operations
     checkLLMStatus: handleCheckLLMStatus,
     checkConvexStatus: handleCheckConvexStatus,
+    checkDockerStatus: handleCheckDockerStatus,
     checkAllStatus: handleCheckAllStatus,
     
     // Optimistic updates
     updateLLMStatusOptimistically,
     updateConvexStatusOptimistically,
+    updateDockerStatusOptimistically,
     
     // Direct store actions (for advanced usage)
     setLLMStatus,
-    setConvexStatus
+    setConvexStatus,
+    setDockerStatus
   };
 }
 

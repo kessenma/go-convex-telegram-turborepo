@@ -8,6 +8,12 @@ import threading
 import requests
 import uuid
 from typing import List, Dict, Any
+from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownTextSplitter
+import json
+import psutil
+import gc
+import threading
+import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -128,6 +134,45 @@ def load_model_async():
     except Exception as e:
         logger.error(f"Background model loading failed: {e}")
 
+def chunk_document(content: str, content_type: str = "text", chunk_size: int = 1000, chunk_overlap: int = 200) -> List[str]:
+    """Chunk document content using LangChain text splitters"""
+    try:
+        if content_type.lower() == "markdown":
+            # Use MarkdownTextSplitter for markdown content
+            text_splitter = MarkdownTextSplitter(
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                length_function=len,
+            )
+        else:
+            # Use RecursiveCharacterTextSplitter for other content types
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                length_function=len,
+                separators=["\n\n", "\n", " ", ""]
+            )
+        
+        chunks = text_splitter.split_text(content)
+        logger.info(f"Document chunked into {len(chunks)} pieces (chunk_size={chunk_size}, overlap={chunk_overlap})")
+        return chunks
+        
+    except Exception as e:
+        logger.error(f"Error chunking document: {e}")
+        # Fallback to simple chunking if LangChain fails
+        return simple_chunk_text(content, chunk_size)
+
+def simple_chunk_text(text: str, max_chunk_size: int = 1000) -> List[str]:
+    """Simple fallback chunking method"""
+    if len(text) <= max_chunk_size:
+        return [text]
+    
+    chunks = []
+    for i in range(0, len(text), max_chunk_size):
+        chunks.append(text[i:i + max_chunk_size])
+    
+    return chunks
+
 @app.route('/routes', methods=['GET'])
 def list_routes():
     """List all available routes for debugging"""
@@ -140,13 +185,95 @@ def list_routes():
         })
     return jsonify({'routes': routes}), 200
 
+def get_memory_usage():
+    """Get current memory usage information"""
+    try:
+        process = psutil.Process()
+        memory_info = process.memory_info()
+        memory_percent = process.memory_percent()
+        
+        # Get system memory info
+        system_memory = psutil.virtual_memory()
+        
+        return {
+            'process_memory_mb': round(memory_info.rss / 1024 / 1024, 2),
+            'process_memory_percent': round(memory_percent, 2),
+            'system_memory_total_gb': round(system_memory.total / 1024 / 1024 / 1024, 2),
+            'system_memory_available_gb': round(system_memory.available / 1024 / 1024 / 1024, 2),
+            'system_memory_used_percent': round(system_memory.percent, 2)
+        }
+    except Exception as e:
+        logger.error(f"Error getting memory usage: {e}")
+        return {
+            'process_memory_mb': 0,
+            'process_memory_percent': 0,
+            'system_memory_total_gb': 0,
+            'system_memory_available_gb': 0,
+            'system_memory_used_percent': 0,
+            'error': str(e)
+        }
+
+def send_memory_usage_to_convex():
+    """Send memory usage data to Convex backend"""
+    try:
+        convex_url = os.environ.get('CONVEX_URL')
+        if not convex_url:
+            logger.debug("CONVEX_URL not set, skipping memory usage reporting")
+            return
+            
+        memory_usage = get_memory_usage()
+        
+        # Add model status information
+        global model_loaded, model_loading, model_error
+        if model_error:
+            model_status = 'error'
+        elif model_loading:
+            model_status = 'loading'
+        elif model_loaded:
+            model_status = 'healthy'
+        else:
+            model_status = 'starting'
+            
+        payload = {
+            **memory_usage,
+            'model_status': model_status,
+            'timestamp': int(time.time() * 1000)  # milliseconds
+        }
+        
+        response = requests.post(
+            f"{convex_url}/api/llm/memory-usage",
+            json=payload,
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            logger.debug(f"Memory usage sent to Convex: {memory_usage['process_memory_mb']}MB")
+        else:
+            logger.warning(f"Failed to send memory usage to Convex: {response.status_code}")
+            
+    except Exception as e:
+        logger.error(f"Error sending memory usage to Convex: {e}")
+
+def memory_monitoring_worker():
+    """Background worker to periodically send memory usage data"""
+    while True:
+        try:
+            send_memory_usage_to_convex()
+            time.sleep(30)  # Send memory data every 30 seconds
+        except Exception as e:
+            logger.error(f"Error in memory monitoring worker: {e}")
+            time.sleep(60)  # Wait longer on error
+
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Health check endpoint with detailed status"""
+    """Health check endpoint with detailed status and memory usage"""
     global model_loaded, model_loading, model_error, start_time, load_start_time
     
     current_time = time.time()
     uptime = current_time - start_time
+    
+    # Get memory usage
+    memory_usage = get_memory_usage()
     
     # Determine service status
     if model_error:
@@ -179,7 +306,8 @@ def health_check():
         'model': 'sentence-transformers/all-MiniLM-L6-v2' if model_loaded else None,
         'service': 'vector-convert-llm',
         'uptime': uptime,
-        'error': model_error
+        'error': model_error,
+        'memory_usage': memory_usage
     }), 200
 
 @app.route('/test-post', methods=['POST'])
@@ -460,7 +588,7 @@ def semantic_search():
 
 @app.route('/process-document', methods=['POST'])
 def process_document_embedding():
-    """Fetch document from Convex, generate embedding, and save back to Convex"""
+    """Fetch document from Convex, generate embedding with chunking, and save back to Convex"""
     start_time = time.time()
     job_id = None
     
@@ -474,11 +602,14 @@ def process_document_embedding():
         
         document_id = data['document_id']
         convex_url = data.get('convex_url', os.environ.get('CONVEX_URL'))
+        use_chunking = data.get('use_chunking', True)  # Enable chunking by default
+        chunk_size = data.get('chunk_size', 1000)
+        chunk_overlap = data.get('chunk_overlap', 200)
         
         if not convex_url:
             return jsonify({'error': 'Convex URL not provided'}), 400
         
-        logger.info(f"Processing document embedding for ID: {document_id}")
+        logger.info(f"Processing document embedding for ID: {document_id} (chunking: {use_chunking})")
         
         # Create conversion job
         job_id = create_conversion_job(
@@ -508,6 +639,7 @@ def process_document_embedding():
         
         document_data = fetch_response.json()
         text = document_data.get('content')
+        content_type = document_data.get('contentType', 'text')
         
         if not text:
             error_msg = "Document content is empty or missing"
@@ -516,12 +648,75 @@ def process_document_embedding():
                 update_conversion_job(job_id, "failed", error_message=error_msg)
             return jsonify({'error': error_msg}), 400
         
-        logger.info(f"Document fetched successfully, content length: {len(text)}")
+        logger.info(f"Document fetched successfully, content length: {len(text)}, type: {content_type}")
         
-        # Generate embedding
-        logger.info("Generating embedding...")
-        embedding = model.encode([text])[0].tolist()
-        logger.info(f"Embedding generated successfully, dimension: {len(embedding)}")
+        # Generate embedding with chunking
+        if use_chunking and len(text) > chunk_size:
+            logger.info("‼️Using chunking for large documen🤖...")
+            
+            # Chunk the document
+            chunks = chunk_document(text, content_type, chunk_size, chunk_overlap)
+            
+            # Generate embeddings for each chunk with memory management
+            logger.info(f"Generating embeddings for {len(chunks)} chunks...")
+            chunk_embeddings = []
+            
+            # Process chunks in smaller batches to prevent memory issues
+            batch_size = 2  # Process 2 chunks at a time to reduce memory pressure
+            
+            for batch_start in range(0, len(chunks), batch_size):
+                batch_end = min(batch_start + batch_size, len(chunks))
+                batch_chunks = chunks[batch_start:batch_end]
+                
+                try:
+                    # Process batch of chunks
+                    logger.info(f"Processing batch {batch_start//batch_size + 1}/{(len(chunks) + batch_size - 1)//batch_size} (chunks {batch_start+1}-{batch_end})")
+                    
+                    # Generate embeddings for the batch
+                    batch_embeddings = model.encode(batch_chunks, show_progress_bar=False)
+                    
+                    # Add each embedding to the list
+                    for i, embedding in enumerate(batch_embeddings):
+                        chunk_embeddings.append(embedding.tolist())
+                        logger.info(f"Generated embedding for chunk {batch_start + i + 1}/{len(chunks)}")
+                    
+                    # Force garbage collection after each batch
+                    import gc
+                    gc.collect()
+                    
+                except Exception as batch_error:
+                    logger.error(f"Error processing batch {batch_start//batch_size + 1}: {batch_error}")
+                    
+                    # Fallback: try processing chunks individually in this batch
+                    for i, chunk in enumerate(batch_chunks):
+                        try:
+                            chunk_embedding = model.encode([chunk], show_progress_bar=False)[0].tolist()
+                            chunk_embeddings.append(chunk_embedding)
+                            logger.info(f"Generated embedding for chunk {batch_start + i + 1}/{len(chunks)} (individual fallback)")
+                        except Exception as chunk_error:
+                            logger.error(f"Error generating embedding for chunk {batch_start + i + 1}: {chunk_error}")
+                            continue
+            
+            if not chunk_embeddings:
+                error_msg = "Failed to generate embeddings for any chunks"
+                logger.error(error_msg)
+                if job_id:
+                    update_conversion_job(job_id, "failed", error_message=error_msg)
+                return jsonify({'error': error_msg}), 500
+            
+            # Calculate average embedding from all chunks
+            avg_embedding = np.mean(chunk_embeddings, axis=0).tolist()
+            logger.info(f"Calculated average embedding from {len(chunk_embeddings)} chunks, dimension: {len(avg_embedding)}")
+            
+            embedding = avg_embedding
+            embedding_method = "chunked_average"
+            
+        else:
+            # Generate single embedding for small documents
+            logger.info("Generating single embedding for document...")
+            embedding = model.encode([text])[0].tolist()
+            logger.info(f"Embedding generated successfully, dimension: {len(embedding)}")
+            embedding_method = "single"
         
         # Save embedding back to Convex
         logger.info("Saving embedding back to Convex...")
@@ -543,9 +738,11 @@ def process_document_embedding():
                     "document_id": document_id,
                     "embedding_dimension": len(embedding),
                     "model": "all-MiniLM-L6-v2",
-                    "content_length": len(text)
+                    "content_length": len(text),
+                    "embedding_method": embedding_method,
+                    "chunks_processed": len(chunk_embeddings) if use_chunking and len(text) > chunk_size else 1
                 }
-                update_conversion_job(job_id, "completed", output_data=output_data, processing_time_ms=processing_time)
+                update_conversion_job(job_id, "completed", output_data=json.dumps(output_data), processing_time_ms=processing_time)
             
             return jsonify({
                 'success': True,
@@ -553,7 +750,9 @@ def process_document_embedding():
                 'embedding_dimension': len(embedding),
                 'model': 'all-MiniLM-L6-v2',
                 'processing_time_ms': processing_time,
-                'content_length': len(text)
+                'content_length': len(text),
+                'embedding_method': embedding_method,
+                'chunks_processed': len(chunk_embeddings) if use_chunking and len(text) > chunk_size else 1
             }), 200
         else:
             error_msg = f"Failed to save embedding to Convex: {save_response.status_code} - {save_response.text}"
@@ -580,8 +779,171 @@ def process_document_embedding():
         
         return jsonify({'error': str(e)}), 500
 
+@app.route('/process-markdown', methods=['POST'])
+def process_markdown_document():
+    """Process markdown content with chunking and generate embeddings"""
+    start_time = time.time()
+    job_id = None
+    
+    try:
+        if model is None:
+            return jsonify({'error': 'Model not loaded'}), 500
+        
+        data = request.get_json()
+        if not data or 'content' not in data:
+            return jsonify({'error': 'Missing content field in request'}), 400
+        
+        content = data['content']
+        document_id = data.get('document_id')
+        convex_url = data.get('convex_url', os.environ.get('CONVEX_URL'))
+        chunk_size = data.get('chunk_size', 1000)
+        chunk_overlap = data.get('chunk_overlap', 200)
+        
+        if not convex_url:
+            return jsonify({'error': 'Convex URL not provided'}), 400
+        
+        logger.info(f"Processing markdown document (length: {len(content)})")
+        
+        # Create conversion job
+        job_id = create_conversion_job(
+            job_type="markdown_embedding",
+            document_id=document_id,
+            request_source="web_app"
+        )
+        
+        if job_id:
+            update_conversion_job(job_id, "processing")
+        
+        # Chunk the markdown content
+        chunks = chunk_document(content, 'markdown', chunk_size, chunk_overlap)
+        logger.info(f"Document chunked into 🧩 {len(chunks)} pieces")
+        
+        # Generate embeddings for each chunk with memory management
+        chunk_embeddings = []
+        chunk_texts = []
+        
+        # Process chunks in smaller batches to prevent memory issues
+        batch_size = 2  # Process 2 chunks at a time to reduce memory pressure
+        
+        for batch_start in range(0, len(chunks), batch_size):
+            batch_end = min(batch_start + batch_size, len(chunks))
+            batch_chunks = chunks[batch_start:batch_end]
+            
+            try:
+                # Process batch of chunks
+                logger.info(f"Processing batch {batch_start//batch_size + 1}/{(len(chunks) + batch_size - 1)//batch_size} (chunks {batch_start+1}-{batch_end})")
+                
+                # Generate embeddings for the batch
+                batch_embeddings = model.encode(batch_chunks, show_progress_bar=False)
+                
+                # Add each embedding to the list
+                for i, embedding in enumerate(batch_embeddings):
+                    chunk_embeddings.append(embedding.tolist())
+                    chunk_texts.append(batch_chunks[i])
+                    logger.info(f"Generated embedding for chunk {batch_start + i + 1}/{len(chunks)}")
+                
+                # Force garbage collection after each batch
+                import gc
+                gc.collect()
+                
+            except Exception as batch_error:
+                logger.error(f"Error processing batch {batch_start//batch_size + 1}: {batch_error}")
+                
+                # Fallback: try processing chunks individually in this batch
+                for i, chunk in enumerate(batch_chunks):
+                    try:
+                        chunk_embedding = model.encode([chunk], show_progress_bar=False)[0].tolist()
+                        chunk_embeddings.append(chunk_embedding)
+                        chunk_texts.append(chunk)
+                        logger.info(f"Generated embedding for chunk {batch_start + i + 1}/{len(chunks)} (individual fallback)")
+                    except Exception as chunk_error:
+                        logger.error(f"Error generating embedding for chunk {batch_start + i + 1}: {chunk_error}")
+                        continue
+        
+        if not chunk_embeddings:
+            error_msg = "Failed to generate embeddings for any chunks"
+            logger.error(error_msg)
+            if job_id:
+                update_conversion_job(job_id, "failed", error_message=error_msg)
+            return jsonify({'error': error_msg}), 500
+        
+        # Calculate average embedding
+        avg_embedding = np.mean(chunk_embeddings, axis=0).tolist()
+        logger.info(f"Calculated average embedding from {len(chunk_embeddings)} chunks, dimension: {len(avg_embedding)}")
+        
+        # Save to Convex
+        save_url = f"{convex_url}/api/embeddings"
+        save_payload = {
+            'text': content,
+            'embedding': avg_embedding,
+            'document_id': document_id,
+            'chunks': chunk_texts,
+            'chunk_embeddings': chunk_embeddings,
+            'metadata': {
+                'content_type': 'markdown',
+                'chunk_count': len(chunks),
+                'embedding_method': 'chunked_average',
+                'model': 'all-MiniLM-L6-v2'
+            }
+        }
+        
+        save_response = requests.post(save_url, json=save_payload)
+        
+        processing_time = int((time.time() - start_time) * 1000)
+        
+        if save_response.status_code == 200:
+            logger.info("Markdown embedding saved successfully to Convex")
+            
+            # Update job as completed
+            if job_id:
+                output_data = {
+                    "document_id": document_id,
+                    "embedding_dimension": len(avg_embedding),
+                    "model": "all-MiniLM-L6-v2",
+                    "content_length": len(content),
+                    "chunks_processed": len(chunk_embeddings),
+                    "embedding_method": "chunked_average"
+                }
+                update_conversion_job(job_id, "completed", output_data=json.dumps(output_data), processing_time_ms=processing_time)
+            
+            return jsonify({
+                'success': True,
+                'document_id': document_id,
+                'embedding_dimension': len(avg_embedding),
+                'model': 'all-MiniLM-L6-v2',
+                'processing_time_ms': processing_time,
+                'content_length': len(content),
+                'chunks_processed': len(chunk_embeddings),
+                'embedding_method': 'chunked_average'
+            }), 200
+        else:
+            error_msg = f"Failed to save to Convex: {save_response.status_code} - {save_response.text}"
+            logger.error(error_msg)
+            
+            # Update job as failed
+            if job_id:
+                update_conversion_job(job_id, "failed", error_message=error_msg, processing_time_ms=processing_time)
+            
+            return jsonify({
+                'error': 'Failed to save to Convex',
+                'convex_status': save_response.status_code,
+                'convex_error': save_response.text
+            }), 500
+        
+    except Exception as e:
+        processing_time = int((time.time() - start_time) * 1000)
+        error_msg = f"Error in process_markdown_document: {e}"
+        logger.error(error_msg, exc_info=True)
+        
+        # Update job as failed
+        if job_id:
+            update_conversion_job(job_id, "failed", error_message=str(e), processing_time_ms=processing_time)
+        
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/embed-and-save', methods=['POST'])
-def embed_and_save_to_convex():
+def embed_and_save():
     """Generate embeddings and save them to Convex backend (legacy endpoint)"""
     try:
         if model is None:
@@ -635,5 +997,10 @@ logger.info("Starting vector-convert-llm service...")
 model_thread = threading.Thread(target=load_model_async, daemon=True)
 model_thread.start()
 
+# Start memory monitoring worker thread
+logger.info("Starting memory monitoring worker...")
+memory_thread = threading.Thread(target=memory_monitoring_worker, daemon=True)
+memory_thread.start()
+
 logger.info("Service initialized, model loading in background...")
-logger.info("Available endpoints: /health, /embed, /similarity, /search, /process-document, /embed-and-save")
+logger.info("Available endpoints: /health, /embed, /similarity, /search, /process-document, /process-markdown, /embed-and-save")

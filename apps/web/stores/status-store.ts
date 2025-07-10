@@ -17,6 +17,14 @@ interface LLMStatus {
     timestamp?: string;
     error?: string;
   };
+  memory_usage?: {
+    process_memory_mb?: number;
+    process_memory_percent?: number;
+    system_memory_total_gb?: number;
+    system_memory_available_gb?: number;
+    system_memory_used_percent?: number;
+    error?: string;
+  };
 }
 
 // Convex Status Types
@@ -49,18 +57,61 @@ interface ConvexStatus {
   };
 }
 
+// Docker Status Types
+interface DockerService {
+  name: string;
+  status: 'running' | 'stopped' | 'starting' | 'error';
+  uptime?: string;
+  health?: 'healthy' | 'unhealthy' | 'starting';
+  port?: string;
+  restarts?: number;
+}
+
+interface DockerNetwork {
+  name?: string;
+  driver?: string;
+  scope?: string;
+  attachedServices?: number;
+  ports?: string[];
+}
+
+interface DockerResources {
+  cpu_usage?: number;
+  memory_usage?: number;
+  disk_usage?: number;
+}
+
+interface DockerStatus {
+  status: 'healthy' | 'degraded' | 'critical' | 'connecting';
+  ready: boolean;
+  message: string;
+  services?: DockerService[];
+  networks?: DockerNetwork[];
+  resources?: DockerResources;
+  details?: {
+    compose_version?: string;
+    total_services?: number;
+    running_services?: number;
+    timestamp?: string;
+    error?: string;
+  };
+}
+
 // Combined Status Interface
 interface SystemStatus {
   llm: LLMStatus;
   convex: ConvexStatus;
+  docker: DockerStatus;
   lastUpdated: number;
   consecutiveErrors: {
     llm: number;
     convex: number;
+    docker: number;
   };
   pollingIntervals: {
     llm: number;
     convex: number;
+    docker: number;
   };
 }
 
@@ -68,47 +119,59 @@ interface StatusStore {
   // State
   llmStatus: LLMStatus;
   convexStatus: ConvexStatus;
+  dockerStatus: DockerStatus;
   loading: {
     llm: boolean;
     convex: boolean;
+    docker: boolean;
   };
   lastUpdated: {
     llm: number;
     convex: number;
+    docker: number;
   };
   consecutiveErrors: {
     llm: number;
     convex: number;
+    docker: number;
   };
   pollingIntervals: {
     llm: number;
     convex: number;
+    docker: number;
   };
   
   // Basic setters
   setLLMStatus: (status: LLMStatus) => void;
   setConvexStatus: (status: ConvexStatus) => void;
+  setDockerStatus: (status: DockerStatus) => void;
   setLLMLoading: (loading: boolean) => void;
   setConvexLoading: (loading: boolean) => void;
+  setDockerLoading: (loading: boolean) => void;
   
   // Error tracking
   incrementLLMErrors: () => void;
   incrementConvexErrors: () => void;
+  incrementDockerErrors: () => void;
   resetLLMErrors: () => void;
   resetConvexErrors: () => void;
+  resetDockerErrors: () => void;
   
   // Polling interval management
   updateLLMPollingInterval: () => void;
   updateConvexPollingInterval: () => void;
+  updateDockerPollingInterval: () => void;
   
   // Optimistic updates
   optimisticLLMUpdate: (partialStatus: Partial<LLMStatus>) => void;
   optimisticConvexUpdate: (partialStatus: Partial<ConvexStatus>) => void;
+  optimisticDockerUpdate: (partialStatus: Partial<DockerStatus>) => void;
   
   // API actions
   checkLLMStatus: () => Promise<boolean>;
   checkConvexStatus: () => Promise<boolean>;
-  checkAllStatus: () => Promise<{ llm: boolean; convex: boolean }>;
+  checkDockerStatus: () => Promise<boolean>;
+  checkAllStatus: () => Promise<{ llm: boolean; convex: boolean; docker: boolean }>;
   
   // Utility getters
   getSystemHealth: () => 'healthy' | 'degraded' | 'critical';
@@ -127,26 +190,37 @@ const initialConvexStatus: ConvexStatus = {
   message: 'Checking Convex connection...'
 };
 
+const initialDockerStatus: DockerStatus = {
+  status: 'connecting',
+  ready: false,
+  message: 'Checking Docker system...'
+};
+
 export const useStatusStore = create<StatusStore>()(devtools(
   (set, get) => ({
     // Initial state
     llmStatus: initialLLMStatus,
     convexStatus: initialConvexStatus,
+    dockerStatus: initialDockerStatus,
     loading: {
       llm: false,
-      convex: false
+      convex: false,
+      docker: false
     },
     lastUpdated: {
       llm: 0,
-      convex: 0
+      convex: 0,
+      docker: 0
     },
     consecutiveErrors: {
       llm: 0,
-      convex: 0
+      convex: 0,
+      docker: 0
     },
     pollingIntervals: {
       llm: 15000, // 15 seconds default
-      convex: 15000 // 15 seconds default
+      convex: 15000, // 15 seconds default
+      docker: 30000 // 30 seconds default for Docker
     },
     
     // Basic setters
@@ -168,6 +242,15 @@ export const useStatusStore = create<StatusStore>()(devtools(
       'setConvexStatus'
     ),
     
+    setDockerStatus: (status) => set(
+      (state) => ({
+        dockerStatus: status,
+        lastUpdated: { ...state.lastUpdated, docker: Date.now() }
+      }),
+      false,
+      'setDockerStatus'
+    ),
+    
     setLLMLoading: (loading) => set(
       (state) => ({ loading: { ...state.loading, llm: loading } }),
       false,
@@ -178,6 +261,12 @@ export const useStatusStore = create<StatusStore>()(devtools(
       (state) => ({ loading: { ...state.loading, convex: loading } }),
       false,
       'setConvexLoading'
+    ),
+    
+    setDockerLoading: (loading) => set(
+      (state) => ({ loading: { ...state.loading, docker: loading } }),
+      false,
+      'setDockerLoading'
     ),
     
     // Error tracking
@@ -197,6 +286,14 @@ export const useStatusStore = create<StatusStore>()(devtools(
       'incrementConvexErrors'
     ),
     
+    incrementDockerErrors: () => set(
+      (state) => ({
+        consecutiveErrors: { ...state.consecutiveErrors, docker: state.consecutiveErrors.docker + 1 }
+      }),
+      false,
+      'incrementDockerErrors'
+    ),
+    
     resetLLMErrors: () => set(
       (state) => ({
         consecutiveErrors: { ...state.consecutiveErrors, llm: 0 }
@@ -211,6 +308,14 @@ export const useStatusStore = create<StatusStore>()(devtools(
       }),
       false,
       'resetConvexErrors'
+    ),
+    
+    resetDockerErrors: () => set(
+      (state) => ({
+        consecutiveErrors: { ...state.consecutiveErrors, docker: 0 }
+      }),
+      false,
+      'resetDockerErrors'
     ),
     
     // Polling interval management
@@ -248,6 +353,23 @@ export const useStatusStore = create<StatusStore>()(devtools(
       );
     },
     
+    updateDockerPollingInterval: () => {
+      const { dockerStatus, consecutiveErrors } = get();
+      let interval = 30000; // Default 30 seconds
+      
+      if (dockerStatus.status === 'healthy' && dockerStatus.ready && consecutiveErrors.docker === 0) {
+        interval = 60000; // 60 seconds for stable Docker systems
+      } else if (consecutiveErrors.docker > 0) {
+        interval = 15000; // 15 seconds when there are issues
+      }
+      
+      set(
+        (state) => ({ pollingIntervals: { ...state.pollingIntervals, docker: interval } }),
+        false,
+        'updateDockerPollingInterval'
+      );
+    },
+    
     // Optimistic updates
     optimisticLLMUpdate: (partialStatus) => {
       const { llmStatus } = get();
@@ -274,6 +396,20 @@ export const useStatusStore = create<StatusStore>()(devtools(
         }),
         false,
         'optimisticConvexUpdate'
+      );
+    },
+    
+    optimisticDockerUpdate: (partialStatus) => {
+      const { dockerStatus } = get();
+      const updatedStatus = { ...dockerStatus, ...partialStatus };
+      
+      set(
+        (state) => ({
+          dockerStatus: updatedStatus,
+          lastUpdated: { ...state.lastUpdated, docker: Date.now() }
+        }),
+        false,
+        'optimisticDockerUpdate'
       );
     },
     
@@ -394,35 +530,99 @@ export const useStatusStore = create<StatusStore>()(devtools(
       }
     },
     
-    checkAllStatus: async () => {
-      const { checkLLMStatus, checkConvexStatus } = get();
+    checkDockerStatus: async () => {
+      const { setDockerLoading, setDockerStatus, incrementDockerErrors, resetDockerErrors, updateDockerPollingInterval } = get();
       
-      const [llmResult, convexResult] = await Promise.allSettled([
+      setDockerLoading(true);
+      
+      try {
+        const response = await fetch('/api/docker/status', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(10000) // Longer timeout for Docker operations
+        });
+        
+        if (!response.ok) {
+          incrementDockerErrors();
+          setDockerStatus({
+            status: 'critical',
+            ready: false,
+            message: `Docker service unavailable (${response.status})`,
+            details: {
+              error: `HTTP ${response.status}: ${response.statusText}`,
+              timestamp: new Date().toISOString()
+            }
+          });
+          updateDockerPollingInterval();
+          return false;
+        }
+        
+        const data = await response.json();
+        resetDockerErrors();
+        setDockerStatus({
+          status: data.status || 'critical',
+          ready: data.ready || false,
+          message: data.message || 'Docker status unknown',
+          services: data.services,
+          networks: data.networks,
+          resources: data.resources,
+          details: data.details || { timestamp: new Date().toISOString() }
+        });
+        updateDockerPollingInterval();
+        return true;
+      } catch (error) {
+        incrementDockerErrors();
+        const errorMessage = error instanceof Error ? error.message : 'Cannot connect to Docker service';
+        setDockerStatus({
+          status: 'critical',
+          ready: false,
+          message: 'Cannot connect to Docker system',
+          details: {
+            error: errorMessage,
+            timestamp: new Date().toISOString()
+          }
+        });
+        updateDockerPollingInterval();
+        return false;
+      } finally {
+        setDockerLoading(false);
+      }
+    },
+    
+    checkAllStatus: async () => {
+      const { checkLLMStatus, checkConvexStatus, checkDockerStatus } = get();
+      
+      const [llmResult, convexResult, dockerResult] = await Promise.allSettled([
         checkLLMStatus(),
-        checkConvexStatus()
+        checkConvexStatus(),
+        checkDockerStatus()
       ]);
       
       return {
         llm: llmResult.status === 'fulfilled' ? llmResult.value : false,
-        convex: convexResult.status === 'fulfilled' ? convexResult.value : false
+        convex: convexResult.status === 'fulfilled' ? convexResult.value : false,
+        docker: dockerResult.status === 'fulfilled' ? dockerResult.value : false
       };
     },
     
     // Utility getters
     getSystemHealth: () => {
-      const { llmStatus, convexStatus } = get();
+      const { llmStatus, convexStatus, dockerStatus } = get();
       
       const llmHealthy = llmStatus.status === 'healthy' && llmStatus.ready;
       const convexHealthy = convexStatus.status === 'connected' && convexStatus.ready;
+      const dockerHealthy = dockerStatus.status === 'healthy' && dockerStatus.ready;
       
-      if (llmHealthy && convexHealthy) return 'healthy';
-      if (llmHealthy || convexHealthy) return 'degraded';
+      const healthyCount = [llmHealthy, convexHealthy, dockerHealthy].filter(Boolean).length;
+      
+      if (healthyCount === 3) return 'healthy';
+      if (healthyCount >= 1) return 'degraded';
       return 'critical';
     },
     
     isSystemReady: () => {
-      const { llmStatus, convexStatus } = get();
-      return llmStatus.ready && convexStatus.ready;
+      const { llmStatus, convexStatus, dockerStatus } = get();
+      return llmStatus.ready && convexStatus.ready && dockerStatus.ready;
     }
   }),
   {
@@ -430,4 +630,4 @@ export const useStatusStore = create<StatusStore>()(devtools(
   }
 ));
 
-export type { LLMStatus, ConvexStatus, SystemStatus };
+export type { LLMStatus, ConvexStatus, DockerStatus, DockerService, DockerNetwork, DockerResources, SystemStatus };

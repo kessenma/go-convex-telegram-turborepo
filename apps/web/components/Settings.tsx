@@ -9,6 +9,7 @@ import { cn, getCookie, setCookie } from "../lib/utils";
 import { renderIcon } from "../lib/icon-utils";
 import { LLMStatusIndicator } from "./rag/llm-status-indicator";
 import { ConvexStatusIndicator } from "./convex/convex-status-indicator";
+import { DockerStatus } from "./docker-status";
 
 interface SettingsProps {
   className?: string;
@@ -130,6 +131,13 @@ export function Settings({ className }: SettingsProps) {
                       
                       {/* Convex Status */}
                       <ConvexStatusIndicator
+                        size="sm"
+                        showLogs={false}
+                        className="bg-gray-50 dark:bg-gray-800/30"
+                      />
+                      
+                      {/* Docker Status */}
+                      <DockerStatus
                         size="sm"
                         showLogs={false}
                         className="bg-gray-50 dark:bg-gray-800/30"

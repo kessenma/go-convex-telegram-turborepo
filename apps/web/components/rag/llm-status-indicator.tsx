@@ -112,9 +112,9 @@ export const LLMStatusIndicator = ({
   };
 
   return (
-    <div className={cn("rounded-lg bg-gray-800/50 border border-gray-700", className)}>
-      <div className="flex items-center gap-3 p-3">
-        <div className="flex items-center gap-2">
+    <div className={cn("rounded-lg border border-gray-700 bg-gray-800/50", className)}>
+      <div className="flex gap-3 items-center p-3">
+        <div className="flex gap-2 items-center">
           {renderIcon(Brain, { className: "w-5 h-5 text-gray-400" })}
           <div className={cn(
             "rounded-full",
@@ -134,24 +134,24 @@ export const LLMStatusIndicator = ({
               {getProgressMessage()}
             </div>
             {model && status === 'healthy' && (
-              <div className="text-xs text-gray-400 mt-1">
+              <div className="mt-1 text-xs text-gray-400">
                 Model: {model}
               </div>
             )}
             {details?.uptime && (
-              <div className="text-xs text-gray-400 mt-1">
+              <div className="mt-1 text-xs text-gray-400">
                 Uptime: {formatUptime(details.uptime)}
               </div>
             )}
           </div>
         )}
         
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex gap-2 items-center ml-auto">
           {getStatusIcon()}
           {showLogs && details && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1 text-gray-400 hover:text-gray-300 transition-colors"
+              className="p-1 text-gray-400 transition-colors hover:text-gray-300"
               title="View detailed logs"
             >
               {renderIcon(Info, { className: "w-4 h-4" })}
@@ -160,7 +160,7 @@ export const LLMStatusIndicator = ({
           {showLogs && details && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1 text-gray-400 hover:text-gray-300 transition-colors"
+              className="p-1 text-gray-400 transition-colors hover:text-gray-300"
             >
               {renderIcon(isExpanded ? ChevronUp : ChevronDown, { className: "w-4 h-4" })}
             </button>
@@ -170,9 +170,9 @@ export const LLMStatusIndicator = ({
 
       {/* Expandable logs section */}
       {isExpanded && details && (
-        <div className="border-t border-gray-700 p-3 bg-gray-900/50">
+        <div className="p-3 border-t border-gray-700 bg-gray-900/50">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
+            <div className="flex gap-2 items-center mb-2 text-xs text-gray-400">
               {renderIcon(Info, { className: "w-3 h-3" })}
               <span className="font-medium">Service Details</span>
             </div>
@@ -181,7 +181,7 @@ export const LLMStatusIndicator = ({
               {details.service_status && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Service Status:</span>
-                  <span className="text-gray-300 font-mono">{details.service_status}</span>
+                  <span className="font-mono text-gray-300">{details.service_status}</span>
                 </div>
               )}
               
@@ -198,23 +198,71 @@ export const LLMStatusIndicator = ({
               {details.uptime && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Uptime:</span>
-                  <span className="text-gray-300 font-mono">{formatUptime(details.uptime)}</span>
+                  <span className="font-mono text-gray-300">{formatUptime(details.uptime)}</span>
                 </div>
               )}
               
               {details.timestamp && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Last Check:</span>
-                  <span className="text-gray-300 font-mono">
+                  <span className="font-mono text-gray-300">
                     {new Date(details.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
               )}
               
+              {llmStatus.memory_usage && (
+                <>
+                  <div className="pt-2 my-2 border-t border-gray-600">
+                    <div className="mb-2 text-xs font-medium text-gray-400">Memory Usage</div>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Process Memory:</span>
+                    <span className="font-mono text-gray-300">
+                      {llmStatus.memory_usage.process_memory_mb?.toFixed(1) || '0'} MB
+                      {llmStatus.memory_usage.process_memory_percent && (
+                        <span className="ml-1 text-gray-500">
+                          ({llmStatus.memory_usage.process_memory_percent.toFixed(1)}%)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">System Memory:</span>
+                    <span className="font-mono text-gray-300">
+                      {llmStatus.memory_usage.system_memory_used_percent?.toFixed(1) || '0'}% used
+                      {llmStatus.memory_usage.system_memory_available_gb && (
+                        <span className="ml-1 text-gray-500">
+                          ({llmStatus.memory_usage.system_memory_available_gb.toFixed(1)}GB free)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  
+                  {llmStatus.memory_usage.system_memory_total_gb && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Total System RAM:</span>
+                      <span className="font-mono text-gray-300">
+                        {llmStatus.memory_usage.system_memory_total_gb.toFixed(1)} GB
+                      </span>
+                    </div>
+                  )}
+                  
+                  {llmStatus.memory_usage.error && (
+                    <div className="p-2 mt-2 rounded border border-yellow-800 bg-yellow-900/30">
+                      <div className="mb-1 text-xs font-medium text-yellow-400">Memory Monitoring Error:</div>
+                      <div className="font-mono text-xs text-yellow-300 break-all">{llmStatus.memory_usage.error}</div>
+                    </div>
+                  )}
+                </>
+              )}
+              
               {details.error && (
-                <div className="mt-2 p-2 bg-red-900/30 border border-red-800 rounded">
-                  <div className="text-red-400 text-xs font-medium mb-1">Error Details:</div>
-                  <div className="text-red-300 text-xs font-mono break-all">{details.error}</div>
+                <div className="p-2 mt-2 rounded border border-red-800 bg-red-900/30">
+                  <div className="mb-1 text-xs font-medium text-red-400">Error Details:</div>
+                  <div className="font-mono text-xs text-red-300 break-all">{details.error}</div>
                 </div>
               )}
             </div>

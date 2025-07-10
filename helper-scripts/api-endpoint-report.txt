@@ -1,5 +1,5 @@
 WEB API TO CONVEX ENDPOINT ANALYSIS REPORT
-Generated: Wed Jul  9 13:35:29 EDT 2025
+Generated: Wed Jul  9 19:55:41 EDT 2025
 ==========================================
 
 SUMMARY:
@@ -7,7 +7,7 @@ SUMMARY:
 Total Next.js API routes: 23
 Matched routes: 8
 Missing in Convex: 15
-Extra Convex routes: 9
+Extra Convex routes: 12
 
 MATCHED ROUTES:
 ---------------
@@ -40,12 +40,15 @@ MISSING IN CONVEX:
 
 EXTRA CONVEX ROUTES:
 -------------------
+⚠️  /api/docker/status
+⚠️  /api/documents/by-id
 ⚠️  /api/embeddings
 ⚠️  /api/embeddings/batch
 ⚠️  /api/embeddings/generate
 ⚠️  /api/embeddings/llm-status
 ⚠️  /api/embeddings/search
 ⚠️  /api/health
+⚠️  /api/llm/memory-usage
 ⚠️  /api/telegram/messages
 ⚠️  /api/telegram/messages/thread
 ⚠️  /api/threads/by-id
