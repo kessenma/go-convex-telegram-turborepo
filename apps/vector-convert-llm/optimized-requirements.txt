@@ -1,0 +1,27 @@
+# Core dependencies - let pip resolve compatible versions
+sentence-transformers==2.2.2
+flask==3.0.0
+requests==2.31.0
+numpy==1.24.3
+gunicorn==21.2.0
+
+# PyTorch - standard versions (will use CPU by default in container)
+torch==2.1.0
+torchvision==0.16.0
+torchaudio==2.1.0
+
+# Text processing - let pip resolve compatible versions
+transformers>=4.30.0,<5.0.0
+tokenizers>=0.13.0,<0.15.0
+langchain-text-splitters==0.2.4
+
+# System monitoring
+psutil==5.9.6
+
+# Scientific computing
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# Utilities - let pip resolve compatible versions
+huggingface-hub>=0.16.0,<1.0.0
+safetensors>=0.3.0,<1.0.0

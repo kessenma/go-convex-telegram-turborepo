@@ -102,6 +102,37 @@ services:
       - telegram-bot-network
 
   # Vector Convert LLM Service
+ ## newish!!!!
+  # vector-convert-llm:
+  #   build:
+  #     context: ./apps/vector-convert-llm
+  #     dockerfile: Dockerfile
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 8G
+  #       reservations:
+  #         memory: 4G
+  #   ports:
+  #     - "8081:8081"
+  #   environment:
+  #     - PORT=8081
+  #     - CONVEX_URL=http://convex-backend:3211
+  #   depends_on:
+  #     convex-backend:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - telegram-bot-network
+  #   healthcheck:
+  #     test: curl -f http://localhost:8081/health || exit 1
+  #     interval: 30s
+  #     timeout: 10s
+  #     start_period: 60s
+  #     retries: 3
+
+
+  # Vector Convert LLM Service (Optimized & Stable)
   vector-convert-llm:
     build:
       context: ./apps/vector-convert-llm
@@ -109,14 +140,24 @@ services:
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 2G
         reservations:
-          memory: 4G
+          memory: 1G
     ports:
       - "8081:8081"
     environment:
       - PORT=8081
       - CONVEX_URL=http://convex-backend:3211
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - TRANSFORMERS_CACHE=/app/cache/transformers
+      - HF_HOME=/app/cache/huggingface
+      - TOKENIZERS_PARALLELISM=false
+      - OMP_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - NUMEXPR_NUM_THREADS=1
+      - VECLIB_MAXIMUM_THREADS=1
     depends_on:
       convex-backend:
         condition: service_healthy
@@ -128,7 +169,7 @@ services:
       interval: 30s
       timeout: 10s
       start_period: 60s
-      retries: 3
+      retries: 5
 
   # Next.js Web Dashboard Service
   web-dashboard:

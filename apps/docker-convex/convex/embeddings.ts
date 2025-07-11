@@ -92,6 +92,19 @@ export const processDocumentEmbedding = internalAction({
         embedding,
       });
 
+      // Create notification for embedding completion
+      await ctx.runMutation(api.notifications.createNotification, {
+        type: "document_embedding",
+        title: "Document Embedding Complete",
+        message: `Embedding generated for document "${document.title}"`,
+        documentId: args.documentId,
+        metadata: JSON.stringify({
+          embeddingLength: embedding.length,
+          contentType: document.contentType
+        }),
+        source: "system"
+      });
+
       return { success: true, message: "Embedding generated successfully" };
     } catch (error) {
       console.error("Error processing document embedding:", error);
@@ -157,6 +170,19 @@ export const processDocumentWithChunking = action({
       await ctx.runMutation(api.embeddings.updateDocumentEmbedding, {
         documentId: args.documentId,
         embedding,
+      });
+
+      // Create notification for embedding completion
+      await ctx.runMutation(api.notifications.createNotification, {
+        type: "document_embedding",
+        title: "Document Embedding Complete",
+        message: `Embedding generated for document "${document.title}"`,
+        documentId: args.documentId,
+        metadata: JSON.stringify({
+          embeddingLength: embedding.length,
+          contentType: document.contentType
+        }),
+        source: "system"
       });
 
       return { success: true, message: "Embedding generated successfully" };

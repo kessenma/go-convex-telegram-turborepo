@@ -31,6 +31,20 @@ export const saveDocument = mutation({
       embedding: undefined, // Will be populated by embedding service
     });
 
+    // Create notification for document upload
+    await ctx.runMutation(api.notifications.createNotification, {
+      type: "document_upload",
+      title: "Document Uploaded",
+      message: `Document "${args.title}" has been uploaded successfully`,
+      documentId: documentId,
+      metadata: JSON.stringify({
+        contentType: args.contentType,
+        fileSize: fileSize,
+        wordCount: wordCount
+      }),
+      source: "system"
+    });
+
     // Schedule embedding generation (async)
     await ctx.scheduler.runAfter(0, internal.embeddings.processDocumentEmbedding, {
       documentId: documentId,

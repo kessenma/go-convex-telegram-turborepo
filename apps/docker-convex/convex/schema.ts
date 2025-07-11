@@ -128,4 +128,21 @@ export default defineSchema({
     .index("by_status", ["responseStatus"])
     .index("by_source", ["requestSource"])
     .index("by_endpoint_and_time", ["endpoint", "timestamp"]),
+
+  // Notifications table - tracks user actions and system events
+  notifications: defineTable({
+    type: v.string(), // "document_uploaded", "document_embedded", "system_event"
+    title: v.string(), // Notification title
+    message: v.string(), // Notification message/description
+    timestamp: v.number(), // When the notification was created
+    isRead: v.boolean(), // Whether the notification has been read
+    documentId: v.optional(v.id("rag_documents")), // Reference to document if applicable
+    metadata: v.optional(v.string()), // JSON string for additional data
+    source: v.optional(v.string()), // "web", "telegram", "api", "system"
+  })
+    .index("by_timestamp", ["timestamp"])
+    .index("by_type", ["type"])
+    .index("by_read_status", ["isRead"])
+    .index("by_type_and_timestamp", ["type", "timestamp"])
+    .index("by_read_and_timestamp", ["isRead", "timestamp"]),
 });

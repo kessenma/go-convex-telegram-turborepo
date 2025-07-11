@@ -63,7 +63,12 @@ export const healthAPI = httpAction(async (ctx, request) => {
       }),
       { 
         status: 200,
-        headers: { "Content-Type": "application/json" }
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
       }
     );
   } catch (error) {
@@ -432,7 +437,15 @@ export const getDocumentByIdAPI = httpAction(async (ctx, request) => {
     if (!document) {
       return errorResponse("Document not found", 404);
     }
-    return new Response(JSON.stringify(document));
+    return new Response(JSON.stringify(document), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return errorResponse("Internal server error", 500, message);
@@ -810,6 +823,199 @@ export const getDockerStatusAPI = httpAction(async (ctx, request) => {
 });
 
 // =============================================================================
+// NOTIFICATIONS API ENDPOINTS
+// =============================================================================
+
+// Get all notifications
+export const getNotificationsAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const limit = url.searchParams.get("limit");
+    const type = url.searchParams.get("type");
+    
+    let notifications;
+    if (type) {
+      notifications = await ctx.runQuery(api.notifications.getNotificationsByType, {
+        type,
+        limit: limit ? parseInt(limit) : undefined,
+      });
+    } else {
+      notifications = await ctx.runQuery(api.notifications.getAllNotifications, {
+        limit: limit ? parseInt(limit) : undefined,
+      });
+    }
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        notifications,
+        count: notifications.length,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    return errorResponse(
+      "Failed to fetch notifications",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Create a new notification
+export const createNotificationAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    
+    // Validate required fields
+    if (!body.type || !body.title || !body.message) {
+      return errorResponse("Missing required fields: type, title, message", 400);
+    }
+    
+    const notificationId = await ctx.runMutation(api.notifications.createNotification, {
+      type: body.type,
+      title: body.title,
+      message: body.message,
+      documentId: body.documentId,
+      metadata: body.metadata,
+      source: body.source,
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        notificationId,
+        message: "Notification created successfully",
+      }),
+      {
+        status: 201,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error creating notification:", error);
+    return errorResponse(
+      "Failed to create notification",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Get unread notifications count
+export const getUnreadNotificationsCountAPI = httpAction(async (ctx, request) => {
+  try {
+    const count = await ctx.runQuery(api.notifications.getUnreadCount, {});
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        unreadCount: count,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching unread count:", error);
+    return errorResponse(
+      "Failed to fetch unread count",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Mark notification as read
+export const markNotificationAsReadAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    
+    if (!body.notificationId) {
+      return errorResponse("Missing required field: notificationId", 400);
+    }
+    
+    await ctx.runMutation(api.notifications.markAsRead, {
+      notificationId: body.notificationId,
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Notification marked as read",
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "PUT, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+    return errorResponse(
+      "Failed to mark notification as read",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Mark all notifications as read
+export const markAllNotificationsAsReadAPI = httpAction(async (ctx, request) => {
+  try {
+    const markedCount = await ctx.runMutation(api.notifications.markAllAsRead, {});
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        markedCount,
+        message: `${markedCount} notifications marked as read`,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "PUT, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+    return errorResponse(
+      "Failed to mark all notifications as read",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// =============================================================================
 // HTTP ROUTER CONFIGURATION
 // =============================================================================
 
@@ -953,6 +1159,37 @@ http.route({
   path: "/api/llm/memory-usage",
   method: "POST",
   handler: saveLLMMemoryUsageAPI,
+});
+
+// NOTIFICATIONS API ENDPOINTS
+http.route({
+  path: "/api/notifications",
+  method: "GET",
+  handler: getNotificationsAPI,
+});
+
+http.route({
+  path: "/api/notifications",
+  method: "POST",
+  handler: createNotificationAPI,
+});
+
+http.route({
+  path: "/api/notifications/unread-count",
+  method: "GET",
+  handler: getUnreadNotificationsCountAPI,
+});
+
+http.route({
+  path: "/api/notifications/mark-read",
+  method: "PUT",
+  handler: markNotificationAsReadAPI,
+});
+
+http.route({
+  path: "/api/notifications/mark-all-read",
+  method: "PUT",
+  handler: markAllNotificationsAsReadAPI,
 });
 
 // PARAMETERIZED ROUTES (Must be placed last to avoid conflicts)

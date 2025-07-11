@@ -17,6 +17,9 @@ interface DocumentSelectorProps {
 export function DocumentSelector({ documents, selectedDocuments, onDocumentToggle, onStartChat }: DocumentSelectorProps) {
   const [showOnlyEmbedded, setShowOnlyEmbedded] = useState(false);
 
+  // Ensure documents is an array
+  const safeDocuments = Array.isArray(documents) ? documents : [];
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -34,10 +37,10 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
   };
 
   const filteredDocuments = showOnlyEmbedded 
-    ? documents.filter(doc => doc.embedding && doc.embedding.length > 0)
-    : documents;
+    ? safeDocuments.filter(doc => doc.embedding && doc.embedding.length > 0)
+    : safeDocuments;
 
-  const embeddedCount = documents.filter(doc => doc.embedding && doc.embedding.length > 0).length;
+  const embeddedCount = safeDocuments.filter(doc => doc.embedding && doc.embedding.length > 0).length;
 
   return (
     <div className="space-y-6">
@@ -53,7 +56,7 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
           </div>
           <div className="flex gap-2 items-center text-sm text-gray-400">
             {renderIcon(ZapOff, { className: "w-4 h-4 text-yellow-400" })}
-            <span>{documents.length - embeddedCount} not embedded</span>
+            <span>{safeDocuments.length - embeddedCount} not embedded</span>
           </div>
         </div>
       </div>
@@ -72,7 +75,7 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
         </button>
       </div>
 
-      {documents && documents.length > 0 ? (
+      {safeDocuments && safeDocuments.length > 0 ? (
         <>
           <div className="grid gap-4">
             {filteredDocuments.map((doc) => {

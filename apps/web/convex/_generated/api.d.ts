@@ -20,6 +20,7 @@ import type * as embeddings from "../embeddings.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as messagesThread from "../messagesThread.js";
+import type * as notifications from "../notifications.js";
 import type * as requestLogs from "../requestLogs.js";
 import type * as threads from "../threads.js";
 
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   messages: typeof messages;
   messagesThread: typeof messagesThread;
+  notifications: typeof notifications;
   requestLogs: typeof requestLogs;
   threads: typeof threads;
 }>;

@@ -14,12 +14,26 @@ import psutil
 import gc
 import threading
 import requests
+import multiprocessing
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 app = Flask(__name__)
+
+
+# Set multiprocessing start method to 'spawn' to avoid fork/thread issues with PyTorch/NumPy
+try:
+    multiprocessing.set_start_method('spawn')
+except RuntimeError:
+    pass
+
+# Service endpoints ready
+logger.info("Model loaded and memory monitor started. Available endpoints: /health, /embed, /similarity, /search, /process-document, /process-markdown, /embed-and-save")
+
+
 
 # Add request logging middleware
 @app.before_request
@@ -28,7 +42,8 @@ def log_request_info():
         logger.info(f"Incoming request: {request.method} {request.path}")
         logger.info(f"Request headers: {dict(request.headers)}")
         logger.info(f"Content-Type: {request.content_type}")
-        if request.content_type == 'application/json':
+        # Only try to parse JSON for methods that should have a body
+        if request.content_type == 'application/json' and request.method in ('POST', 'PUT', 'PATCH'):
             try:
                 data = request.get_json(force=True)
                 logger.info(f"Request JSON: {data}")
@@ -55,6 +70,35 @@ model_loading = False
 model_error = None
 start_time = time.time()
 load_start_time = None
+
+LLM_LOG_PATH = "/tmp/llm_error_logs.json"
+llm_error_logs = []
+
+def load_llm_error_logs():
+    global llm_error_logs
+    if os.path.exists(LLM_LOG_PATH):
+        try:
+            with open(LLM_LOG_PATH, "r") as f:
+                llm_error_logs = json.load(f)
+        except Exception:
+            llm_error_logs = []
+
+def save_llm_error_logs():
+    try:
+        with open(LLM_LOG_PATH, "w") as f:
+            json.dump(llm_error_logs[-100:], f)
+    except Exception:
+        pass
+
+def log_llm_error(message):
+    llm_error_logs.append({
+        "timestamp": int(time.time() * 1000),
+        "message": str(message)
+    })
+    # Keep only last 100 errors
+    if len(llm_error_logs) > 100:
+        llm_error_logs.pop(0)
+    save_llm_error_logs()
 
 def create_conversion_job(job_type, document_id=None, input_text=None, request_source="api"):
     """Create a new conversion job in Convex"""
@@ -115,16 +159,14 @@ def load_model():
         model_loading = True
         model_error = None
         load_start_time = time.time()
-        logger.info("Loading minimal sentence-transformers model: all-MiniLM-L6-v2")
-        
-        # Import here to avoid startup issues
-        from sentence_transformers import SentenceTransformer
-        
-        # Use a smaller, more stable model to avoid segmentation faults
-        model = SentenceTransformer('all-MiniLM-L6-v2')
+        logger.info("Starting model download and initialization...")
+        model_name = 'BAAI/bge-small-en'
+        logger.info(f"Loading sentence-transformers model: {model_name}")
+        model = SentenceTransformer(model_name)
         model_loaded = True
         model_loading = False
         logger.info("Model loaded successfully")
+        logger.info("Service endpoints ready: /health, /embed, /similarity, /search, /process-document, /process-markdown, /embed-and-save")
     except Exception as e:
         model_loading = False
         model_error = str(e)
@@ -137,6 +179,25 @@ def load_model_async():
         load_model()
     except Exception as e:
         logger.error(f"Background model loading failed: {e}")
+
+# Remove this block:
+# logger.info("Preloading model at import time")
+# load_model()
+# logger.info("Starting vector-convert-llm service...")
+# threading.Thread(target=load_model_async, daemon=True).start()
+
+# Instead, load logs and model only in main or Gunicorn worker
+def startup():
+    load_llm_error_logs()
+    load_model()
+
+# Preload model synchronously at import to ensure model is loaded before workers fork
+# logger.info("Preloading model at import time")
+# load_model()
+
+# Start model loading at import time
+# logger.info("Starting vector-convert-llm service...")
+# threading.Thread(target=load_model_async, daemon=True).start()
 
 def chunk_document(content: str, content_type: str = "text", chunk_size: int = 1000, chunk_overlap: int = 200) -> List[str]:
     """Chunk document content using LangChain text splitters"""
@@ -190,11 +251,13 @@ def list_routes():
     return jsonify({'routes': routes}), 200
 
 def get_memory_usage():
-    """Get current memory usage information"""
+    """Get current memory and CPU usage information"""
     try:
         process = psutil.Process()
         memory_info = process.memory_info()
         memory_percent = process.memory_percent()
+        # Add CPU usage (percent over 0.1s interval)
+        cpu_percent = process.cpu_percent(interval=0.1)
         
         # Get system memory info
         system_memory = psutil.virtual_memory()
@@ -202,15 +265,17 @@ def get_memory_usage():
         return {
             'process_memory_mb': round(memory_info.rss / 1024 / 1024, 2),
             'process_memory_percent': round(memory_percent, 2),
+            'process_cpu_percent': round(cpu_percent, 2),
             'system_memory_total_gb': round(system_memory.total / 1024 / 1024 / 1024, 2),
             'system_memory_available_gb': round(system_memory.available / 1024 / 1024 / 1024, 2),
             'system_memory_used_percent': round(system_memory.percent, 2)
         }
     except Exception as e:
-        logger.error(f"Error getting memory usage: {e}")
+        logger.error(f"Error getting memory/cpu usage: {e}")
         return {
             'process_memory_mb': 0,
             'process_memory_percent': 0,
+            'process_cpu_percent': 0,
             'system_memory_total_gb': 0,
             'system_memory_available_gb': 0,
             'system_memory_used_percent': 0,
@@ -268,6 +333,7 @@ def memory_monitoring_worker():
             logger.error(f"Error in memory monitoring worker: {e}")
             time.sleep(60)  # Wait longer on error
 
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint with detailed status and memory usage"""
@@ -301,13 +367,14 @@ def health_check():
         ready = False
         message = "Service starting, model not yet loaded"
     
+    model_name = 'BAAI/bge-small-en'
     return jsonify({
         'status': status,
         'ready': ready,
         'message': message,
         'model_loaded': model_loaded,
         'model_loading': model_loading,
-        'model': 'sentence-transformers/all-MiniLM-L6-v2' if model_loaded else None,
+        'model': model_name if model_loaded else None,
         'service': 'vector-convert-llm',
         'uptime': uptime,
         'error': model_error,
@@ -367,6 +434,7 @@ def encode_sentences():
             
         except Exception as e:
             logger.error(f"Error during encoding: {e}", exc_info=True)
+            log_llm_error(e)
             return jsonify({"error": str(e)}), 500
             
     except Exception as e:
@@ -432,6 +500,7 @@ def embed_text():
             logger.info(f"Embeddings generated successfully. Shape: {embeddings.shape}")
         except Exception as embed_error:
             logger.error(f"Error during embedding generation: {embed_error}", exc_info=True)
+            log_llm_error(embed_error)
             return jsonify({'error': f'Embedding generation failed: {str(embed_error)}'}), 500
         
         # Convert to list for JSON serialization
@@ -542,6 +611,7 @@ def calculate_similarity():
             update_conversion_job(job_id, "failed", error_message=str(e), processing_time_ms=processing_time)
         
         logger.error(f"Error in calculate_similarity: {e}")
+        log_llm_error(e)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/search', methods=['POST'])
@@ -588,6 +658,7 @@ def semantic_search():
         
     except Exception as e:
         logger.error(f"Error in semantic_search: {e}")
+        log_llm_error(e)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/process-document', methods=['POST'])
@@ -595,72 +666,87 @@ def process_document_embedding():
     """Fetch document from Convex, generate embedding with chunking, and save back to Convex"""
     start_time = time.time()
     job_id = None
-    
+
     try:
         if model is None:
             return jsonify({'error': 'Model not loaded'}), 500
-        
+
         data = request.get_json()
         if not data or 'document_id' not in data:
             return jsonify({'error': 'Missing document_id field in request'}), 400
-        
+
         document_id = data['document_id']
         convex_url = data.get('convex_url', os.environ.get('CONVEX_URL'))
         use_chunking = data.get('use_chunking', True)  # Enable chunking by default
         chunk_size = data.get('chunk_size', 1000)
         chunk_overlap = data.get('chunk_overlap', 200)
-        
-        if not convex_url:
-            return jsonify({'error': 'Convex URL not provided'}), 400
-        
-        logger.info(f"Processing document embedding for ID: {document_id} (chunking: {use_chunking})")
-        
-        # Create conversion job
-        job_id = create_conversion_job(
-            job_type="document_embedding",
-            document_id=document_id,
-            request_source="web_app"
-        )
-        
-        if job_id:
-            update_conversion_job(job_id, "processing")
-        
-        # Fetch document from Convex
-        logger.info(f"Fetching document from Convex: {document_id}")
-        fetch_url = f"{convex_url}/api/documents/{document_id}"
-        fetch_response = requests.get(fetch_url)
-        
-        if fetch_response.status_code != 200:
-            error_msg = f"Failed to fetch document from Convex: {fetch_response.status_code} - {fetch_response.text}"
-            logger.error(error_msg)
+
+        # Prefer inputText from request if present
+        input_text = data.get('inputText')
+        content_type = data.get('contentType', 'markdown')  # Default to markdown for .md files
+
+        if input_text:
+            text = input_text
+            logger.info(f"Using inputText from request, length: {len(text)}")
+            print(f"EXTRACTED inputText (first 200 chars): {text[:200]}")
+        else:
+            if not convex_url:
+                return jsonify({'error': 'Convex URL not provided'}), 400
+
+            logger.info(f"Processing document embedding for ID: {document_id} (chunking: {use_chunking})")
+
+            # Create conversion job
+            job_id = create_conversion_job(
+                job_type="document_embedding",
+                document_id=document_id,
+                input_text=None,
+                request_source="web_app"
+            )
+
             if job_id:
-                update_conversion_job(job_id, "failed", error_message=error_msg)
-            return jsonify({
-                'error': 'Failed to fetch document from Convex',
-                'convex_status': fetch_response.status_code,
-                'convex_error': fetch_response.text
-            }), 500
-        
-        document_data = fetch_response.json()
-        text = document_data.get('content')
-        content_type = document_data.get('contentType', 'text')
-        
-        if not text:
-            error_msg = "Document content is empty or missing"
-            logger.error(error_msg)
-            if job_id:
-                update_conversion_job(job_id, "failed", error_message=error_msg)
-            return jsonify({'error': error_msg}), 400
-        
-        logger.info(f"Document fetched successfully, content length: {len(text)}, type: {content_type}")
-        
+                update_conversion_job(job_id, "processing")
+
+            # Fetch document from Convex
+            logger.info(f"Fetching document from Convex: {document_id}")
+            fetch_url = f"{convex_url}/api/documents/{document_id}"
+            fetch_response = requests.get(fetch_url)
+
+            if fetch_response.status_code != 200:
+                error_msg = f"Failed to fetch document from Convex: {fetch_response.status_code} - {fetch_response.text}"
+                logger.error(error_msg)
+                if job_id:
+                    update_conversion_job(job_id, "failed", error_message=error_msg)
+                return jsonify({
+                    'error': 'Failed to fetch document from Convex',
+                    'convex_status': fetch_response.status_code,
+                    'convex_error': fetch_response.text
+                }), 500
+
+            document_data = fetch_response.json()
+            text = document_data.get('content')
+            content_type = document_data.get('contentType', 'text')
+
+            if not text:
+                error_msg = "Document content is empty or missing"
+                logger.error(error_msg)
+                if job_id:
+                    update_conversion_job(job_id, "failed", error_message=error_msg)
+                return jsonify({'error': error_msg}), 400
+
+            logger.info(f"Document fetched successfully, content length: {len(text)}, type: {content_type}")
+            print(f"FETCHED document content (first 200 chars): {text[:200]}")
+
         # Generate embedding with chunking
         if use_chunking and len(text) > chunk_size:
             logger.info("‼️Using chunking for large documen🤖...")
-            
+
             # Chunk the document
             chunks = chunk_document(text, content_type, chunk_size, chunk_overlap)
-            
+            logger.info(f"Document chunked into {len(chunks)} pieces (chunk_size={chunk_size}, overlap={chunk_overlap})")
+            print(f"CHUNKS ({len(chunks)}):")
+            for i, chunk in enumerate(chunks):
+                print(f"Chunk {i+1} (length {len(chunk)}): {chunk[:120]}{'...' if len(chunk) > 120 else ''}")
+
             # Generate embeddings for each chunk with memory management
             logger.info(f"Generating embeddings for {len(chunks)} chunks...")
             chunk_embeddings = []
@@ -690,6 +776,7 @@ def process_document_embedding():
                     
                 except Exception as batch_error:
                     logger.error(f"Error processing batch {batch_start//batch_size + 1}: {batch_error}")
+                    log_llm_error(batch_error)
                     
                     # Fallback: try processing chunks individually in this batch
                     for i, chunk in enumerate(batch_chunks):
@@ -776,11 +863,11 @@ def process_document_embedding():
         processing_time = int((time.time() - start_time) * 1000)
         error_msg = f"Error in process_document_embedding: {e}"
         logger.error(error_msg, exc_info=True)
-        
+        if 'log_llm_error' in globals():
+            log_llm_error(error_msg)
         # Update job as failed
         if job_id:
             update_conversion_job(job_id, "failed", error_message=str(e), processing_time_ms=processing_time)
-        
         return jsonify({'error': str(e)}), 500
 
 @app.route('/process-markdown', methods=['POST'])
@@ -852,6 +939,7 @@ def process_markdown_document():
                 
             except Exception as batch_error:
                 logger.error(f"Error processing batch {batch_start//batch_size + 1}: {batch_error}")
+                log_llm_error(batch_error)
                 
                 # Fallback: try processing chunks individually in this batch
                 for i, chunk in enumerate(batch_chunks):
@@ -996,19 +1084,17 @@ def embed_and_save():
         logger.error(f"Error in embed_and_save_to_convex: {e}")
         return jsonify({'error': str(e)}), 500
 
-# Start model loading in background thread when module is imported
-logger.info("Starting vector-convert-llm service...")
-model_thread = threading.Thread(target=load_model_async, daemon=True)
-model_thread.start()
+@app.route('/logs', methods=['GET'])
+def get_llm_logs():
+    return jsonify({"logs": llm_error_logs[-50:]})
 
-# Start memory monitoring worker thread
-logger.info("Starting memory monitoring worker...")
-memory_thread = threading.Thread(target=memory_monitoring_worker, daemon=True)
-memory_thread.start()
+if __name__ == "__main__":
+    startup()
+    logger.info("Starting memory monitoring worker...")
+    threading.Thread(target=memory_monitoring_worker, daemon=True).start()
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8081)))
 
-logger.info("Service initialized, model loading in background...")
-logger.info("Available endpoints: /health, /embed, /similarity, /search, /process-document, /process-markdown, /embed-and-save")
-
-if __name__ == '__main__':
-    logger.info("Starting minimal vector-convert-llm service...")
-    app.run(host='0.0.0.0', port=8081, debug=False, threaded=True)
+# For Gunicorn, use post-fork hook:
+def post_fork(server, worker):
+    startup()
+    logger.info("Worker started, model loaded.")

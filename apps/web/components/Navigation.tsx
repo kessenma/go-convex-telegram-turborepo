@@ -11,6 +11,7 @@ import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, Chevro
 import { renderIcon } from "../lib/icon-utils";
 import { motion } from "motion/react";
 import { Settings } from "./Settings";
+import { Notifications } from "./Notifications";
 
 export default function Navigation(): React.ReactNode {
   const pathname = usePathname();
@@ -241,7 +242,8 @@ interface NavItem {
           })}
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center gap-1">
+          <Notifications />
           <Settings />
         </div>
       </div>
