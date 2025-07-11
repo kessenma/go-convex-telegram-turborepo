@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import { Search, Loader2, FileText, Calendar, Hash } from "lucide-react";
-import { renderIcon } from "../../../lib/icon-utils";
-import { Card } from "../../../components/ui/card";
-import { Button as MovingButton } from "../../../components/ui/moving-border";
+import { renderIcon } from "../../lib/icon-utils";
+import { Card } from "../ui/card";
+import { Button as MovingButton } from "../ui/moving-border";
 
 interface SearchResult {
   _id: string;

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.11",
+    "@radix-ui/react-scroll-area": "^1.2.9",
     "@repo/ui": "workspace:*",
     "@tabler/icons-react": "^3.34.0",
     "@tsparticles/engine": "^3.8.1",
@@ -23,6 +24,7 @@
     "clsx": "^2.1.1",
     "convex": "^1.25.2",
     "framer-motion": "^12.23.0",
+    "gsap": "^3.13.0",
     "lucide-react": "^0.525.0",
     "motion": "^12.19.2",
     "next": "^15.3.0",
@@ -31,6 +33,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.8",
+    "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",
     "three": "^0.178.0",
     "zustand": "^5.0.6"

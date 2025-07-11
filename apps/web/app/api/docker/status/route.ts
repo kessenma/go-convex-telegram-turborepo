@@ -16,7 +16,7 @@ export async function GET() {
       success: true,
       status: 'healthy',
       ready: true,
-      message: 'Optimized for 32GB system - generous memory allocation',
+      message: '18gb ram allocated',
       services: [
         {
           name: 'web-dashboard',
@@ -56,18 +56,10 @@ export async function GET() {
           driver: 'bridge',
           scope: 'local',
           attachedServices: 4,
-          ports: [
-            process.env.WEB_DASHBOARD_PORT || '3000',
-            process.env.CONVEX_DASHBOARD_PORT || '3210', 
-            process.env.VECTOR_CONVERT_LLM_PORT || '8081'
-          ]
+          // Remove ports from here, handled per-service
         }
       ],
-      resources: {
-        cpu_usage: 25.5,
-        memory_usage: 42.8, // Optimized for 32GB system
-        disk_usage: 2.1
-      },
+      // Remove resources, not available in Next.js API
       environment: {
         DOCKER_HOST: dockerHost,
         WEB_DASHBOARD_PORT: process.env.WEB_DASHBOARD_PORT || '3000',

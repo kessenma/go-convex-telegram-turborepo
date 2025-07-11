@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Card } from '../../../components/ui/card';
+import { Card } from '../ui/card';
 import { Loader2, BarChart3 } from 'lucide-react';
-import { renderIcon } from '../../../lib/icon-utils';
+import { renderIcon } from '../../lib/icon-utils';
 
 interface VectorEmbeddingProps {
   hasDocuments: boolean;

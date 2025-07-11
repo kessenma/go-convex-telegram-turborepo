@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import CountUp from '../../../components/ui/text-animations/count-up';
+import CountUp from '../ui/text-animations/count-up';
 
 interface DocumentStatsProps {
   stats: {

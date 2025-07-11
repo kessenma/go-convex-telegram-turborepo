@@ -30,11 +30,11 @@ export async function GET() {
     }
 
     const healthData = await response.json();
-    
+
     // Map the Python service status to our frontend status
     let actualStatus: string;
     let ready = healthData.ready || false;
-    
+
     switch (healthData.status) {
       case 'healthy':
         actualStatus = 'healthy';
@@ -56,7 +56,7 @@ export async function GET() {
         actualStatus = 'connecting';
         ready = false;
     }
-    
+
     // Transform the health response to our expected format
     return NextResponse.json({
       success: true,
@@ -69,8 +69,10 @@ export async function GET() {
         model_loaded: healthData.model_loaded !== false,
         model_loading: healthData.model_loading || false,
         uptime: healthData.uptime?.toString(),
-        error: healthData.error || null
-      }
+        error: healthData.error || null,
+        timestamp: new Date().toISOString()
+      },
+      memory_usage: healthData.memory_usage // propagate memory usage if present
     });
 
   } catch (error) {

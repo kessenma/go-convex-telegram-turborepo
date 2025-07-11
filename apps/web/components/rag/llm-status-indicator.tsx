@@ -5,6 +5,8 @@ import { cn } from "../../lib/utils";
 import { renderIcon } from "../../lib/icon-utils";
 import { CheckCircle, AlertCircle, Loader2, Brain, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { useLLMStatus } from "../../hooks/use-status-operations";
+import { LLMUsageBarChart } from "./llm-usage-bar-chart";
+import { LLMLogs } from "./LLMLogs";
 
 interface LLMStatusIndicatorProps {
   size?: "sm" | "md" | "lg";
@@ -143,6 +145,11 @@ export const LLMStatusIndicator = ({
                 Uptime: {formatUptime(details.uptime)}
               </div>
             )}
+            {details?.timestamp && (
+              <div className="mt-1 text-xs text-gray-400">
+                Last checked: {new Date(details.timestamp).toLocaleTimeString()}
+              </div>
+            )}
           </div>
         )}
         
@@ -214,7 +221,7 @@ export const LLMStatusIndicator = ({
               {llmStatus.memory_usage && (
                 <>
                   <div className="pt-2 my-2 border-t border-gray-600">
-                    <div className="mb-2 text-xs font-medium text-gray-400">Memory Usage</div>
+                    <div className="mb-2 text-xs font-medium text-gray-400">Memory & CPU Usage</div>
                   </div>
                   
                   <div className="flex justify-between">
@@ -228,6 +235,15 @@ export const LLMStatusIndicator = ({
                       )}
                     </span>
                   </div>
+                  
+                  {llmStatus.memory_usage.process_cpu_percent !== undefined && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Process CPU:</span>
+                      <span className="font-mono text-gray-300">
+                        {llmStatus.memory_usage.process_cpu_percent.toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
                   
                   <div className="flex justify-between">
                     <span className="text-gray-400">System Memory:</span>
@@ -266,6 +282,16 @@ export const LLMStatusIndicator = ({
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="my-4">
+            <LLMUsageBarChart />
+          </div>
+          <div className="text-xs text-gray-500 mt-2">
+            Note: Memory and CPU usage is updated every 5 seconds.
+        </div>
+          <div className="text-xs text-gray-500 mt-2">
+            <LLMLogs />
           </div>
         </div>
       )}

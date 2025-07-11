@@ -9,10 +9,11 @@ import { Hero, TextAnimationType } from "../../components/ui/hero";
 import { Card } from "../../components/ui/card";
 import { BackgroundGradient } from "../../components/ui/backgrounds/background-gradient";
 import { SparklesCore } from "../../components/ui/sparkles";
-import { UploadForm } from "./components/UploadForm";
-import { DocumentStats } from "./components/DocumentStats";
+import { UploadForm } from "../../components/rag/UploadForm";
+import { DocumentStats } from "../../components/rag/DocumentStats";
 import { DocumentHistory } from "../../components/rag/DocumentHistory";
-import { ThreeJSUploadIcon } from "./components/ThreeJSUploadIcon";
+import { ThreeJSUploadIcon } from "../../components/rag/ThreeJSUploadIcon";
+import { LLMUsageBarChart } from "../../components/rag/llm-usage-bar-chart";
 
 import { ConvexStatusIndicator } from "../../components/convex/convex-status-indicator";
 import { useStatusOperations } from "../../hooks/use-status-operations";
@@ -320,6 +321,17 @@ export default function RAGUploadPage(): React.ReactElement | null {
             className="mx-auto max-w-md"
             showLogs={true}
           />
+        </div>
+        {/* LLM Status Indicator */}
+        <div className="mb-6">
+          <LLMStatusIndicator
+            size="sm"
+            showLogs={true}
+            className="bg-gray-50 dark:bg-gray-800/30"
+          />
+          <div className="mt-4">
+            <LLMUsageBarChart />
+          </div>
         </div>
 
 

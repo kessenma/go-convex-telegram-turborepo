@@ -3,9 +3,10 @@
 import React, { RefObject, useCallback } from "react";
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, Type, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { renderIcon } from "../../../lib/icon-utils";
-import { Button as MovingButton } from "../../../components/ui/moving-border";
-import { StickyBanner } from "../../../components/ui/sticky-banner";
+import { renderIcon } from "../../lib/icon-utils";
+import { Button as MovingButton } from "../ui/moving-border";
+import { StickyBanner } from "../ui/sticky-banner";
+import { toast } from "sonner";
 
 interface UploadFormProps {
   uploadMethod: 'file' | 'text';
@@ -106,6 +107,16 @@ export function UploadForm({
   handleGenerateEmbeddings,
   embeddingMessage,
 }: UploadFormProps): React.ReactElement | null {
+  // Show toast on upload status change
+  React.useEffect(() => {
+    if (uploadStatus === "success" && uploadMessage) {
+      toast.success(uploadMessage);
+    }
+    if (uploadStatus === "error" && uploadMessage) {
+      toast.error(uploadMessage);
+    }
+  }, [uploadStatus, uploadMessage]);
+
   return (
     <div className="p-6">
       <h2 className="mb-4 text-xl font-semibold text-white">Choose Upload Method</h2>

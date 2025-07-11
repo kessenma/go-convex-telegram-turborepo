@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { toast } from "sonner";
 
 // LLM Status Types
 interface LLMStatus {
@@ -20,6 +21,7 @@ interface LLMStatus {
   memory_usage?: {
     process_memory_mb?: number;
     process_memory_percent?: number;
+    process_cpu_percent?: number;
     system_memory_total_gb?: number;
     system_memory_available_gb?: number;
     system_memory_used_percent?: number;
@@ -416,18 +418,19 @@ export const useStatusStore = create<StatusStore>()(devtools(
     // API actions
     checkLLMStatus: async () => {
       const { setLLMLoading, setLLMStatus, incrementLLMErrors, resetLLMErrors, updateLLMPollingInterval } = get();
-      
+
       setLLMLoading(true);
-      
+
       try {
         const response = await fetch('/api/llm/status', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           signal: AbortSignal.timeout(5000)
         });
-        
+
         if (!response.ok) {
           incrementLLMErrors();
+          toast.error(`LLM Error: ${response.status} ${response.statusText}`);
           setLLMStatus({
             status: 'error',
             ready: false,
@@ -440,21 +443,26 @@ export const useStatusStore = create<StatusStore>()(devtools(
           updateLLMPollingInterval();
           return false;
         }
-        
+
         const data = await response.json();
         resetLLMErrors();
         setLLMStatus({
           status: data.status || 'error',
-          ready: data.ready || false,
+          ready: data.ready ?? false,
           message: data.message || 'LLM status unknown',
           model: data.model,
-          details: data.details || { timestamp: new Date().toISOString() }
+          details: {
+            ...data.details,
+            timestamp: new Date().toISOString()
+          },
+          memory_usage: data.memory_usage // propagate memory usage if present
         });
         updateLLMPollingInterval();
         return true;
       } catch (error) {
         incrementLLMErrors();
         const errorMessage = error instanceof Error ? error.message : 'Cannot connect to LLM service';
+        toast.error(`LLM Error: ${errorMessage}`);
         setLLMStatus({
           status: 'error',
           ready: false,

@@ -101,7 +101,6 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
       if (response.ok) {
         const result = await response.json();
         console.log('Embedding generated successfully:', result);
-        
         // Refresh document data to show updated embedding status
         const docResponse = await fetch(`/api/documents/${documentId}`);
         if (docResponse.ok) {
@@ -112,7 +111,7 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
       } else {
         const errorData = await response.json();
         console.error('Error generating embedding:', errorData);
-        setError(`Failed to generate embedding: ${errorData.error || 'Unknown error'}`);
+        setError(`Failed to generate embedding: ${errorData.error || JSON.stringify(errorData) || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error generating embedding:', error);

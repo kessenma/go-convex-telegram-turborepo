@@ -193,6 +193,11 @@ export function DockerStatusIndicator({ size = "md", showLogs = true, className 
                       <div key={index} className="flex justify-between items-center text-sm">
                         <span className="text-gray-700 dark:text-gray-300">{service.name}</span>
                         <div className="flex items-center space-x-2">
+                         {service.port && (
+                           <span className="px-2 py-1 font-mono text-xs text-blue-800 bg-blue-100 rounded dark:bg-blue-900/30 dark:text-blue-400">
+                             {service.port}
+                           </span>
+                         )}
                           <span className={cn(
                             "px-2 py-1 rounded text-xs font-medium",
                             service.status === 'running' 
@@ -212,50 +217,6 @@ export function DockerStatusIndicator({ size = "md", showLogs = true, className 
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Network & Ports */}
-              {status.networks && status.networks.length > 0 && (
-                <div>
-                  <h4 className="flex items-center mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    {renderIcon(Network, { className: "w-4 h-4 mr-2" })}
-                    Network & Ports
-                  </h4>
-                  {status.networks.map((network: DockerNetwork, networkIndex: number) => (
-                    <div key={networkIndex} className="mb-4 space-y-2">
-                      {network.name && (
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-700 dark:text-gray-300">Network</span>
-                          <span className="text-gray-500 dark:text-gray-400">{network.name}</span>
-                        </div>
-                      )}
-                      {network.driver && (
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-700 dark:text-gray-300">Driver</span>
-                          <span className="text-gray-500 dark:text-gray-400">{network.driver}</span>
-                        </div>
-                      )}
-                      {network.attachedServices && (
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-700 dark:text-gray-300">Attached Services</span>
-                          <span className="text-gray-500 dark:text-gray-400">{network.attachedServices}</span>
-                        </div>
-                      )}
-                      {network.ports && network.ports.length > 0 && (
-                        <div>
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Exposed Ports:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {network.ports.map((port: string, index: number) => (
-                              <span key={index} className="px-2 py-1 font-mono text-xs text-blue-800 bg-blue-100 rounded dark:bg-blue-900/30 dark:text-blue-400">
-                                {port}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
                 </div>
               )}
 

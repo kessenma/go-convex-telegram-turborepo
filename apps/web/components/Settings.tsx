@@ -10,6 +10,7 @@ import { renderIcon } from "../lib/icon-utils";
 import { LLMStatusIndicator } from "./rag/llm-status-indicator";
 import { ConvexStatusIndicator } from "./convex/convex-status-indicator";
 import { DockerStatus } from "./docker-status";
+import { ScrollArea } from "../components/ui/scroll-area";
 
 interface SettingsProps {
   className?: string;
@@ -78,7 +79,7 @@ export function Settings({ className }: SettingsProps) {
       >
         {renderIcon(SettingsIcon, { className: "w-5 h-5 text-gray-600 dark:text-gray-400" })}
       </button>
-
+  
       <AnimatePresence>
         {isOpen && (
           <>
@@ -102,85 +103,87 @@ export function Settings({ className }: SettingsProps) {
               }}
               className="w-96 bg-white rounded-xl border border-gray-200 shadow-2xl dark:bg-gray-900 dark:border-gray-700"
             >
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Settings
-                  </h2>
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    {renderIcon(X, { className: "w-5 h-5 text-gray-500 dark:text-gray-400" })}
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  {/* System Status Section */}
-                  <div>
-                    <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
-                      System Status
-                    </h3>
-                    <div className="space-y-3">
-                      {/* LLM Status */}
-                      <LLMStatusIndicator
-                        size="sm"
-                        showLogs={false}
-                        className="bg-gray-50 dark:bg-gray-800/30"
-                      />
-                      
-                      {/* Convex Status */}
-                      <ConvexStatusIndicator
-                        size="sm"
-                        showLogs={false}
-                        className="bg-gray-50 dark:bg-gray-800/30"
-                      />
-                      
-                      {/* Docker Status */}
-                      <DockerStatus
-                        size="sm"
-                        showLogs={false}
-                        className="bg-gray-50 dark:bg-gray-800/30"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Settings Section */}
-                  <div>
-                    <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Preferences
-                    </h3>
-                    <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                        Animation Light Mode
-                      </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Enable lighter animations for better performance
-                      </p>
-                    </div>
+              <ScrollArea className="h-[calc(60vh)]">
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Settings
+                    </h2>
                     <button
-                      onClick={handleToggleAnimationMode}
-                      className={cn(
-                        "inline-flex relative items-center w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2",
-                        animationLightMode
-                          ? "bg-cyan-600"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      )}
+                      onClick={() => setIsOpen(false)}
+                      className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      <span
-                        className={cn(
-                          "inline-block w-4 h-4 bg-white rounded-full transition-transform transform",
-                          animationLightMode ? "translate-x-6" : "translate-x-1"
-                        )}
-                      />
+                      {renderIcon(X, { className: "w-5 h-5 text-gray-500 dark:text-gray-400" })}
                     </button>
                   </div>
+
+                  <div className="space-y-6">
+                    {/* System Status Section */}
+                    <div>
+                      <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                        System Status
+                      </h3>
+                      <div className="space-y-3">
+                        {/* LLM Status */}
+                        <LLMStatusIndicator
+                          size="sm"
+                          showLogs={false}
+                          className="bg-gray-50 dark:bg-gray-800/30"
+                        />
+                        
+                        {/* Convex Status */}
+                        <ConvexStatusIndicator
+                          size="sm"
+                          showLogs={false}
+                          className="bg-gray-50 dark:bg-gray-800/30"
+                        />
+                        
+                        {/* Docker Status */}
+                        <DockerStatus
+                          size="sm"
+                          showLogs={false}
+                          className="bg-gray-50 dark:bg-gray-800/30"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Settings Section */}
+                    <div>
+                      <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                        Preferences
+                      </h3>
+                      <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                          Animation Light Mode
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Enable lighter animations for better performance
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleToggleAnimationMode}
+                        className={cn(
+                          "inline-flex relative items-center w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2",
+                          animationLightMode
+                            ? "bg-cyan-600"
+                            : "bg-gray-200 dark:bg-gray-700"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "inline-block w-4 h-4 bg-white rounded-full transition-transform transform",
+                            animationLightMode ? "translate-x-6" : "translate-x-1"
+                          )}
+                        />
+                      </button>
+                    </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </ScrollArea>
             </motion.div>
           </>
         )}
