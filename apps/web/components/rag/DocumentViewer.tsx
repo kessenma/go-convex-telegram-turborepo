@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useId, useRef } from 'react';
-import { X, FileText, Calendar, Hash, BarChart3, Zap, ZapOff, ChevronDown } from 'lucide-react';
+import { X, FileText, Calendar, Hash, BarChart3, Zap, ZapOff, ChevronDown, Trash2 } from 'lucide-react';
 import { AnimatePresence, motion } from "motion/react";
 import { useOutsideClick } from '../../hooks/use-outside-clicks';
 import { renderIcon } from '../../lib/icon-utils';
@@ -43,11 +43,26 @@ interface EmbeddingData {
 
 export default function DocumentViewer({ documentId, isOpen, onClose, animationOrigin }: DocumentViewerProps): React.ReactElement | null {
   const { openNotifications } = useNotifications();
+  const deleteDocument = async () => {
+    try {
+      const response = await fetch(`/api/documents/${documentId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete document');
+      }
+      setDeleting(true);
+      toast.success('Document deleted successfully');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete document');
+    }
+  };
   const [documentData, setDocumentData] = useState<DocumentData | null>(null);
   const [embeddingData, setEmbeddingData] = useState<EmbeddingData[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingEmbeddings, setLoadingEmbeddings] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [generatingEmbedding, setGeneratingEmbedding] = useState(false);
   const [embeddingStatus, setEmbeddingStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [embeddingMessage, setEmbeddingMessage] = useState('');
@@ -235,10 +250,12 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                 scale: 0.1,
                 transformOrigin: `${originX} ${originY}`
               }}
-              animate={{ 
-                opacity: 1, 
-                scale: 1,
-                transformOrigin: `${originX} ${originY}`
+              className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-gray-900 rounded-lg border border-gray-700 overflow-hidden"
+              animate={{
+                opacity: deleting ? [1, 0.8, 0.4, 0] : 1,
+                scale: deleting ? [1, 0.8, 0.6, 0.2] : animationOrigin ? 1 : 0.1,
+                rotate: deleting ? [0, 360, 720, 1080] : 0,
+                transformOrigin: animationOrigin ? `${originX} ${originY}` : undefined
               }}
               exit={{ 
                 opacity: 0, 
@@ -246,13 +263,19 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                 transformOrigin: `${originX} ${originY}`
               }}
               transition={{
-                type: "spring",
-                damping: 25,
-                stiffness: 300,
-                duration: 0.4,
-                delay: animationOrigin ? 0.35 : 0 // Delay if coming from paper expansion
+                type: deleting ? undefined : "spring",
+                damping: deleting ? undefined : 25,
+                stiffness: deleting ? undefined : 300,
+                duration: deleting ? 1.5 : 0.4,
+                delay: !deleting && animationOrigin ? 0.35 : 0,
+                ease: deleting ? [0.25, 0.46, 0.45, 0.94] : undefined,
+                rotate: deleting ? { duration: 1.5, ease: "easeIn" } : undefined
               }}
-              className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-gray-900 rounded-lg border border-gray-700 overflow-hidden"
+              onAnimationComplete={() => {
+                if (deleting) {
+                  onClose();
+                }
+              }}
             >
               {/* Header */}
               <div className="flex justify-between items-center p-6 border-b border-gray-700">
@@ -296,12 +319,20 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                       {generatingEmbedding ? 'Generating...' : 'Generate Embedding'}
                     </button>
                   )}
-                  <button
-                    onClick={onClose}
-                    className="p-2 text-gray-400 rounded-lg transition-colors hover:text-white hover:bg-gray-700"
-                  >
-                    {renderIcon(X, { className: "w-5 h-5" })}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={deleteDocument}
+                      className="p-2 text-red-400 rounded-lg transition-colors hover:text-red-300 hover:bg-gray-700"
+                    >
+                      {renderIcon(Trash2, { className: "w-5 h-5" })}
+                    </button>
+                    <button
+                      onClick={onClose}
+                      className="p-2 text-gray-400 rounded-lg transition-colors hover:text-white hover:bg-gray-700"
+                    >
+                      {renderIcon(X, { className: "w-5 h-5" })}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -413,10 +444,21 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                                       </div>
                                     )}
                                     <div className="mt-3">
-                                      <p className="text-sm text-gray-400">Vector Preview</p>
-                                      <p className="p-2 mt-1 font-mono text-xs text-gray-500 bg-gray-800 rounded border">
-                                        [{embedding.embedding.slice(0, 5).map(v => v.toFixed(4)).join(', ')}, ...] ({embedding.embedding.length} values)
-                                      </p>
+                                      <Accordion className="space-y-2">
+                                        <AccordionItem value="vector-preview" className="bg-gray-700 rounded-lg border border-gray-600">
+                                          <AccordionTrigger className="flex justify-between items-center p-4 w-full text-left rounded-lg transition-colors hover:bg-gray-650">
+                                            <div className="flex gap-3 items-center">
+                                              <p className="text-sm text-gray-400">Vector Preview</p>
+                                              <span className="text-xs text-gray-500">({embedding.embedding.length} values)</span>
+                                            </div>
+                                          </AccordionTrigger>
+                                          <AccordionContent className="px-4 pb-4">
+                                            <p className="p-2 font-mono text-xs text-gray-500 bg-gray-800 rounded border">
+                                              [{embedding.embedding.map(v => v.toFixed(4)).join(', ')}]
+                                            </p>
+                                          </AccordionContent>
+                                        </AccordionItem>
+                                      </Accordion>
                                     </div>
                                   </div>
                                 ))

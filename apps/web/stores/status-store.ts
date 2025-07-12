@@ -29,6 +29,27 @@ interface LLMStatus {
   };
 }
 
+// Lightweight LLM Status Types
+interface LightweightLLMStatus {
+  status: 'healthy' | 'error' | 'loading' | 'starting' | 'connecting';
+  ready: boolean;
+  message: string;
+  model?: string;
+  details?: {
+    service_status?: string;
+    model_loaded?: boolean;
+    gpu_available?: boolean;
+    timestamp?: string;
+    error?: string;
+  };
+  memory_usage?: {
+    rss_mb?: number;
+    vms_mb?: number;
+    percent?: number;
+    available_mb?: number;
+  };
+}
+
 // Convex Status Types
 interface ConvexStatus {
   status: 'connected' | 'disconnected' | 'connecting';
@@ -102,16 +123,19 @@ interface DockerStatus {
 // Combined Status Interface
 interface SystemStatus {
   llm: LLMStatus;
+  lightweightLlm: LightweightLLMStatus;
   convex: ConvexStatus;
   docker: DockerStatus;
   lastUpdated: number;
   consecutiveErrors: {
     llm: number;
+    lightweightLlm: number;
     convex: number;
     docker: number;
   };
   pollingIntervals: {
     llm: number;
+    lightweightLlm: number;
     convex: number;
     docker: number;
   };
@@ -120,60 +144,72 @@ interface SystemStatus {
 interface StatusStore {
   // State
   llmStatus: LLMStatus;
+  lightweightLlmStatus: LightweightLLMStatus;
   convexStatus: ConvexStatus;
   dockerStatus: DockerStatus;
   loading: {
     llm: boolean;
+    lightweightLlm: boolean;
     convex: boolean;
     docker: boolean;
   };
   lastUpdated: {
     llm: number;
+    lightweightLlm: number;
     convex: number;
     docker: number;
   };
   consecutiveErrors: {
     llm: number;
+    lightweightLlm: number;
     convex: number;
     docker: number;
   };
   pollingIntervals: {
     llm: number;
+    lightweightLlm: number;
     convex: number;
     docker: number;
   };
   
   // Basic setters
   setLLMStatus: (status: LLMStatus) => void;
+  setLightweightLlmStatus: (status: LightweightLLMStatus) => void;
   setConvexStatus: (status: ConvexStatus) => void;
   setDockerStatus: (status: DockerStatus) => void;
   setLLMLoading: (loading: boolean) => void;
+  setLightweightLlmLoading: (loading: boolean) => void;
   setConvexLoading: (loading: boolean) => void;
   setDockerLoading: (loading: boolean) => void;
   
   // Error tracking
   incrementLLMErrors: () => void;
+  incrementLightweightLlmErrors: () => void;
   incrementConvexErrors: () => void;
   incrementDockerErrors: () => void;
   resetLLMErrors: () => void;
+  resetLightweightLlmErrors: () => void;
   resetConvexErrors: () => void;
   resetDockerErrors: () => void;
   
   // Polling interval management
   updateLLMPollingInterval: () => void;
+  updateLightweightLlmPollingInterval: () => void;
   updateConvexPollingInterval: () => void;
   updateDockerPollingInterval: () => void;
   
   // Optimistic updates
   optimisticLLMUpdate: (partialStatus: Partial<LLMStatus>) => void;
+  optimisticLightweightLlmUpdate: (partialStatus: Partial<LightweightLLMStatus>) => void;
   optimisticConvexUpdate: (partialStatus: Partial<ConvexStatus>) => void;
   optimisticDockerUpdate: (partialStatus: Partial<DockerStatus>) => void;
   
   // API actions
   checkLLMStatus: () => Promise<boolean>;
+  checkLightweightLlmStatus: () => Promise<boolean>;
   checkConvexStatus: () => Promise<boolean>;
   checkDockerStatus: () => Promise<boolean>;
-  checkAllStatus: () => Promise<{ llm: boolean; convex: boolean; docker: boolean }>;
+  checkAllStatus: () => Promise<{ llm: boolean; lightweightLlm: boolean; convex: boolean; docker: boolean }>;
   
   // Utility getters
   getSystemHealth: () => 'healthy' | 'degraded' | 'critical';
@@ -181,6 +217,12 @@ interface StatusStore {
 }
 
 const initialLLMStatus: LLMStatus = {
+  status: 'connecting',
+  ready: false,
+  message: 'Checking LLM Transformer service...'
+};
+
+const initialLightweightLlmStatus: LightweightLLMStatus = {
   status: 'connecting',
   ready: false,
   message: 'Checking LLM service...'
@@ -202,25 +244,30 @@ export const useStatusStore = create<StatusStore>()(devtools(
   (set, get) => ({
     // Initial state
     llmStatus: initialLLMStatus,
+    lightweightLlmStatus: initialLightweightLlmStatus,
     convexStatus: initialConvexStatus,
     dockerStatus: initialDockerStatus,
     loading: {
       llm: false,
+      lightweightLlm: false,
       convex: false,
       docker: false
     },
     lastUpdated: {
       llm: 0,
+      lightweightLlm: 0,
       convex: 0,
       docker: 0
     },
     consecutiveErrors: {
       llm: 0,
+      lightweightLlm: 0,
       convex: 0,
       docker: 0
     },
     pollingIntervals: {
       llm: 15000, // 15 seconds default
+      lightweightLlm: 15000, // 15 seconds default
       convex: 15000, // 15 seconds default
       docker: 30000 // 30 seconds default for Docker
     },
@@ -233,6 +280,15 @@ export const useStatusStore = create<StatusStore>()(devtools(
       }),
       false,
       'setLLMStatus'
+    ),
+    
+    setLightweightLlmStatus: (status) => set(
+      (state) => ({
+        lightweightLlmStatus: status,
+        lastUpdated: { ...state.lastUpdated, lightweightLlm: Date.now() }
+      }),
+      false,
+      'setLightweightLlmStatus'
     ),
     
     setConvexStatus: (status) => set(
@@ -259,6 +315,12 @@ export const useStatusStore = create<StatusStore>()(devtools(
       'setLLMLoading'
     ),
     
+    setLightweightLlmLoading: (loading) => set(
+      (state) => ({ loading: { ...state.loading, lightweightLlm: loading } }),
+      false,
+      'setLightweightLlmLoading'
+    ),
+    
     setConvexLoading: (loading) => set(
       (state) => ({ loading: { ...state.loading, convex: loading } }),
       false,
@@ -278,6 +340,14 @@ export const useStatusStore = create<StatusStore>()(devtools(
       }),
       false,
       'incrementLLMErrors'
+    ),
+    
+    incrementLightweightLlmErrors: () => set(
+      (state) => ({
+        consecutiveErrors: { ...state.consecutiveErrors, lightweightLlm: state.consecutiveErrors.lightweightLlm + 1 }
+      }),
+      false,
+      'incrementLightweightLlmErrors'
     ),
     
     incrementConvexErrors: () => set(
@@ -302,6 +372,14 @@ export const useStatusStore = create<StatusStore>()(devtools(
       }),
       false,
       'resetLLMErrors'
+    ),
+    
+    resetLightweightLlmErrors: () => set(
+      (state) => ({
+        consecutiveErrors: { ...state.consecutiveErrors, lightweightLlm: 0 }
+      }),
+      false,
+      'resetLightweightLlmErrors'
     ),
     
     resetConvexErrors: () => set(
@@ -335,6 +413,23 @@ export const useStatusStore = create<StatusStore>()(devtools(
         (state) => ({ pollingIntervals: { ...state.pollingIntervals, llm: interval } }),
         false,
         'updateLLMPollingInterval'
+      );
+    },
+    
+    updateLightweightLlmPollingInterval: () => {
+      const { lightweightLlmStatus, consecutiveErrors } = get();
+      let interval = 15000; // Default 15 seconds
+      
+      if (lightweightLlmStatus.status === 'healthy' && lightweightLlmStatus.ready && consecutiveErrors.lightweightLlm === 0) {
+        interval = 30000; // 30 seconds for stable connections
+      } else if (consecutiveErrors.lightweightLlm > 0) {
+        interval = 5000; // 5 seconds when there are issues
+      }
+      
+      set(
+        (state) => ({ pollingIntervals: { ...state.pollingIntervals, lightweightLlm: interval } }),
+        false,
+        'updateLightweightLlmPollingInterval'
       );
     },
     
@@ -387,6 +482,20 @@ export const useStatusStore = create<StatusStore>()(devtools(
       );
     },
     
+    optimisticLightweightLlmUpdate: (partialStatus) => {
+      const { lightweightLlmStatus } = get();
+      const updatedStatus = { ...lightweightLlmStatus, ...partialStatus };
+      
+      set(
+        (state) => ({
+          lightweightLlmStatus: updatedStatus,
+          lastUpdated: { ...state.lastUpdated, lightweightLlm: Date.now() }
+        }),
+        false,
+        'optimisticLightweightLlmUpdate'
+      );
+    },
+    
     optimisticConvexUpdate: (partialStatus) => {
       const { convexStatus } = get();
       const updatedStatus = { ...convexStatus, ...partialStatus };
@@ -430,11 +539,11 @@ export const useStatusStore = create<StatusStore>()(devtools(
 
         if (!response.ok) {
           incrementLLMErrors();
-          toast.error(`LLM Error: ${response.status} ${response.statusText}`);
+          toast.error(`LLM Transformer Error: ${response.status} ${response.statusText}`);
           setLLMStatus({
             status: 'error',
             ready: false,
-            message: `LLM service unavailable (${response.status})`,
+            message: `LLM Transformer service unavailable (${response.status})`,
             details: {
               error: `HTTP ${response.status}: ${response.statusText}`,
               timestamp: new Date().toISOString()
@@ -449,7 +558,7 @@ export const useStatusStore = create<StatusStore>()(devtools(
         setLLMStatus({
           status: data.status || 'error',
           ready: data.ready ?? false,
-          message: data.message || 'LLM status unknown',
+          message: data.message || 'LLM Transformer status unknown',
           model: data.model,
           details: {
             ...data.details,
@@ -461,12 +570,12 @@ export const useStatusStore = create<StatusStore>()(devtools(
         return true;
       } catch (error) {
         incrementLLMErrors();
-        const errorMessage = error instanceof Error ? error.message : 'Cannot connect to LLM service';
-        toast.error(`LLM Error: ${errorMessage}`);
+        const errorMessage = error instanceof Error ? error.message : 'Cannot connect to LLM Transformer service';
+        toast.error(`LLM Transformer Error: ${errorMessage}`);
         setLLMStatus({
           status: 'error',
           ready: false,
-          message: 'Cannot connect to LLM service',
+          message: 'Cannot connect to LLM Transformer service',
           details: {
             error: errorMessage,
             timestamp: new Date().toISOString()
@@ -597,17 +706,82 @@ export const useStatusStore = create<StatusStore>()(devtools(
       }
     },
     
+    checkLightweightLlmStatus: async () => {
+      const { setLightweightLlmLoading, setLightweightLlmStatus, incrementLightweightLlmErrors, resetLightweightLlmErrors, updateLightweightLlmPollingInterval } = get();
+
+      setLightweightLlmLoading(true);
+
+      try {
+        const response = await fetch('/api/lightweight-llm/status', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(5000)
+        });
+
+        if (!response.ok) {
+          incrementLightweightLlmErrors();
+          toast.error(`LLM Error: ${response.status} ${response.statusText}`);
+          setLightweightLlmStatus({
+            status: 'error',
+            ready: false,
+            message: `LLM service unavailable (${response.status})`,
+            details: {
+              error: `HTTP ${response.status}: ${response.statusText}`,
+              timestamp: new Date().toISOString()
+            }
+          });
+          updateLightweightLlmPollingInterval();
+          return false;
+        }
+
+        const data = await response.json();
+        resetLightweightLlmErrors();
+        setLightweightLlmStatus({
+          status: data.status || 'error',
+          ready: data.ready ?? false,
+          message: data.message || 'LLM status unknown',
+          model: data.model,
+          memory_usage: data.memory_usage,
+          details: {
+            ...data.details,
+            timestamp: new Date().toISOString()
+          }
+        });
+        updateLightweightLlmPollingInterval();
+        return true;
+      } catch (error) {
+        incrementLightweightLlmErrors();
+        const errorMessage = error instanceof Error ? error.message : 'Cannot connect to LLM service';
+        toast.error(`LLM Error: ${errorMessage}`);
+        setLightweightLlmStatus({
+          status: 'error',
+          ready: false,
+          message: 'Cannot connect to LLM service',
+          details: {
+            error: errorMessage,
+            timestamp: new Date().toISOString()
+          }
+        });
+        updateLightweightLlmPollingInterval();
+        return false;
+      } finally {
+        setLightweightLlmLoading(false);
+      }
+    },
+    
     checkAllStatus: async () => {
-      const { checkLLMStatus, checkConvexStatus, checkDockerStatus } = get();
+      const { checkLLMStatus, checkLightweightLlmStatus, checkConvexStatus, checkDockerStatus } = get();
       
-      const [llmResult, convexResult, dockerResult] = await Promise.allSettled([
+      const [llmResult, lightweightLlmResult, convexResult, dockerResult] = await Promise.allSettled([
         checkLLMStatus(),
+        checkLightweightLlmStatus(),
         checkConvexStatus(),
         checkDockerStatus()
       ]);
       
       return {
         llm: llmResult.status === 'fulfilled' ? llmResult.value : false,
+        lightweightLlm: lightweightLlmResult.status === 'fulfilled' ? lightweightLlmResult.value : false,
         convex: convexResult.status === 'fulfilled' ? convexResult.value : false,
         docker: dockerResult.status === 'fulfilled' ? dockerResult.value : false
       };
@@ -615,22 +789,23 @@ export const useStatusStore = create<StatusStore>()(devtools(
     
     // Utility getters
     getSystemHealth: () => {
-      const { llmStatus, convexStatus, dockerStatus } = get();
+      const { llmStatus, lightweightLlmStatus, convexStatus, dockerStatus } = get();
       
       const llmHealthy = llmStatus.status === 'healthy' && llmStatus.ready;
+      const lightweightLlmHealthy = lightweightLlmStatus.status === 'healthy' && lightweightLlmStatus.ready;
       const convexHealthy = convexStatus.status === 'connected' && convexStatus.ready;
       const dockerHealthy = dockerStatus.status === 'healthy' && dockerStatus.ready;
       
-      const healthyCount = [llmHealthy, convexHealthy, dockerHealthy].filter(Boolean).length;
+      const healthyCount = [llmHealthy, lightweightLlmHealthy, convexHealthy, dockerHealthy].filter(Boolean).length;
       
-      if (healthyCount === 3) return 'healthy';
-      if (healthyCount >= 1) return 'degraded';
+      if (healthyCount === 4) return 'healthy';
+      if (healthyCount >= 2) return 'degraded';
       return 'critical';
     },
     
     isSystemReady: () => {
-      const { llmStatus, convexStatus, dockerStatus } = get();
-      return llmStatus.ready && convexStatus.ready && dockerStatus.ready;
+      const { llmStatus, lightweightLlmStatus, convexStatus, dockerStatus } = get();
+      return llmStatus.ready && lightweightLlmStatus.ready && convexStatus.ready && dockerStatus.ready;
     }
   }),
   {
@@ -638,4 +813,4 @@ export const useStatusStore = create<StatusStore>()(devtools(
   }
 ));
 
-export type { LLMStatus, ConvexStatus, DockerStatus, DockerService, DockerNetwork, DockerResources, SystemStatus };
+export type { LLMStatus, LightweightLLMStatus, ConvexStatus, DockerStatus, DockerService, DockerNetwork, DockerResources, SystemStatus };

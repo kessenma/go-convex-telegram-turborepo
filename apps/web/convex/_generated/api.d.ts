@@ -22,6 +22,7 @@ import type * as messages from "../messages.js";
 import type * as messagesThread from "../messagesThread.js";
 import type * as migrations from "../migrations.js";
 import type * as notifications from "../notifications.js";
+import type * as ragChat from "../ragChat.js";
 import type * as requestLogs from "../requestLogs.js";
 import type * as threads from "../threads.js";
 
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   messagesThread: typeof messagesThread;
   migrations: typeof migrations;
   notifications: typeof notifications;
+  ragChat: typeof ragChat;
   requestLogs: typeof requestLogs;
   threads: typeof threads;
 }>;

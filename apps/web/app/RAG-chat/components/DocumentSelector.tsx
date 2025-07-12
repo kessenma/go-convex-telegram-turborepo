@@ -37,10 +37,10 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
   };
 
   const filteredDocuments = showOnlyEmbedded 
-    ? safeDocuments.filter(doc => doc.embedding && doc.embedding.length > 0)
+    ? safeDocuments.filter(doc => doc.hasEmbedding)
     : safeDocuments;
 
-  const embeddedCount = safeDocuments.filter(doc => doc.embedding && doc.embedding.length > 0).length;
+  const embeddedCount = safeDocuments.filter(doc => doc.hasEmbedding).length;
 
   return (
     <div className="space-y-6">
@@ -80,7 +80,7 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
           <div className="grid gap-4">
             {filteredDocuments.map((doc) => {
               const isSelected = selectedDocuments.includes(doc._id);
-              const hasEmbedding = doc.embedding && doc.embedding.length > 0;
+              const hasEmbedding = doc.hasEmbedding;
               
               return (
                 <div 

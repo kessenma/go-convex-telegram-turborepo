@@ -11,6 +11,7 @@ export function useStatusOperations() {
   // Zustand store
   const {
     llmStatus,
+    lightweightLlmStatus,
     convexStatus,
     dockerStatus,
     loading,
@@ -18,15 +19,18 @@ export function useStatusOperations() {
     consecutiveErrors,
     pollingIntervals,
     setLLMStatus,
+    setLightweightLlmStatus,
     setConvexStatus,
     setDockerStatus,
     checkLLMStatus,
+    checkLightweightLlmStatus,
     checkConvexStatus,
     checkDockerStatus,
     checkAllStatus,
     getSystemHealth,
     isSystemReady,
     optimisticLLMUpdate,
+    optimisticLightweightLlmUpdate,
     optimisticConvexUpdate,
     optimisticDockerUpdate
   } = useStatusStore();
@@ -35,6 +39,10 @@ export function useStatusOperations() {
   const handleCheckLLMStatus = useCallback(async () => {
     return await checkLLMStatus();
   }, [checkLLMStatus]);
+  
+  const handleCheckLightweightLlmStatus = useCallback(async () => {
+    return await checkLightweightLlmStatus();
+  }, [checkLightweightLlmStatus]);
   
   const handleCheckConvexStatus = useCallback(async () => {
     return await checkConvexStatus();
@@ -52,6 +60,10 @@ export function useStatusOperations() {
   const updateLLMStatusOptimistically = useCallback((partialStatus: Partial<typeof llmStatus>) => {
     optimisticLLMUpdate(partialStatus);
   }, [optimisticLLMUpdate]);
+  
+  const updateLightweightLlmStatusOptimistically = useCallback((partialStatus: Partial<typeof lightweightLlmStatus>) => {
+    optimisticLightweightLlmUpdate(partialStatus);
+  }, [optimisticLightweightLlmUpdate]);
   
   const updateConvexStatusOptimistically = useCallback((partialStatus: Partial<typeof convexStatus>) => {
     optimisticConvexUpdate(partialStatus);
@@ -73,6 +85,19 @@ export function useStatusOperations() {
     
     return () => clearInterval(interval);
   }, [handleCheckLLMStatus, pollingIntervals.llm]);
+  
+  // Auto-polling effect for Lightweight LLM status
+  useEffect(() => {
+    // Initial check
+    handleCheckLightweightLlmStatus();
+    
+    // Set up polling with dynamic interval
+    const interval = setInterval(() => {
+      handleCheckLightweightLlmStatus();
+    }, pollingIntervals.lightweightLlm);
+    
+    return () => clearInterval(interval);
+  }, [handleCheckLightweightLlmStatus, pollingIntervals.lightweightLlm]);
   
   // Auto-polling effect for Convex status
   useEffect(() => {
@@ -111,6 +136,13 @@ export function useStatusOperations() {
       pollingInterval: pollingIntervals.llm,
       loading: loading.llm
     },
+    lightweightLlm: {
+      ...lightweightLlmStatus,
+      lastUpdated: lastUpdated.lightweightLlm,
+      consecutiveErrors: consecutiveErrors.lightweightLlm,
+      pollingInterval: pollingIntervals.lightweightLlm,
+      loading: loading.lightweightLlm
+    },
     convex: {
       ...convexStatus,
       lastUpdated: lastUpdated.convex,
@@ -128,13 +160,14 @@ export function useStatusOperations() {
     system: {
       health: systemHealth,
       ready: systemReady,
-      overallLoading: loading.llm || loading.convex || loading.docker
+      overallLoading: loading.llm || loading.lightweightLlm || loading.convex || loading.docker
     }
   };
   
   return {
     // Status data
     llmStatus,
+    lightweightLlmStatus,
     convexStatus,
     dockerStatus,
     statusSummary,
@@ -153,17 +186,20 @@ export function useStatusOperations() {
     
     // Operations
     checkLLMStatus: handleCheckLLMStatus,
+    checkLightweightLlmStatus: handleCheckLightweightLlmStatus,
     checkConvexStatus: handleCheckConvexStatus,
     checkDockerStatus: handleCheckDockerStatus,
     checkAllStatus: handleCheckAllStatus,
     
     // Optimistic updates
     updateLLMStatusOptimistically,
+    updateLightweightLlmStatusOptimistically,
     updateConvexStatusOptimistically,
     updateDockerStatusOptimistically,
     
     // Direct store actions (for advanced usage)
     setLLMStatus,
+    setLightweightLlmStatus,
     setConvexStatus,
     setDockerStatus
   };
@@ -191,6 +227,31 @@ export function useLLMStatus() {
     pollingInterval: pollingIntervals.llm,
     checkStatus: checkLLMStatus,
     updateOptimistically: updateLLMStatusOptimistically
+  };
+}
+
+/**
+ * Hook specifically for Lightweight LLM status monitoring
+ */
+export function useLightweightLlmStatus() {
+  const {
+    lightweightLlmStatus,
+    loading,
+    checkLightweightLlmStatus,
+    updateLightweightLlmStatusOptimistically,
+    lastUpdated,
+    consecutiveErrors,
+    pollingIntervals
+  } = useStatusOperations();
+  
+  return {
+    status: lightweightLlmStatus,
+    loading: loading.lightweightLlm,
+    lastUpdated: lastUpdated.lightweightLlm,
+    consecutiveErrors: consecutiveErrors.lightweightLlm,
+    pollingInterval: pollingIntervals.lightweightLlm,
+    checkStatus: checkLightweightLlmStatus,
+    updateOptimistically: updateLightweightLlmStatusOptimistically
   };
 }
 

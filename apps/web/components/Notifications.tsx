@@ -11,6 +11,7 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
+import { toast } from "sonner";
 
 interface NotificationsProps {
   className?: string;
@@ -40,6 +41,48 @@ export function Notifications({ className }: NotificationsProps) {
   const unreadCount = useQuery(api.notifications.getUnreadCount, {});
   const markAsRead = useMutation(api.notifications.markAsRead);
   const markAllAsRead = useMutation(api.notifications.markAllAsRead);
+
+  // Track previous notifications to detect new ones
+  const [previousNotifications, setPreviousNotifications] = useState<Notification[]>([]);
+
+  // Show toast for new notifications
+  useEffect(() => {
+    if (!notifications || notifications.length === 0) {
+      setPreviousNotifications([]);
+      return;
+    }
+
+    // If we have previous notifications, check for new ones
+    if (previousNotifications.length > 0) {
+      const newNotifications = notifications.filter(
+        (notification: Notification) => 
+          !previousNotifications.some(prev => prev._id === notification._id)
+      );
+
+      // Show toast for each new notification
+      newNotifications.forEach((notification: Notification) => {
+        if (notification.type === 'document_embedded') {
+          toast.success(notification.message, {
+            description: `Embedding completed successfully`,
+            duration: 5000,
+          });
+        } else if (notification.type === 'document_uploaded') {
+          toast.success(notification.message, {
+            description: `Document uploaded successfully`,
+            duration: 5000,
+          });
+        } else {
+          toast.info(notification.message, {
+            description: notification.title,
+            duration: 5000,
+          });
+        }
+      });
+    }
+
+    // Update previous notifications
+    setPreviousNotifications(notifications);
+  }, [notifications, previousNotifications]);
 
   // Update button position when opening
   useEffect(() => {
@@ -132,7 +175,7 @@ export function Notifications({ className }: NotificationsProps) {
       >
         {renderIcon(Bell, { className: "w-5 h-5 text-gray-600 dark:text-gray-400" })}
         {(unreadCount || 0) > 0 && (
-          <span className="flex absolute -top-1 -right-1 justify-center items-center w-5 h-5 text-xs text-white bg-red-500 rounded-full">
+          <span className="flex absolute -top-1 -right-1 justify-center items-center w-5 h-5 text-xs bg-cyan-400 rounded-full text-slate-950">
             {unreadCount! > 99 ? "99+" : unreadCount}
           </span>
         )}

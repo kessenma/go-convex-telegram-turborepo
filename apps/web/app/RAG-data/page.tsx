@@ -64,9 +64,8 @@ export default function RAGDataPage(): React.ReactElement | null {
             textAlign="left"
             titleAnimation={TextAnimationType.Decrypt}
             subtitleAnimation={TextAnimationType.Shimmer}
-            headerColor="text-cyan-200"
-            subheaderColor="text-cyan-200"
-            accordionColor="text-cyan-300"
+            animationSpeed={75}
+            className="mb-6"
           >
             {/* Sparkles Effect */}
             <div className="overflow-hidden relative -mb-40 w-full h-40 rounded-md">

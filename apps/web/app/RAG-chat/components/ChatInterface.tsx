@@ -99,6 +99,10 @@ export function ChatInterface({ selectedDocuments, onBackToSelection }: ChatInte
           <p className="text-sm text-gray-300">
             Chatting with: {selectedDocuments.map(d => d.title).join(', ')}
           </p>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-xs text-green-400">Powered by Lightweight LLM</span>
+          </div>
         </div>
         <button
           onClick={onBackToSelection}

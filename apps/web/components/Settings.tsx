@@ -8,6 +8,7 @@ import { Settings as SettingsIcon, X } from "lucide-react";
 import { cn, getCookie, setCookie } from "../lib/utils";
 import { renderIcon } from "../lib/icon-utils";
 import { LLMStatusIndicator } from "./rag/llm-status-indicator";
+import { LightweightLLMStatusIndicator } from "./rag/lightweight-llm-status-indicator";
 import { ConvexStatusIndicator } from "./convex/convex-status-indicator";
 import { DockerStatus } from "./docker-status";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -125,6 +126,13 @@ export function Settings({ className }: SettingsProps) {
                       </h3>
                       <div className="space-y-3">
                         {/* LLM Status */}
+                        <LightweightLLMStatusIndicator
+                          size="sm"
+                          showLogs={false}
+                          className="bg-gray-50 dark:bg-gray-800/30"
+                        />
+                        
+                        {/* LLM Transformer Status */}
                         <LLMStatusIndicator
                           size="sm"
                           showLogs={false}

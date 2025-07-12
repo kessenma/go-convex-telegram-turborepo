@@ -651,6 +651,7 @@ def process_document_embedding():
         document_data = fetch_response.json()
         text = document_data.get('content')
         content_type = document_data.get('contentType', 'text')
+        document_title = document_data.get('title', 'Unknown Document')
         
         if not text:
             error_msg = "Document content is empty or missing"
@@ -745,13 +746,14 @@ def process_document_embedding():
             
             # Create notification for successful embedding
             try:
-                notification_url = f"{convex_url}/http/api/notifications"
+                notification_url = f"{convex_url}/api/notifications"
                 notification_payload = {
                     'type': 'document_embedded',
                     'title': 'Document Embedded',
-                    'message': f'Document embedding completed successfully',
+                    'message': f'"{document_title}" embedding completed successfully',
                     'documentId': document_id,
                     'metadata': json.dumps({
+                        'document_title': document_title,
                         'embedding_dimension': len(embedding),
                         'model': 'all-MiniLM-L6-v2',
                         'processing_time_ms': processing_time,
@@ -931,7 +933,7 @@ def process_markdown_document():
             
             # Create notification for successful embedding
             try:
-                notification_url = f"{convex_url}/http/api/notifications"
+                notification_url = f"{convex_url}/api/notifications"
                 notification_payload = {
                     'type': 'document_embedded',
                     'title': 'Document Embedded',

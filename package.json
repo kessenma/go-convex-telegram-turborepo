@@ -63,10 +63,11 @@
     "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages",
     "docker:web-reset": "docker compose stop web-dashboard && docker compose rm -f web-dashboard && docker compose up web-dashboard -d",
     
-    "docker:llm-logs": "docker logs telegram-bot-vector-convert-llm-1 --tail 100",
+    "docker:llm-transformer-logs": "docker logs telegram-bot-vector-convert-llm-1 --tail 100",
+    "docker:llm-logs": "docker logs telegram-bot-lightweight-llm-1 --tail 100",
     "docker:web-app-logs": "docker logs telegram-bot-web-dashboard-1 --tail 100",
     "docker:convex-backend-logs": "docker logs telegram-bot-convex-backend-1 --tail 100", 
-    "docker:logs-all": "pnpm docker:web-app-logs && pnpm docker:convex-backend-logs && pnpm docker:llm-logs"
+    "docker:logs-all": "pnpm docker:web-app-logs && pnpm docker:convex-backend-logs && pnpm docker:llm-transformer-logs && pnpm docker:llm-logs"
   },
   "devDependencies": {
     "prettier": "^3.6.0",

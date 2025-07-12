@@ -164,4 +164,48 @@ export default defineSchema({
     .index("by_read_status", ["isRead"])
     .index("by_type_and_timestamp", ["type", "timestamp"])
     .index("by_read_and_timestamp", ["isRead", "timestamp"]),
+
+  // RAG chat conversations table - stores chat sessions with documents
+  rag_conversations: defineTable({
+    sessionId: v.string(), // Unique session identifier
+    title: v.optional(v.string()), // Optional conversation title
+    documentIds: v.array(v.id("rag_documents")), // Documents being chatted with
+    userId: v.optional(v.string()), // User identifier (if available)
+    userAgent: v.optional(v.string()), // User agent for web sessions
+    ipAddress: v.optional(v.string()), // IP address for tracking
+    isActive: v.boolean(), // Whether conversation is still active
+    createdAt: v.number(), // When conversation started
+    lastMessageAt: v.number(), // When last message was sent
+    messageCount: v.number(), // Total number of messages in conversation
+    totalTokensUsed: v.number(), // Total tokens consumed in this conversation
+    llmModel: v.string(), // LLM model being used for this conversation
+  })
+    .index("by_session_id", ["sessionId"])
+    .index("by_user", ["userId"])
+    .index("by_created_at", ["createdAt"])
+    .index("by_last_message", ["lastMessageAt"])
+    .index("by_active", ["isActive"])
+    .index("by_active_and_last_message", ["isActive", "lastMessageAt"]),
+
+  // RAG chat messages table - stores individual messages in conversations
+  rag_chat_messages: defineTable({
+    conversationId: v.id("rag_conversations"), // Reference to conversation
+    messageId: v.string(), // Unique message identifier
+    role: v.string(), // "user" or "assistant"
+    content: v.string(), // Message content
+    timestamp: v.number(), // When message was created
+    tokenCount: v.optional(v.number()), // Number of tokens in this message
+    processingTimeMs: v.optional(v.number()), // Time taken to generate (for assistant messages)
+    sources: v.optional(v.array(v.object({
+      documentId: v.id("rag_documents"),
+      title: v.string(),
+      snippet: v.string(),
+      score: v.number(),
+    }))), // Source documents used for assistant responses
+    metadata: v.optional(v.string()), // JSON string for additional data
+  })
+    .index("by_conversation", ["conversationId"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_role", ["role"])
+    .index("by_conversation_and_timestamp", ["conversationId", "timestamp"]),
 });

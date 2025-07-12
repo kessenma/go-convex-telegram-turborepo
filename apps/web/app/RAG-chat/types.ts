@@ -1,14 +1,17 @@
 export interface Document {
   _id: string;
+  _creationTime: number;
   title: string;
   content: string;
-  contentType: 'markdown' | 'text';
+  contentType: string;
   fileSize: number;
   uploadedAt: number;
+  lastModified: number;
+  isActive: boolean;
   wordCount: number;
+  hasEmbedding: boolean;
   tags?: string[];
   summary?: string;
-  embedding?: number[];
 }
 
 export interface ChatMessage {

@@ -313,7 +313,6 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
             title="Convex Web Console"
             subtitle="Access your Convex database dashboard and manage your data"
             className="mb-8"
-            whiteText
           />
         </div>
         

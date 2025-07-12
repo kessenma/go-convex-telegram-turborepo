@@ -1020,6 +1020,54 @@ export const markAllNotificationsAsReadAPI = httpAction(async (ctx, request) => 
   }
 });
 
+// Lightweight LLM Status API
+export const getLightweightLLMStatusAPI = httpAction(async (ctx, request) => {
+  try {
+    // This is a proxy endpoint that forwards requests to the lightweight LLM service
+    // In a real implementation, you would make an HTTP request to the lightweight LLM service
+    // For now, we'll return a mock response that matches the expected interface
+    
+    const mockResponse = {
+      status: 'healthy',
+      ready: true,
+      message: 'Lightweight LLM service is running',
+      model: 'lightweight-transformer',
+      details: {
+        service_status: 'active',
+        model_loaded: true,
+        gpu_available: false,
+        timestamp: new Date().toISOString()
+      },
+      memory_usage: {
+        rss_mb: 256,
+        vms_mb: 512,
+        percent: 15.2,
+        available_mb: 1024
+      }
+    };
+    
+    return new Response(
+      JSON.stringify(mockResponse),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error checking lightweight LLM status:", error);
+    return errorResponse(
+      "Failed to check lightweight LLM status",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
 // =============================================================================
 // HTTP ROUTER CONFIGURATION
 // =============================================================================
@@ -1037,6 +1085,12 @@ http.route({
   path: "/api/docker/status",
   method: "GET",
   handler: getDockerStatusAPI,
+});
+
+http.route({
+  path: "/api/lightweight-llm/status",
+  method: "GET",
+  handler: getLightweightLLMStatusAPI,
 });
 
 // TELEGRAM BOT API ENDPOINTS

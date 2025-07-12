@@ -3,12 +3,10 @@
 import React, { useState } from "react";
 import { cn } from "../../lib/utils";
 import { renderIcon } from "../../lib/icon-utils";
-import { CheckCircle, AlertCircle, Loader2, Brain, Info, ChevronDown, ChevronUp } from "lucide-react";
-import { useLLMStatus } from "../../hooks/use-status-operations";
-import { LLMUsageBarChart } from "./llm-usage-bar-chart";
-import { LLMLogs } from "./LLMLogs";
+import { CheckCircle, AlertCircle, Loader2, BrainCog, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { useLightweightLlmStatus } from "../../hooks/use-status-operations";
 
-interface LLMStatusIndicatorProps {
+interface LightweightLLMStatusIndicatorProps {
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
   className?: string;
@@ -29,21 +27,13 @@ const statusSizes = {
   lg: "w-4 h-4"
 };
 
-const statusLabels = {
-  healthy: "LLM Ready",
-  loading: "Model Downloading",
-  starting: "Service Starting",
-  connecting: "Connecting",
-  error: "LLM Error"
-};
-
-export const LLMStatusIndicator = ({
+export const LightweightLLMStatusIndicator = ({
   size = "md",
   showLabel = true,
   className,
   showLogs = true
-}: LLMStatusIndicatorProps) => {
-  const { status: llmStatus, loading } = useLLMStatus();
+}: LightweightLLMStatusIndicatorProps) => {
+  const { status: lightweightLlmStatus, loading } = useLightweightLlmStatus();
   
   // Extract values from the status object
   const {
@@ -52,8 +42,9 @@ export const LLMStatusIndicator = ({
     message,
     model,
     details
-  } = llmStatus;
+  } = lightweightLlmStatus;
   const [isExpanded, setIsExpanded] = useState(false);
+  
   const getStatusIcon = () => {
     if (status === 'healthy' && ready) {
       return renderIcon(CheckCircle, { className: "w-4 h-4 text-green-400" });
@@ -70,17 +61,17 @@ export const LLMStatusIndicator = ({
 
   const getStatusText = () => {
     if (status === 'healthy' && ready) {
-      return 'LLM Transformer Ready';
+      return 'LLM Ready';
     } else if (status === 'error') {
-      return 'LLM Transformer Error';
+      return 'LLM Service Error';
     } else if (status === 'starting') {
       return 'Service Starting...';
     } else if (status === 'connecting') {
-      return 'Connecting to LLM Transformer...';
+      return 'Connecting to LLM...';
     } else if (status === 'loading') {
-      return 'Model Downloading...';
+      return 'Model Loading...';
     } else {
-      return 'Loading LLM Transformer...';
+      return 'Loading LLM...';
     }
   };
 
@@ -117,7 +108,7 @@ export const LLMStatusIndicator = ({
     <div className={cn("rounded-lg border border-gray-700 bg-gray-800/50", className)}>
       <div className="flex gap-3 items-center p-3">
         <div className="flex gap-2 items-center">
-          {renderIcon(Brain, { className: "w-5 h-5 text-gray-400" })}
+          {renderIcon(BrainCog, { className: "w-5 h-5 text-gray-400" })}
           <div className={cn(
             "rounded-full",
             statusColors[status],
@@ -138,11 +129,6 @@ export const LLMStatusIndicator = ({
             {model && status === 'healthy' && (
               <div className="mt-1 text-xs text-gray-400">
                 Model: {model}
-              </div>
-            )}
-            {details?.uptime && (
-              <div className="mt-1 text-xs text-gray-400">
-                Uptime: {formatUptime(details.uptime)}
               </div>
             )}
             {details?.timestamp && (
@@ -202,10 +188,15 @@ export const LLMStatusIndicator = ({
                 </span>
               </div>
               
-              {details.uptime && (
+              {details.gpu_available !== undefined && (
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Uptime:</span>
-                  <span className="font-mono text-gray-300">{formatUptime(details.uptime)}</span>
+                  <span className="text-gray-400">GPU Available:</span>
+                  <span className={cn(
+                    "font-mono",
+                    details.gpu_available ? "text-green-400" : "text-yellow-400"
+                  )}>
+                    {details.gpu_available ? "✓ Yes" : "✗ No"}
+                  </span>
                 </div>
               )}
               
@@ -218,58 +209,45 @@ export const LLMStatusIndicator = ({
                 </div>
               )}
               
-              {llmStatus.memory_usage && (
+              {lightweightLlmStatus.memory_usage && (
                 <>
                   <div className="pt-2 my-2 border-t border-gray-600">
-                    <div className="mb-2 text-xs font-medium text-gray-400">Memory & CPU Usage</div>
+                    <div className="mb-2 text-xs font-medium text-gray-400">Memory Usage</div>
                   </div>
                   
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Process Memory:</span>
-                    <span className="font-mono text-gray-300">
-                      {llmStatus.memory_usage.process_memory_mb?.toFixed(1) || '0'} MB
-                      {llmStatus.memory_usage.process_memory_percent && (
-                        <span className="ml-1 text-gray-500">
-                          ({llmStatus.memory_usage.process_memory_percent.toFixed(1)}%)
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  
-                  {llmStatus.memory_usage.process_cpu_percent !== undefined && (
+                  {lightweightLlmStatus.memory_usage.rss_mb && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Process CPU:</span>
+                      <span className="text-gray-400">RSS Memory:</span>
                       <span className="font-mono text-gray-300">
-                        {llmStatus.memory_usage.process_cpu_percent.toFixed(1)}%
+                        {lightweightLlmStatus.memory_usage.rss_mb.toFixed(1)} MB
                       </span>
                     </div>
                   )}
                   
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">System Memory:</span>
-                    <span className="font-mono text-gray-300">
-                      {llmStatus.memory_usage.system_memory_used_percent?.toFixed(1) || '0'}% used
-                      {llmStatus.memory_usage.system_memory_available_gb && (
-                        <span className="ml-1 text-gray-500">
-                          ({llmStatus.memory_usage.system_memory_available_gb.toFixed(1)}GB free)
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  
-                  {llmStatus.memory_usage.system_memory_total_gb && (
+                  {lightweightLlmStatus.memory_usage.vms_mb && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Total System RAM:</span>
+                      <span className="text-gray-400">VMS Memory:</span>
                       <span className="font-mono text-gray-300">
-                        {llmStatus.memory_usage.system_memory_total_gb.toFixed(1)} GB
+                        {lightweightLlmStatus.memory_usage.vms_mb.toFixed(1)} MB
                       </span>
                     </div>
                   )}
                   
-                  {llmStatus.memory_usage.error && (
-                    <div className="p-2 mt-2 rounded border border-yellow-800 bg-yellow-900/30">
-                      <div className="mb-1 text-xs font-medium text-yellow-400">Memory Monitoring Error:</div>
-                      <div className="font-mono text-xs text-yellow-300 break-all">{llmStatus.memory_usage.error}</div>
+                  {lightweightLlmStatus.memory_usage.percent !== undefined && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Memory %:</span>
+                      <span className="font-mono text-gray-300">
+                        {lightweightLlmStatus.memory_usage.percent.toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
+                  
+                  {lightweightLlmStatus.memory_usage.available_mb && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Available:</span>
+                      <span className="font-mono text-gray-300">
+                        {lightweightLlmStatus.memory_usage.available_mb.toFixed(1)} MB
+                      </span>
                     </div>
                   )}
                 </>
@@ -284,14 +262,8 @@ export const LLMStatusIndicator = ({
             </div>
           </div>
 
-          <div className="my-4">
-            <LLMUsageBarChart />
-          </div>
-          <div className="text-xs text-gray-500 mt-2">
-            Note: Memory and CPU usage is updated every 5 seconds.
-        </div>
-          <div className="text-xs text-gray-500 mt-2">
-            <LLMLogs />
+          <div className="mt-2 text-xs text-gray-500">
+            Note: Memory usage is updated every 5 seconds.
           </div>
         </div>
       )}

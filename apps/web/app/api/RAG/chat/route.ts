@@ -1,25 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '../../../../../docker-convex/convex/_generated/api';
+
+const convex = new ConvexHttpClient(process.env.CONVEX_URL || 'http://localhost:3211');
+const LIGHTWEIGHT_LLM_URL = process.env.LIGHTWEIGHT_LLM_INTERNAL_URL || 'http://localhost:8082';
 
 interface ChatRequest {
   message: string;
   documentIds: string[];
-  conversationHistory?: Array<{
+  conversationHistory: Array<{
     role: 'user' | 'assistant';
     content: string;
   }>;
+  sessionId?: string;
 }
 
-interface DocumentChunk {
-  content: string;
-  score: number;
+interface VectorSearchResult {
   documentId: string;
   title: string;
+  snippet: string;
+  score: number;
+}
+
+// Generate a session ID if not provided
+function generateSessionId(): string {
+  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Perform vector search to find relevant document chunks
+async function performVectorSearch(
+  query: string, 
+  documentIds: string[], 
+  limit: number = 5
+): Promise<VectorSearchResult[]> {
+  try {
+    // Call the vector-convert-llm service for similarity search
+    const response = await fetch(`${process.env.VECTOR_CONVERT_LLM_INTERNAL_URL || 'http://localhost:8081'}/similarity-search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        document_ids: documentIds,
+        top_k: limit,
+        threshold: 0.3, // Minimum similarity threshold
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Vector search failed:', response.statusText);
+      return [];
+    }
+
+    const results = await response.json();
+    
+    // Transform results to match our interface
+    return results.results?.map((result: any) => ({
+      documentId: result.document_id,
+      title: result.title || 'Unknown Document',
+      snippet: result.text || result.content || '',
+      score: result.score || 0,
+    })) || [];
+    
+  } catch (error) {
+    console.error('Error performing vector search:', error);
+    return [];
+  }
+}
+
+// Get document content for context
+async function getDocumentContext(documentIds: string[]): Promise<string> {
+  try {
+    const documents = await Promise.all(
+      documentIds.map(async (docId) => {
+        try {
+          const doc = await convex.query(api.documents.getDocumentById, { documentId: docId as any });
+          return doc;
+        } catch (error) {
+          console.error(`Error fetching document ${docId}:`, error);
+          return null;
+        }
+      })
+    );
+
+    const validDocuments = documents.filter(Boolean);
+    
+    // Combine document content (truncate if too long)
+    const context = validDocuments
+      .map(doc => doc ? `Document: ${doc.title}\n${doc.content}` : '')
+      .filter(Boolean)
+      .join('\n\n')
+      .substring(0, 8000); // Limit context size
+
+    return context;
+  } catch (error) {
+    console.error('Error getting document context:', error);
+    return '';
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json();
-    const { message, documentIds, conversationHistory = [] } = body;
+    const { message, documentIds, conversationHistory, sessionId } = body;
 
     if (!message || !documentIds || documentIds.length === 0) {
       return NextResponse.json(
@@ -28,141 +112,87 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('RAG Chat request:', { message, documentIds: documentIds.length, historyLength: conversationHistory.length });
+    const currentSessionId = sessionId || generateSessionId();
+    const startTime = Date.now();
 
-    // Step 1: Get embeddings for the user's message
-    const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || 'http://localhost:8081';
+    // Step 1: Perform vector search to find relevant content
+    console.log('Performing vector search...');
+    const vectorResults = await performVectorSearch(message, documentIds, 5);
     
-    console.log('Generating embedding for user message...');
-    const embeddingResponse = await fetch(`${vectorServiceUrl}/embed`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: message
-      }),
-    });
-
-    if (!embeddingResponse.ok) {
-      const errorText = await embeddingResponse.text();
-      console.error('Embedding generation failed:', errorText);
-      return NextResponse.json(
-        { error: 'Failed to generate embedding for message' },
-        { status: 500 }
-      );
-    }
-
-    const embeddingData = await embeddingResponse.json();
-    const messageEmbedding = embeddingData.embeddings;
-
-    console.log('Message embedding generated, dimension:', messageEmbedding.length);
-
-    // Step 2: Retrieve relevant document chunks using semantic search
-    const convexUrl = process.env.CONVEX_URL;
-    if (!convexUrl) {
-      return NextResponse.json(
-        { error: 'Convex URL not configured' },
-        { status: 500 }
-      );
-    }
-
-    console.log('Searching for relevant document chunks...');
-    const searchResponse = await fetch(`${convexUrl}/api/embeddings/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        embedding: messageEmbedding,
-        documentIds: documentIds,
-        topK: 5,
-        threshold: 0.3
-      }),
-    });
-
-    if (!searchResponse.ok) {
-      const errorText = await searchResponse.text();
-      console.error('Document search failed:', errorText);
-      return NextResponse.json(
-        { error: 'Failed to search documents' },
-        { status: 500 }
-      );
-    }
-
-    const searchResults = await searchResponse.json();
-    const relevantChunks: DocumentChunk[] = searchResults.results || [];
-
-    console.log('Found relevant chunks:', relevantChunks.length);
-
-    // Step 3: Prepare context from relevant chunks
-    const context = relevantChunks
-      .map(chunk => `Document: ${chunk.title}\nContent: ${chunk.content}`)
-      .join('\n\n---\n\n');
-
-    // Step 4: Generate response using a simple template (you can integrate with OpenAI/Claude here)
-    let response: string;
-    
-    if (relevantChunks.length === 0) {
-      response = "I couldn't find relevant information in the selected documents to answer your question. Could you try rephrasing your question or selecting different documents?";
+    // Step 2: Get additional document context if vector search returns limited results
+    let context = '';
+    if (vectorResults.length > 0) {
+      // Use vector search results as context
+      context = vectorResults
+        .map(result => `${result.title}: ${result.snippet}`)
+        .join('\n\n');
     } else {
-      // Simple template-based response (you can replace this with actual LLM integration)
-      response = generateTemplateResponse(message, context, relevantChunks);
+      // Fallback to full document content if no vector results
+      console.log('No vector results, using full document context...');
+      context = await getDocumentContext(documentIds);
     }
 
-    // Step 5: Prepare sources for the response
-    const sources = relevantChunks.map(chunk => ({
-      documentId: chunk.documentId,
-      title: chunk.title,
-      snippet: chunk.content.substring(0, 200) + (chunk.content.length > 200 ? '...' : ''),
-      score: chunk.score
-    }));
+    // Step 3: Call the lightweight LLM service
+    console.log('Calling lightweight LLM service...');
+    const llmResponse = await fetch(`${LIGHTWEIGHT_LLM_URL}/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message,
+        context,
+        conversation_history: conversationHistory,
+        max_length: 512,
+        temperature: 0.7,
+      }),
+    });
 
-    console.log('RAG Chat response generated successfully');
+    if (!llmResponse.ok) {
+      const errorText = await llmResponse.text();
+      console.error('LLM service error:', errorText);
+      return NextResponse.json(
+        { error: 'Failed to generate response from LLM service' },
+        { status: 500 }
+      );
+    }
 
+    const llmResult = await llmResponse.json();
+    const processingTime = Date.now() - startTime;
+
+    // Step 4: Save conversation to Convex (temporarily disabled until API is regenerated)
+    try {
+      // TODO: Re-enable once ragChat functions are available in generated API
+      console.log('Conversation saving temporarily disabled - need to regenerate Convex API');
+    } catch (convexError) {
+      console.error('Error saving to Convex:', convexError);
+      // Continue even if saving fails
+    }
+
+    // Step 5: Return response
     return NextResponse.json({
-      response,
-      sources,
-      metadata: {
-        chunksFound: relevantChunks.length,
-        documentsSearched: documentIds.length,
-        embeddingDimension: messageEmbedding.length
-      }
+      response: llmResult.response,
+      sessionId: currentSessionId,
+      sources: vectorResults,
+      usage: llmResult.usage,
+      processingTimeMs: processingTime,
+      model: llmResult.model_info,
     });
 
   } catch (error) {
-    console.error('RAG Chat error:', error);
+    console.error('Chat API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error during RAG chat processing' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-function generateTemplateResponse(message: string, context: string, chunks: DocumentChunk[]): string {
-  // Simple template-based response generation
-  // In a production system, you'd want to integrate with OpenAI, Claude, or another LLM
-  
-  const questionWords = ['what', 'how', 'why', 'when', 'where', 'who', 'which'];
-  const isQuestion = questionWords.some(word => 
-    message.toLowerCase().includes(word.toLowerCase())
-  );
-
-  if (isQuestion) {
-    return `Based on the documents you've selected, here's what I found regarding your question:
-
-${chunks.map((chunk, index) => 
-  `${index + 1}. From "${chunk.title}": ${chunk.content.substring(0, 300)}${chunk.content.length > 300 ? '...' : ''}`
-).join('\n\n')}
-
-This information comes from ${chunks.length} relevant section${chunks.length > 1 ? 's' : ''} in your selected documents. Would you like me to elaborate on any specific aspect?`;
-  } else {
-    return `I found relevant information in your documents related to "${message}":
-
-${chunks.map((chunk, index) => 
-  `• From "${chunk.title}": ${chunk.content.substring(0, 200)}${chunk.content.length > 200 ? '...' : ''}`
-).join('\n\n')}
-
-Is there anything specific you'd like to know more about from these sources?`;
-  }
+export async function GET() {
+  return NextResponse.json({
+    message: 'RAG Chat API is running',
+    endpoints: {
+      POST: '/api/RAG/chat - Send a chat message with document context',
+    },
+  });
 }
