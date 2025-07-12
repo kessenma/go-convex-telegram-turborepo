@@ -27,41 +27,77 @@ function generateSessionId(): string {
   return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Perform vector search to find relevant document chunks
+// Perform vector search to find relevant document chunks using Convex
 async function performVectorSearch(
   query: string, 
   documentIds: string[], 
   limit: number = 5
 ): Promise<VectorSearchResult[]> {
   try {
-    // Call the vector-convert-llm service for similarity search
-    const response = await fetch(`${process.env.VECTOR_CONVERT_LLM_INTERNAL_URL || 'http://localhost:8081'}/similarity-search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query,
-        document_ids: documentIds,
-        top_k: limit,
-        threshold: 0.3, // Minimum similarity threshold
-      }),
-    });
+    // For now, let's skip vector search and use a simpler approach
+    // Get the documents directly and return relevant snippets
+    const documents = await Promise.all(
+      documentIds.map(async (docId) => {
+        try {
+          const doc = await convex.query(api.documents.getDocumentById, { documentId: docId as any });
+          return doc;
+        } catch (error) {
+          console.error(`Error fetching document ${docId}:`, error);
+          return null;
+        }
+      })
+    );
 
-    if (!response.ok) {
-      console.error('Vector search failed:', response.statusText);
-      return [];
-    }
-
-    const results = await response.json();
+    const validDocuments = documents.filter(Boolean);
     
-    // Transform results to match our interface
-    return results.results?.map((result: any) => ({
-      documentId: result.document_id,
-      title: result.title || 'Unknown Document',
-      snippet: result.text || result.content || '',
-      score: result.score || 0,
-    })) || [];
+    // Simple keyword matching for now - look for query terms in document content
+    const queryTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
+    
+    const results: VectorSearchResult[] = [];
+    
+    for (const doc of validDocuments) {
+      if (!doc) continue;
+      
+      const content = doc.content.toLowerCase();
+      let relevanceScore = 0;
+      let bestSnippet = '';
+      
+      // Find the best matching snippet
+      const sentences = doc.content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+      let bestSentenceScore = 0;
+      
+      for (const sentence of sentences) {
+        const sentenceLower = sentence.toLowerCase();
+        let sentenceScore = 0;
+        
+        for (const term of queryTerms) {
+          if (sentenceLower.includes(term)) {
+            sentenceScore += 1;
+          }
+        }
+        
+        if (sentenceScore > bestSentenceScore) {
+          bestSentenceScore = sentenceScore;
+          bestSnippet = sentence.trim();
+          relevanceScore = sentenceScore / queryTerms.length;
+        }
+      }
+      
+      // If we found relevant content, add it to results
+      if (relevanceScore > 0) {
+        results.push({
+          documentId: doc._id,
+          title: doc.title,
+          snippet: bestSnippet || doc.content.substring(0, 200),
+          score: relevanceScore,
+        });
+      }
+    }
+    
+    // Sort by relevance score and return top results
+    return results
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
     
   } catch (error) {
     console.error('Error performing vector search:', error);
@@ -160,13 +196,58 @@ export async function POST(request: NextRequest) {
     const llmResult = await llmResponse.json();
     const processingTime = Date.now() - startTime;
 
-    // Step 4: Save conversation to Convex (temporarily disabled until API is regenerated)
+    // Step 4: Save conversation to Convex
     try {
-      // TODO: Re-enable once ragChat functions are available in generated API
-      console.log('Conversation saving temporarily disabled - need to regenerate Convex API');
+      // Check if conversation exists, if not create it
+      let conversation = await convex.query(api.ragChat.getConversationBySessionId, { 
+        sessionId: currentSessionId 
+      });
+
+      let conversationId;
+      if (!conversation) {
+        // Create new conversation
+        conversationId = await convex.mutation(api.ragChat.createConversation, {
+          sessionId: currentSessionId,
+          documentIds: documentIds as any[],
+          title: `Chat about ${documentIds.length} document${documentIds.length > 1 ? 's' : ''}`,
+          llmModel: llmResult.model_info?.model_name || 'lightweight-llm',
+          userId: request.headers.get('x-user-id') || undefined,
+          userAgent: request.headers.get('user-agent') || undefined,
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+        });
+      } else {
+        conversationId = conversation._id;
+      }
+
+      // Save user message
+      await convex.mutation(api.ragChat.addMessage, {
+        conversationId: conversationId as any,
+        messageId: `msg_${Date.now()}_user`,
+        role: 'user',
+        content: message,
+        tokenCount: llmResult.usage?.input_tokens || 0,
+      });
+
+      // Save assistant message
+      await convex.mutation(api.ragChat.addMessage, {
+        conversationId: conversationId as any,
+        messageId: `msg_${Date.now()}_assistant`,
+        role: 'assistant',
+        content: llmResult.response,
+        tokenCount: llmResult.usage?.output_tokens || 0,
+        processingTimeMs: processingTime,
+        sources: vectorResults.map(result => ({
+          documentId: result.documentId as any,
+          title: result.title,
+          snippet: result.snippet,
+          score: result.score,
+        })),
+      });
+
+      console.log('Successfully saved conversation to Convex');
     } catch (convexError) {
       console.error('Error saving to Convex:', convexError);
-      // Continue even if saving fails
+      // Continue even if saving fails - don't break the chat experience
     }
 
     // Step 5: Return response

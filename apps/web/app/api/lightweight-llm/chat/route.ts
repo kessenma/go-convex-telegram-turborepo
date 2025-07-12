@@ -4,7 +4,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const llmUrl = process.env.LIGHTWEIGHT_LLM_URL || process.env.LIGHTWEIGHT_LLM_INTERNAL_URL || 'http://lightweight-llm:8082';
+    const llmUrl = process.env.LIGHTWEIGHT_LLM_URL || 'http://localhost:8082';
     const chatUrl = `${llmUrl}/chat`;
     
     // Validate required fields

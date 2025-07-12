@@ -5,7 +5,8 @@ import { useQuery } from "convex/react";
 import { api } from "../../../docker-convex/convex/_generated/api";
 import { DocumentSelector } from "./components/DocumentSelector";
 import { ChatInterface } from "./components/ChatInterface";
-import { Document } from "./types";
+import { ChatHistory } from "./components/ChatHistory";
+import { Document, ChatConversation } from "./types";
 import { Card } from "../../components/ui/card";
 import { Loader2, MessageSquare } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
@@ -16,7 +17,9 @@ import { LightweightLLMStatusIndicator } from "../../components/rag/lightweight-
 export default function RAGChatPage() {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [showChat, setShowChat] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [selectedDocumentObjects, setSelectedDocumentObjects] = useState<Document[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
 
   // Fetch documents from Convex
   const documents = useQuery(api.documents.getAllDocuments, { limit: 50 });
@@ -43,12 +46,36 @@ export default function RAGChatPage() {
 
   const handleStartChat = () => {
     if (selectedDocuments.length > 0) {
+      // Generate a new session ID for the new chat
+      setCurrentSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
       setShowChat(true);
+      setShowHistory(false);
     }
   };
 
   const handleBackToSelection = () => {
     setShowChat(false);
+    setShowHistory(false);
+  };
+
+  const handleShowHistory = () => {
+    setShowHistory(true);
+    setShowChat(false);
+  };
+
+  const handleSelectConversation = (conversation: ChatConversation) => {
+    // Load the conversation's documents
+    setSelectedDocuments(conversation.documentIds);
+    setCurrentSessionId(conversation.sessionId);
+    setShowHistory(false);
+    setShowChat(true);
+  };
+
+  const handleNewChat = () => {
+    setShowHistory(false);
+    setShowChat(false);
+    setSelectedDocuments([]);
+    setCurrentSessionId('');
   };
 
   if (documents === undefined) {
@@ -96,23 +123,39 @@ export default function RAGChatPage() {
           />
         </div>
 
-        <Card className="mx-auto max-w-6xl border-gray-700 bg-gray-800/50 backdrop-blur-sm">
-          {!showChat ? (
-            <div className="p-6">
-              <DocumentSelector
-                documents={documentsArray as Document[]}
-                selectedDocuments={selectedDocuments}
-                onDocumentToggle={handleDocumentToggle}
-                onStartChat={handleStartChat}
+        <div className="mx-auto max-w-6xl">
+          {showHistory ? (
+            <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+              <ChatHistory
+                onSelectConversation={handleSelectConversation}
+                onNewChat={handleNewChat}
+                onBackToSelection={handleBackToSelection}
+                currentSessionId={currentSessionId}
               />
-            </div>
+            </Card>
+          ) : showChat ? (
+            <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+              <ChatInterface
+                selectedDocuments={selectedDocumentObjects}
+                onBackToSelection={handleBackToSelection}
+                sessionId={currentSessionId}
+                onShowHistory={handleShowHistory}
+              />
+            </Card>
           ) : (
-            <ChatInterface
-              selectedDocuments={selectedDocumentObjects}
-              onBackToSelection={handleBackToSelection}
-            />
+            <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+              <div className="p-6">
+                <DocumentSelector
+                  documents={documentsArray as Document[]}
+                  selectedDocuments={selectedDocuments}
+                  onDocumentToggle={handleDocumentToggle}
+                  onStartChat={handleStartChat}
+                  onShowHistory={handleShowHistory}
+                />
+              </div>
+            </Card>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   );

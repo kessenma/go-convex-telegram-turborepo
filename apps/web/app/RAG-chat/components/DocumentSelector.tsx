@@ -12,9 +12,10 @@ interface DocumentSelectorProps {
   selectedDocuments: string[];
   onDocumentToggle: (documentId: string) => void;
   onStartChat: () => void;
+  onShowHistory: () => void;
 }
 
-export function DocumentSelector({ documents, selectedDocuments, onDocumentToggle, onStartChat }: DocumentSelectorProps) {
+export function DocumentSelector({ documents, selectedDocuments, onDocumentToggle, onStartChat, onShowHistory }: DocumentSelectorProps) {
   const [showOnlyEmbedded, setShowOnlyEmbedded] = useState(false);
 
   // Ensure documents is an array
@@ -147,7 +148,14 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
             })}
           </div>
 
-          <div className="text-center">
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={onShowHistory}
+              className="flex gap-2 items-center px-4 py-2 text-gray-300 rounded-lg border border-gray-600 transition-colors bg-gray-800/50 hover:border-gray-500 hover:text-white"
+            >
+              {renderIcon(FileText, { className: "w-4 h-4" })}
+              View History
+            </button>
             <MovingButton
               onClick={onStartChat}
               disabled={selectedDocuments.length === 0}

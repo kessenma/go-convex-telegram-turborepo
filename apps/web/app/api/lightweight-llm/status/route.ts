@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const llmUrl = process.env.LIGHTWEIGHT_LLM_URL || process.env.LIGHTWEIGHT_LLM_INTERNAL_URL || 'http://lightweight-llm:8082';
+    const llmUrl = process.env.LIGHTWEIGHT_LLM_URL || 'http://localhost:8082';
     const healthUrl = `${llmUrl}/health`;
     
     const response = await fetch(healthUrl, {
@@ -52,7 +52,7 @@ export async function GET() {
       status: actualStatus,
       ready: ready,
       message: ready ? 'Lightweight LLM ready for chat' : 'Model loading...',
-      model: 'microsoft/Phi-3-mini-4k-instruct',
+      model: 'distilgpt2',
       details: {
         service_status: healthData.status || 'unknown',
         model_loaded: healthData.model_loaded !== false,

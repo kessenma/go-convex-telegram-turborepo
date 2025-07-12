@@ -1,20 +1,47 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { MessageCircle, Send, Bot, User, Loader2, ArrowLeft } from "lucide-react";
+import { MessageCircle, Send, Bot, User, Loader2, ArrowLeft, History } from "lucide-react";
 import { renderIcon } from "../../../lib/icon-utils";
 import { Document, ChatMessage } from "../types";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 
 interface ChatInterfaceProps {
   selectedDocuments: Document[];
   onBackToSelection: () => void;
+  sessionId: string;
+  onShowHistory: () => void;
 }
 
-export function ChatInterface({ selectedDocuments, onBackToSelection }: ChatInterfaceProps) {
+export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId, onShowHistory }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Convex queries and mutations
+  const existingConversation = useQuery(api.ragChat.getConversationBySessionId, { sessionId });
+  const conversationMessages = useQuery(
+    api.ragChat.getConversationMessages, 
+    existingConversation ? { conversationId: existingConversation._id as Id<"rag_conversations"> } : "skip"
+  );
+
+  // Load existing messages when conversation is found
+  useEffect(() => {
+    if (conversationMessages && conversationMessages.length > 0) {
+      const loadedMessages: ChatMessage[] = conversationMessages.map((msg: any) => ({
+        id: msg.messageId,
+        type: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: msg.timestamp,
+        sources: msg.sources,
+      }));
+      setMessages(loadedMessages);
+    }
+  }, [conversationMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -48,6 +75,7 @@ export function ChatInterface({ selectedDocuments, onBackToSelection }: ChatInte
         body: JSON.stringify({
           message: currentInput,
           documentIds: selectedDocuments.map(doc => doc._id),
+          sessionId: sessionId,
           conversationHistory: messages.slice(-10).map(msg => ({
             role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
             content: msg.content
@@ -104,13 +132,22 @@ export function ChatInterface({ selectedDocuments, onBackToSelection }: ChatInte
             <span className="text-xs text-green-400">Powered by Lightweight LLM</span>
           </div>
         </div>
-        <button
-          onClick={onBackToSelection}
-          className="flex gap-2 items-center px-3 py-2 text-gray-300 rounded-lg border border-gray-600 transition-colors hover:bg-gray-700"
-        >
-          {renderIcon(ArrowLeft, { className: "w-4 h-4" })}
-          Back to Selection
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={onShowHistory}
+            className="flex gap-2 items-center px-3 py-2 text-gray-300 rounded-lg border border-gray-600 transition-colors hover:bg-gray-700"
+          >
+            {renderIcon(History, { className: "w-4 h-4" })}
+            History
+          </button>
+          <button
+            onClick={onBackToSelection}
+            className="flex gap-2 items-center px-3 py-2 text-gray-300 rounded-lg border border-gray-600 transition-colors hover:bg-gray-700"
+          >
+            {renderIcon(ArrowLeft, { className: "w-4 h-4" })}
+            Back to Selection
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
