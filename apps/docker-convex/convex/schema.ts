@@ -15,20 +15,39 @@ export default defineSchema({
     tags: v.optional(v.array(v.string())), // Optional tags for categorization
     summary: v.optional(v.string()), // Optional summary/description
     wordCount: v.number(), // Number of words in content
-    embedding: v.optional(v.array(v.number())), // Vector embedding for semantic search
+    hasEmbedding: v.boolean(), // Whether document has an embedding
   })
     .index("by_upload_date", ["uploadedAt"])
     .index("by_active", ["isActive"])
     .index("by_content_type", ["contentType"])
     .index("by_active_and_date", ["isActive", "uploadedAt"])
+    .index("by_has_embedding", ["hasEmbedding"])
     .searchIndex("search_content", {
       searchField: "content",
       filterFields: ["isActive", "contentType"]
-    })
+    }),
+
+  // Document embeddings table - stores vector embeddings with relationship to documents
+  document_embeddings: defineTable({
+    documentId: v.id("rag_documents"), // Reference to the original document
+    embedding: v.array(v.number()), // Vector embedding for semantic search
+    embeddingModel: v.string(), // Model used to generate embedding
+    embeddingDimensions: v.number(), // Number of dimensions in the embedding
+    chunkIndex: v.optional(v.number()), // For chunked documents, which chunk this is
+    chunkText: v.optional(v.string()), // Text content of this chunk
+    createdAt: v.number(), // When embedding was generated
+    processingTimeMs: v.optional(v.number()), // Time taken to generate embedding
+    isActive: v.boolean(), // Whether embedding is active for search
+  })
+    .index("by_document", ["documentId"])
+    .index("by_created_at", ["createdAt"])
+    .index("by_active", ["isActive"])
+    .index("by_model", ["embeddingModel"])
+    .index("by_document_and_chunk", ["documentId", "chunkIndex"])
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
       dimensions: 768, // sentence-transformers/all-distilroberta-v1 embedding dimensions
-      filterFields: ["isActive", "contentType"]
+      filterFields: ["isActive", "embeddingModel"]
     }),
 
   // Telegram threads table - stores conversation threads

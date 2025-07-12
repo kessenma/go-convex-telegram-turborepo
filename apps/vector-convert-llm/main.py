@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import logging
@@ -20,6 +21,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app, origins=['http://localhost:3000', 'http://localhost:3210', 'http://localhost:3211'])
 
 # Add request logging middleware
 @app.before_request
@@ -72,7 +76,7 @@ def create_conversion_job(job_type, document_id=None, input_text=None, request_s
             'requestSource': request_source,
         }
         
-        response = requests.post(f"{convex_url}/api/conversion-jobs", json=job_data)
+        response = requests.post(f"{convex_url}/http/api/conversion-jobs", json=job_data)
         if response.status_code == 200:
             return job_id
         else:
@@ -102,7 +106,7 @@ def update_conversion_job(job_id, status, output_data=None, error_message=None, 
         if processing_time_ms is not None:
             update_data['processingTimeMs'] = processing_time_ms
             
-        response = requests.put(f"{convex_url}/api/conversion-jobs", json=update_data)
+        response = requests.put(f"{convex_url}/http/api/conversion-jobs", json=update_data)
         return response.status_code == 200
     except Exception as e:
         logger.error(f"Error updating conversion job: {e}")
@@ -245,7 +249,7 @@ def send_memory_usage_to_convex():
         }
         
         response = requests.post(
-            f"{convex_url}/api/llm/memory-usage",
+            f"{convex_url}/http/api/llm/memory-usage",
             json=payload,
             timeout=5
         )
@@ -605,7 +609,8 @@ def process_document_embedding():
             return jsonify({'error': 'Missing document_id field in request'}), 400
         
         document_id = data['document_id']
-        convex_url = data.get('convex_url', os.environ.get('CONVEX_URL'))
+        # Always use the internal Docker network URL for Convex
+        convex_url = os.environ.get('CONVEX_URL', 'http://convex-backend:3211')
         use_chunking = data.get('use_chunking', True)  # Enable chunking by default
         chunk_size = data.get('chunk_size', 1000)
         chunk_overlap = data.get('chunk_overlap', 200)
@@ -614,6 +619,7 @@ def process_document_embedding():
             return jsonify({'error': 'Convex URL not provided'}), 400
         
         logger.info(f"Processing document embedding for ID: {document_id} (chunking: {use_chunking})")
+        logger.info(f"Convex URL used: {convex_url}")
         
         # Create conversion job
         job_id = create_conversion_job(
@@ -628,6 +634,7 @@ def process_document_embedding():
         # Fetch document from Convex
         logger.info(f"Fetching document from Convex: {document_id}")
         fetch_url = f"{convex_url}/api/documents/{document_id}"
+        logger.info(f"Fetching document from Convex at: {fetch_url}")
         fetch_response = requests.get(fetch_url)
         
         if fetch_response.status_code != 200:
@@ -735,6 +742,30 @@ def process_document_embedding():
         
         if save_response.status_code == 200:
             logger.info("Embedding saved successfully to Convex")
+            
+            # Create notification for successful embedding
+            try:
+                notification_url = f"{convex_url}/http/api/notifications"
+                notification_payload = {
+                    'type': 'document_embedded',
+                    'title': 'Document Embedded',
+                    'message': f'Document embedding completed successfully',
+                    'documentId': document_id,
+                    'metadata': json.dumps({
+                        'embedding_dimension': len(embedding),
+                        'model': 'all-MiniLM-L6-v2',
+                        'processing_time_ms': processing_time,
+                        'embedding_method': embedding_method
+                    })
+                }
+                
+                notification_response = requests.post(notification_url, json=notification_payload)
+                if notification_response.status_code in (200, 201):
+                    logger.info("Notification created successfully")
+                else:
+                    logger.warning(f"Failed to create notification: {notification_response.status_code} - {notification_response.text}")
+            except Exception as notification_error:
+                logger.error(f"Error creating notification: {notification_error}")
             
             # Update job as completed
             if job_id:
@@ -876,7 +907,7 @@ def process_markdown_document():
         logger.info(f"Calculated average embedding from {len(chunk_embeddings)} chunks, dimension: {len(avg_embedding)}")
         
         # Save to Convex
-        save_url = f"{convex_url}/api/embeddings"
+        save_url = f"{convex_url}/http/api/embeddings"
         save_payload = {
             'text': content,
             'embedding': avg_embedding,
@@ -897,6 +928,31 @@ def process_markdown_document():
         
         if save_response.status_code == 200:
             logger.info("Markdown embedding saved successfully to Convex")
+            
+            # Create notification for successful embedding
+            try:
+                notification_url = f"{convex_url}/http/api/notifications"
+                notification_payload = {
+                    'type': 'document_embedded',
+                    'title': 'Document Embedded',
+                    'message': f'Markdown document embedding completed successfully',
+                    'documentId': document_id,
+                    'metadata': json.dumps({
+                        'embedding_dimension': len(avg_embedding),
+                        'model': 'all-MiniLM-L6-v2',
+                        'processing_time_ms': processing_time,
+                        'embedding_method': 'chunked_average',
+                        'chunks_processed': len(chunk_embeddings)
+                    })
+                }
+                
+                notification_response = requests.post(notification_url, json=notification_payload)
+                if notification_response.status_code in (200, 201):
+                    logger.info("Notification created successfully")
+                else:
+                    logger.warning(f"Failed to create notification: {notification_response.status_code} - {notification_response.text}")
+            except Exception as notification_error:
+                logger.error(f"Error creating notification: {notification_error}")
             
             # Update job as completed
             if job_id:

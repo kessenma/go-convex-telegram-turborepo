@@ -417,7 +417,7 @@ export const getDocumentsAPI = httpAction(async (ctx, request) => {
 export const getDocumentByIdAPI = httpAction(async (ctx, request) => {
   try {
     const url = new URL(request.url);
-    let documentId: string;
+    let documentId: string | undefined;
     
     // Check if documentId is in query parameters (for /api/documents/by-id route)
     const queryDocumentId = url.searchParams.get("documentId");
@@ -480,7 +480,12 @@ export const saveDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
     if (!documentId || !embedding) {
       return errorResponse("Missing documentId or embedding", 400);
     }
-    await ctx.runMutation(api.documents.updateDocumentEmbedding, { documentId, embedding });
+    await ctx.runMutation(api.embeddings.createDocumentEmbedding, { 
+      documentId, 
+      embedding,
+      embeddingModel: "sentence-transformers/all-distilroberta-v1",
+      embeddingDimensions: embedding.length
+    });
     return new Response(JSON.stringify({ success: true }));
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";

@@ -28,6 +28,10 @@ export default {
         'bitcount': ['Audiowide', 'monospace'],
       },
       keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '100% center' },
+          '100%': { backgroundPosition: '0% center' },
+        },
         gradient: {
           '0%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
@@ -71,6 +75,7 @@ export default {
         shine: 'shine 5s linear infinite',
         "glitch-after": "glitch var(--after-duration) infinite linear alternate-reverse",
         "glitch-before": "glitch var(--before-duration) infinite linear alternate-reverse",
+        shimmer: 'shimmer var(--duration,2s) linear infinite',
       },
     },
   },

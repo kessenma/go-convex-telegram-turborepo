@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useEffect, useState, useId, useRef } from 'react';
-import { X, FileText, Calendar, Hash, BarChart3, Zap, ZapOff } from 'lucide-react';
+import { X, FileText, Calendar, Hash, BarChart3, Zap, ZapOff, ChevronDown } from 'lucide-react';
 import { AnimatePresence, motion } from "motion/react";
 import { useOutsideClick } from '../../hooks/use-outside-clicks';
 import { renderIcon } from '../../lib/icon-utils';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
+import { toast } from "sonner";
+import { useNotifications } from '../../contexts/NotificationsContext';
 
 interface DocumentViewerProps {
   documentId: string;
@@ -22,21 +25,39 @@ interface DocumentData {
   wordCount: number;
   uploadedAt: number;
   summary?: string;
-  embedding?: number[];
-  hasEmbedding?: boolean;
+  hasEmbedding: boolean;
+}
+
+interface EmbeddingData {
+  _id: string;
+  documentId: string;
+  embedding: number[];
+  embeddingModel: string;
+  embeddingDimensions: number;
+  chunkIndex?: number;
+  chunkText?: string;
+  createdAt: number;
+  processingTimeMs?: number;
+  isActive: boolean;
 }
 
 export default function DocumentViewer({ documentId, isOpen, onClose, animationOrigin }: DocumentViewerProps): React.ReactElement | null {
+  const { openNotifications } = useNotifications();
   const [documentData, setDocumentData] = useState<DocumentData | null>(null);
+  const [embeddingData, setEmbeddingData] = useState<EmbeddingData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingEmbeddings, setLoadingEmbeddings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatingEmbedding, setGeneratingEmbedding] = useState(false);
+  const [embeddingStatus, setEmbeddingStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [embeddingMessage, setEmbeddingMessage] = useState('');
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
 
   useEffect(() => {
     if (!isOpen || !documentId) {
       setDocumentData(null);
+      setEmbeddingData([]);
       setError(null);
       return;
     }
@@ -50,9 +71,12 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
           throw new Error('Failed to fetch document');
         }
         const data = await response.json();
-        // Check if document has embedding
-        data.hasEmbedding = data.embedding && data.embedding.length > 0;
         setDocumentData(data);
+        
+        // Fetch embeddings if document has them
+        if (data.hasEmbedding) {
+          await fetchEmbeddings(documentId);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
@@ -62,6 +86,21 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
 
     fetchDocument();
   }, [documentId, isOpen]);
+
+  const fetchEmbeddings = async (docId: string) => {
+    setLoadingEmbeddings(true);
+    try {
+      const response = await fetch(`/api/documents/${docId}/embeddings`);
+      if (response.ok) {
+        const embeddings = await response.json();
+        setEmbeddingData(embeddings);
+      }
+    } catch (err) {
+      console.error('Failed to fetch embeddings:', err);
+    } finally {
+      setLoadingEmbeddings(false);
+    }
+  };
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -86,36 +125,54 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
     if (!documentData) return;
     
     setGeneratingEmbedding(true);
+    setEmbeddingStatus('idle');
+    setEmbeddingMessage('');
+    
     try {
       // Call the vector-convert-llm service directly
-      const response = await fetch('/api/vector-convert-llm/process-document', {
+      const vectorServiceUrl = process.env.NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL || 'http://localhost:8081';
+      const response = await fetch(`${vectorServiceUrl}/process-document`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          document_id: documentData._id 
+          document_id: documentData._id,
+          convex_url: process.env.NEXT_PUBLIC_CONVEX_URL || 'http://localhost:3210'
         }),
       });
       
       if (response.ok) {
         const result = await response.json();
-        console.log('Embedding generated successfully:', result);
         // Refresh document data to show updated embedding status
         const docResponse = await fetch(`/api/documents/${documentId}`);
         if (docResponse.ok) {
           const updatedData = await docResponse.json();
-          updatedData.hasEmbedding = updatedData.embedding && updatedData.embedding.length > 0;
           setDocumentData(updatedData);
+          // Fetch the new embeddings
+          if (updatedData.hasEmbedding) {
+            await fetchEmbeddings(documentId);
+          }
+          setEmbeddingStatus('success');
+          setEmbeddingMessage(`Embedding generated successfully for "${documentData.title}"`);
         }
       } else {
-        const errorData = await response.json();
-        console.error('Error generating embedding:', errorData);
-        setError(`Failed to generate embedding: ${errorData.error || JSON.stringify(errorData) || 'Unknown error'}`);
+        let errorMessage = 'Failed to generate embedding';
+        try {
+          const errorData = await response.json();
+          errorMessage = `Failed to generate embedding: ${errorData.error || JSON.stringify(errorData) || 'Unknown error'}`;
+        } catch {
+          // fallback
+        }
+        setError(errorMessage);
+        setEmbeddingStatus('error');
+        setEmbeddingMessage(errorMessage);
       }
     } catch (error) {
-      console.error('Error generating embedding:', error);
-      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      setError(errorMessage);
+      setEmbeddingStatus('error');
+      setEmbeddingMessage(errorMessage);
     } finally {
       setGeneratingEmbedding(false);
     }
@@ -302,16 +359,72 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                       </div>
                     </div>
 
-                    {/* Embedding Info */}
-                    {documentData.hasEmbedding && documentData.embedding && (
-                      <div>
-                        <h3 className="mb-3 text-lg font-semibold text-white">Vector Embedding</h3>
-                        <div className="p-4 bg-gray-800 rounded-lg">
-                          <p className="text-gray-300">
-                            Document has been converted to a {documentData.embedding.length}-dimensional vector for semantic search.
-                          </p>
-                        </div>
-                      </div>
+                    {/* Embedded Vector Section */}
+                    {documentData.hasEmbedding && embeddingData.length > 0 && (
+                      <Accordion className="space-y-2">
+                        <AccordionItem value="embeddings" className="bg-gray-800 rounded-lg border border-gray-700">
+                          <AccordionTrigger className="flex justify-between items-center p-4 w-full text-left rounded-lg transition-colors hover:bg-gray-750">
+                            <div className="flex gap-3 items-center">
+                              {renderIcon(Zap, { className: "w-5 h-5 text-green-400" })}
+                              <div>
+                                <h3 className="text-lg font-semibold text-white">Embedded Vectors</h3>
+                                <p className="text-sm text-gray-400">
+                                  {embeddingData.length} embedding{embeddingData.length !== 1 ? 's' : ''} • {embeddingData[0]?.embeddingDimensions || 0} dimensions
+                                </p>
+                              </div>
+                            </div>
+                            {renderIcon(ChevronDown, { className: "w-5 h-5 text-gray-400 transition-transform group-data-[expanded]:rotate-180" })}
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4">
+                            <div className="space-y-4">
+                              {loadingEmbeddings ? (
+                                <div className="flex justify-center items-center p-4">
+                                  <div className="w-6 h-6 rounded-full border-2 border-gray-600 animate-spin border-t-curious-cyan-500"></div>
+                                </div>
+                              ) : (
+                                embeddingData.map((embedding, index) => (
+                                  <div key={embedding._id} className="p-4 bg-gray-900 rounded-lg border border-gray-600">
+                                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                      <div>
+                                        <p className="text-sm text-gray-400">Model</p>
+                                        <p className="font-medium text-white">{embedding.embeddingModel}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-gray-400">Dimensions</p>
+                                        <p className="font-medium text-white">{embedding.embeddingDimensions}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-gray-400">Created</p>
+                                        <p className="font-medium text-white">{formatDate(embedding.createdAt)}</p>
+                                      </div>
+                                      {embedding.processingTimeMs && (
+                                        <div>
+                                          <p className="text-sm text-gray-400">Processing Time</p>
+                                          <p className="font-medium text-white">{embedding.processingTimeMs}ms</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {embedding.chunkText && (
+                                      <div className="mt-3">
+                                        <p className="text-sm text-gray-400">Chunk Text</p>
+                                        <p className="p-2 mt-1 text-sm text-gray-300 bg-gray-800 rounded border">
+                                          {embedding.chunkText.substring(0, 200)}{embedding.chunkText.length > 200 ? '...' : ''}
+                                        </p>
+                                      </div>
+                                    )}
+                                    <div className="mt-3">
+                                      <p className="text-sm text-gray-400">Vector Preview</p>
+                                      <p className="p-2 mt-1 font-mono text-xs text-gray-500 bg-gray-800 rounded border">
+                                        [{embedding.embedding.slice(0, 5).map(v => v.toFixed(4)).join(', ')}, ...] ({embedding.embedding.length} values)
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
                     )}
 
                     {/* Summary */}

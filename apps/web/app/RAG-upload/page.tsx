@@ -271,12 +271,13 @@ export default function RAGUploadPage(): React.ReactElement | null {
       <div className="px-4 mx-auto max-w-4xl">
         {/* Header */}
         <Hero 
+          titleAnimation={TextAnimationType.TextRoll}
+
           title="Upload Documents"
           subtitle="Upload your knowledge base for AI-powered search and retrieval"
           subtitleAccordionContent={`RAG (Retrieval-Augmented Generation) is a search technique that enhances AI responses by incorporating uploaded information from your documents in combination with an external LLM (large language model). The uploaded documents are stored in a vector database (more efficient than searching through plain text or traditional databases like SQL/NoSQL). **Convex is different than other databases because it combines SQL structure with vector search.**`
-
           } 
-          textAlign="left"
+          textAlign="center"
         >
            {/* Sparkles Effect */}
         <div className="overflow-hidden relative -mb-40 w-full h-40 rounded-md">

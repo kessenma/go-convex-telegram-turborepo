@@ -43,9 +43,9 @@ export default function RAGDataPage(): React.ReactElement | null {
       <div className="relative min-h-screen">
         <div className="flex overflow-hidden fixed inset-0 justify-center items-center -z-10 cubes-container">
           <Cubes 
-            gridSize={8}
-            maxAngle={60}
-            radius={4}
+            gridSize={10}
+            maxAngle={90}
+            radius={2}
             duration={{ enter: 0.1, leave: 0.2 }}
             borderStyle="1px solid rgb(30 41 59)"
             faceColor="rgb(2 6 23)"
@@ -62,14 +62,18 @@ export default function RAGDataPage(): React.ReactElement | null {
             subtitle="Explore, search, and manage your knowledge base"
             subtitleAccordionContent={`This page provides comprehensive tools for managing your RAG (Retrieval-Augmented Generation) data. You can view document statistics, search through your knowledge base using vector embeddings, generate new embeddings, and browse your document history. The vector search uses AI embeddings to find semantically similar content across all your uploaded documents.`}
             textAlign="left"
-            titleAnimation={TextAnimationType.Gradient}
+            titleAnimation={TextAnimationType.Decrypt}
+            subtitleAnimation={TextAnimationType.Shimmer}
+            headerColor="text-cyan-200"
+            subheaderColor="text-cyan-200"
+            accordionColor="text-cyan-300"
           >
             {/* Sparkles Effect */}
             <div className="overflow-hidden relative -mb-40 w-full h-40 rounded-md">
-              <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-purple-200 to-transparent h-[2px] w-3/4 blur-sm" />
-              <div className="absolute top-0 inset-x-20 w-3/4 h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent" />
-              <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-purple-500 to-transparent h-[5px] w-1/4 blur-sm" />
-              <div className="absolute top-0 inset-x-60 w-1/4 h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent" />
+              <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-cyan-200 to-transparent h-[2px] w-3/4 blur-sm" />
+              <div className="absolute top-0 inset-x-20 w-3/4 h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent" />
+              <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-cyan-500 to-transparent h-[5px] w-1/4 blur-sm" />
+              <div className="absolute top-0 inset-x-60 w-1/4 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
               
               <SparklesCore
                 id="tsparticles-data"

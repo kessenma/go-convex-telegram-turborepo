@@ -9,6 +9,8 @@ import {
 } from 'motion/react';
 import { cn } from '../../lib/utils';
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { renderIcon } from '../../lib/icon-utils';
 
 export type AccordionContextType = {
   expandedValue: React.Key | null;
@@ -145,10 +147,17 @@ function AccordionTrigger({
       onClick={() => value !== undefined && toggleItem(value)}
       aria-expanded={isExpanded}
       type='button'
-      className={cn('group', className)}
+      className={cn('flex justify-between items-center w-full transition-opacity duration-200 group hover:opacity-80', className)}
       {...(isExpanded ? { 'data-expanded': '' } : {'data-closed': ''})}
     >
-      {children}
+      <span className="flex-1">{children}</span>
+      {renderIcon(ChevronDown, {
+        className: cn(
+          "w-4 h-4 transition-transform duration-200 shrink-0",
+          isExpanded ? "rotate-180" : "rotate-0"
+        ),
+        "aria-hidden": "true"
+      })}
     </button>
   );
 }

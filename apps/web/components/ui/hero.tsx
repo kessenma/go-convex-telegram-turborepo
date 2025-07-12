@@ -9,13 +9,17 @@ import ShinyText from "./text-animations/shiny-text";
 import TrueFocus from "./text-animations/true-focus";
 import { TextRoll } from "./text-animations/text-roll";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
+import BlurText from "./text-animations/blur-text";
+import { TextShimmer } from "./text-animations/text-shimmer";
 
 export enum TextAnimationType {
   None = "none",
+  Blur = "blur",
   Decrypt = "decrypt",
   Glitch = "glitch",
   Gradient = "gradient",
   Shiny = "shiny",
+  Shimmer = "shimmer",
   TrueFocus = "trueFocus",
   TextRoll = "textRoll"
 }
@@ -26,8 +30,10 @@ interface HeroProps {
   subtitleAccordionContent?: string;
   children?: React.ReactNode;
   className?: string;
-  whiteText?: boolean;
   textAlign?: "left" | "center" | "right";
+  headerColor?: string;
+  subheaderColor?: string;
+  accordionColor?: string;
   titleAnimation?: TextAnimationType;
   subtitleAnimation?: TextAnimationType;
   animationSpeed?: number;
@@ -44,13 +50,15 @@ export const Hero = ({
   subtitleAccordionContent, 
   children, 
   className, 
-  whiteText = false, 
   textAlign = "center", 
+  headerColor,
+  subheaderColor = "text-gray-600 dark:text-gray-300",
+  accordionColor = "text-gray-300",
   titleAnimation = TextAnimationType.None, 
   subtitleAnimation = TextAnimationType.None,
   animationSpeed = 50, 
   glitchSpeed = 0.5,
-  gradientColors = ["#ffaa40", "#9c40ff", "#ffaa40"],
+  gradientColors = ["#a2f4fd", "#a2f4fd", "#a2f4fd"],
   trueFocusBlurAmount = 5,
   trueFocusBorderColor = "green",
   trueFocusGlowColor = "rgba(0, 255, 0, 0.6)"
@@ -60,10 +68,10 @@ export const Hero = ({
     <div className={cn("my-8", `text-${textAlign}`, className)}>
       <h1 className={cn(
         "mb-4 text-2xl font-bold md:text-5xl font-bitcount",
-        whiteText ? "text-white" : "text-transparent bg-clip-text bg-gradient-to-br from-cyan-100 to-cyan-500"
+        headerColor
       )}>
         {(() => {
-          const textStyle = whiteText ? "text-white" : "text-transparent bg-clip-text bg-gradient-to-br from-cyan-100 to-cyan-500";
+          const textStyle = headerColor;
           if (animationLightMode) return title;
           
           switch (titleAnimation) {
@@ -77,6 +85,14 @@ export const Hero = ({
                 >
                   {title}
                 </GlitchText>
+              );
+            case TextAnimationType.Blur:
+              return (
+                <BlurText
+                  text={title}
+                  speed={animationSpeed}
+                  className={textStyle}
+                />
               );
             case TextAnimationType.Decrypt:
               return (
@@ -106,6 +122,15 @@ export const Hero = ({
                   speed={animationSpeed / 10}
                   className={textStyle}
                 />
+              );
+            case TextAnimationType.Shimmer:
+              return (
+                <TextShimmer
+                  className={textStyle}
+                  duration={animationSpeed / 10}
+                >
+                  {title}
+                </TextShimmer>
               );
             case TextAnimationType.TrueFocus:
               return (
@@ -133,20 +158,20 @@ export const Hero = ({
         })()}
       </h1>
       {subtitle && (() => {
-          const textStyle = whiteText ? "text-white" : "text-transparent bg-clip-text bg-gradient-to-br from-cyan-100 to-cyan-500";
+          const textStyle = headerColor;
           const subtitleContent = subtitleAccordionContent ? (
             <Accordion type="single" collapsible className="mb-6">
               <AccordionItem value="subtitle-info">
-                <AccordionTrigger className="text-xl text-gray-600 dark:text-gray-300">
+                <AccordionTrigger className={cn("text-xl", subheaderColor)}>
                   {subtitle}
                 </AccordionTrigger>
-                <AccordionContent className="mx-auto max-w-3xl text-gray-300">
+                <AccordionContent className={cn("mx-auto max-w-3xl", accordionColor)}>
                   {subtitleAccordionContent}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
           ) : (
-            <p className="mb-6 text-xl text-gray-600 dark:text-gray-300">
+            <p className={cn("mb-6 text-xl", subheaderColor)}>
               {subtitle}
             </p>
           );
@@ -164,6 +189,14 @@ export const Hero = ({
                 >
                   {subtitle}
                 </GlitchText>
+              );
+            case TextAnimationType.Blur:
+              return (
+                <BlurText
+                  text={subtitle}
+                  speed={animationSpeed}
+                  className={textStyle}
+                />
               );
             case TextAnimationType.Decrypt:
               return (
@@ -193,6 +226,15 @@ export const Hero = ({
                   speed={animationSpeed / 10}
                   className={textStyle}
                 />
+              );
+            case TextAnimationType.Shimmer:
+              return (
+                <TextShimmer
+                  className={textStyle}
+                  duration={animationSpeed / 10}
+                >
+                  {subtitle}
+                </TextShimmer>
               );
             case TextAnimationType.TrueFocus:
               return (

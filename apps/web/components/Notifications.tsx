@@ -3,6 +3,7 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useOutsideClick } from "../hooks/use-outside-clicks";
+import { useNotifications } from "../contexts/NotificationsContext";
 import { Bell, X, Check, CheckCheck, Clock, Upload, Database } from "lucide-react";
 import { cn } from "../lib/utils";
 import { renderIcon } from "../lib/icon-utils";
@@ -28,7 +29,7 @@ interface Notification {
 }
 
 export function Notifications({ className }: NotificationsProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, openNotifications, closeNotifications } = useNotifications();
   const [buttonPosition, setButtonPosition] = useState({ top: 0, right: 0 });
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -54,7 +55,7 @@ export function Notifications({ className }: NotificationsProps) {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setIsOpen(false);
+        closeNotifications();
       }
     }
 
@@ -66,7 +67,7 @@ export function Notifications({ className }: NotificationsProps) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen]);
+  }, [isOpen, closeNotifications]);
 
   const handleMarkAsRead = async (notificationId: Id<"notifications">) => {
     try {
@@ -120,13 +121,13 @@ export function Notifications({ className }: NotificationsProps) {
     }
   };
 
-  useOutsideClick(ref, (event: MouseEvent | TouchEvent) => setIsOpen(false));
+  useOutsideClick(ref, (event: MouseEvent | TouchEvent) => closeNotifications());
 
   return (
     <div className={cn("relative", className)}>
       <button
         ref={buttonRef}
-        onClick={() => setIsOpen(true)}
+        onClick={openNotifications}
         className="relative p-2 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
       >
         {renderIcon(Bell, { className: "w-5 h-5 text-gray-600 dark:text-gray-400" })}
@@ -177,7 +178,7 @@ export function Notifications({ className }: NotificationsProps) {
                         </button>
                       )}
                       <button
-                        onClick={() => setIsOpen(false)}
+                        onClick={closeNotifications}
                         className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
                       >
                         {renderIcon(X, { className: "w-5 h-5 text-gray-500 dark:text-gray-400" })}

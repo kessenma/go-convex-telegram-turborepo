@@ -28,7 +28,7 @@ export interface CubesProps {
 }
 
 const Cubes: React.FC<CubesProps> = ({
-  gridSize = 10,
+  gridSize = 100,
   cubeSize,
   maxAngle = 45,
   radius = 3,

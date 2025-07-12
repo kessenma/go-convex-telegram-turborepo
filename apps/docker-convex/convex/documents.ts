@@ -28,7 +28,7 @@ export const saveDocument = mutation({
       tags: args.tags,
       summary: args.summary,
       wordCount,
-      embedding: undefined, // Will be populated by embedding service
+      hasEmbedding: false, // Will be set to true when embedding is generated
     });
 
     // Create notification for document upload
@@ -54,20 +54,7 @@ export const saveDocument = mutation({
   },
 });
 
-// Update a document's embedding
-export const updateDocumentEmbedding = mutation({
-  args: {
-    documentId: v.id("rag_documents"),
-    embedding: v.array(v.float64()),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.documentId, {
-      embedding: args.embedding,
-      lastModified: Date.now(),
-    });
-    return args.documentId;
-  },
-});
+
 
 // Get all documents with pagination
 export const getAllDocuments = query({
@@ -121,7 +108,7 @@ export const updateDocument = mutation({
     if (updates.content) {
       updateData.wordCount = updates.content.split(/\s+/).filter(word => word.length > 0).length;
       updateData.fileSize = updates.content.length; // Simple character count for file size
-      updateData.embedding = undefined; // Reset embedding when content changes
+      updateData.hasEmbedding = false; // Reset embedding flag when content changes
     }
 
     await ctx.db.patch(documentId, updateData);

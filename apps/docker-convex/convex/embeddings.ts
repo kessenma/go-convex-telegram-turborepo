@@ -39,18 +39,52 @@ export const generateEmbedding = action({
   },
 });
 
-// Update document with embedding
-export const updateDocumentEmbedding = mutation({
+// Create document embedding in separate table
+export const createDocumentEmbedding = mutation({
   args: {
     documentId: v.id("rag_documents"),
     embedding: v.array(v.number()),
+    embeddingModel: v.string(),
+    embeddingDimensions: v.number(),
+    chunkIndex: v.optional(v.number()),
+    chunkText: v.optional(v.string()),
+    processingTimeMs: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.documentId, {
+    // Create the embedding record
+    const embeddingId = await ctx.db.insert("document_embeddings", {
+      documentId: args.documentId,
       embedding: args.embedding,
+      embeddingModel: args.embeddingModel,
+      embeddingDimensions: args.embeddingDimensions,
+      chunkIndex: args.chunkIndex,
+      chunkText: args.chunkText,
+      createdAt: Date.now(),
+      processingTimeMs: args.processingTimeMs,
+      isActive: true,
+    });
+
+    // Update document to mark it as having an embedding
+    await ctx.db.patch(args.documentId, {
+      hasEmbedding: true,
       lastModified: Date.now(),
     });
-    return args.documentId;
+
+    return embeddingId;
+  },
+});
+
+// Get embeddings for a document
+export const getDocumentEmbeddings = query({
+  args: {
+    documentId: v.id("rag_documents"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("document_embeddings")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
   },
 });
 
@@ -67,7 +101,7 @@ export const processDocumentEmbedding = internalAction({
   args: {
     documentId: v.id("rag_documents"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ success: boolean; message: string; embeddingId?: any }> => {
     // Get the document
     const document = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
       documentId: args.documentId,
@@ -77,35 +111,48 @@ export const processDocumentEmbedding = internalAction({
       throw new Error("Document not found");
     }
 
-    // Skip if embedding already exists
-    if (document.embedding && document.embedding.length > 0) {
+    // Check if embedding already exists
+    const existingEmbeddings = await ctx.runQuery(api.embeddings.getDocumentEmbeddings, {
+      documentId: args.documentId,
+    });
+
+    if (existingEmbeddings.length > 0) {
       return { success: true, message: "Embedding already exists" };
     }
 
     try {
+      const startTime = Date.now();
+      
       // Generate embedding for the document content
       const embedding = await generateEmbeddingInternal(document.content);
+      
+      const processingTime = Date.now() - startTime;
 
-      // Update the document with the embedding
-      await ctx.runMutation(api.embeddings.updateDocumentEmbedding, {
+      // Create the embedding record
+      const embeddingId: any = await ctx.runMutation(api.embeddings.createDocumentEmbedding, {
         documentId: args.documentId,
         embedding,
+        embeddingModel: "sentence-transformers/all-distilroberta-v1",
+        embeddingDimensions: embedding.length,
+        processingTimeMs: processingTime,
       });
 
       // Create notification for embedding completion
       await ctx.runMutation(api.notifications.createNotification, {
-        type: "document_embedding",
+        type: "document_embedded",
         title: "Document Embedding Complete",
         message: `Embedding generated for document "${document.title}"`,
         documentId: args.documentId,
         metadata: JSON.stringify({
+          embeddingId: embeddingId,
           embeddingLength: embedding.length,
-          contentType: document.contentType
+          contentType: document.contentType,
+          processingTimeMs: processingTime
         }),
         source: "system"
       });
 
-      return { success: true, message: "Embedding generated successfully" };
+      return { success: true, message: "Embedding generated successfully", embeddingId };
     } catch (error) {
       console.error("Error processing document embedding:", error);
       throw error;
@@ -144,7 +191,7 @@ export const processDocumentWithChunking = action({
     documentId: v.id("rag_documents"),
     maxChunkSize: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ success: boolean; message: string; embeddingId?: any }> => {
     const maxChunkSize = args.maxChunkSize ?? 1000;
     
     // Get the document
@@ -156,36 +203,49 @@ export const processDocumentWithChunking = action({
       throw new Error("Document not found");
     }
 
-    // Skip if embedding already exists
-    if (document.embedding && document.embedding.length > 0) {
+    // Check if embedding already exists
+    const existingEmbeddings = await ctx.runQuery(api.embeddings.getDocumentEmbeddings, {
+      documentId: args.documentId,
+    });
+
+    if (existingEmbeddings.length > 0) {
       return { success: true, message: "Embedding already exists" };
     }
 
     try {
+      const startTime = Date.now();
+      
       // For large documents, we'll use the full content but could implement chunking
       // For now, we'll process the entire document as one embedding
       const embedding = await generateEmbeddingInternal(document.content);
+      
+      const processingTime = Date.now() - startTime;
 
-      // Update the document with the embedding
-      await ctx.runMutation(api.embeddings.updateDocumentEmbedding, {
+      // Create the embedding record
+      const embeddingId: any = await ctx.runMutation(api.embeddings.createDocumentEmbedding, {
         documentId: args.documentId,
         embedding,
+        embeddingModel: "sentence-transformers/all-distilroberta-v1",
+        embeddingDimensions: embedding.length,
+        processingTimeMs: processingTime,
       });
 
       // Create notification for embedding completion
       await ctx.runMutation(api.notifications.createNotification, {
-        type: "document_embedding",
+        type: "document_embedded",
         title: "Document Embedding Complete",
         message: `Embedding generated for document "${document.title}"`,
         documentId: args.documentId,
         metadata: JSON.stringify({
+          embeddingId: embeddingId,
           embeddingLength: embedding.length,
-          contentType: document.contentType
+          contentType: document.contentType,
+          processingTimeMs: processingTime
         }),
         source: "system"
       });
 
-      return { success: true, message: "Embedding generated successfully" };
+      return { success: true, message: "Embedding generated successfully", embeddingId };
     } catch (error) {
       console.error("Error processing document with chunking:", error);
       throw error;
@@ -237,19 +297,35 @@ export const searchDocumentsByVector = action({
     queryText: v.string(),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<any[]> => {
     const limit = args.limit ?? 10;
 
     try {
       // Generate embedding for the query
       const queryEmbedding = await generateEmbeddingInternal(args.queryText);
 
-      // Search for similar documents using vector index
-      const results = await ctx.vectorSearch("rag_documents", "by_embedding", {
+      // Search for similar embeddings using vector index
+      const embeddingResults = await ctx.vectorSearch("document_embeddings", "by_embedding", {
         vector: queryEmbedding,
         limit,
         filter: (q) => q.eq("isActive", true),
       });
+
+      // Get the corresponding documents
+      const results = [];
+      for (const embeddingResult of embeddingResults) {
+        // embeddingResult contains the embedding record with documentId field
+        const embeddingRecord = embeddingResult as any;
+        const document: any = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
+          documentId: embeddingRecord.documentId,
+        });
+        if (document && document.isActive) {
+          results.push({
+            ...embeddingResult,
+            document,
+          });
+        }
+      }
 
       return results;
     } catch (error) {

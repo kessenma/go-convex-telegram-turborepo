@@ -38,10 +38,9 @@ export default function Home(): React.ReactNode {
           <Hero 
             title="RAG Telegram Bot"
             subtitle="View Telegram bot messages and RAG-uploaded documents"
-            whiteText={true}
             className="my-2"
             titleAnimation={TextAnimationType.Decrypt}
-            subtitleAnimation={TextAnimationType.TextRoll}
+            subtitleAnimation={TextAnimationType.Shimmer}
             animationSpeed={75}
           >
           </Hero>
@@ -115,7 +114,7 @@ export default function Home(): React.ReactNode {
                 href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-white border-t-2 border-b-2 border-cyan-50 transition-colors hover:text-cyan-500"
+                className="font-medium text-cyan-200 transition-colors hover:text-cyan-500 hover:drop-shadow-xl hover:shadow-xl shadow-white"
               >
                 t.me/{process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
               </a>

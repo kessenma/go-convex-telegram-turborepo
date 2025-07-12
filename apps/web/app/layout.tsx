@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Navigation from "../components/Navigation";
 import { ConvexClientProvider } from "../providers/ConvexClientProvider";
+import { NotificationsProvider } from "../contexts/NotificationsContext";
 import { Toaster } from "sonner";
 
 const geistSans = localFont({
@@ -29,11 +30,13 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} bg-slate-950 text-white`}>
         <ConvexClientProvider>
-          <Navigation />
-          <main style={{ minHeight: "calc(100vh - 64px)" }}>
-            {children}
-          </main>
-          <Toaster position="top-right" theme="dark" />
+          <NotificationsProvider>
+            <Navigation />
+            <main style={{ minHeight: "calc(100vh - 64px)" }}>
+              {children}
+            </main>
+            <Toaster position="bottom-left" theme="dark" />
+          </NotificationsProvider>
         </ConvexClientProvider>
       </body>
     </html>

@@ -9,7 +9,7 @@ export const createNotification = mutation({
     title: v.string(),
     message: v.string(),
     documentId: v.optional(v.id("rag_documents")),
-    metadata: v.optional(v.string()),
+    metadata: v.optional(v.string()), // must be string
     source: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
