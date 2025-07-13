@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { FileText, CheckCircle, AlertCircle, BotMessageSquare, Filter, Zap, ZapOff } from "lucide-react";
+import React from "react";
+import { FileText, CheckCircle, BotMessageSquare, Zap } from "lucide-react";
 import { renderIcon } from "../../../lib/icon-utils";
 import { Card } from "../../../components/ui/card";
 import { Button as MovingButton } from "../../../components/ui/moving-border";
@@ -16,8 +16,6 @@ interface DocumentSelectorProps {
 }
 
 export function DocumentSelector({ documents, selectedDocuments, onDocumentToggle, onStartChat, onShowHistory }: DocumentSelectorProps) {
-  const [showOnlyEmbedded, setShowOnlyEmbedded] = useState(false);
-
   // Ensure documents is an array
   const safeDocuments = Array.isArray(documents) ? documents : [];
 
@@ -37,51 +35,29 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
     });
   };
 
-  const filteredDocuments = showOnlyEmbedded 
-    ? safeDocuments.filter(doc => doc.hasEmbedding)
-    : safeDocuments;
-
-  const embeddedCount = safeDocuments.filter(doc => doc.hasEmbedding).length;
+  // Only show documents with embeddings
+  const filteredDocuments = safeDocuments.filter(doc => doc.hasEmbedding);
+  const embeddedCount = filteredDocuments.length;
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="mb-2 text-2xl font-bold text-white">Select Documents to Chat With</h2>
-        <p className="text-gray-300">
-          Choose one or more documents from your knowledge base to start a conversation.
+      <div className="text-left">
+        <p className="mt-20 text-gray-200">
+          Choose document(s) from your database to start a conversation.
         </p>
-        <div className="flex gap-4 justify-center items-center mt-4">
+        <div className="flex justify-center items-center mt-4">
           <div className="flex gap-2 items-center text-sm text-gray-400">
             {renderIcon(Zap, { className: "w-4 h-4 text-green-400" })}
-            <span>{embeddedCount} embedded</span>
-          </div>
-          <div className="flex gap-2 items-center text-sm text-gray-400">
-            {renderIcon(ZapOff, { className: "w-4 h-4 text-yellow-400" })}
-            <span>{safeDocuments.length - embeddedCount} not embedded</span>
+            <span>{embeddedCount} embedded documents available</span>
           </div>
         </div>
       </div>
 
-      <div className="flex justify-center">
-        <button
-          onClick={() => setShowOnlyEmbedded(!showOnlyEmbedded)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-            showOnlyEmbedded 
-              ? 'border-curious-cyan-500 bg-curious-cyan-900/20 text-curious-cyan-400' 
-              : 'text-gray-300 border-gray-600 bg-gray-800/50 hover:border-gray-500'
-          }`}
-        >
-          {renderIcon(Filter, { className: "w-4 h-4" })}
-          {showOnlyEmbedded ? 'Show All Documents' : 'Show Only Embedded'}
-        </button>
-      </div>
-
-      {safeDocuments && safeDocuments.length > 0 ? (
+      {filteredDocuments.length > 0 ? (
         <>
           <div className="grid gap-4">
             {filteredDocuments.map((doc) => {
               const isSelected = selectedDocuments.includes(doc._id);
-              const hasEmbedding = doc.hasEmbedding;
               
               return (
                 <div 
@@ -99,17 +75,8 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
                         {renderIcon(FileText, { className: "w-4 h-4 text-curious-cyan-400" })}
                         <h3 className="font-semibold text-white">{doc.title}</h3>
                         <div className="flex gap-1 items-center">
-                          {hasEmbedding ? (
-                            <>
-                              {renderIcon(Zap, { className: "w-4 h-4 text-green-400" })}
-                              <span className="text-xs font-medium text-green-400">Embedded</span>
-                            </>
-                          ) : (
-                            <>
-                              {renderIcon(ZapOff, { className: "w-4 h-4 text-yellow-400" })}
-                              <span className="text-xs font-medium text-yellow-400">Not Embedded</span>
-                            </>
-                          )}
+                          {renderIcon(Zap, { className: "w-4 h-4 text-green-400" })}
+                          <span className="text-xs font-medium text-green-400">Embedded</span>
                         </div>
                       </div>
                       
@@ -123,12 +90,6 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
                         <span>{formatDate(doc.uploadedAt)}</span>
                         <span className="capitalize">{doc.contentType}</span>
                       </div>
-                      
-                      {!hasEmbedding && (
-                        <div className="mt-2 text-xs text-yellow-400">
-                          ⚠️ No embeddings generated - limited search capability
-                        </div>
-                      )}
                     </div>
                     
                     <div className={`w-4 h-4 rounded border-2 transition-colors ${
@@ -171,13 +132,13 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
           </div>
         </>
       ) : (
-        <Card className="p-8 text-center border-gray-700 bg-gray-800/50">
+        <div className="p-8 text-center border-gray-700">
           <div className="mb-4">
             {renderIcon(FileText, { className: "mx-auto w-12 h-12 text-gray-400" })}
           </div>
-          <h3 className="mb-2 text-lg font-semibold text-white">No Documents Found</h3>
+          <h3 className="mb-2 text-lg font-semibold text-white">No Embedded Documents Found</h3>
           <p className="mb-4 text-gray-300">
-            You need to upload some documents before you can start chatting.
+            You need to upload and embed documents before you can start chatting.
           </p>
           <MovingButton
             onClick={() => window.location.href = '/RAG-upload'}
@@ -187,7 +148,7 @@ export function DocumentSelector({ documents, selectedDocuments, onDocumentToggl
           >
             Upload Documents
           </MovingButton>
-        </Card>
+        </div>
       )}
     </div>
   );

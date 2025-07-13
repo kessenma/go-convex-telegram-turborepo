@@ -152,3 +152,17 @@ const results = await ctx.runAction(api.embeddings.searchDocumentsByVector, {
 ```
 
 This backend provides a robust foundation for a Telegram bot with real-time web dashboard capabilities and integrated RAG system for semantic document search.
+
+## Core Schema Tables
+- `rag_documents`: Stores documents with metadata for RAG system
+- `document_embeddings`: Manages vector embeddings with chunking support
+- `telegram_threads`: Conversation threads with message tracking
+- `telegram_messages`: Individual message storage with thread relations
+- `rag_conversations`: Chat sessions with document context
+- `rag_chat_messages`: LLM-generated responses with sources
+
+## Active API Endpoints
+- `POST /api/documents` - Manage RAG documents
+- `POST /api/embeddings` - Handle vector operations
+- `GET /api/threads` - Conversation thread management
+- `GET /api/health` - System status monitoring

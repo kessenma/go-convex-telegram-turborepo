@@ -13,6 +13,7 @@ import { renderIcon } from "../../lib/icon-utils";
 import { ParticlesBackground } from "../../components/ui/backgrounds/particles-background";
 import { Hero, TextAnimationType } from "../../components/ui/hero";
 import { LightweightLLMStatusIndicator } from "../../components/rag/lightweight-llm-status-indicator";
+import { useAnimationSettings } from "../../hooks/use-animation-settings";
 
 export default function RAGChatPage() {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
@@ -20,6 +21,9 @@ export default function RAGChatPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [selectedDocumentObjects, setSelectedDocumentObjects] = useState<Document[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  
+  // Get animation settings
+  const { animationEnabled } = useAnimationSettings();
 
   // Fetch documents from Convex
   const documents = useQuery(api.documents.getAllDocuments, { limit: 50 });
@@ -80,7 +84,7 @@ export default function RAGChatPage() {
 
   if (documents === undefined) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container px-4 py-8 mx-auto">
         <Card className="p-8 text-center border-gray-700 bg-gray-800/50">
           <div className="flex flex-col gap-4 items-center">
             {renderIcon(Loader2, { className: "w-8 h-8 animate-spin text-curious-cyan-400" })}
@@ -97,24 +101,23 @@ export default function RAGChatPage() {
   return (
     <div className="relative min-h-screen">
       <ParticlesBackground 
-        className="z-0" 
-        animationEnabled={true}
+        className="fixed z-0" 
+        animationEnabled={animationEnabled}
         meshCount={50}
         selectedCount={selectedDocuments.length}
       />
-      <div className="relative z-10 container mx-auto px-4 py-8 mt-12 mb-8">
+      <div className="container relative z-10 px-4 py-8 mx-auto mt-12 mb-8">
         <Hero
           title="RAG Chat"
           subtitle="Have intelligent conversations with your documents using AI-powered retrieval"
           titleAnimation={TextAnimationType.TextRoll}
           subtitleAnimation={TextAnimationType.Shimmer}
-          textAlign="center"
           animationSpeed={75}
         >
         </Hero>
 
         {/* LLM Status Indicator */}
-        <div className="mx-auto max-w-6xl mb-4">
+        <div className="mx-auto mr-80 mb-4 ml-80 max-w-6xl">
           <LightweightLLMStatusIndicator 
             size="md" 
             showLabel={true} 
@@ -125,7 +128,7 @@ export default function RAGChatPage() {
 
         <div className="mx-auto max-w-6xl">
           {showHistory ? (
-            <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+            <Card className="border-gray-700 backdrop-blur-sm bg-gray-800/50">
               <ChatHistory
                 onSelectConversation={handleSelectConversation}
                 onNewChat={handleNewChat}
@@ -134,7 +137,7 @@ export default function RAGChatPage() {
               />
             </Card>
           ) : showChat ? (
-            <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+            <Card className="border-gray-700 backdrop-blur-sm bg-gray-800/50">
               <ChatInterface
                 selectedDocuments={selectedDocumentObjects}
                 onBackToSelection={handleBackToSelection}
@@ -143,8 +146,8 @@ export default function RAGChatPage() {
               />
             </Card>
           ) : (
-            <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm">
-              <div className="p-6">
+            <div className="border-gray-700">
+              <div className="p-6 mr-64 ml-64">
                 <DocumentSelector
                   documents={documentsArray as Document[]}
                   selectedDocuments={selectedDocuments}
@@ -153,7 +156,7 @@ export default function RAGChatPage() {
                   onShowHistory={handleShowHistory}
                 />
               </div>
-            </Card>
+            </div>
           )}
         </div>
       </div>
