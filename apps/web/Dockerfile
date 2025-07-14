@@ -59,7 +59,8 @@ FROM node:20-alpine AS runner
 WORKDIR /app/apps/web
 
 # Set production env
-ENV NODE_ENV=production PORT=3000
+ENV NODE_ENV=production
+ENV PORT=3000
 
 # Install curl for healthchecks and pnpm for runtime
 RUN apk add --no-cache curl \
@@ -67,7 +68,8 @@ RUN apk add --no-cache curl \
 
 # Copy built output, package manifest, and dependencies
 COPY --from=builder /app/apps/web/package.json ./package.json
-COPY --from=builder /app/apps/web/.next ./.next
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./.next/static
 COPY --from=builder /app/apps/web/public ./public
 
 # Copy global node_modules (monorepo root) for runtime dependencies
@@ -75,4 +77,4 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Expose port and run
 EXPOSE 3000
-CMD ["node", ".next/standalone/apps/web/server.js"]
+CMD ["node", "apps/web/server.js"]
