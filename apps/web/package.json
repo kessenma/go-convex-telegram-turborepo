@@ -23,7 +23,7 @@
     "@types/node-telegram-bot-api": "^0.64.9",
     "@types/three": "^0.178.0",
     "clsx": "^2.1.1",
-    "convex": "^1.25.2",
+    "convex": "1.24.8",
     "framer-motion": "^12.23.0",
     "gsap": "^3.13.0",
     "lucide-react": "^0.525.0",

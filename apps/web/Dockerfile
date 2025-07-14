@@ -22,8 +22,9 @@ WORKDIR /app
 # Copy workspace manifest and lockfiles
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 
-# Copy only web app manifest and any shared packages
+# Copy web app manifest, docker-convex manifest, and shared packages
 COPY apps/web/package.json apps/web/
+COPY apps/docker-convex/package.json apps/docker-convex/
 COPY packages ./packages
 
 # If Convex _generated files exist in docker-convex, bring them into web
@@ -35,8 +36,12 @@ RUN mkdir -p apps/web/convex/_generated \
 # Install full monorepo dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy rest of the source code
-COPY . .
+# Copy the web app source code, docker-convex convex functions, and necessary shared files
+COPY apps/web ./apps/web
+COPY apps/docker-convex/convex ./apps/docker-convex/convex
+COPY packages ./packages
+COPY turbo.json ./turbo.json
+COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 # Add TELEGRAM_BOT_TOKEN to turbo.json env vars or disable the warning
 ENV TELEGRAM_BOT_TOKEN=""
