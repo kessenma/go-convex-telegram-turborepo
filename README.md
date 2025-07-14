@@ -3,6 +3,18 @@
 A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Telegram bot 🤖 with a self-hosted Convex database backend, and a next.js web app.
 
 ## 🧱 The building blocks 
+- **Vector Conversion Service** (`apps/vector-convert-llm/`) - Python/Flask service for document processing and embedding generation using sentence-transformers
+- **Lightweight LLM Service** (`apps/lightweight-llm/`) - FastAPI service for chat interactions using Microsoft's Phi-3-mini model
+
+## Project Structure
+├── vector-convert-llm/       # Document embedding generation service
+│   ├── main.py              # Flask API endpoints
+│   ├── Dockerfile           # Optimized container setup
+│   └── requirements.txt    # Python dependencies
+├── lightweight-llm/         # Local LLM inference service
+│   ├── main.py              # FastAPI endpoints
+│   ├── Dockerfile           # CUDA-optimized container
+│   └── requirements.txt    # Transformer dependencies
 - ** Turborepo** - A monorepo management tool that orchestrates the project from a central package.json and .env
 - **a central Docker compose** - Used to define and run multi-container Docker applications (🧩every app in the apps folder has a dockerfile  inside it🧩)
 - ** a docker network** - Used to connect the containers securely (managed in the docker-compose.yaml)
@@ -38,41 +50,41 @@ What the combined Infrastrcture looks like:
 <table>
 <tr>
 <td align="center">
-<img src="./app-screenshots/NextJS-home.png" width="300" alt="Next.js Home Page">
+<img src="./apps//web/public/app-screenshots/NextJS-home.png" width="300" alt="Next.js Home Page">
 <br><b>Next.js Home Page</b>
 </td>
 <td align="center">
-<img src="./app-screenshots/nextJS-messages.png" width="300" alt="Messages View">
+<img src="./apps//web/public/app-screenshots/nextJS-messages.png" width="300" alt="Messages View">
 <br><b>Messages Dashboard</b>
 </td>
 </tr>
 <tr>
 <td align="center">
-<img src="./app-screenshots/nextJS-threads.png" width="300" alt="Threads View">
+<img src="./apps//web/public/app-screenshots/nextJS-threads.png" width="300" alt="Threads View">
 <br><b>Threads Overview</b>
 </td>
 <td align="center">
-<img src="./app-screenshots/nextJS-thread.png" width="300" alt="Thread Detail">
+<img src="./apps//web/public/app-screenshots/nextJS-thread.png" width="300" alt="Thread Detail">
 <br><b>Thread Detail View</b>
 </td>
 </tr>
 <tr>
 <td align="center">
-<img src="./app-screenshots/convex-console.png" width="300" alt="Convex Console">
+<img src="./apps//web/public/app-screenshots/convex-console.png" width="300" alt="Convex Console">
 <br><b>Convex Database Console</b>
 </td>
 <td align="center">
-<img src="./app-screenshots/telegram-chat.png" width="300" alt="Telegram Chat">
+<img src="./apps//web/public/app-screenshots/telegram-chat.png" width="300" alt="Telegram Chat">
 <br><b>Telegram Bot Chat</b>
 </td>
 </tr>
 <tr>
 <td align="center">
-<img src="./app-screenshots/telegram-bot-father.png" width="300" alt="Bot Father Setup">
+<img src="./apps//web/public/app-screenshots/telegram-bot-father.png" width="300" alt="Bot Father Setup">
 <br><b>Telegram API Key retrieval</b>
 </td>
 <td align="center">
-<img src="./app-screenshots/docker-container.png" width="300" alt="Docker Container">
+<img src="./apps//web/public/app-screenshots/docker-container.png" width="300" alt="Docker Container">
 <br><b>Simultaneous Docker Containers</b>
 </td>
 </tr>
@@ -176,14 +188,20 @@ Every app in this repo contains a readme file to run the app independently from 
 │   ├── golang-telegram-bot/    # Telegram bot
 │   │   ├── main.go             # Bot implementation
 │   │   └── Dockerfile          # Bot container
+│   ├── vector-convert-llm/     # Document embedding service
+│   │   ├── main.py             # Flask API for embeddings
+│   │   └── Dockerfile          # Python container setup
+│   ├── lightweight-llm/        # Local LLM service
+│   │   ├── main.py             # FastAPI for chat
+│   │   └── Dockerfile          # CPU & (optional) CUDA-optimized container
 │   └── web/                    # Next.js app
-│   │   └── package.json        # Next.js web dev scripts
-│   │   └── Dockerfile          # How the web app connects to the central docker-compose.yaml and central .env
-│   │   └── home
-│   │   └── messages
-│   │   └── message threads
-│   │   └── send message
-│   │   └── convex dashboard connection steps
+│       └── package.json        # Next.js web dev scripts
+│       └── Dockerfile          # How the web app connects to the central docker-compose.yaml and central .env
+│       └── home
+│       └── messages
+│       └── message threads
+│       └── send message
+│       └── convex dashboard connection steps
 ├── packages/                   # Shared packages (not used really)
 │   ├── ui/                     # Shared UI components (not used)
 │   ├── eslint-config/          # ESLint configurations (idk if used)
@@ -255,21 +273,57 @@ The Convex backend exposes these HTTP endpoints:
 - `GET /api/telegram/messages` - Get all messages
 - `GET /api/telegram/messages?chatId=123` - Get messages for specific chat
 - `GET /api/health` - Health check
+- `POST /api/documents` - Upload a new document for RAG
+- `GET /api/documents` - List all documents
+- `GET /api/documents/:id` - Get document details
+- `POST /api/rag/chat` - Chat with documents using RAG
   
 ## 🗄️ Database Schema
 
-The Convex backend uses a structured schema with two main tables:
+The Convex backend uses a structured schema with the following tables:
 
 ### `telegram_messages`
 - Message content and metadata
 - User information (ID, username, name)
 - Chat information
 - Timestamps
+- Thread references and reply tracking
 
 ### `telegram_threads`
 - Thread metadata and status
 - Creator information
 - Message counts and timestamps
+- Last message tracking
+
+### `document_embeddings`
+- Vector embeddings for semantic search
+- References to source documents
+- Embedding model information
+- Chunking metadata for large documents
+
+### `rag_documents`
+- Document content and metadata
+- Content type and file information
+- Embedding status tracking
+- Tags and categorization
+
+### `rag_conversations`
+- Chat session management
+- Document references for context
+- User tracking and message counts
+- Token usage monitoring
+
+### `rag_chat_messages`
+- Individual chat messages
+- Role identification (user/assistant)
+- Source citations and references
+- Token counting and processing metrics
+
+### `notifications`
+- System event tracking
+- Document processing notifications
+- Read status and timestamps
+- Event source identification
 
 For detailed documentation of the schema, API endpoints, and real-time features, see the [Convex Backend Documentation](./apps/docker-convex/convex/README.md).
 
@@ -282,6 +336,8 @@ docker compose ps -a
 # Check specific service logs
 docker compose logs telegram-bot
 docker compose logs convex-backend
+docker compose logs vector-convert-llm
+docker compose logs lightweight-llm
 
 # Test API health
 curl http://localhost:3210/api/health
@@ -305,6 +361,14 @@ Common issues:
 3. **Messages not saving**:
    - Check bot logs: `docker compose logs telegram-bot`
    - Test API directly: `curl -X POST http://localhost:3210/api/telegram/messages -H "Content-Type: application/json" -d '{"messageId":1,"chatId":123,"text":"test"}'`
+
+4. **Vector embedding service issues**:
+   - Check service logs: `docker compose logs vector-convert-llm`
+   - Verify model loading: `curl http://localhost:8081/health`
+
+5. **LLM service not responding**:
+   - Check service logs: `docker compose logs lightweight-llm`
+   - Verify model status: `curl http://localhost:8082/health`
 
 For detailed troubleshooting, see [SETUP.md](./SETUP.md).
 

@@ -3,12 +3,17 @@
   "private": true,
   "scripts": {
     "setup-init": "./setup.sh",
-    "docker:reset": "docker compose down -v && docker system prune -af",
+    "docker:reset": "docker compose down -v && docker network prune -f && docker system prune -af && echo 'docker containters:' && docker ps -a",
+    "docker:reset-web": "./reset-web-only.sh",
+    "docker:deploy-convex": "./deploy-convex.sh",
+    "check-web-convex-endpoints":"./helper-scripts/api-web-convex-check.sh",
 
     "docker:manage": "./docker-manager.sh",
-    
+
     "get-admin-key": "docker compose exec convex-backend ./generate_admin_key.sh",
     "convex:dev:bot": "docker compose up convex-backend convex-dashboard telegram-bot -d && cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
+    "docker:restart-web-convex": "docker compose stop web-dashboard convex-backend convex-dashboard && docker compose up web-dashboard convex-backend convex-dashboard -d",
+    "docker:llm-only": "docker compose up vector-convert-llm -d",
     
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -55,7 +60,14 @@
     "docker:build": "docker compose up --build -d",
     "convex:deploy": "cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     "convex:dev": "docker compose up convex-backend convex-dashboard -d",
-    "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages"
+    "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages",
+    "docker:web-reset": "docker compose stop web-dashboard && docker compose rm -f web-dashboard && docker compose up web-dashboard -d",
+    
+    "docker:llm-transformer-logs": "docker logs telegram-bot-vector-convert-llm-1 --tail 100",
+    "docker:llm-logs": "docker logs telegram-bot-lightweight-llm-1 --tail 100",
+    "docker:web-app-logs": "docker logs telegram-bot-web-dashboard-1 --tail 100",
+    "docker:convex-backend-logs": "docker logs telegram-bot-convex-backend-1 --tail 100", 
+    "docker:logs-all": "pnpm docker:web-app-logs && pnpm docker:convex-backend-logs && pnpm docker:llm-transformer-logs && pnpm docker:llm-logs"
   },
   "devDependencies": {
     "prettier": "^3.6.0",

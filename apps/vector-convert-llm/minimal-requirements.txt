@@ -1,0 +1,14 @@
+# Minimal requirements for stable vector embedding service
+flask==3.0.0
+sentence-transformers==2.7.0
+numpy==1.24.3
+requests==2.31.0
+psutil==5.9.6
+
+# Compatible versions to avoid import errors
+transformers==4.40.0
+huggingface-hub==0.23.0
+tokenizers==0.19.1
+torch==2.3.0
+torchvision==0.18.0
+safetensors==0.4.3

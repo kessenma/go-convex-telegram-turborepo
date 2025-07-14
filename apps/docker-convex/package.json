@@ -7,6 +7,7 @@
     "build": "pnpm run deploy-functions",
     "start": "pnpm run self-hosted:setup",
     "clean": "docker compose down && docker system prune -af --volumes",
+    "check-types": "tsc --noEmit",
     "docker:up": "docker compose --env-file .env.docker up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",

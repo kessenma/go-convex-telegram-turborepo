@@ -13,9 +13,18 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as example from "../example.js";
+import type * as api_ from "../api.js";
+import type * as conversionJobs from "../conversionJobs.js";
+import type * as documents from "../documents.js";
+import type * as embeddings from "../embeddings.js";
 import type * as http from "../http.js";
-import type * as telegram from "../telegram.js";
+import type * as messages from "../messages.js";
+import type * as messagesThread from "../messagesThread.js";
+import type * as migrations from "../migrations.js";
+import type * as notifications from "../notifications.js";
+import type * as ragChat from "../ragChat.js";
+import type * as requestLogs from "../requestLogs.js";
+import type * as threads from "../threads.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -26,9 +35,18 @@ import type * as telegram from "../telegram.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  example: typeof example;
+  api: typeof api_;
+  conversionJobs: typeof conversionJobs;
+  documents: typeof documents;
+  embeddings: typeof embeddings;
   http: typeof http;
-  telegram: typeof telegram;
+  messages: typeof messages;
+  messagesThread: typeof messagesThread;
+  migrations: typeof migrations;
+  notifications: typeof notifications;
+  ragChat: typeof ragChat;
+  requestLogs: typeof requestLogs;
+  threads: typeof threads;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

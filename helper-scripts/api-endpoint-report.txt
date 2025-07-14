@@ -1,0 +1,73 @@
+WEB API TO CONVEX ENDPOINT ANALYSIS REPORT
+Generated: Wed Jul  9 19:55:41 EDT 2025
+==========================================
+
+SUMMARY:
+--------
+Total Next.js API routes: 23
+Matched routes: 8
+Missing in Convex: 15
+Extra Convex routes: 12
+
+MATCHED ROUTES:
+---------------
+✅ /api/conversion-jobs
+✅ /api/conversion-jobs/stats
+✅ /api/documents
+✅ /api/documents/[id]
+✅ /api/documents/stats
+✅ /api/messages
+✅ /api/threads
+✅ /api/threads/stats
+
+MISSING IN CONVEX:
+------------------
+❌ /api/batch-generate-embeddings
+❌ /api/convex/status
+❌ /api/llm/status
+❌ /api/RAG/batch-upload
+❌ /api/RAG/chat
+❌ /api/RAG/documents/[id]
+❌ /api/RAG/documents/[id]/embedding
+❌ /api/RAG/embeddings
+❌ /api/RAG/embeddings/batch
+❌ /api/RAG/search
+❌ /api/RAG/stats
+❌ /api/RAG/upload
+❌ /api/telegram/send-message
+❌ /api/telegram/send-to-thread
+❌ /api/vector-convert-llm/process-document
+
+EXTRA CONVEX ROUTES:
+-------------------
+⚠️  /api/docker/status
+⚠️  /api/documents/by-id
+⚠️  /api/embeddings
+⚠️  /api/embeddings/batch
+⚠️  /api/embeddings/generate
+⚠️  /api/embeddings/llm-status
+⚠️  /api/embeddings/search
+⚠️  /api/health
+⚠️  /api/llm/memory-usage
+⚠️  /api/telegram/messages
+⚠️  /api/telegram/messages/thread
+⚠️  /api/threads/by-id
+
+DETAILED ANALYSIS:
+------------------
+The following Next.js API routes need Convex implementations:
+- /api/batch-generate-embeddings
+- /api/convex/status
+- /api/llm/status
+- /api/RAG/batch-upload
+- /api/RAG/chat
+- /api/RAG/documents/[id]
+- /api/RAG/documents/[id]/embedding
+- /api/RAG/embeddings
+- /api/RAG/embeddings/batch
+- /api/RAG/search
+- /api/RAG/stats
+- /api/RAG/upload
+- /api/telegram/send-message
+- /api/telegram/send-to-thread
+- /api/vector-convert-llm/process-document

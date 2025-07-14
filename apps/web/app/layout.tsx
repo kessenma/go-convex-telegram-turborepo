@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { ConvexClientProvider } from "./ConvexClientProvider";
-import Navigation from "./components/Navigation";
+import Navigation from "../components/Navigation";
+import { ConvexClientProvider } from "../providers/ConvexClientProvider";
+import { NotificationsProvider } from "../contexts/NotificationsContext";
+import { Toaster } from "sonner";
 
 const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
+  src: "../fonts/GeistVF.woff",
   variable: "--font-geist-sans",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
@@ -20,9 +18,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}): React.ReactElement {
   return (
     <html lang="en" className="dark">
       <head>
@@ -30,12 +28,15 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} bg-gray-900 text-white`}>
+      <body className={`${geistSans.variable} bg-slate-950 text-white`}>
         <ConvexClientProvider>
-          <Navigation />
-          <main style={{ minHeight: "calc(100vh - 64px)" }}>
-            {children}
-          </main>
+          <NotificationsProvider>
+            <Navigation />
+            <main style={{ minHeight: "calc(100vh - 64px)" }}>
+              {children}
+            </main>
+            <Toaster position="bottom-left" theme="dark" />
+          </NotificationsProvider>
         </ConvexClientProvider>
       </body>
     </html>

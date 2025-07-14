@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/go-telegram/bot"
@@ -43,7 +44,179 @@ type ConvexResponse struct {
 var (
 	convexURL string
 	httpClient *http.Client
+	llmQueue *LLMQueue
 )
+
+// handleLLMCommands processes LLM-related commands and returns response text
+func handleLLMCommands(ctx context.Context, b *bot.Bot, message *models.Message) string {
+	text := strings.TrimSpace(message.Text)
+	
+	// Check for LLM commands
+	if strings.HasPrefix(text, "/embed ") {
+		return handleEmbedCommand(ctx, b, message, strings.TrimPrefix(text, "/embed "))
+	} else if strings.HasPrefix(text, "/similarity ") {
+		return handleSimilarityCommand(ctx, b, message, strings.TrimPrefix(text, "/similarity "))
+	} else if strings.HasPrefix(text, "/search ") {
+		return handleSearchCommand(ctx, b, message, strings.TrimPrefix(text, "/search "))
+	} else if text == "/queue" {
+		return handleQueueStatusCommand()
+	} else if text == "/help" {
+		return handleHelpCommand()
+	}
+	
+	return "" // No LLM command found
+}
+
+// handleEmbedCommand processes text embedding requests
+func handleEmbedCommand(ctx context.Context, b *bot.Bot, message *models.Message, text string) string {
+	if text == "" {
+		return "Please provide text to embed. Usage: /embed <text>"
+	}
+	
+	userID := message.From.ID
+	chatID := message.Chat.ID
+	
+	// Create embedding job payload
+	payload := map[string]interface{}{
+		"text": text,
+	}
+	
+	jobID := llmQueue.AddJob("embedding", payload, chatID, userID)
+	log.Printf("🧠 Embedding job queued for user %d: %s", userID, jobID)
+	
+	status := llmQueue.GetQueueStatus()
+	pendingCount := status["pending"].(int)
+	
+	return fmt.Sprintf("🧠 Embedding job queued (ID: %s). Position in queue: %d", jobID, pendingCount)
+}
+
+// handleSimilarityCommand processes similarity calculation requests
+func handleSimilarityCommand(ctx context.Context, b *bot.Bot, message *models.Message, text string) string {
+	parts := strings.SplitN(text, " | ", 2)
+	if len(parts) != 2 {
+		return "Please provide two texts separated by ' | '. Usage: /similarity <text1> | <text2>"
+	}
+	
+	userID := message.From.ID
+	chatID := message.Chat.ID
+	
+	// Create similarity job payload
+	payload := map[string]interface{}{
+		"texts": []interface{}{parts[0], parts[1]},
+	}
+	
+	jobID := llmQueue.AddJob("similarity", payload, chatID, userID)
+	log.Printf("🧠 Similarity job queued for user %d: %s", userID, jobID)
+	
+	status := llmQueue.GetQueueStatus()
+	pendingCount := status["pending"].(int)
+	
+	return fmt.Sprintf("🧠 Similarity job queued (ID: %s). Position in queue: %d", jobID, pendingCount)
+}
+
+// handleSearchCommand processes semantic search requests
+func handleSearchCommand(ctx context.Context, b *bot.Bot, message *models.Message, query string) string {
+	if query == "" {
+		return "Please provide a search query. Usage: /search <query>"
+	}
+	
+	userID := message.From.ID
+	chatID := message.Chat.ID
+	
+	// Create search job payload
+	payload := map[string]interface{}{
+		"query":     query,
+		"documents": []interface{}{}, // Empty for now, could be populated from Convex
+		"top_k":     5,
+	}
+	
+	jobID := llmQueue.AddJob("search", payload, chatID, userID)
+	log.Printf("🧠 Search job queued for user %d: %s", userID, jobID)
+	
+	status := llmQueue.GetQueueStatus()
+	pendingCount := status["pending"].(int)
+	
+	return fmt.Sprintf("🧠 Search job queued (ID: %s). Position in queue: %d", jobID, pendingCount)
+}
+
+// handleQueueStatusCommand returns current queue status
+func handleQueueStatusCommand() string {
+	status := llmQueue.GetQueueStatus()
+	return fmt.Sprintf("📊 Queue Status:\n• Pending: %d\n• Processing: %d\n• Total jobs: %d\n• Running: %t", 
+		status["pending"], status["processing"], status["total_jobs"], status["running"])
+}
+
+// handleHelpCommand returns available commands
+func handleHelpCommand() string {
+	return `🤖 Available LLM Commands:
+
+/embed <text> - Generate embeddings for text
+/similarity <text1> | <text2> - Calculate similarity between two texts
+/search <query> - Perform semantic search
+/queue - Show queue status
+/help - Show this help message
+
+Example:
+/embed Hello world
+/similarity apple | orange
+/search machine learning`
+}
+
+// Result handlers for async callbacks
+func handleEmbedResult(ctx context.Context, b *bot.Bot, originalMessage *models.Message, result interface{}, err error) {
+	var responseText string
+	if err != nil {
+		responseText = fmt.Sprintf("❌ Embedding failed: %v", err)
+	} else {
+		responseText = "✅ Embedding generated successfully! (Vector data saved)"
+	}
+	
+	sendAsyncResponse(ctx, b, originalMessage, responseText)
+}
+
+func handleSimilarityResult(ctx context.Context, b *bot.Bot, originalMessage *models.Message, result interface{}, err error) {
+	var responseText string
+	if err != nil {
+		responseText = fmt.Sprintf("❌ Similarity calculation failed: %v", err)
+	} else if similarity, ok := result.(float64); ok {
+		responseText = fmt.Sprintf("✅ Similarity score: %.4f (%.1f%%)", similarity, similarity*100)
+	} else {
+		responseText = "✅ Similarity calculated successfully!"
+	}
+	
+	sendAsyncResponse(ctx, b, originalMessage, responseText)
+}
+
+func handleSearchResult(ctx context.Context, b *bot.Bot, originalMessage *models.Message, result interface{}, err error) {
+	var responseText string
+	if err != nil {
+		responseText = fmt.Sprintf("❌ Search failed: %v", err)
+	} else {
+		responseText = "✅ Search completed! (Results processed)"
+	}
+	
+	sendAsyncResponse(ctx, b, originalMessage, responseText)
+}
+
+// sendAsyncResponse sends a response message asynchronously
+func sendAsyncResponse(ctx context.Context, b *bot.Bot, originalMessage *models.Message, text string) {
+	sendParams := &bot.SendMessageParams{
+		ChatID: originalMessage.Chat.ID,
+		Text:   text,
+	}
+	
+	// Reply in the same thread if applicable
+	if originalMessage.MessageThreadID != 0 {
+		sendParams.MessageThreadID = originalMessage.MessageThreadID
+	}
+	
+	_, err := b.SendMessage(ctx, sendParams)
+	if err != nil {
+		log.Printf("❌ Failed to send async response: %v", err)
+	} else {
+		log.Printf("✅ Async response sent: %s", text)
+	}
+}
 
 func main() {
 	// Configure logging with timestamps for Docker
@@ -62,13 +235,24 @@ func main() {
 		convexURL = "http://convex-backend:3211" // Default for Docker
 	}
 
+	// Get LLM service URL from environment variable
+	llmURL := os.Getenv("VECTOR_CONVERT_LLM_URL")
+	if llmURL == "" {
+		llmURL = "http://vector-convert-llm:8081" // Default for Docker
+	}
+
 	// Initialize HTTP client with timeout
 	httpClient = &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
+	// Initialize LLM queue with 2 workers
+	llmQueue = NewLLMQueue(llmURL, 2)
+	llmQueue.Start()
+
 	log.Printf("🚀 Initializing Telegram bot at %s", time.Now().Format(time.RFC3339))
 	log.Printf("🔗 Convex backend URL: %s", convexURL)
+	log.Printf("🧠 LLM service URL: %s", llmURL)
 
 	// Create context that will be cancelled on interrupt signal
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -90,7 +274,10 @@ func main() {
 	// Start the bot
 	b.Start(ctx)
 	
+	// Graceful shutdown
 	log.Println("🛑 Telegram bot shutting down gracefully...")
+	llmQueue.Stop()
+	log.Println("✅ LLM queue stopped")
 }
 
 // saveMessageToConvex saves a telegram message to the Convex database
@@ -215,8 +402,12 @@ func messageHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		// Continue processing even if save fails
 	}
 
-	// Create response message
-	responseText := fmt.Sprintf("Message received and saved: %s", update.Message.Text)
+	// Handle LLM commands
+	responseText := handleLLMCommands(ctx, b, update.Message)
+	if responseText == "" {
+		// Default response for non-LLM messages
+		responseText = fmt.Sprintf("Message received and saved: %s", update.Message.Text)
+	}
 
 	// Prepare response parameters
 	sendParams := &bot.SendMessageParams{
