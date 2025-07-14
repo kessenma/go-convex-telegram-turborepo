@@ -16,12 +16,14 @@ echo "✅ Backend is ready, deploying functions..."
 echo "📝 Setting up Convex environment..."
 cat > .env.local << EOF
 CONVEX_URL=${CONVEX_URL}
-CONVEX_DEPLOYMENT=${CONVEX_URL}
 EOF
 
-# Deploy functions using the npm script (which uses convex dev --once)
+# Clear CONVEX_DEPLOYMENT to avoid login prompts for self-hosted
+unset CONVEX_DEPLOYMENT
+
+# Deploy functions using convex dev --once directly with proper flags
 echo "🚀 Deploying functions to self-hosted backend..."
-pnpm run deploy-functions
+npx convex dev --once --url ${CONVEX_URL}
 
 echo "📁 Copying generated files to shared volume..."
 # Copy generated files to shared volume
