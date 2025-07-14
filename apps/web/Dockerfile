@@ -69,8 +69,8 @@ RUN apk add --no-cache curl \
 # Copy built output, package manifest, and dependencies
 COPY --from=builder /app/apps/web/package.json ./package.json
 COPY --from=builder /app/apps/web/.next/standalone ./
-COPY --from=builder /app/apps/web/.next/static ./.next/static
-COPY --from=builder /app/apps/web/public ./public
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/apps/web/public ./apps/web/public
 
 # Copy global node_modules (monorepo root) for runtime dependencies
 COPY --from=builder /app/node_modules ./node_modules
