@@ -20,9 +20,8 @@ WORKDIR /app
 
 # Install pnpm is already done in base
 # Copy workspace configuration
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages ./packages
-COPY apps/web ./apps/web
+COPY . .
+
 # Copy Convex generated files if they exist
 RUN mkdir -p ./apps/web/convex/_generated
 RUN if [ -d "apps/docker-convex/convex/_generated" ]; then \
