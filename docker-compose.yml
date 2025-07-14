@@ -181,6 +181,23 @@ services:
       start_period: 300s
       retries: 5
 
+  # Convex Function Deployment Service
+  convex-deployer:
+    build:
+      context: ./apps/docker-convex
+      dockerfile: ../web/Dockerfile.convex-deployer
+    environment:
+      - CONVEX_URL=http://convex-backend:3211
+      - CONVEX_INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
+    depends_on:
+      convex-backend:
+        condition: service_healthy
+    volumes:
+      - convex_generated:/app/convex/_generated
+    networks:
+      - telegram-bot-network
+    restart: "no"
+
   # Next.js Web Dashboard Service
   web-dashboard:
     build:
@@ -215,8 +232,12 @@ services:
     depends_on:
       convex-backend:
         condition: service_healthy
+      convex-deployer:
+        condition: service_completed_successfully
       lightweight-llm:
         condition: service_healthy
+    volumes:
+      - convex_generated:/app/convex/_generated:ro
     restart: unless-stopped
     networks:
       - telegram-bot-network
@@ -224,6 +245,7 @@ services:
 volumes:
   convex_data:
   lightweight_llm_cache:
+  convex_generated:
 
 networks:
   telegram-bot-network:

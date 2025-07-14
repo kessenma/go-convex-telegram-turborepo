@@ -1,0 +1,27 @@
+# Convex Function Deployment Container
+FROM node:20-alpine AS deployer
+
+# Install system dependencies and pnpm
+RUN apk update && apk upgrade --no-cache \
+    && apk add --no-cache libc6-compat bash curl \
+    && npm install -g pnpm@latest \
+    && rm -rf /var/cache/apk/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+COPY convex ./convex
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy deployment script
+COPY ../web/deploy-convex.sh ./deploy.sh
+RUN chmod +x deploy.sh
+
+# Create the shared volume directory
+RUN mkdir -p /app/convex/_generated
+
+# Run deployment
+CMD ["./deploy.sh"]

@@ -97,6 +97,7 @@ interface NavItem {
     if (item.href) {
       router.push(item.href);
     }
+    // Don't do anything if there's no href (dropdown items)
   };
 
   const handleDropdownClick = (href: string, external?: boolean) => {
