@@ -14,7 +14,7 @@ COPY package.json pnpm-lock.yaml ./
 COPY convex ./convex
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy deployment script
 COPY deploy-convex.sh ./deploy.sh
