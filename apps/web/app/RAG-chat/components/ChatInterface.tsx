@@ -119,7 +119,7 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
   };
 
   return (
-    <div className="flex flex-col h-[600px]">
+    <div className="flex flex-col h-[1000px]">
       {/* Header */}
       <div className="flex justify-between items-center p-4 border-b border-gray-700">
         <div>
@@ -127,7 +127,7 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
           <p className="text-sm text-gray-300">
             Chatting with: {selectedDocuments.map(d => d.title).join(', ')}
           </p>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex gap-2 items-center mt-1">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             <span className="text-xs text-green-400">Powered by Lightweight LLM</span>
           </div>
@@ -151,7 +151,7 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <div className="overflow-y-auto flex-1 p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center text-gray-400">
             <div className="mb-4">
@@ -178,7 +178,7 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
                     <div className="mt-3 space-y-2">
                       <p className="text-xs font-semibold text-gray-300">Sources:</p>
                       {message.sources.map((source, index) => (
-                        <div key={index} className="p-2 text-xs rounded bg-gray-800">
+                        <div key={index} className="p-2 text-xs bg-gray-800 rounded">
                           <div className="flex justify-between items-center mb-1">
                             <span className="font-medium text-curious-cyan-400">{source.title}</span>
                             <span className="text-gray-400">{(source.score * 100).toFixed(1)}% match</span>

@@ -7,7 +7,7 @@ import { api } from "../convex/_generated/api";
 import { StatusIndicator } from "./ui/status-indicator";
 import { useLLMStatus } from "../hooks/use-status-operations";
 import { useConvexStatus } from "../hooks/use-status-operations";
-import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, ChevronDown, ExternalLink, Info, MessageSquareShare, MessageSquareText, BotMessageSquare, Library } from "lucide-react";
+import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, ChevronDown, ExternalLink, Info, MessageSquareShare, MessageSquareText, BotMessageSquare, Library } from 'lucide-react';
 import { renderIcon } from "../lib/icon-utils";
 import { motion } from "motion/react";
 import { Settings } from "./Settings";
@@ -50,7 +50,12 @@ interface NavItem {
   const dashboardUrl = `http://localhost:${dashboardPort}`;
 
   const navItems: NavItem[] = [
-    { href: "/", label: "Home", icon: HouseWifi as React.FC<{ className?: string }> },
+    { 
+      href: "/", label: "Home", icon: HouseWifi as React.FC<{ className?: string }>, 
+      dropdown: [
+        { href: "/about", label: "about", icon: Info as React.FC<{ className?: string }> },
+      ]
+    },
     { 
       label: "Messages", 
       icon: MessagesSquare as React.FC<{ className?: string }>,
@@ -106,9 +111,9 @@ interface NavItem {
   return (
     <nav className="fixed top-0 right-0 left-0 z-50">
       <div className="flex justify-between items-center px-4 mx-auto max-w-6xl h-16">
-        <div className="flex gap-2 items-center font-semibold text-cyan-500">
+        <div className="flex gap-2 items-center font-semibold text-cyan-200">
           {renderIcon(Bot, { className: "w-6 h-6" })}
-          <span className={`text-lg font-bold bg-gradient-to-r from-cyan-500 to-cyan-100 bg-clip-text text-transparent hidden ${isScrolled ? 'sm:hidden' : 'sm:inline'}`}>
+          <span className={`text-lg font-bold bg-gradient-to-r from-cyan-200 to-white bg-clip-text text-transparent hidden ${isScrolled ? 'sm:hidden' : 'sm:inline'}`}>
             Bot Manager
           </span>
         </div>
@@ -119,7 +124,9 @@ interface NavItem {
             const isConsole = item.label === "Console";
             const isMessages = item.label === "Messages";
             const isRAG = item.label === "RAG";
-             const hasDropdown = Boolean(item.dropdown);
+            const isHome = item.label === "Home";
+            const isAbout = item.label === "About";
+            const hasDropdown = Boolean(item.dropdown);
             const isActive = isActiveItem(item);
             const isHovered = hoveredItem === item.label;
             
@@ -185,7 +192,7 @@ interface NavItem {
                 </button>
                 
                 {/* Dropdown with buffer zone */}
-                 {(isMessages || item.label === "Console" || isRAG) && isHovered && item.dropdown && (
+                 {(isMessages || item.label === "Console" || isRAG || isHome) && isHovered && item.dropdown && (
                    <>
                      {/* Invisible buffer zone */}
                      <div className="absolute left-0 top-full z-40 w-48 h-4" />
@@ -232,6 +239,7 @@ interface NavItem {
                                {documentStats?.totalDocuments || 0}
                              </span>
                            )}
+                           {isHome && dropdownItem.href === "/about" }
                          </button>
                        ))}
                      </motion.div>
@@ -242,7 +250,7 @@ interface NavItem {
           })}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex gap-1 items-center">
           <Notifications />
           <Settings />
         </div>
