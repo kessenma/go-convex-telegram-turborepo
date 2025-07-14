@@ -61,8 +61,9 @@ WORKDIR /app/apps/web
 # Set production env
 ENV NODE_ENV=production PORT=3000
 
-# Install curl for healthchecks
-RUN apk add --no-cache curl
+# Install curl for healthchecks and pnpm for runtime
+RUN apk add --no-cache curl \
+    && npm install -g pnpm@latest
 
 # Copy built output, package manifest, and dependencies
 COPY --from=builder /app/apps/web/package.json ./package.json
