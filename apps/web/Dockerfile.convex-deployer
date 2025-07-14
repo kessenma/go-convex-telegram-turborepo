@@ -17,7 +17,7 @@ COPY convex ./convex
 RUN pnpm install --frozen-lockfile
 
 # Copy deployment script
-COPY ../web/deploy-convex.sh ./deploy.sh
+COPY deploy-convex.sh ./deploy.sh
 RUN chmod +x deploy.sh
 
 # Create the shared volume directory
