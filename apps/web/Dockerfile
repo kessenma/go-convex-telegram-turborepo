@@ -4,21 +4,24 @@ FROM node:20-alpine AS base
 # Accept build args for runtime
 ARG NEXT_PUBLIC_CONVEX_URL
 ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
+
 ENV NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL}
 ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
 
 # Install system dependencies and pnpm
 RUN apk update && apk upgrade --no-cache \
-    && apk add --no-cache libc6-compat bash \
+    && apk add --no-cache libc6-compat bash curl \
     && npm install -g pnpm@latest \
     && rm -rf /var/cache/apk/*
 
 # Stage 1: Install dependencies & codegen (monorepo root)
 FROM base AS builder
+
 WORKDIR /app
 
 # Copy workspace manifest and lockfiles
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+
 # Copy only web app manifest and any shared packages
 COPY apps/web/package.json apps/web/
 COPY packages ./packages
@@ -26,8 +29,8 @@ COPY packages ./packages
 # If Convex _generated files exist in docker-convex, bring them into web
 RUN mkdir -p apps/web/convex/_generated \
     && if [ -d "apps/docker-convex/convex/_generated" ]; then \
-         cp -r apps/docker-convex/convex/_generated/* apps/web/convex/_generated/; \
-       fi
+        cp -r apps/docker-convex/convex/_generated/* apps/web/convex/_generated/; \
+    fi
 
 # Install full monorepo dependencies
 RUN pnpm install --frozen-lockfile
@@ -35,21 +38,29 @@ RUN pnpm install --frozen-lockfile
 # Copy rest of the source code
 COPY . .
 
+# Add TELEGRAM_BOT_TOKEN to turbo.json env vars or disable the warning
+ENV TELEGRAM_BOT_TOKEN=""
+
 # Build only the web app
 WORKDIR /app/apps/web
 RUN pnpm build
 
 # Stage 2: Production runtime
 FROM node:20-alpine AS runner
+
 WORKDIR /app/apps/web
 
 # Set production env
 ENV NODE_ENV=production PORT=3000
 
+# Install curl for healthchecks
+RUN apk add --no-cache curl
+
 # Copy built output, package manifest, and dependencies
 COPY --from=builder /app/apps/web/package.json ./package.json
 COPY --from=builder /app/apps/web/.next ./.next
 COPY --from=builder /app/apps/web/public ./public
+
 # Copy global node_modules (monorepo root) for runtime dependencies
 COPY --from=builder /app/node_modules ./node_modules
 
