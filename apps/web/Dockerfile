@@ -4,9 +4,11 @@ FROM node:20-alpine AS base
 # Accept build args for runtime
 ARG NEXT_PUBLIC_CONVEX_URL
 ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
+ARG CONVEX_URL
 
 ENV NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL}
 ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
+ENV CONVEX_URL=${CONVEX_URL}
 
 # Install system dependencies and pnpm
 RUN apk update && apk upgrade --no-cache \
@@ -43,8 +45,9 @@ COPY packages ./packages
 COPY turbo.json ./turbo.json
 COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
 
-# Add TELEGRAM_BOT_TOKEN to turbo.json env vars or disable the warning
+# Add environment variables for build process
 ENV TELEGRAM_BOT_TOKEN=""
+ENV CONVEX_URL=${CONVEX_URL:-"http://localhost:3210"}
 
 # Build only the web app
 WORKDIR /app/apps/web

@@ -38,7 +38,7 @@
         "build/**",
         "convex/_generated/**"
       ],
-      "env": ["NODE_ENV", "NEXT_PUBLIC_CONVEX_URL", "TELEGRAM_BOT_TOKEN"]
+      "env": ["NODE_ENV", "NEXT_PUBLIC_CONVEX_URL", "TELEGRAM_BOT_TOKEN", "CONVEX_URL"]
     },
     "dev": {
       "cache": false,
