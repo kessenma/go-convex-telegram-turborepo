@@ -1,6 +1,13 @@
 # Optimized Dockerfile for faster builds
 FROM node:20-alpine AS base
 
+# Accept build arguments
+ARG NEXT_PUBLIC_CONVEX_URL
+ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
+
+ENV NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL}
+ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
+
 # Install system dependencies and pnpm in one layer
 RUN apk update && apk upgrade --no-cache && \
     apk add --no-cache libc6-compat bash && \
@@ -39,11 +46,7 @@ RUN if [ -d "/app/apps/web/convex/_generated" ]; then \
 
 # Build the application
 WORKDIR /app/apps/web
-# Accept build arguments
-ARG NEXT_PUBLIC_CONVEX_URL
-ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
-ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
-ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
+
 RUN pnpm build
 
 # Production image - minimal runtime
