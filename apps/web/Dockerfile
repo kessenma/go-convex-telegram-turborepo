@@ -34,7 +34,7 @@ RUN mkdir -p apps/web/convex/_generated \
     fi
 
 # Install full monorepo dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy the web app source code, docker-convex convex functions, and necessary shared files
 COPY apps/web ./apps/web
