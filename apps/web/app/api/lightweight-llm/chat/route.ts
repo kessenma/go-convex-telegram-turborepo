@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sessionManager, SessionManager } from '../../../../lib/session-manager';
 
 export async function POST(request: NextRequest) {
+  let sessionId: string | undefined;
+  
   try {
     const body = await request.json();
-    
-    const llmUrl = process.env.LIGHTWEIGHT_LLM_URL || 'http://localhost:8082';
-    const chatUrl = `${llmUrl}/chat`;
     
     // Validate required fields
     if (!body.message) {
@@ -14,6 +14,21 @@ export async function POST(request: NextRequest) {
         error: 'Message is required'
       }, { status: 400 });
     }
+
+    // Try to acquire the lightweight LLM service
+    const acquisition = sessionManager.acquireService(SessionManager.LIGHTWEIGHT_LLM);
+    if (!acquisition.success) {
+      return NextResponse.json({
+        success: false,
+        error: acquisition.message,
+        serviceUnavailable: true
+      }, { status: 503 });
+    }
+
+    sessionId = acquisition.sessionId;
+    
+    const llmUrl = process.env.LIGHTWEIGHT_LLM_URL || 'http://localhost:8082';
+    const chatUrl = `${llmUrl}/chat`;
 
     // Forward the request to the lightweight LLM service
     const response = await fetch(chatUrl, {
@@ -63,5 +78,10 @@ export async function POST(request: NextRequest) {
       success: false,
       error: `Failed to connect to Lightweight LLM service: ${errorMessage}`
     }, { status: 500 });
+  } finally {
+    // Always release the service when done
+    if (sessionId) {
+      sessionManager.releaseService(SessionManager.LIGHTWEIGHT_LLM, sessionId);
+    }
   }
 }

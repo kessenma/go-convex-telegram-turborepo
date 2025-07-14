@@ -144,9 +144,8 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
     setEmbeddingMessage('');
     
     try {
-      // Call the vector-convert-llm service directly
-      const vectorServiceUrl = process.env.NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL || 'http://localhost:8081';
-      const response = await fetch(`${vectorServiceUrl}/process-document`, {
+      // Call the API route which handles session management
+      const response = await fetch('/api/vector-convert-llm/process-document', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,8 +156,9 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
         }),
       });
       
-      if (response.ok) {
-        const result = await response.json();
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
         // Refresh document data to show updated embedding status
         const docResponse = await fetch(`/api/documents/${documentId}`);
         if (docResponse.ok) {
@@ -172,22 +172,25 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
           setEmbeddingMessage(`Embedding generated successfully for "${documentData.title}"`);
         }
       } else {
-        let errorMessage = 'Failed to generate embedding';
-        try {
-          const errorData = await response.json();
-          errorMessage = `Failed to generate embedding: ${errorData.error || JSON.stringify(errorData) || 'Unknown error'}`;
-        } catch {
-          // fallback
+        // Handle service unavailable (503) or other errors
+        if (response.status === 503 && result.serviceUnavailable) {
+          setEmbeddingStatus('error');
+          setEmbeddingMessage(result.error || 'Service is currently unavailable');
+          toast.error(result.error || 'Service is currently unavailable');
+        } else {
+          const errorMessage = result.error || 'Failed to generate embedding';
+          setError(errorMessage);
+          setEmbeddingStatus('error');
+          setEmbeddingMessage(errorMessage);
+          toast.error(errorMessage);
         }
-        setError(errorMessage);
-        setEmbeddingStatus('error');
-        setEmbeddingMessage(errorMessage);
       }
     } catch (error) {
       const errorMessage = `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`;
       setError(errorMessage);
       setEmbeddingStatus('error');
       setEmbeddingMessage(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setGeneratingEmbedding(false);
     }

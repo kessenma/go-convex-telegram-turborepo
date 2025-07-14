@@ -7,6 +7,7 @@ import { Document, ChatMessage } from "../types";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import { toast } from "sonner";
 
 interface ChatInterfaceProps {
   selectedDocuments: Document[];
@@ -95,7 +96,19 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
         };
         setMessages(prev => [...prev, assistantMessage]);
       } else {
-        throw new Error(result.error || 'Chat request failed');
+        // Handle service unavailable (503) or other errors
+        if (response.status === 503 && result.serviceUnavailable) {
+          toast.error(result.error || 'Chat service is currently unavailable');
+          const errorMessage: ChatMessage = {
+            id: (Date.now() + 1).toString(),
+            type: 'assistant',
+            content: result.error || 'Someone else is using the chat service right now. Please try again in a minute or two.',
+            timestamp: Date.now(),
+          };
+          setMessages(prev => [...prev, errorMessage]);
+        } else {
+          throw new Error(result.error || 'Chat request failed');
+        }
       }
     } catch (error) {
       console.error('Chat error:', error);
@@ -106,6 +119,7 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
         timestamp: Date.now(),
       };
       setMessages(prev => [...prev, errorMessage]);
+      toast.error(error instanceof Error ? error.message : 'Unknown error occurred');
     } finally {
       setIsLoading(false);
     }

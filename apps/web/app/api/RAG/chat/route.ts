@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../docker-convex/convex/_generated/api';
+import { sessionManager, SessionManager } from '../../../../lib/session-manager';
 
 const convex = new ConvexHttpClient(process.env.CONVEX_URL || 'http://localhost:3211');
 const LIGHTWEIGHT_LLM_URL = process.env.LIGHTWEIGHT_LLM_INTERNAL_URL || 'http://localhost:8082';
@@ -137,6 +138,8 @@ async function getDocumentContext(documentIds: string[]): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
+  let llmSessionId: string | undefined;
+  
   try {
     const body: ChatRequest = await request.json();
     const { message, documentIds, conversationHistory, sessionId } = body;
@@ -148,6 +151,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Try to acquire the lightweight LLM service
+    const acquisition = sessionManager.acquireService(SessionManager.LIGHTWEIGHT_LLM);
+    if (!acquisition.success) {
+      return NextResponse.json({
+        error: acquisition.message,
+        serviceUnavailable: true
+      }, { status: 503 });
+    }
+
+    llmSessionId = acquisition.sessionId;
     const currentSessionId = sessionId || generateSessionId();
     const startTime = Date.now();
 
@@ -266,6 +279,11 @@ export async function POST(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     );
+  } finally {
+    // Always release the service when done
+    if (llmSessionId) {
+      sessionManager.releaseService(SessionManager.LIGHTWEIGHT_LLM, llmSessionId);
+    }
   }
 }
 
