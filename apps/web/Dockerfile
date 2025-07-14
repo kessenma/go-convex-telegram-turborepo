@@ -1,75 +1,58 @@
-# Optimized Dockerfile for a monorepo web-dashboard build
-
 # Stage 0: Base image with pnpm
 FROM node:20-alpine AS base
 
-# Accept build arguments for runtime injection
+# Accept build args for runtime
 ARG NEXT_PUBLIC_CONVEX_URL
 ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 ENV NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL}
 ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
 
 # Install system dependencies and pnpm
-RUN apk update && apk upgrade --no-cache && \
-    apk add --no-cache libc6-compat bash && \
-    npm install -g pnpm@latest && \
-    rm -rf /var/cache/apk/*
+RUN apk update && apk upgrade --no-cache \
+    && apk add --no-cache libc6-compat bash \
+    && npm install -g pnpm@latest \
+    && rm -rf /var/cache/apk/*
 
-# Stage 1: Install dependencies (monorepo root)
-FROM base AS deps
-WORKDIR /app
-
-# Copy only manifests for install caching
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages ./packages
-COPY apps/web/package.json apps/web/
-
-# Copy Convex-generated files if they exist
-RUN mkdir -p apps/web/convex/_generated && \
-    if [ -d "apps/docker-convex/convex/_generated" ]; then \
-      cp -r apps/docker-convex/convex/_generated/* apps/web/convex/_generated/; \
-    fi
-
-# Install all workspace dependencies
-RUN pnpm install --frozen-lockfile
-
-# Stage 2: Build web app
+# Stage 1: Install dependencies & codegen (monorepo root)
 FROM base AS builder
 WORKDIR /app
 
-# Bring in installed dependencies
-COPY --from=deps /app/node_modules ./node_modules
+# Copy workspace manifest and lockfiles
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+# Copy only web app manifest and any shared packages
+COPY apps/web/package.json apps/web/
+COPY packages ./packages
 
-# Copy rest of monorepo
+# If Convex _generated files exist in docker-convex, bring them into web
+RUN mkdir -p apps/web/convex/_generated \
+    && if [ -d "apps/docker-convex/convex/_generated" ]; then \
+         cp -r apps/docker-convex/convex/_generated/* apps/web/convex/_generated/; \
+       fi
+
+# Install full monorepo dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy rest of the source code
 COPY . .
 
-# Mirror node_modules into web app folder so pnpm/next can use them
-RUN cp -R node_modules apps/web/node_modules
-
-# Ensure generated Convex API files are in place
-RUN mkdir -p apps/web/convex/_generated && \
-    if [ -d "/app/apps/web/convex/_generated" ]; then \
-      cp -r /app/apps/web/convex/_generated/* apps/web/convex/_generated/; \
-    fi
-
-# Build the Next.js application
+# Build only the web app
 WORKDIR /app/apps/web
 RUN pnpm build
 
-# Stage 3: Production runtime
+# Stage 2: Production runtime
 FROM node:20-alpine AS runner
 WORKDIR /app/apps/web
 
-# Set environment for production
-ENV NODE_ENV=production
+# Set production env
+ENV NODE_ENV=production PORT=3000
 
-# Copy build output and dependencies
-COPY --from=builder /app/apps/web/public ./public
+# Copy built output, package manifest, and dependencies
+COPY --from=builder /app/apps/web/package.json ./package.json
 COPY --from=builder /app/apps/web/.next ./.next
-COPY --from=builder /app/apps/web/node_modules ./node_modules
+COPY --from=builder /app/apps/web/public ./public
+# Copy global node_modules (monorepo root) for runtime dependencies
+COPY --from=builder /app/node_modules ./node_modules
 
-# Expose default Next.js port
+# Expose port and run
 EXPOSE 3000
-
-# Start the server
 CMD ["pnpm", "start"]
