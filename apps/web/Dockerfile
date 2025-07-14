@@ -1,75 +1,75 @@
-# Optimized Dockerfile for faster builds
+# Optimized Dockerfile for a monorepo web-dashboard build
+
+# Stage 0: Base image with pnpm
 FROM node:20-alpine AS base
 
-# Accept build arguments
+# Accept build arguments for runtime injection
 ARG NEXT_PUBLIC_CONVEX_URL
 ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
-
 ENV NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL}
 ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
 
-# Install system dependencies and pnpm in one layer
+# Install system dependencies and pnpm
 RUN apk update && apk upgrade --no-cache && \
     apk add --no-cache libc6-compat bash && \
     npm install -g pnpm@latest && \
     rm -rf /var/cache/apk/*
 
-# Install dependencies only when needed
+# Stage 1: Install dependencies (monorepo root)
 FROM base AS deps
 WORKDIR /app
 
-# Install pnpm is already done in base
-# Copy workspace configuration
-COPY . .
+# Copy only manifests for install caching
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages ./packages
+COPY apps/web/package.json apps/web/
 
-# Copy Convex generated files if they exist
-RUN mkdir -p ./apps/web/convex/_generated
-RUN if [ -d "apps/docker-convex/convex/_generated" ]; then \
-    cp -r apps/docker-convex/convex/_generated/* ./apps/web/convex/_generated/ || true; \
-    else echo "No generated files to copy yet"; fi
+# Copy Convex-generated files if they exist
+RUN mkdir -p apps/web/convex/_generated && \
+    if [ -d "apps/docker-convex/convex/_generated" ]; then \
+      cp -r apps/docker-convex/convex/_generated/* apps/web/convex/_generated/; \
+    fi
 
-# Install dependencies with cache mount
-RUN --mount=type=cache,target=/root/.pnpm-store \
-    pnpm install --frozen-lockfile
+# Install all workspace dependencies
+RUN pnpm install --frozen-lockfile
 
-# Build the application
+# Stage 2: Build web app
 FROM base AS builder
 WORKDIR /app
+
+# Bring in installed dependencies
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy rest of monorepo
 COPY . .
-# Ensure Convex generated files are available
-RUN mkdir -p ./apps/web/convex/_generated
-RUN if [ -d "/app/apps/web/convex/_generated" ]; then \
-    cp -r /app/apps/web/convex/_generated/* ./apps/web/convex/_generated/ || true; \
-    else echo "No generated files to copy from deps"; fi
 
-# Build the application
+# Mirror node_modules into web app folder so pnpm/next can use them
+RUN cp -R node_modules apps/web/node_modules
+
+# Ensure generated Convex API files are in place
+RUN mkdir -p apps/web/convex/_generated && \
+    if [ -d "/app/apps/web/convex/_generated" ]; then \
+      cp -r /app/apps/web/convex/_generated/* apps/web/convex/_generated/; \
+    fi
+
+# Build the Next.js application
 WORKDIR /app/apps/web
-
 RUN pnpm build
 
-# Production image - minimal runtime
+# Stage 3: Production runtime
 FROM node:20-alpine AS runner
-WORKDIR /app
+WORKDIR /app/apps/web
 
-# Set production environment variables
-ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
-    HOSTNAME="0.0.0.0"
+# Set environment for production
+ENV NODE_ENV=production
 
-# Create non-root user and setup directories in one layer
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs && \
-    mkdir .next && \
-    chown nextjs:nodejs .next
+# Copy build output and dependencies
+COPY --from=builder /app/apps/web/public ./public
+COPY --from=builder /app/apps/web/.next ./.next
+COPY --from=builder /app/apps/web/node_modules ./node_modules
 
-# Copy built application with proper ownership
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
-
-USER nextjs
+# Expose default Next.js port
 EXPOSE 3000
 
-CMD ["node", "apps/web/server.js"]
+# Start the server
+CMD ["pnpm", "start"]
