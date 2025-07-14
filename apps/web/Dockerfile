@@ -75,4 +75,4 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Expose port and run
 EXPOSE 3000
-CMD ["pnpm", "start"]
+CMD ["node", ".next/standalone/apps/web/server.js"]
