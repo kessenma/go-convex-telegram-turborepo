@@ -12,25 +12,16 @@ done
 
 echo "✅ Backend is ready, deploying functions..."
 
-# Create convex.json configuration for self-hosted deployment
-echo "📝 Creating Convex configuration..."
-cat > convex.json << EOF
-{
-  "functions": "convex/",
-  "generateCommonJSApi": false,
-  "node": {
-    "externalPackages": []
-  }
-}
+# Create .env.local with the backend URL for Convex CLI
+echo "📝 Setting up Convex environment..."
+cat > .env.local << EOF
+CONVEX_URL=${CONVEX_URL}
+CONVEX_DEPLOYMENT=${CONVEX_URL}
 EOF
 
-# Set environment variables for Convex CLI
-export CONVEX_DEPLOYMENT=${CONVEX_URL}
-export CONVEX_DEPLOY_KEY=${CONVEX_INSTANCE_SECRET}
-
-# Deploy functions with proper configuration
+# Deploy functions using the npm script (which uses convex dev --once)
 echo "🚀 Deploying functions to self-hosted backend..."
-npx convex deploy --url ${CONVEX_URL} --admin-key ${CONVEX_INSTANCE_SECRET} --yes
+pnpm run deploy-functions
 
 echo "📁 Copying generated files to shared volume..."
 # Copy generated files to shared volume

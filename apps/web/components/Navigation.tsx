@@ -51,9 +51,10 @@ interface NavItem {
 
   const navItems: NavItem[] = [
     { 
-      href: "/", label: "Home", icon: HouseWifi as React.FC<{ className?: string }>, 
+      label: "Home", icon: HouseWifi as React.FC<{ className?: string }>, 
       dropdown: [
-        { href: "/about", label: "about", icon: Info as React.FC<{ className?: string }> },
+        { href: "/", label: "Dashboard", icon: HouseWifi as React.FC<{ className?: string }> },
+        { href: "/about", label: "About", icon: Info as React.FC<{ className?: string }> }
       ]
     },
     { 
@@ -112,7 +113,10 @@ interface NavItem {
   return (
     <nav className="fixed top-0 right-0 left-0 z-50">
       <div className="flex justify-between items-center px-4 mx-auto max-w-6xl h-16">
-        <div className="flex gap-2 items-center font-semibold text-cyan-200">
+        <div 
+          className="flex gap-2 items-center font-semibold text-cyan-200 cursor-pointer" 
+          onClick={() => router.push('/')}
+        >
           {renderIcon(Bot, { className: "w-6 h-6" })}
           <span className={`text-lg font-bold bg-gradient-to-r from-cyan-200 to-white bg-clip-text text-transparent hidden ${isScrolled ? 'sm:hidden' : 'sm:inline'}`}>
             Bot Manager
