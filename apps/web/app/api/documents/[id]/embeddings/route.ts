@@ -5,11 +5,12 @@ import { api } from '../../../../../../docker-convex/convex/_generated/api';
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const documentId = params.id;
+    const { id } = await params;
+    const documentId = id;
     
     if (!documentId) {
       return NextResponse.json(
