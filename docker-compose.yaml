@@ -61,6 +61,22 @@ services:
       - vector-convert-llm
       - lightweight-llm
     restart: unless-stopped
+  convex-deployer:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ./apps/docker-convex:/app
+    env_file:
+      - .env           # picks up CONVEX_URL & CONVEX_ADMIN_KEY
+    depends_on:
+      - convex-backend
+    entrypoint: >
+      sh -c "
+        npm ci &&
+        npx convex deploy ./convex \
+          --url $CONVEX_URL \
+          --admin-key $CONVEX_ADMIN_KEY
+      "
 
 networks:
   default:

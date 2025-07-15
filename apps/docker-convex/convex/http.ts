@@ -1,5 +1,6 @@
 /*
  * CONVEX HTTP API ROUTER
+ * apps/docker-convex/convex/http.ts
  * =====================
  * 
  * This file serves as the centralized HTTP API router for the Convex backend application.
