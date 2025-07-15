@@ -196,7 +196,7 @@ services:
         reservations:
           memory: 512M
     ports:
-      - "${WEB_DASHBOARD_PORT:-8000}:8000"
+      - "${WEB_DASHBOARD_PORT:-3000}:3000"
     environment:
       - NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL:-http://localhost:3210}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}
