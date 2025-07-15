@@ -1,4 +1,4 @@
-# Z-production deployment/docker-compose.yml
+# Z-production deployment/docker-compose.yaml
 version: '3.8'
 
 services:

@@ -137,7 +137,7 @@ curl -X POST http://localhost:8081/embed \
 
 2. **Reduce memory further:**
    ```yaml
-   # In docker-compose.yml
+   # In docker-compose.yaml
    deploy:
      resources:
        limits:
@@ -196,7 +196,7 @@ If you need to rollback to the original version:
 # Stop optimized version
 docker-compose stop vector-convert-llm
 
-# Update docker-compose.yml to use original Dockerfile
+# Update docker-compose.yaml to use original Dockerfile
 # Change: dockerfile: optimized.Dockerfile
 # To: dockerfile: Dockerfile
 

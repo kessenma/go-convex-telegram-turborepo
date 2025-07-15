@@ -184,7 +184,7 @@ Every app in this repo contains a readme file to run the app independently from 
 │   │   │   ├── schema.ts       # Database schema
 │   │   │   ├── telegram.ts     # Telegram functions
 │   │   │   └── http.ts         # HTTP API routes
-│   │   └── docker-compose.yml  # Original Convex setup
+│   │   └── docker-compose.yaml  # Original Convex setup
 │   ├── golang-telegram-bot/    # Telegram bot
 │   │   ├── main.go             # Bot implementation
 │   │   └── Dockerfile          # Bot container
@@ -206,7 +206,7 @@ Every app in this repo contains a readme file to run the app independently from 
 │   ├── ui/                     # Shared UI components (not used)
 │   ├── eslint-config/          # ESLint configurations (idk if used)
 │   └── typescript-config/      # TypeScript configurations (idk if used)
-├── docker-compose.yml          # Centralized Docker setup to control all the docekrfile's
+├── docker-compose.yaml          # Centralized Docker setup to control all the docekrfile's
 ├── .env.example                # Environment template
 ├── setup.sh                    # Automated setup script
 └── SETUP.md                    # Detailed setup guide
