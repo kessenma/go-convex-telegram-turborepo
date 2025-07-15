@@ -12,12 +12,14 @@ import { renderIcon } from "../lib/icon-utils";
 import { motion } from "motion/react";
 import { Settings } from "./Settings";
 import { Notifications } from "./Notifications";
+import MobileNavigation from "./mobile-navigation";
 
 export default function Navigation(): React.ReactNode {
   const pathname = usePathname();
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,6 +30,27 @@ export default function Navigation(): React.ReactNode {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      const shouldBeMobile = width < 768; // md breakpoint for easier testing
+      console.log('Screen width:', width, 'Should be mobile:', shouldBeMobile);
+      setIsMobile(shouldBeMobile);
+    };
+
+    // Check on mount
+    checkScreenSize();
+
+    // Add event listener for resize
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  // Debug effect to track mobile state changes
+  useEffect(() => {
+    console.log('Navigation: isMobile changed to:', isMobile);
+  }, [isMobile]);
 
 interface NavItem {
   href?: string;
@@ -110,6 +133,15 @@ interface NavItem {
     setHoveredItem(null);
   };
 
+  // Return mobile navigation for small screens
+  if (isMobile) {
+    console.log('Navigation: Rendering MobileNavigation');
+    return <MobileNavigation />;
+  }
+
+  console.log('Navigation: Rendering Desktop Navigation');
+
+  // Return desktop navigation for larger screens
   return (
     <nav className="fixed top-0 right-0 left-0 z-50">
       <div className="flex justify-between items-center px-4 mx-auto max-w-6xl h-16">
