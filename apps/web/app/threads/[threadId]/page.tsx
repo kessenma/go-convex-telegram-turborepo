@@ -8,7 +8,8 @@ import { renderIcon } from "../../../lib/icon-utils";
 import { cn } from "../../../lib/utils";
 import React, { useState } from 'react';
 import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../../convexApi1752607591403";
+import { type GenericId as Id } from "convex/values";
 import {Button} from "../../../components/ui/button";
 
 interface ThreadDetailPageProps {
@@ -26,8 +27,8 @@ export default function ThreadDetailPage({ params }: ThreadDetailPageProps) {
     params.then(p => setThreadId(p.threadId));
   }, [params]);
 
-  const thread = useQuery(api.threads.getThreadById, threadId ? { threadDocId: threadId } : "skip");
-  const messages = useQuery(api.messages.getMessagesByThreadDoc, threadId ? { threadDocId: threadId } : "skip");
+  const thread = useQuery(api.threads.getThreadById, threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip");
+  const messages = useQuery(api.messages.getMessagesByThreadDoc, threadId ? { threadDocId: threadId as Id<"telegram_threads"> } : "skip");
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

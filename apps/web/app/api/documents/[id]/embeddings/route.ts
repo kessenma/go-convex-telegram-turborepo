@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../../../../../docker-convex/convex/_generated/api';
+import { api } from '../../../../../convexApi1752607591403';
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL || 'http://localhost:3210';
+const convex = new ConvexHttpClient(convexUrl);
 
 export async function GET(
   req: Request,

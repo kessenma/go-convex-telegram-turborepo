@@ -5,8 +5,8 @@ import { MessageCircle, Send, Bot, User, Loader2, ArrowLeft, History } from "luc
 import { renderIcon } from "../../../lib/icon-utils";
 import { Document, ChatMessage } from "../types";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { api } from "../../../convexApi1752607591403";
+import { type GenericId as Id } from "convex/values";
 import { toast } from "sonner";
 
 interface ChatInterfaceProps {

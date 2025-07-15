@@ -9,8 +9,8 @@ import { cn } from "../lib/utils";
 import { renderIcon } from "../lib/icon-utils";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { api } from "../convexApi1752607591403";
+import { type GenericId as Id } from "convex/values";
 import { toast } from "sonner";
 
 interface NotificationsProps {

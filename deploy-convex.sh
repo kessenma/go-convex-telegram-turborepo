@@ -1,3 +1,4 @@
+# deploy-convex.sh
 #!/bin/bash
 
 # Deploy Convex functions and sync generated files
@@ -9,6 +10,7 @@ echo "🚀 Deploying Convex functions..."
 
 # Deploy functions from docker-convex
 cd apps/docker-convex
+
 pnpm run deploy-functions
 pnpm build
 

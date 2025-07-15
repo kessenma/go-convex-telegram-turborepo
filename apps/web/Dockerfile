@@ -1,3 +1,4 @@
+# /Users/kyleessenmacher/WS/go-convex-telegram-turborepo/apps/web/Dockerfile
 # Stage 0: Base image with pnpm
 FROM node:20-alpine AS base
 
@@ -30,10 +31,10 @@ COPY apps/docker-convex/package.json apps/docker-convex/
 COPY packages ./packages
 
 # If Convex _generated files exist in docker-convex, bring them into web
-RUN mkdir -p apps/web/convex/_generated \
-    && if [ -d "apps/docker-convex/convex/_generated" ]; then \
-        cp -r apps/docker-convex/convex/_generated/* apps/web/convex/_generated/; \
-    fi
+# RUN mkdir -p apps/web/convex/_generated \
+#     && if [ -d "apps/docker-convex/convex/_generated" ]; then \
+#         cp -r apps/docker-convex/convex/_generated/* apps/web/convex/_generated/; \
+#     fi
 
 # Install full monorepo dependencies
 RUN pnpm install --no-frozen-lockfile

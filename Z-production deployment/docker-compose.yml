@@ -1,0 +1,83 @@
+# Z-production deployment/docker-compose.yml
+version: '3.8'
+
+services:
+  # Telegram bot written in Go
+  telegram-bot:
+    build:
+      context: ../apps/golang-telegram-bot
+      dockerfile: Dockerfile
+    environment:
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
+      CONVEX_URL: ${CONVEX_URL}
+      VECTOR_CONVERT_LLM_URL: http://vector-convert-llm:8081
+    depends_on:
+      - vector-convert-llm
+      - lightweight-llm
+    restart: unless-stopped
+
+  # Optimized & stable vector conversion LLM service
+  vector-convert-llm:
+    build:
+      context: ../apps/vector-convert-llm
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: 8081
+      CONVEX_URL: ${CONVEX_URL}
+    restart: unless-stopped
+
+  # Lightweight LLM service for document chat
+  lightweight-llm:
+    build:
+      context: ../apps/lightweight-llm
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: 8082
+      CONVEX_URL: ${CONVEX_URL}
+    restart: unless-stopped
+
+  # Convex sync service (run BEFORE web-dashboard)
+  # convex-sync:
+  #   image: node:20-alpine
+  #   working_dir: /app
+  #   volumes:
+  #     - ..:/app
+  #   environment:
+  #     TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
+  #     CONVEX_INSTANCE_SECRET: ${CONVEX_INSTANCE_SECRET}
+  #     NEXT_PUBLIC_CONVEX_URL: ${NEXT_PUBLIC_CONVEX_URL}
+  #     CONVEX_URL: ${CONVEX_URL}
+  #   entrypoint: sh
+  #   command: -c "apk add bash curl && npm install -g pnpm && ./deploy-convex.sh"
+  #   restart: "no"
+
+  # Next.js web dashboard
+  web-dashboard:
+    build:
+      context: ../
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_CONVEX_URL: ${NEXT_PUBLIC_CONVEX_URL:-http://localhost:3210}
+        NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+        CONVEX_URL: ${CONVEX_URL:-http://localhost:3210}
+    ports:
+      - "${WEB_DASHBOARD_PORT:-3000}:3000"
+    environment:
+      NEXT_PUBLIC_CONVEX_URL: ${NEXT_PUBLIC_CONVEX_URL:-http://localhost:3210}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_TOKEN}
+      NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      VECTOR_CONVERT_LLM_INTERNAL_URL: http://vector-convert-llm:8081
+      LIGHTWEIGHT_LLM_INTERNAL_URL: http://lightweight-llm:8082
+    depends_on:
+      - vector-convert-llm
+      - lightweight-llm
+    restart: unless-stopped
+
+networks:
+  default:
+    name: telegram-bot-network
+    driver: bridge

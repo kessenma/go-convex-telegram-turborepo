@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../../docker-convex/convex/_generated/api";
+import { api } from "../../convexApi1752607591403";
 import { DocumentSelector } from "./components/DocumentSelector";
 import { ChatInterface } from "./components/ChatInterface";
 import { ChatHistory } from "./components/ChatHistory";
 import { Document, ChatConversation } from "./types";
 import { Card } from "../../components/ui/card";
-import { Loader2, MessageSquare } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
 import { ParticlesBackground } from "../../components/ui/backgrounds/particles-background";
 import { Hero, TextAnimationType } from "../../components/ui/hero";

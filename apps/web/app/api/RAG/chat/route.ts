@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../../../../docker-convex/convex/_generated/api';
+import { api } from '../../../../convexApi1752607591403';
 import { sessionManager, SessionManager } from '../../../../lib/session-manager';
 
 const convex = new ConvexHttpClient(process.env.CONVEX_URL || 'http://localhost:3211');
@@ -64,7 +64,7 @@ async function performVectorSearch(
       let bestSnippet = '';
       
       // Find the best matching snippet
-      const sentences = doc.content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+      const sentences = doc.content.split(/[.!?]+/).filter((s: string) => s.trim().length > 20);
       let bestSentenceScore = 0;
       
       for (const sentence of sentences) {

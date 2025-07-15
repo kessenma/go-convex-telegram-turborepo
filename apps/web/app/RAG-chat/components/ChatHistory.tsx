@@ -1,3 +1,4 @@
+// /Users/kyleessenmacher/WS/go-convex-telegram-turborepo/apps/web/app/RAG-chat/components/ChatHistory.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -5,8 +6,8 @@ import { History, MessageCircle, Clock, FileText, Search, Trash2, Edit3, Chevron
 import { renderIcon } from "../../../lib/icon-utils";
 import { ChatConversation } from "../types";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { api } from "../../../convexApi1752607591403";
+import { type GenericId as Id } from "convex/values";
 
 interface ChatHistoryProps {
   onSelectConversation: (conversation: ChatConversation) => void;
@@ -99,7 +100,7 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
         <div className="flex gap-2 items-center">
           <button
             onClick={onBackToSelection}
-            className="flex gap-2 items-center px-2 py-1 text-gray-300 rounded-lg border border-gray-600 transition-colors hover:bg-gray-700 mr-2"
+            className="flex gap-2 items-center px-2 py-1 mr-2 text-gray-300 rounded-lg border border-gray-600 transition-colors hover:bg-gray-700"
           >
             {renderIcon(ArrowLeft, { className: "w-4 h-4" })}
             Back
@@ -126,13 +127,13 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search conversations..."
-            className="block p-2 pl-10 w-full text-sm text-white rounded-lg border border-gray-600 bg-gray-700 placeholder-gray-400 focus:ring-curious-cyan-500 focus:border-curious-cyan-500"
+            className="block p-2 pl-10 w-full text-sm placeholder-gray-400 text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-curious-cyan-500 focus:border-curious-cyan-500"
           />
         </div>
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="overflow-y-auto flex-1">
         {!conversations ? (
           <div className="flex justify-center items-center h-32">
             <div className="text-gray-400">Loading conversations...</div>
@@ -153,7 +154,7 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
             )}
           </div>
         ) : (
-          <div className="space-y-1 p-2">
+          <div className="p-2 space-y-1">
             {filteredConversations.map((conversation: ChatConversation) => (
               <div
                 key={conversation._id}
@@ -181,7 +182,7 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
                           }
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full px-2 py-1 text-sm text-white rounded bg-gray-600 border border-gray-500 focus:outline-none focus:ring-1 focus:ring-curious-cyan-500"
+                        className="px-2 py-1 w-full text-sm text-white bg-gray-600 rounded border border-gray-500 focus:outline-none focus:ring-1 focus:ring-curious-cyan-500"
                         autoFocus
                       />
                     ) : (
@@ -213,7 +214,7 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
                   
                   <div className="flex gap-1 items-center ml-2">
                     {/* Action buttons - only show on hover */}
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -246,7 +247,7 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
 
       {/* Footer with stats */}
       {conversations && conversations.length > 0 && (
-        <div className="p-3 border-t border-gray-700 text-xs text-gray-400">
+        <div className="p-3 text-xs text-gray-400 border-t border-gray-700">
           <div className="flex justify-between">
             <span>{filteredConversations.length} conversations</span>
             <span>

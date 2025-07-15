@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../convexApi1752607591403";
 import { renderIcon } from "../../lib/icon-utils";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
 import { Hero, TextAnimationType } from "../../components/ui/hero";

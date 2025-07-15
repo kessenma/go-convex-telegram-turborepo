@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { api } from "../convexApi1752607591403";
 import { Hero, TextAnimationType } from "../components/ui/hero";
 import { StatCard } from "../components/ui/card";
 import { Button } from "../components/ui/button";

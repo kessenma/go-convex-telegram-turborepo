@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { api } from "../convexApi1752607591403";
 import { StatusIndicator } from "./ui/status-indicator";
 import { useLLMStatus } from "../hooks/use-status-operations";
 import { useConvexStatus } from "../hooks/use-status-operations";
