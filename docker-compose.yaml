@@ -5,7 +5,7 @@ services:
   # Telegram bot written in Go
   telegram-bot:
     build:
-      context: ../apps/golang-telegram-bot
+      context: ./apps/golang-telegram-bot
       dockerfile: Dockerfile
     environment:
       TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
@@ -19,7 +19,7 @@ services:
   # Optimized & stable vector conversion LLM service
   vector-convert-llm:
     build:
-      context: ../apps/vector-convert-llm
+      context: ./apps/vector-convert-llm
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
@@ -31,7 +31,7 @@ services:
   # Lightweight LLM service for document chat
   lightweight-llm:
     build:
-      context: ../apps/lightweight-llm
+      context: ./apps/lightweight-llm
       dockerfile: Dockerfile
     ports:
       - "8082:8082"
@@ -40,25 +40,10 @@ services:
       CONVEX_URL: ${CONVEX_URL}
     restart: unless-stopped
 
-  # Convex sync service (run BEFORE web-dashboard)
-  # convex-sync:
-  #   image: node:20-alpine
-  #   working_dir: /app
-  #   volumes:
-  #     - ..:/app
-  #   environment:
-  #     TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
-  #     CONVEX_INSTANCE_SECRET: ${CONVEX_INSTANCE_SECRET}
-  #     NEXT_PUBLIC_CONVEX_URL: ${NEXT_PUBLIC_CONVEX_URL}
-  #     CONVEX_URL: ${CONVEX_URL}
-  #   entrypoint: sh
-  #   command: -c "apk add bash curl && npm install -g pnpm && ./deploy-convex.sh"
-  #   restart: "no"
-
   # Next.js web dashboard
   web-dashboard:
     build:
-      context: ../
+      context: ./
       dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_CONVEX_URL: ${NEXT_PUBLIC_CONVEX_URL:-http://localhost:3210}
