@@ -60,7 +60,7 @@ WORKDIR /app/apps/web
 
 # Set production env
 ENV NODE_ENV=production
-ENV PORT=8000
+ENV PORT=3000
 
 # Install curl for healthchecks and pnpm for runtime
 RUN apk add --no-cache curl \
@@ -76,5 +76,5 @@ COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/node_modules ./node_modules
 
 # Expose port and run
-EXPOSE 8000
+EXPOSE 3000
 CMD ["node", "apps/web/server.js"]
