@@ -134,6 +134,19 @@ export default function AboutPage() {
           </div>
         </div>
       )
+    },
+    {
+      title: "Start Convex",
+      content: (
+        <div className="space-y-4">
+          <p className="text-slate-300">Convex is a "backend as a service" built on Rust with TypeScript and PostgreSQL. It is a bit tricky to setup, but in my opinion well worth the effort.</p>
+          <div className="p-4 rounded-lg border bg-slate-800/50 border-slate-700">
+            <a href="http://localhost:3000" target="_blank" rel="noopener noreferrer" className="text-lg text-cyan-400 hover:underline">
+              https://github.com/kessenma/go-convex-telegram-turborepo
+            </a>
+          </div>
+        </div>
+      )
     }
   ];
 

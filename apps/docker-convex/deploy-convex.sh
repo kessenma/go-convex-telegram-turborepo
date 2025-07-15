@@ -1,3 +1,5 @@
+# apps/docker-convex/deploy-convex.sh
+
 #!/bin/bash
 set -e
 
@@ -12,11 +14,7 @@ done
 
 echo "✅ Backend is ready, deploying functions..."
 
-# Create .env.local with the backend URL for Convex CLI
-echo "📝 Setting up Convex environment..."
-cat > .env.local << EOF
-CONVEX_URL=${CONVEX_URL}
-EOF
+
 
 # Clear CONVEX_DEPLOYMENT to avoid login prompts for self-hosted
 unset CONVEX_DEPLOYMENT
