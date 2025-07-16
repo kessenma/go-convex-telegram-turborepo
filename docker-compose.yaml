@@ -70,6 +70,8 @@ services:
     depends_on:
       convex-backend:
         condition: service_healthy
+      convex-dashboard:
+        condition: service_healthy
       vector-convert-llm:
         condition: service_healthy
     networks:
