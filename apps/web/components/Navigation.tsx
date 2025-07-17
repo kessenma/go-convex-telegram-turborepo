@@ -7,7 +7,7 @@ import { api } from "../convexApi1752607591403";
 import { StatusIndicator } from "./ui/status-indicator";
 import { useLLMStatus } from "../hooks/use-status-operations";
 import { useConvexStatus } from "../hooks/use-status-operations";
-import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, ChevronDown, ExternalLink, Info, MessageSquareShare, MessageSquareText, BotMessageSquare, Library } from 'lucide-react';
+import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, ChevronDown, ExternalLink, Info, Blocks, MessageSquareShare, MessageSquareText, BotMessageSquare, Library } from 'lucide-react';
 import { renderIcon } from "../lib/icon-utils";
 import { motion } from "motion/react";
 import { Settings } from "./Settings";
@@ -77,7 +77,8 @@ interface NavItem {
       label: "Home", icon: HouseWifi as React.FC<{ className?: string }>, 
       dropdown: [
         { href: "/", label: "Dashboard", icon: HouseWifi as React.FC<{ className?: string }> },
-        { href: "/about", label: "About", icon: Info as React.FC<{ className?: string }> }
+        { href: "/about", label: "About", icon: Info as React.FC<{ className?: string }> },
+        { href: "/architecture", label: "Architecture", icon: Blocks as React.FC<{ className?: string }> }
       ]
     },
     { 
@@ -163,6 +164,7 @@ interface NavItem {
             const isRAG = item.label === "RAG";
             const isHome = item.label === "Home";
             const isAbout = item.label === "About";
+            const isArchitecture = item.label === "Architecture";
             const hasDropdown = Boolean(item.dropdown);
             const isActive = isActiveItem(item);
             const isHovered = hoveredItem === item.label;
@@ -277,6 +279,7 @@ interface NavItem {
                              </span>
                            )}
                            {isHome && dropdownItem.href === "/about" }
+                           {isArchitecture && dropdownItem.href === "/architecture" }
                          </button>
                        ))}
                      </motion.div>

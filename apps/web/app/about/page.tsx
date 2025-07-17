@@ -13,6 +13,7 @@ import { SparklesCore } from '../../components/ui/sparkles';
 import { FloatingCubes } from '../../components/ui/floating-cubes';
 import { HoverExpand } from '../../components/ui/hover-expand-gallery';
 import { Timeline } from '../../components/ui/timeline';
+import { ThreeTimeline } from '../../components/ui/three-timeline';
 import LetterGlitch from '../../components/ui/backgrounds/letter-glitch';
 import { MessageSquare, Code, Database, Layers, Palette, Terminal } from 'lucide-react';
 import { renderIcon } from '../../lib/icon-utils';
@@ -432,7 +433,7 @@ export default function AboutPage() {
         />
       </div>
 
-      {/* Setup Timeline Section */}
+
       <div id="setup" className="relative z-20 px-4 py-16 mx-auto max-w-6xl">
         <div className="mb-12 text-center">
           <h2 className="mb-4 text-3xl font-bold text-cyan-400">Getting Started</h2>
@@ -454,3 +455,5 @@ export default function AboutPage() {
     </div>
   );
 }
+
+

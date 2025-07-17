@@ -82,7 +82,7 @@ export function Notifications({ className }: NotificationsProps) {
 
     // Update previous notifications
     setPreviousNotifications(notifications);
-  }, [notifications, previousNotifications]);
+  }, [notifications]);
 
   // Update button position when opening
   useEffect(() => {

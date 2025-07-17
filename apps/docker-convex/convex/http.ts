@@ -1070,6 +1070,86 @@ export const getLightweightLLMStatusAPI = httpAction(async (ctx, request) => {
 });
 
 // =============================================================================
+// USER SESSIONS API ENDPOINTS
+// =============================================================================
+
+// Get active user count
+export const getActiveUserCountAPI = httpAction(async (ctx, request) => {
+  try {
+    const userCount = await ctx.runQuery(api.userSessions.getActiveUserCount);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        data: {
+          activeUsers: userCount.total,
+          bySource: userCount.bySource,
+          timestamp: userCount.timestamp,
+          lastUpdated: new Date().toISOString(),
+        },
+        message: `${userCount.total} active users`
+      }),
+      { 
+        status: 200,
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching active user count:", error);
+    return new Response(
+      JSON.stringify({ 
+        error: "Failed to fetch active user count",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+});
+
+// Get user session statistics
+export const getUserSessionStatsAPI = httpAction(async (ctx, request) => {
+  try {
+    const stats = await ctx.runQuery(api.userSessions.getSessionStats);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        stats: stats
+      }),
+      { 
+        status: 200,
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching user session stats:", error);
+    return new Response(
+      JSON.stringify({ 
+        error: "Failed to fetch user session stats",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+});
+
+// =============================================================================
 // HTTP ROUTER CONFIGURATION
 // =============================================================================
 
@@ -1092,6 +1172,19 @@ http.route({
   path: "/api/lightweight-llm/status",
   method: "GET",
   handler: getLightweightLLMStatusAPI,
+});
+
+// USER SESSIONS API ENDPOINTS
+http.route({
+  path: "/api/users/active-count",
+  method: "GET",
+  handler: getActiveUserCountAPI,
+});
+
+http.route({
+  path: "/api/users/session-stats",
+  method: "GET",
+  handler: getUserSessionStatsAPI,
 });
 
 // TELEGRAM BOT API ENDPOINTS

@@ -4,6 +4,7 @@ import "./globals.css";
 import Navigation from "../components/Navigation";
 import { ConvexClientProvider } from "../providers/ConvexClientProvider";
 import { NotificationsProvider } from "../contexts/NotificationsContext";
+import { SessionProvider } from "../components/SessionProvider";
 import { Toaster } from "sonner";
 
 const geistSans = localFont({
@@ -31,11 +32,13 @@ export default function RootLayout({
       <body className={`${geistSans.variable} bg-slate-950 text-white`}>
         <ConvexClientProvider>
           <NotificationsProvider>
-            <Navigation />
-            <main style={{ minHeight: "calc(100vh - 64px)" }}>
-              {children}
-            </main>
-            <Toaster position="bottom-left" theme="dark" />
+            <SessionProvider>
+              <Navigation />
+              <main style={{ minHeight: "calc(100vh - 64px)" }}>
+                {children}
+              </main>
+              <Toaster position="bottom-left" theme="dark" />
+            </SessionProvider>
           </NotificationsProvider>
         </ConvexClientProvider>
       </body>

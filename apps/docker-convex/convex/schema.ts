@@ -208,4 +208,24 @@ export default defineSchema({
     .index("by_timestamp", ["timestamp"])
     .index("by_role", ["role"])
     .index("by_conversation_and_timestamp", ["conversationId", "timestamp"]),
+
+  // User sessions table - tracks active user sessions for real-time user count
+  user_sessions: defineTable({
+    sessionId: v.string(), // Unique session identifier (generated client-side)
+    userId: v.optional(v.string()), // User identifier if available
+    userAgent: v.optional(v.string()), // Browser user agent
+    ipAddress: v.optional(v.string()), // Client IP address
+    source: v.string(), // "web", "mobile", "telegram"
+    isActive: v.boolean(), // Whether session is currently active
+    lastHeartbeat: v.number(), // Last heartbeat timestamp
+    createdAt: v.number(), // When session was created
+    updatedAt: v.number(), // When session was last updated
+    metadata: v.optional(v.string()), // JSON string for additional session data
+  })
+    .index("by_session_id", ["sessionId"])
+    .index("by_active", ["isActive"])
+    .index("by_last_heartbeat", ["lastHeartbeat"])
+    .index("by_source", ["source"])
+    .index("by_active_and_heartbeat", ["isActive", "lastHeartbeat"])
+    .index("by_created_at", ["createdAt"]),
 });

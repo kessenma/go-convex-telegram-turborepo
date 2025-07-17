@@ -25,6 +25,7 @@ import type * as notifications from "../notifications.js";
 import type * as ragChat from "../ragChat.js";
 import type * as requestLogs from "../requestLogs.js";
 import type * as threads from "../threads.js";
+import type * as userSessions from "../userSessions.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   ragChat: typeof ragChat;
   requestLogs: typeof requestLogs;
   threads: typeof threads;
+  userSessions: typeof userSessions;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

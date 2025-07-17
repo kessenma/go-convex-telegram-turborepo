@@ -11,6 +11,17 @@ interface ConvexStatusIndicatorProps {
   showLabel?: boolean;
   className?: string;
   showLogs?: boolean;
+  status?: "connected" | "connecting" | "disconnected";
+  ready?: boolean;
+  message?: string;
+  uptime?: number;
+  statistics?: {
+    requestsPerHour?: number;
+    requestsPerDay?: number;
+    successRate?: number;
+    avgResponseTime?: number;
+    totalRequests?: number;
+  };
 }
 
 const statusColors = {

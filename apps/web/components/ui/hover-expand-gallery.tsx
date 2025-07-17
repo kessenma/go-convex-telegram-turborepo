@@ -11,6 +11,7 @@ interface HoverExpandProps {
   initialSelectedIndex?: number
   thumbnailHeight?: number
   maxThumbnails?: number
+  modalImageSize?: number
 }
 
 export function HoverExpand({

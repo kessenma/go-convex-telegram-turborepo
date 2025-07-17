@@ -28,7 +28,14 @@ export function ExpandableCardDemo() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [active]);
 
-  useOutsideClick(ref, (event: MouseEvent | TouchEvent) => setActive(null));
+  useOutsideClick(ref, (event: MouseEvent | TouchEvent) => {
+    // Prevent immediate closing on touch devices when touching the card itself
+    if (event.target && ref.current?.contains(event.target as Node)) {
+      return;
+    }
+    // Small delay to prevent accidental closing on mobile
+    setTimeout(() => setActive(null), 100);
+  });
 
   return (
     <>
@@ -44,7 +51,7 @@ export function ExpandableCardDemo() {
       </AnimatePresence>
       <AnimatePresence>
         {active && typeof active === "object" ? (
-          <div className="fixed inset-0  grid place-items-center z-[100]">
+          <div className="fixed inset-0 flex justify-center items-center z-[100] px-4 py-8 overflow-auto">
             <motion.button
               key={`button-${active.title}-${id}`}
               layout
@@ -68,7 +75,7 @@ export function ExpandableCardDemo() {
             <motion.div
               layoutId={`card-${active.title}-${id}`}
               ref={ref}
-              className="w-full max-w-[500px]  h-full md:h-fit md:max-h-[90%]  flex flex-col bg-white dark:bg-neutral-900 sm:rounded-3xl overflow-hidden"
+              className="w-[90vw] max-w-[500px] h-auto max-h-[90vh] md:h-fit md:max-h-[90%] flex flex-col bg-white dark:bg-neutral-900 sm:rounded-3xl overflow-hidden"
             >
               <motion.div layoutId={`image-${active.title}-${id}`}>
                 <img
@@ -76,7 +83,7 @@ export function ExpandableCardDemo() {
                   height={200}
                   src={active.src}
                   alt={active.title}
-                  className="object-cover object-top w-full h-80 lg:h-80 sm:rounded-tr-lg sm:rounded-tl-lg"
+                  className="object-cover object-top w-full h-48 md:h-80 sm:rounded-tr-lg sm:rounded-tl-lg"
                 />
               </motion.div>
 
@@ -106,13 +113,13 @@ export function ExpandableCardDemo() {
                     {active.ctaText}
                   </motion.a>
                 </div>
-                <div className="relative px-4 pt-4">
+                <div className="relative px-4 pt-4 overflow-hidden">
                   <motion.div
                     layout
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="text-neutral-600 text-xs md:text-sm lg:text-base h-40 md:h-fit pb-10 flex flex-col items-start gap-4 overflow-auto dark:text-neutral-400 [mask:linear-gradient(to_bottom,white,white,transparent)] [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch]"
+                    className="text-neutral-600 text-xs md:text-sm lg:text-base max-h-[30vh] md:max-h-[50vh] pb-10 flex flex-col items-start gap-4 overflow-y-auto dark:text-neutral-400 [mask:linear-gradient(to_bottom,white,white,transparent)] [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] overscroll-contain"
                   >
                     {typeof active.content === "function"
                       ? active.content()

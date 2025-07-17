@@ -20,6 +20,7 @@ interface UploadFormProps {
   isUploading: boolean;
   uploadStatus: 'idle' | 'success' | 'error';
   uploadMessage: string;
+  fileInputRef?: React.RefObject<HTMLInputElement>;
 
   handleFileUpload: (file: File) => void;
   handleBatchFileUpload: (files: File[]) => void;

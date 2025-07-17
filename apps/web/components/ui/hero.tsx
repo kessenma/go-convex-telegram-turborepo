@@ -41,6 +41,7 @@ interface HeroProps {
   gradientColors?: string[];
   trueFocusBlurAmount?: number;
   trueFocusBorderColor?: string;
+  whiteText?: boolean;
   trueFocusGlowColor?: string;
 }
 

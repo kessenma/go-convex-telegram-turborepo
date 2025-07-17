@@ -74,6 +74,8 @@ export type AccordionProps = {
   variants?: { expanded: Variant; collapsed: Variant };
   expandedValue?: React.Key | null;
   onValueChange?: (value: React.Key | null) => void;
+  type?: string;
+  collapsible?: boolean;
 };
 
 function Accordion({

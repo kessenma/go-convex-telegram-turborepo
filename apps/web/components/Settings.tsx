@@ -11,6 +11,7 @@ import { LLMStatusIndicator } from "./rag/llm-status-indicator";
 import { LightweightLLMStatusIndicator } from "./rag/lightweight-llm-status-indicator";
 import { ConvexStatusIndicator } from "./convex/convex-status-indicator";
 import { DockerStatus } from "./docker-status";
+import { UserCountIndicator } from "./user-count/user-count-indicator";
 import { ScrollArea } from "../components/ui/scroll-area";
 
 interface SettingsProps {
@@ -148,6 +149,13 @@ export function Settings({ className }: SettingsProps) {
                         
                         {/* Docker Status */}
                         <DockerStatus
+                          size="sm"
+                          showLogs={false}
+                          className="bg-gray-50 dark:bg-gray-800/30"
+                        />
+                        
+                        {/* User Count Status */}
+                        <UserCountIndicator
                           size="sm"
                           showLogs={false}
                           className="bg-gray-50 dark:bg-gray-800/30"

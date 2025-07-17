@@ -14,6 +14,7 @@ export function useStatusOperations() {
     lightweightLlmStatus,
     convexStatus,
     dockerStatus,
+    userCountStatus,
     loading,
     lastUpdated,
     consecutiveErrors,
@@ -22,17 +23,20 @@ export function useStatusOperations() {
     setLightweightLlmStatus,
     setConvexStatus,
     setDockerStatus,
+    setUserCountStatus,
     checkLLMStatus,
     checkLightweightLlmStatus,
     checkConvexStatus,
     checkDockerStatus,
+    checkUserCountStatus,
     checkAllStatus,
     getSystemHealth,
     isSystemReady,
     optimisticLLMUpdate,
     optimisticLightweightLlmUpdate,
     optimisticConvexUpdate,
-    optimisticDockerUpdate
+    optimisticDockerUpdate,
+    optimisticUserCountUpdate
   } = useStatusStore();
   
   // Memoized status check functions
@@ -51,6 +55,10 @@ export function useStatusOperations() {
   const handleCheckDockerStatus = useCallback(async () => {
     return await checkDockerStatus();
   }, [checkDockerStatus]);
+  
+  const handleCheckUserCountStatus = useCallback(async () => {
+    return await checkUserCountStatus();
+  }, [checkUserCountStatus]);
   
   const handleCheckAllStatus = useCallback(async () => {
     return await checkAllStatus();
@@ -72,6 +80,10 @@ export function useStatusOperations() {
   const updateDockerStatusOptimistically = useCallback((partialStatus: Partial<typeof dockerStatus>) => {
     optimisticDockerUpdate(partialStatus);
   }, [optimisticDockerUpdate]);
+  
+  const updateUserCountStatusOptimistically = useCallback((partialStatus: Partial<typeof userCountStatus>) => {
+    optimisticUserCountUpdate(partialStatus);
+  }, [optimisticUserCountUpdate]);
   
   // Auto-polling effect for LLM status
   useEffect(() => {
@@ -123,6 +135,19 @@ export function useStatusOperations() {
     return () => clearInterval(interval);
   }, [pollingIntervals.docker, handleCheckDockerStatus]);
   
+  // Auto-polling effect for User Count status
+  useEffect(() => {
+    // Initial check
+    handleCheckUserCountStatus();
+    
+    // Set up polling with dynamic interval
+    const interval = setInterval(() => {
+      handleCheckUserCountStatus();
+    }, pollingIntervals.userCount);
+    
+    return () => clearInterval(interval);
+  }, [handleCheckUserCountStatus, pollingIntervals.userCount]);
+  
   // Derived state
   const systemHealth = getSystemHealth();
   const systemReady = isSystemReady();
@@ -157,10 +182,17 @@ export function useStatusOperations() {
       pollingInterval: pollingIntervals.docker,
       loading: loading.docker
     },
+    userCount: {
+      ...userCountStatus,
+      lastUpdated: lastUpdated.userCount,
+      consecutiveErrors: consecutiveErrors.userCount,
+      pollingInterval: pollingIntervals.userCount,
+      loading: loading.userCount
+    },
     system: {
       health: systemHealth,
       ready: systemReady,
-      overallLoading: loading.llm || loading.lightweightLlm || loading.convex || loading.docker
+      overallLoading: loading.llm || loading.lightweightLlm || loading.convex || loading.docker || loading.userCount
     }
   };
   
@@ -170,6 +202,7 @@ export function useStatusOperations() {
     lightweightLlmStatus,
     convexStatus,
     dockerStatus,
+    userCountStatus,
     statusSummary,
     
     // Loading states
@@ -189,6 +222,7 @@ export function useStatusOperations() {
     checkLightweightLlmStatus: handleCheckLightweightLlmStatus,
     checkConvexStatus: handleCheckConvexStatus,
     checkDockerStatus: handleCheckDockerStatus,
+    checkUserCountStatus: handleCheckUserCountStatus,
     checkAllStatus: handleCheckAllStatus,
     
     // Optimistic updates
@@ -196,12 +230,14 @@ export function useStatusOperations() {
     updateLightweightLlmStatusOptimistically,
     updateConvexStatusOptimistically,
     updateDockerStatusOptimistically,
+    updateUserCountStatusOptimistically,
     
     // Direct store actions (for advanced usage)
     setLLMStatus,
     setLightweightLlmStatus,
     setConvexStatus,
-    setDockerStatus
+    setDockerStatus,
+    setUserCountStatus
   };
 }
 
@@ -277,5 +313,30 @@ export function useConvexStatus() {
     pollingInterval: pollingIntervals.convex,
     checkStatus: checkConvexStatus,
     updateOptimistically: updateConvexStatusOptimistically
+  };
+}
+
+/**
+ * Hook specifically for User Count status monitoring
+ */
+export function useUserCountStatus() {
+  const {
+    userCountStatus,
+    loading,
+    checkUserCountStatus,
+    updateUserCountStatusOptimistically,
+    lastUpdated,
+    consecutiveErrors,
+    pollingIntervals
+  } = useStatusOperations();
+  
+  return {
+    status: userCountStatus,
+    loading: loading.userCount,
+    lastUpdated: lastUpdated.userCount,
+    consecutiveErrors: consecutiveErrors.userCount,
+    pollingInterval: pollingIntervals.userCount,
+    checkStatus: checkUserCountStatus,
+    updateOptimistically: updateUserCountStatusOptimistically
   };
 }
