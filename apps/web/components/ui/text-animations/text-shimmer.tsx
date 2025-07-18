@@ -9,6 +9,7 @@ export type TextShimmerProps = {
   className?: string;
   duration?: number;
   spread?: number;
+  isInView?: boolean; // Added to control animation from parent
 };
 
 function TextShimmerComponent({
@@ -17,6 +18,7 @@ function TextShimmerComponent({
   className,
   duration = 2,
   spread = 2,
+  isInView = true, // Default to true if not provided
 }: TextShimmerProps) {
   const dynamicSpread = useMemo(() => {
     return children.length * spread;
@@ -39,9 +41,9 @@ function TextShimmerComponent({
         className
       )}
       initial={{ backgroundPosition: '100% center' }}
-      animate={{ backgroundPosition: '0% center' }}
+      animate={isInView ? { backgroundPosition: '0% center' } : { backgroundPosition: '100% center' }}
       transition={{
-        repeat: Infinity,
+        repeat: isInView ? Infinity : 0,
         duration,
         ease: 'linear',
       }}

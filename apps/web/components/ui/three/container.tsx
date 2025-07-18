@@ -119,7 +119,7 @@ function ContainerOutline({ scrollProgress, isMobile }: { scrollProgress: number
                     args: [new THREE.BoxGeometry(containerWidth, containerHeight, containerDepth)] 
                 }),
                 React.createElement('lineBasicMaterial' as any, {
-                    color: 0x00ff88,
+                    color: 0xFFFFFF,
                     transparent: true,
                     opacity: 0.6,
                     linewidth: 3

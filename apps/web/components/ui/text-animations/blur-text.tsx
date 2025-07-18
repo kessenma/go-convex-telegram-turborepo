@@ -15,6 +15,7 @@ type BlurTextProps = {
   onAnimationComplete?: () => void;
   stepDuration?: number;
   speed?: number;
+  isInView?: boolean;
 };
 
 const buildKeyframes = (
@@ -49,17 +50,23 @@ const BlurText = ({
   easing = (t) => t,
   onAnimationComplete,
   stepDuration = 0.35,
+  isInView: externalIsInView,
 }: BlurTextProps): React.ReactElement => {
   const elements = animateBy === 'words' ? text.split(' ') : text.split('');
-  const [inView, setInView] = useState(false);
+  const [internalInView, setInternalInView] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
 
+  // Use external isInView prop if provided, otherwise use internal state
+  const inView = externalIsInView !== undefined ? externalIsInView : internalInView;
+
   useEffect(() => {
-    if (!ref.current) return;
+    // Only set up the observer if externalIsInView is not provided
+    if (externalIsInView !== undefined || !ref.current) return;
+    
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
-          setInView(true);
+          setInternalInView(true);
           observer.unobserve(ref.current as Element);
         }
       },
@@ -67,7 +74,7 @@ const BlurText = ({
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [threshold, rootMargin]);
+  }, [threshold, rootMargin, externalIsInView]);
 
   const defaultFrom = useMemo(
     () =>

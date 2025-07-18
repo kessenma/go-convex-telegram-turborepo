@@ -26,6 +26,7 @@ export type TextRollProps = {
     };
   };
   onAnimationComplete?: () => void;
+  isInView?: boolean;
 };
 
 export function TextRoll({
@@ -37,6 +38,7 @@ export function TextRoll({
   transition = { ease: 'easeIn' },
   variants,
   onAnimationComplete,
+  isInView = true,
 }: TextRollProps): React.JSX.Element {
   const defaultVariants = {
     enter: {
@@ -66,12 +68,12 @@ export function TextRoll({
                 variants?.enter?.initial ?? defaultVariants.enter.initial
               }
               animate={
-                variants?.enter?.animate ?? defaultVariants.enter.animate
+                isInView ? (variants?.enter?.animate ?? defaultVariants.enter.animate) : (variants?.enter?.initial ?? defaultVariants.enter.initial)
               }
               transition={{
                 ...transition,
                 duration,
-                delay: getEnterDelay(i),
+                delay: isInView ? getEnterDelay(i) : 0,
               }}
             >
               {letter === ' ' ? '\u00A0' : letter}
@@ -79,14 +81,14 @@ export function TextRoll({
             <motion.span
               className='absolute inline-block [backface-visibility:hidden] [transform-origin:50%_100%]'
               initial={variants?.exit?.initial ?? defaultVariants.exit.initial}
-              animate={variants?.exit?.animate ?? defaultVariants.exit.animate}
+              animate={isInView ? (variants?.exit?.animate ?? defaultVariants.exit.animate) : (variants?.exit?.initial ?? defaultVariants.exit.initial)}
               transition={{
                 ...transition,
                 duration,
-                delay: getExitDelay(i),
+                delay: isInView ? getExitDelay(i) : 0,
               }}
               onAnimationComplete={
-                letters.length === i + 1 ? onAnimationComplete : undefined
+                isInView && letters.length === i + 1 ? onAnimationComplete : undefined
               }
             >
               {letter === ' ' ? '\u00A0' : letter}

@@ -9,6 +9,7 @@ import ShinyText from "./text-animations/shiny-text";
 import TrueFocus from "./text-animations/true-focus";
 import { TextRoll } from "./text-animations/text-roll";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
+import { useIntersectionObserver } from "../../hooks/use-intersection-observer";
 import BlurText from "./text-animations/blur-text";
 import { TextShimmer } from "./text-animations/text-shimmer";
 
@@ -77,24 +78,44 @@ export const Hero = ({
           
           switch (titleAnimation) {
             case TextAnimationType.Glitch:
-              return (
-                <GlitchText
-                  speed={glitchSpeed}
-                  enableShadows={true}
-                  enableOnHover={false}
-                  className={textStyle}
-                >
-                  {title}
-                </GlitchText>
-              );
+              return (() => {
+                const { ref, isIntersecting } = useIntersectionObserver({
+                  triggerOnce: true,
+                  threshold: 0.2
+                });
+                
+                return (
+                  <div ref={ref}>
+                    <GlitchText
+                      speed={glitchSpeed}
+                      enableShadows={true}
+                      enableOnHover={false}
+                      className={textStyle}
+                      isInView={isIntersecting}
+                    >
+                      {title}
+                    </GlitchText>
+                  </div>
+                );
+              })();
             case TextAnimationType.Blur:
-              return (
-                <BlurText
-                  text={title}
-                  speed={animationSpeed}
-                  className={textStyle}
-                />
-              );
+              return (() => {
+                const { ref, isIntersecting } = useIntersectionObserver({
+                  triggerOnce: true,
+                  threshold: 0.2
+                });
+                
+                return (
+                  <div ref={ref}>
+                    <BlurText
+                      text={title}
+                      speed={animationSpeed}
+                      className={textStyle}
+                      isInView={isIntersecting}
+                    />
+                  </div>
+                );
+              })();
             case TextAnimationType.Decrypt:
               return (
                 <DecryptedText
@@ -107,52 +128,102 @@ export const Hero = ({
                 />
               );
             case TextAnimationType.Gradient:
-              return (
-                <GradientText
-                  colors={gradientColors}
-                  animationSpeed={animationSpeed / 1000}
-                  className={textStyle}
-                >
-                  {title}
-                </GradientText>
-              );
+              return (() => {
+                const { ref, isIntersecting } = useIntersectionObserver({
+                  triggerOnce: true,
+                  threshold: 0.2
+                });
+                
+                return (
+                  <div ref={ref}>
+                    <GradientText
+                      colors={gradientColors}
+                      animationSpeed={animationSpeed / 1000}
+                      className={textStyle}
+                      isInView={isIntersecting}
+                    >
+                      {title}
+                    </GradientText>
+                  </div>
+                );
+              })();
             case TextAnimationType.Shiny:
-              return (
-                <ShinyText
-                  text={title}
-                  speed={animationSpeed / 10}
-                  className={textStyle}
-                />
-              );
+              return (() => {
+                const { ref, isIntersecting } = useIntersectionObserver({
+                  triggerOnce: true,
+                  threshold: 0.2
+                });
+                
+                return (
+                  <div ref={ref}>
+                    <ShinyText
+                      text={title}
+                      speed={animationSpeed / 10}
+                      className={textStyle}
+                      isInView={isIntersecting}
+                    />
+                  </div>
+                );
+              })();
             case TextAnimationType.Shimmer:
-              return (
-                <TextShimmer
-                  className={textStyle}
-                  duration={animationSpeed / 10}
-                >
-                  {title}
-                </TextShimmer>
-              );
+              return (() => {
+                const { ref, isIntersecting } = useIntersectionObserver({
+                  triggerOnce: true,
+                  threshold: 0.2
+                });
+                
+                return (
+                  <div ref={ref}>
+                    <TextShimmer
+                      className={textStyle}
+                      duration={animationSpeed / 10}
+                      isInView={isIntersecting}
+                    >
+                      {title}
+                    </TextShimmer>
+                  </div>
+                );
+              })();
             case TextAnimationType.TrueFocus:
-              return (
-                <TrueFocus
-                  sentence={title}
-                  blurAmount={trueFocusBlurAmount}
-                  borderColor={trueFocusBorderColor}
-                  glowColor={trueFocusGlowColor}
-                  animationDuration={animationSpeed / 100}
-                  playOnce={true}
-                />
-              );
+              return (() => {
+                const { ref, isIntersecting } = useIntersectionObserver({
+                  triggerOnce: true,
+                  threshold: 0.2
+                });
+                
+                return (
+                  <div ref={ref}>
+                    <TrueFocus
+                      sentence={title}
+                      blurAmount={trueFocusBlurAmount}
+                      borderColor={trueFocusBorderColor}
+                      glowColor={trueFocusGlowColor}
+                      animationDuration={animationSpeed / 100}
+                      playOnce={true}
+                      isInView={isIntersecting}
+                    />
+                  </div>
+                );
+              })();
             case TextAnimationType.TextRoll:
-              return (
-                <TextRoll
-                  duration={animationSpeed / 1000}
-                  className={textStyle}
-                >
-                  {title}
-                </TextRoll>
-              );
+              return (() => {
+                const { ref, isIntersecting } = useIntersectionObserver({
+                  triggerOnce: true,
+                  threshold: 0.2
+                });
+                
+                return (
+                  <div ref={ref}>
+                    <TextRoll
+                      duration={animationSpeed / 1000}
+                      className={textStyle}
+                      isInView={isIntersecting}
+                    >
+                      {title}
+                    </TextRoll>
+                  </div>
+                );
+              })();
             default:
               return title;
           }

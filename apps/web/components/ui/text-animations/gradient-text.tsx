@@ -6,6 +6,7 @@ interface GradientTextProps {
     colors?: string[];
     animationSpeed?: number;
     showBorder?: boolean;
+    isInView?: boolean;
 }
 
 export function GradientText({
@@ -14,10 +15,12 @@ export function GradientText({
     colors = ["#ffaa40", "#9c40ff", "#ffaa40"],
     animationSpeed = 8,
     showBorder = false,
+    isInView = true,
 }: GradientTextProps) {
     const gradientStyle = {
         backgroundImage: `linear-gradient(to right, ${colors.join(", ")})`,
         animationDuration: `${animationSpeed}s`,
+        animationPlayState: isInView ? 'running' : 'paused',
     };
 
     return (

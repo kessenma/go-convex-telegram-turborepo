@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, ReactElement } from "react";
 import { motion } from "framer-motion";
+import { useIntersectionObserver } from "./../../../hooks/use-intersection-observer";
 
 interface TrueFocusProps {
     sentence?: string;
@@ -10,6 +11,10 @@ interface TrueFocusProps {
     animationDuration?: number;
     pauseBetweenAnimations?: number;
     playOnce?: boolean;
+    className?: string;
+    duration?: number; // For backward compatibility
+    children?: React.ReactNode;
+    isInView?: boolean; // Added to control animation from parent
 }
 
 interface FocusRect {
@@ -20,7 +25,7 @@ interface FocusRect {
 }
 
 function TrueFocus({
-    sentence = "True Focus",
+    sentence,
     manualMode = false,
     blurAmount = 5,
     borderColor = "green",
@@ -28,17 +33,42 @@ function TrueFocus({
     animationDuration = 0.5,
     pauseBetweenAnimations = 1,
     playOnce = false,
+    className = "",
+    duration, // For backward compatibility
+    children,
+    isInView, // Added to control animation from parent
 }: TrueFocusProps): ReactElement {
-    const words = sentence.split(" ");
-    const [currentIndex, setCurrentIndex] = useState<number>(0);
+    // Use children content if provided, otherwise use sentence prop
+    const content = children ? String(children).trim() : sentence || "True Focus";
+    const words = content.split(" ");
+    const [currentIndex, setCurrentIndex] = useState<number>(-1); // Start with -1 to not show any word initially
     const [lastActiveIndex, setLastActiveIndex] = useState<number | null>(null);
     const [animationComplete, setAnimationComplete] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
     const [focusRect, setFocusRect] = useState<FocusRect>({ x: 0, y: 0, width: 0, height: 0 });
+    
+    // Use intersection observer to detect when component is in view
+    const { ref: intersectionRef, isIntersecting } = useIntersectionObserver({
+        threshold: 0.1,
+        triggerOnce: true
+    });
+
+    // Start animation when component comes into view
+    useEffect(() => {
+        // Use provided isInView prop if available, otherwise use intersection observer
+        const shouldStartAnimation = isInView !== undefined ? isInView : isIntersecting;
+        
+        if (shouldStartAnimation && currentIndex === -1) {
+            setCurrentIndex(0);
+        }
+    }, [isIntersecting, currentIndex, isInView]);
 
     useEffect(() => {
-        if (!manualMode && !animationComplete) {
+        if (!manualMode && !animationComplete && currentIndex >= 0) {
+            // Use duration prop if provided (for backward compatibility)
+            const effectiveAnimationDuration = duration ? duration / words.length : animationDuration;
+            
             const interval = setInterval(() => {
                 setCurrentIndex((prev) => {
                     const nextIndex = (prev + 1) % words.length;
@@ -48,11 +78,11 @@ function TrueFocus({
                     }
                     return nextIndex;
                 });
-            }, (animationDuration + pauseBetweenAnimations) * 1000);
+            }, (effectiveAnimationDuration + pauseBetweenAnimations) * 1000);
 
             return () => clearInterval(interval);
         }
-    }, [manualMode, animationDuration, pauseBetweenAnimations, words.length, playOnce, animationComplete]);
+    }, [manualMode, animationDuration, pauseBetweenAnimations, words.length, playOnce, animationComplete, currentIndex, duration]);
 
     useEffect(() => {
         if (currentIndex === null || currentIndex === -1) return;
@@ -100,8 +130,14 @@ function TrueFocus({
 
     return (
         <div
-            className="flex relative flex-wrap gap-4 justify-center items-center"
-            ref={containerRef}
+            className={`flex relative flex-wrap gap-4 justify-center items-center ${className}`}
+            ref={(el) => {
+                containerRef.current = el;
+                if (intersectionRef && typeof intersectionRef === 'object') {
+                    // @ts-ignore - This is a valid way to assign to a ref
+                    intersectionRef.current = el;
+                }
+            }}
         >
             {words.map((word, index) => {
                 const isActive = index === currentIndex;
@@ -109,7 +145,7 @@ function TrueFocus({
                     <span
                         key={index}
                         ref={(el: HTMLSpanElement | null): void => { wordRefs.current[index] = el }}
-                        className="relative text-[3rem] font-black cursor-pointer"
+                        className="relative text-lg font-semibold text-white cursor-pointer"
                         style={{
                             filter: (animationComplete && playOnce) 
                                 ? `blur(0px)` // All text clear when animation complete

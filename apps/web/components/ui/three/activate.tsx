@@ -92,7 +92,7 @@ function GreenContainer({ scrollProgress, isVisible, isMobile, connectionProgres
                     args: [new THREE.BoxGeometry(containerWidth, containerHeight, containerDepth)]
                 }),
                 React.createElement('lineBasicMaterial' as any, {
-                    color: 0x00ff88,
+                    color: 0x53EAFD,
                     transparent: true,
                     opacity: 0.8,
                     linewidth: 5
@@ -190,13 +190,13 @@ function BrainModel({ scrollProgress, isVisible, isMobile, connectionProgress }:
                     const material = object.material as any;
                     if (material.emissive !== undefined) {
                         // Intense lighting effect - change to green emissive
-                        material.emissive.setHex(0x00ff88);
+                        material.emissive.setHex(0x53EAFD);
                         material.emissiveIntensity = connectionProgress * 0.3;
                     }
                     // Change brain color to match container green
                     if (material.color) {
                         const baseColor = new THREE.Color(0xffffff); // Original orange
-                        const containerColor = new THREE.Color(0x00ff88); // Container green
+                        const containerColor = new THREE.Color(0x53EAFD); // Container green
                         material.color.lerpColors(baseColor, containerColor, connectionProgress);
                     }
                 }
@@ -291,8 +291,8 @@ function ConnectionLine({ scrollProgress, isVisible, isMobile, connectionProgres
     useFrame(() => {
         if (!lineRef.current || !isVisible || !lineGeometry) return;
 
-        // Phase 2: Line moves from container to brain (40-75% of scroll) - starts after objects are in place
-        const lineProgress = Math.max(0, Math.min(1, (scrollProgress - 0.4) / 0.35));
+        // Phase 2: Line moves from container to brain (40-60% of scroll) - starts after objects are in place
+        const lineProgress = Math.max(0, Math.min(1, (scrollProgress - 0.4) / 0.2));
 
         // Update line geometry to show progressive drawing
         const startPoint = new THREE.Vector3(-1, 0, 0); // Start from container edge
@@ -315,7 +315,7 @@ function ConnectionLine({ scrollProgress, isVisible, isMobile, connectionProgres
         if (connectionProgress > 0) {
             // Pulse effect when connected
             const pulse = Math.sin(Date.now() * 0.008) * 0.4 + 0.6;
-            material.color.setHex(0x00ff88);
+            material.color.setHex(0x53EAFD);
             material.opacity = pulse;
         }
     });
@@ -326,7 +326,7 @@ function ConnectionLine({ scrollProgress, isVisible, isMobile, connectionProgres
         React.createElement('line' as any, { ref: lineRef },
             React.createElement('primitive', { object: lineGeometry }),
             React.createElement('lineBasicMaterial' as any, {
-                color: 0x00ff88,
+                color: 0x53EAFD,
                 transparent: true,
                 opacity: 0.8,
                 linewidth: 3
@@ -398,8 +398,8 @@ export function Activate({
 
                     // Scene rotation is now handled continuously in SceneController
 
-                    // Connection progress starts at 75% of scroll
-                    const connectionStart = 0.75;
+                    // Connection progress starts at 60% of scroll (earlier for longer brain color duration)
+                    const connectionStart = 0.6;
                     if (progress >= connectionStart) {
                         const connProgress = (progress - connectionStart) / (1 - connectionStart);
                         setConnectionProgress(connProgress);

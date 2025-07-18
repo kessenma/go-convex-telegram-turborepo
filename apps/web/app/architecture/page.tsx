@@ -12,14 +12,18 @@ import { Card } from "../../components/ui/card";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
 import { useArchitectureStore } from "../../stores/architecture-store";
 import { useEffect, useRef, useState } from "react";
+import { useIntersectionObserver } from "../../hooks/use-intersection-observer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../../components/ui/accordion";
-import { Car, Check, Copy, ExternalLink, Info } from "lucide-react";
+import { Car, Check, Copy, ExternalLink } from "lucide-react";
+import { TextShimmer } from '../../components/ui/text-animations/text-shimmer';
+import TrueFocus from '../../components/ui/text-animations/true-focus';
+import DecryptedText from '../../components/ui/text-animations/decrypted-text';
 
 export default function ArchitecturePage(): React.ReactElement {
   const { animationEnabled } = useAnimationSettings();
   const { setFirstTimelineActive, setSecondTimelineActive, setScrollProgress } = useArchitectureStore();
   const secondTimelineRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedItems, setCopiedItems] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     function handleScroll() {
@@ -102,18 +106,17 @@ export default function ArchitecturePage(): React.ReactElement {
         <div className="p-8 rounded-2xl border backdrop-blur-sm bg-slate-800/30 border-slate-700/30">
           <div className="flex items-center mb-6">
             <div className="flex justify-center items-center mr-4 w-10 h-10 rounded-lg bg-blue-600/20">
-              <Info className="w-5 h-5 text-blue-400" />
+              <img src="/docker.svg" alt="Docker" className="w-6 h-6" />
             </div>
             <div>
               <h3 className="text-xl font-semibold text-white">Docker Infrastructure</h3>
-              <p className="text-sm text-gray-400">One docker-compose.yaml orchestrating six containerized services</p>
             </div>
           </div>
 
           <div className="space-y-6">
             <p className="leading-relaxed text-gray-300">
               Each application in the <code className="px-2 py-1 text-sm text-cyan-300 rounded bg-slate-700">apps/</code> directory
-              contains its own <code className="px-2 py-1 text-sm text-cyan-300 rounded bg-slate-700">Dockerfile</code> that connects to the central <code className="px-2 py-1 text-sm text-cyan-300 rounded bg-slate-700">docker-compose.yaml </code> for unified orchestration.
+              contains its own <code className="px-2 py-1 text-sm text-cyan-300 rounded bg-slate-700">Dockerfile</code> that connects to the central <code className="px-2 py-1 text-sm text-cyan-300 rounded bg-slate-700">docker-compose.yaml </code>.
             </p>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -124,13 +127,13 @@ export default function ArchitecturePage(): React.ReactElement {
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText('pnpm setup-init');
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
+                      setCopiedItems({...copiedItems, 'setup-init': true});
+                      setTimeout(() => setCopiedItems(prev => ({...prev, 'setup-init': false})), 2000);
                     }}
                     className="p-1.5 text-gray-400 hover:text-white transition-colors rounded"
                     title="Copy command"
                   >
-                    {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                    {copiedItems['setup-init'] ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -142,13 +145,13 @@ export default function ArchitecturePage(): React.ReactElement {
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText('pnpm docker:manage');
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
+                      setCopiedItems({...copiedItems, 'docker-manage': true});
+                      setTimeout(() => setCopiedItems(prev => ({...prev, 'docker-manage': false})), 2000);
                     }}
                     className="p-1.5 text-gray-400 hover:text-white transition-colors rounded"
                     title="Copy command"
                   >
-                    {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                    {copiedItems['docker-manage'] ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -188,12 +191,28 @@ export default function ArchitecturePage(): React.ReactElement {
       </div>
 
       {/* Container Assembly */}
-      <div className="mx-auto mb-32 max-w-6xl">
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold text-white">Container Orchestration</h2>
-          <p className="mx-auto -mb-40 max-w-3xl text-lg leading-relaxed text-gray-300">
-            Coolify (or your deployment tool of choice) uses the docker-compose.yaml file to create a unified
-            docker network with shared environment variables across all containerized services.
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-24 text-center">
+          <h2 className="text-3xl font-bold text-white">One .env file</h2>
+          <p className="mx-auto -mb-64 max-w-3xl text-lg leading-relaxed text-gray-300">
+            {(() => {
+              const { ref, isIntersecting } = useIntersectionObserver({
+                triggerOnce: true,
+                threshold: 0.2
+              });
+              
+              return (
+                <div ref={ref}>
+                  <TextShimmer
+                    duration={10}
+                    className="text-lg font-medium"
+                    isInView={isIntersecting}
+                  >
+                    Six connected apps.
+                  </TextShimmer>
+                </div>
+              );
+            })()}
           </p>
         </div>
         <div className="relative" style={{ height: '600px' }}>
@@ -201,31 +220,73 @@ export default function ArchitecturePage(): React.ReactElement {
         </div>
 
         {/* Deployment Details */}
-        <div className="grid grid-cols-1 gap-6 mt-12 -mt-20 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 -mt-48 md:grid-cols-3">
           <div className="p-6 rounded-xl border bg-slate-800/30 border-slate-700/30">
-            <h3 className="mb-3 text-lg font-semibold text-white">Network Isolation</h3>
+            {(() => {
+              const { ref, isIntersecting } = useIntersectionObserver({
+                triggerOnce: true,
+                threshold: 0.2
+              });
+              
+              return (
+                <div ref={ref}>
+                  <TrueFocus
+                    className="mb-3 text-lg font-semibold text-white"
+                    duration={3}
+                    blurAmount={5}
+                    playOnce={true}
+                    borderColor="#53EAFD" /* blue-400 */
+                    glowColor="rgba(33, 92, 99, 0.6)"
+                    isInView={isIntersecting}
+                  >
+                    Network Isolation
+                  </TrueFocus>
+                </div>
+              );
+            })()}
+
             <p className="text-sm leading-relaxed text-gray-400">
-              All services communicate through a secure Docker network, preventing external access to internal APIs.
+              All services communicate through a secure Docker network, preventing external access to internal APIs when deploying locally. The only external connection is to the Telegram bot via the API key provided. 
             </p>
           </div>
           <div className="p-6 rounded-xl border bg-slate-800/30 border-slate-700/30">
-            <h3 className="mb-3 text-lg font-semibold text-white">Environment Management</h3>
-            <p className="text-sm leading-relaxed text-gray-400">
-              Centralized environment variables ensure consistent configuration across all microservices.
-            </p>
+            <h3 className="mb-3 text-lg font-semibold text-center text-white">TurboRepo MonoRepo</h3>
+            <div className="relative">
+              <div className="float-left flex-shrink-0 mr-3 mb-2 w-8 h-8">
+                <img 
+                  src="/turborepo.svg"
+                  alt="TurboRepo MonoRepo"
+                  className="w-full"
+                />
+              </div>
+              <p className="text-sm leading-relaxed text-gray-400">
+                Centralized package.json with scripts for local development and deployment. The monorepo structure enables efficient code sharing and dependency management across all services in the architecture.
+              </p>
+            </div>
           </div>
           <div className="p-6 rounded-xl border bg-slate-800/30 border-slate-700/30">
-            <h3 className="mb-3 text-lg font-semibold text-white">Service Discovery</h3>
+            <h3 className="mb-3 text-lg font-semibold text-center text-white">Go Telegram Bot</h3>
             <p className="text-sm leading-relaxed text-gray-400">
-              Docker Compose handles service discovery, allowing containers to communicate by service name.
+             The Golang Telegram Bot only has one job: to intercept all messages and forward them to the Convex backend. Then the Next.js app can use the same Telegram Bot API key to send messages. 
             </p>
+            <div className="flex justify-center items-center mb-3 space-x-6">
+              <div className="flex-shrink-0 w-8 h-8">
+                <img src="/golang.svg" alt="Go" className="w-full h-full" />
+              </div>
+              <div className="flex-shrink-0 w-8 h-8">
+                <img src="/telegram.svg" alt="Telegram" className="w-full h-full" />
+              </div>
+              <div className="flex-shrink-0 w-8 h-8">
+                <img src="/next-white.svg" alt="Next.js" className="w-full h-full" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
 
       {/* LLM & Vector Services Section */}
-      <div className="object-center relative m-20 mt-32 mb-16">
+      <div className="object-center relative m-auto mt-32 mb-16">
         <div className="relative z-20 mb-8 text-left">
           <h2 className="mb-4 max-w-3xl text-2xl font-bold text-white">When the system is connected</h2>
           <p className="-mb-60 text-gray-300"> Text documents are processed into vector embeddings using the mini-llm-v6 sentence transformer, and natural language responses are generated using the DistillGpt2 model.</p>
@@ -235,9 +296,9 @@ export default function ArchitecturePage(): React.ReactElement {
         </div>
 
         {/* LLM Services Description */}
-        <div className="-mt-48 space-y-8">
-          <div className="p-6 rounded-xl border backdrop-blur-sm bg-slate-800/50 border-slate-700/50">
-            <h3 className="mb-3 text-xl font-semibold text-white">Vector Conversion Service</h3>
+        <div className="-mt-48 space-y-2">
+          <div className="p-6 ml-8 rounded-xl border backdrop-blur-sm bg-slate-800/50 border-slate-700/50">
+            <h3 className="mb-3 text-xl font-semibold text-white">App: Vector Conversion</h3>
             <p className="mb-4 text-gray-300">Python (Flask) app that converts text into searchable vector embeddings using sentence-transformers so that the documents can be queried by the LLM service.</p>
             <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
               <div>
@@ -251,8 +312,8 @@ export default function ArchitecturePage(): React.ReactElement {
             </div>
           </div>
 
-          <div className="p-6 rounded-xl border backdrop-blur-sm bg-slate-800/50 border-slate-700/50">
-            <h3 className="mb-3 text-xl font-semibold text-white">Lightweight LLM Service</h3>
+          <div className="p-6 ml-8 rounded-xl border backdrop-blur-sm bg-slate-800/50 border-slate-700/50">
+            <h3 className="mb-3 text-xl font-semibold text-white">App: Lightweight LLM</h3>
             <p className="mb-4 text-gray-300">FastAPI service running the DistillGPT2 model for natural language generation and document-based Q&A.</p>
             <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
               <div>
@@ -265,28 +326,28 @@ export default function ArchitecturePage(): React.ReactElement {
             </div>
           </div>
 
-          <div className="p-6 bg-gradient-to-r rounded-xl border from-cyan-900/20 to-blue-900/20 border-cyan-700/30">
+          <div className="p-6 mr-8 bg-gradient-to-r rounded-xl border from-cyan-900/20 to-blue-900/20 border-cyan-700/30">
             <h3 className="mb-3 text-xl font-semibold text-cyan-100">RAG Pipeline Flow</h3>
             <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-4">
               <div className="text-center">
                 <div className="flex justify-center items-center mx-auto mb-2 w-8 h-8 font-bold text-white bg-cyan-600 rounded-full">1</div>
-                <h4 className="mb-1 font-medium text-cyan-100">Document Upload</h4>
-                <p className="text-cyan-200/80">User uploads documents via web interface</p>
+                <h4 className="mb-1 font-medium text-left text-cyan-100">Document Upload</h4>
+                <p className="text-left text-cyan-200/80">User uploads documents via web interface</p>
               </div>
               <div className="text-center">
                 <div className="flex justify-center items-center mx-auto mb-2 w-8 h-8 font-bold text-white bg-cyan-600 rounded-full">2</div>
-                <h4 className="mb-1 font-medium text-cyan-100">Vector Processing</h4>
-                <p className="text-cyan-200/80">Vector service chunks and embeds content</p>
+                <h4 className="mb-1 font-medium text-left text-cyan-100">Vector Processing</h4>
+                <p className="text-left text-cyan-200/80">Vector service chunks and embeds content</p>
               </div>
               <div className="text-center">
                 <div className="flex justify-center items-center mx-auto mb-2 w-8 h-8 font-bold text-white bg-cyan-600 rounded-full">3</div>
-                <h4 className="mb-1 font-medium text-cyan-100">Query Matching</h4>
-                <p className="text-cyan-200/80">User questions find relevant document chunks</p>
+                <h4 className="mb-1 font-medium text-left text-cyan-100">Query Matching</h4>
+                <p className="text-left text-cyan-200/80">User questions find relevant document chunks</p>
               </div>
               <div className="text-center">
                 <div className="flex justify-center items-center mx-auto mb-2 w-8 h-8 font-bold text-white bg-cyan-600 rounded-full">4</div>
-                <h4 className="mb-1 font-medium text-cyan-100">LLM Response</h4>
-                <p className="text-cyan-200/80">DistillGPT2 generates contextual answers</p>
+                <h4 className="mb-1 font-medium text-left text-cyan-100">LLM Response</h4>
+                <p className="text-left text-cyan-200/80">DistillGPT2 generates contextual answers</p>
               </div>
             </div>
           </div>
@@ -296,102 +357,93 @@ export default function ArchitecturePage(): React.ReactElement {
       {/* Coolify Cloud Deployment Timeline */}
       <div className="mx-auto mb-32 max-w-6xl">
         <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold text-white">Cloud Deployment</h2>
+          {/* <h2 className="mb-4 text-3xl font-bold text-white">Cloud Deployment</h2> */}
+          <div className="mb-4">
+            {(() => {
+              const { ref, isIntersecting } = useIntersectionObserver({
+                triggerOnce: true,
+                threshold: 0.2
+              });
+              
+              return (
+                <div ref={ref}>
+                  <DecryptedText 
+                    text="Cloud Deployment"
+                    className="text-3xl font-bold text-white"
+                    animateOn="view"
+                    sequential={true}
+                    speed={200}
+                    maxIterations={15}
+                  />
+                </div>
+              );
+            })()}
+          </div>
           <p className="mx-auto max-w-3xl text-lg leading-relaxed text-gray-300">
-            Since everything is containerize, deploying this Rag chatbot to your cloud provider of choice is quite easy.
+            Since everything is containerized, deploying this RAG chatbot to your cloud provider of choice is quite easy. 
           </p>
         </div>
         <CoolifyTimeline height={600} />
 
         {/* Deployment Features */}
         <div className="grid grid-cols-1 gap-6 mt-12 md:grid-cols-2 lg:grid-cols-4">
-          <div className="p-6 bg-gradient-to-br rounded-xl border from-blue-900/20 to-cyan-900/20 border-blue-700/30">
-            <h3 className="mb-3 text-lg font-semibold text-blue-100">Auto Deployment</h3>
-            <p className="text-sm leading-relaxed text-blue-200/80">
-              Git-based deployments with automatic builds from your repository
+          <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
+            <h3 className="mb-3 text-lg font-semibold text-cyan-300">Thoughtful State Management</h3>
+            <p className="text-sm leading-relaxed text-cyan-200/80">
+              Zustand is used to manage client side application state in Next.js. GoLang manages a chronological process queue for incoming messages to be saved to the Convex database. Convex comes with built-in web-sockets for real-time data updates, and the python apps are stateless and will only accept one request at a time. if a process (chat generation or vector conversion) is currently running new processes will be denied till the current process is done. 
             </p>
           </div>
-          <div className="p-6 bg-gradient-to-br rounded-xl border from-green-900/20 to-emerald-900/20 border-green-700/30">
+            <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
             <h3 className="mb-3 text-lg font-semibold text-green-100">Health Monitoring</h3>
             <p className="text-sm leading-relaxed text-green-200/80">
-              Real-time health checks and automatic service recovery
+              The settings modal include docker container health checks for the Convex database and the LLM + vector sentence transformer. Checks are every 30 seconds. 
             </p>
           </div>
-          <div className="p-6 bg-gradient-to-br rounded-xl border from-purple-900/20 to-violet-900/20 border-purple-700/30">
-            <h3 className="mb-3 text-lg font-semibold text-purple-100">SSL & Domains</h3>
-            <p className="text-sm leading-relaxed text-purple-200/80">
-              Automatic SSL certificates and custom domain management
+           <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
+            <h3 className="mb-3 text-lg font-semibold text-blue-100">Ready to integrate Telegram Bot</h3>
+            <p className="text-sm leading-relaxed text-blue-200/80">
+            The Telegram bot is not currently connected to the LLM yet. I was not sure if I wanted to allow uploading documents from the Telegram bot or how to integrate it with the LLM. It works as a stand alone messaging application currently and text messages are saved. Media (audio notes, picture/video) are not saved currently. One of my goals when building this was to allow organizations to self-host this app in their local docker containers and then connect their app to the world using the Telegram Bot.
             </p>
           </div>
-          <div className="p-6 bg-gradient-to-br rounded-xl border from-orange-900/20 to-red-900/20 border-orange-700/30">
-            <h3 className="mb-3 text-lg font-semibold text-orange-100">Resource Scaling</h3>
-            <p className="text-sm leading-relaxed text-orange-200/80">
-              Dynamic resource allocation based on application demand
+            <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
+            <h3 className="mb-3 text-lg font-semibold text-white">Modern backend server languages</h3>
+            <p className="text-sm leading-relaxed text-white">
+              The Telegram bot runs on a Golang server, and Convex + TurboRepo both are built with Rust. Python (not that efficient) is only used for LLM services.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Architecture Summary */}
-      <div className="mx-auto mb-32 max-w-4xl">
+      {/* Docker Summary */}
+      <div className="mx-auto mb-12 max-w-4xl">
         <div className="p-8 bg-gradient-to-r rounded-2xl border backdrop-blur-sm from-slate-800/40 to-slate-700/40 border-slate-600/30">
-          <h2 className="mb-6 text-2xl font-bold text-center text-white">Complete System Overview</h2>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <div>
-              <h3 className="mb-4 text-lg font-semibold text-white">Core Services</h3>
+              <h3 className="mb-4 text-lg font-semibold text-white">Docker containers : ports : apps:</h3>
               <ul className="space-y-2 text-gray-300">
                 <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-cyan-400 rounded-full"></div>
-                  Next.js Web Application (Port 3000)
-                </li>
-                <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-blue-400 rounded-full"></div>
+                  <div className="mr-3 w-2 h-2 bg-cyan-50 rounded-full"></div>
                   Convex Backend Database (Port 3210)
                 </li>
                 <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-green-400 rounded-full"></div>
+                  <div className="mr-3 w-2 h-2 bg-cyan-50 rounded-full"></div>
+                  Convex Admin Dashboard (Port 6791)
+                </li>
+                <li className="flex items-center">
+                  <div className="mr-3 w-2 h-2 bg-cyan-500 rounded-full"></div>
+                  Next.js Web Application (Port 3000)
+                </li>
+                <li className="flex items-center">
+                  <div className="mr-3 w-2 h-2 bg-cyan-50 rounded-full"></div>
                   Golang Telegram Bot
                 </li>
                 <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-purple-400 rounded-full"></div>
+                  <div className="mr-3 w-2 h-2 bg-cyan-50 rounded-full"></div>
                   Vector Conversion Service (Port 8081)
                 </li>
                 <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-orange-400 rounded-full"></div>
+                  <div className="mr-3 w-2 h-2 bg-cyan-50 rounded-full"></div>
                   Lightweight LLM Service (Port 8082)
-                </li>
-                <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-pink-400 rounded-full"></div>
-                  Convex Admin Dashboard (Port 6791)
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="mb-4 text-lg font-semibold text-white">Key Features</h3>
-              <ul className="space-y-2 text-gray-300">
-                <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-cyan-400 rounded-full"></div>
-                  Real-time message synchronization
-                </li>
-                <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-blue-400 rounded-full"></div>
-                  Document-based AI chat (RAG)
-                </li>
-                <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-green-400 rounded-full"></div>
-                  Telegram bot integration
-                </li>
-                <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-purple-400 rounded-full"></div>
-                  Vector similarity search
-                </li>
-                <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-orange-400 rounded-full"></div>
-                  Local LLM inference
-                </li>
-                <li className="flex items-center">
-                  <div className="mr-3 w-2 h-2 bg-pink-400 rounded-full"></div>
-                  Containerized deployment
                 </li>
               </ul>
             </div>
