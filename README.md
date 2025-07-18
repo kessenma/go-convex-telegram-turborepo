@@ -4,7 +4,7 @@ A [Turborepo](https://turbo.build/repo) monorepo setup that connects a Golang Te
 
 ## 🧱 The building blocks 
 - **Vector Conversion Service** (`apps/vector-convert-llm/`) - Python/Flask service for document processing and embedding generation using sentence-transformers
-- **Lightweight LLM Service** (`apps/lightweight-llm/`) - FastAPI service for chat interactions using Microsoft's Phi-3-mini model
+- **Lightweight LLM Service** (`apps/lightweight-llm/`) - FastAPI service for chat interactions using the distillgpt2 model (not that good of a model in my experience tbh)
 
 ## Project Structure
 ├── vector-convert-llm/       # Document embedding generation service

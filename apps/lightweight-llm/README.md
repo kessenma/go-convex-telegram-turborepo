@@ -1,10 +1,10 @@
 # Lightweight LLM Service
 
-A lightweight self-hosted LLM service for document chat using Microsoft's Phi-3-mini model.
+A lightweight self-hosted LLM service for document chat.
 
 ## Features
 
-- **Lightweight Model**: Uses Microsoft Phi-3-mini-4k-instruct (3.8B parameters)
+- **Lightweight Model**: Uses Microsoft the distillgpt2 model
 - **Memory Efficient**: 4-bit quantization for reduced memory usage
 - **Fast API**: FastAPI-based REST API
 - **Document Context**: Optimized for RAG (Retrieval-Augmented Generation)
@@ -23,38 +23,6 @@ Returns service health status and memory usage.
 POST /chat
 ```
 Generate responses based on user messages and document context.
-
-**Request Body:**
-```json
-{
-  "message": "What is the main topic?",
-  "context": "Document content here...",
-  "conversation_history": [
-    {"role": "user", "content": "Previous question"},
-    {"role": "assistant", "content": "Previous response"}
-  ],
-  "max_length": 512,
-  "temperature": 0.7
-}
-```
-
-**Response:**
-```json
-{
-  "response": "Generated response text",
-  "model_info": {
-    "model_name": "microsoft/Phi-3-mini-4k-instruct",
-    "device": "cuda",
-    "max_length": 512,
-    "temperature": 0.7
-  },
-  "usage": {
-    "input_tokens": 150,
-    "output_tokens": 75,
-    "total_tokens": 225
-  }
-}
-```
 
 ### Model Info
 ```
@@ -77,11 +45,8 @@ Returns detailed information about the loaded model.
 
 ## Model Details
 
-- **Model**: microsoft/Phi-3-mini-4k-instruct
-- **Parameters**: 3.8B
-- **Context Length**: 4K tokens
-- **Quantization**: 4-bit (when GPU available)
-- **Optimization**: Optimized for document Q&A tasks
+- **Model**: DistillGPT2
+- **Parameters**: 88.2M
 
 ## Integration
 

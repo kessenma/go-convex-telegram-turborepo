@@ -428,7 +428,7 @@ export function Activate({
         };
     }, [isIntersecting]);
 
-    // Separate effect for scene positioning
+    // Separate effect for scene positioning with improved fade handling
     useEffect(() => {
         if (!activateRef.current || typeof window === 'undefined') return;
 
@@ -449,54 +449,54 @@ export function Activate({
                     sceneElement.style.width = '100vw';
                     sceneElement.style.height = '100vh';
                     sceneElement.style.transform = 'none';
-                    sceneElement.style.transition = 'none';
+                    sceneElement.style.opacity = '1';
+                    sceneElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
                 }
             },
             onLeave: () => {
                 // When leaving the section (scrolling down), fade out gracefully
                 const sceneElement = element.querySelector('.three-js-canvas') as HTMLElement;
                 if (sceneElement) {
-                    // Instead of repositioning, just fade out while maintaining position
-                    sceneElement.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                    sceneElement.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
                     sceneElement.style.opacity = '0';
                     sceneElement.style.transform = 'scale(0.95)';
                     
                     // After fade completes, move to absolute positioning
                     setTimeout(() => {
-                        if (sceneElement) {
+                        if (sceneElement && sceneElement.style.opacity === '0') {
                             sceneElement.style.position = 'absolute';
                             sceneElement.style.top = '100vh';
                             sceneElement.style.left = '0';
                             sceneElement.style.width = '100vw';
                             sceneElement.style.height = '100vh';
                         }
-                    }, 500);
+                    }, 400);
                 }
             },
             onLeaveBack: () => {
                 // When leaving the section (scrolling up), fade out gracefully
                 const sceneElement = element.querySelector('.three-js-canvas') as HTMLElement;
                 if (sceneElement) {
-                    sceneElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                    sceneElement.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
                     sceneElement.style.opacity = '0';
                     sceneElement.style.transform = 'scale(0.95)';
                     
                     setTimeout(() => {
-                        if (sceneElement) {
+                        if (sceneElement && sceneElement.style.opacity === '0') {
                             sceneElement.style.position = 'absolute';
                             sceneElement.style.top = '0';
                             sceneElement.style.left = '0';
                             sceneElement.style.width = '100vw';
                             sceneElement.style.height = '100vh';
                         }
-                    }, 300);
+                    }, 400);
                 }
             },
             onEnterBack: () => {
                 // When re-entering from below, set up for smooth fade-in
                 const sceneElement = element.querySelector('.three-js-canvas') as HTMLElement;
                 if (sceneElement) {
-                    // First, position the scene correctly but keep it invisible
+                    // Clear any pending timeouts and reset positioning immediately
                     sceneElement.style.position = 'fixed';
                     sceneElement.style.top = '0';
                     sceneElement.style.left = '0';
@@ -506,10 +506,13 @@ export function Activate({
                     sceneElement.style.opacity = '0';
                     sceneElement.style.transition = 'none';
                     
-                    // Then fade in smoothly after a brief moment
+                    // Force a reflow to ensure the styles are applied
+                    sceneElement.offsetHeight;
+                    
+                    // Then fade in smoothly
                     requestAnimationFrame(() => {
                         if (sceneElement) {
-                            sceneElement.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
+                            sceneElement.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
                             sceneElement.style.opacity = '1';
                             sceneElement.style.transform = 'none';
                         }

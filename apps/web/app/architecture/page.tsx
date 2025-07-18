@@ -2,7 +2,7 @@
 
 import { ArchitectureTimeline } from '../../components/ui/three/architecture-timeline11';
 import { DockerComposeTimeline } from '../../components/ui/three/docker-compose-timeline';
-import { CoolifyTimeline } from '../../components/ui/three/coolify-timeline';
+import { CoolifyTimeline } from '../../components/ui/three/cloud-upload';
 import { Container } from '../../components/ui/three/container';
 import { Activate } from '../../components/ui/three/activate';
 import { Hero, TextAnimationType } from '../../components/ui/hero';
@@ -59,11 +59,11 @@ export default function ArchitecturePage(): React.ReactElement {
         gridColor="#000000"
       />
       {/* Radial gradient for the container to give a faded look */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950 to-slate-800 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950 to-slate-800 [mask-image:radial-gradient(ellipse_at_center,transparent_70%,black)]"></div>
       {/* Header */}
       <Hero
         title="Architecture"
-        subtitle="Did I know how to make an LLM app before this? No."
+        subtitle="Did I know how to make an LLM app before this? No. My goal was to see how far I could push a linux server and a self-hosted convex database for a chatbot with 8gb of ram and 4 cpu cores and no GPU. The DistillGPT2 model is not that great for RAG tasks and I plan to  tinker with different libraries and models in the future."
         textAlign="center"
         titleAnimation={TextAnimationType.Shimmer}
         animationSpeed={75}
@@ -235,7 +235,7 @@ export default function ArchitecturePage(): React.ReactElement {
         </div>
 
         {/* LLM Services Description */}
-        <div className="mt-16 space-y-8">
+        <div className="-mt-48 space-y-8">
           <div className="p-6 rounded-xl border backdrop-blur-sm bg-slate-800/50 border-slate-700/50">
             <h3 className="mb-3 text-xl font-semibold text-white">Vector Conversion Service</h3>
             <p className="mb-4 text-gray-300">Python (Flask) app that converts text into searchable vector embeddings using sentence-transformers so that the documents can be queried by the LLM service.</p>
@@ -253,15 +253,13 @@ export default function ArchitecturePage(): React.ReactElement {
 
           <div className="p-6 rounded-xl border backdrop-blur-sm bg-slate-800/50 border-slate-700/50">
             <h3 className="mb-3 text-xl font-semibold text-white">Lightweight LLM Service</h3>
-            <p className="mb-4 text-gray-300">FastAPI service running Microsoft's Phi-3-mini model for natural language generation and document-based Q&A.</p>
+            <p className="mb-4 text-gray-300">FastAPI service running the DistillGPT2 model for natural language generation and document-based Q&A.</p>
             <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
               <div>
                 <h4 className="mb-2 font-medium text-white">Model Specifications:</h4>
                 <ul className="space-y-1 text-gray-400">
-                  <li>• Microsoft Phi-3-mini-4k-instruct</li>
-                  <li>• 3.8B parameters</li>
-                  <li>• 4-bit quantization</li>
-                  <li>• 4K context window</li>
+                  <li>• DistilGPT2 (short for Distilled-GPT2) is an English-language model pre-trained with the supervision of the smallest version of Generative Pre-trained Transformer 2 (GPT-2)</li>
+                  <li>• 88.2M parameters</li>
                 </ul>
               </div>
             </div>
@@ -288,7 +286,7 @@ export default function ArchitecturePage(): React.ReactElement {
               <div className="text-center">
                 <div className="flex justify-center items-center mx-auto mb-2 w-8 h-8 font-bold text-white bg-cyan-600 rounded-full">4</div>
                 <h4 className="mb-1 font-medium text-cyan-100">LLM Response</h4>
-                <p className="text-cyan-200/80">Phi-3 generates contextual answers</p>
+                <p className="text-cyan-200/80">DistillGPT2 generates contextual answers</p>
               </div>
             </div>
           </div>
