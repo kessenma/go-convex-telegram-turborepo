@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * RAG EMBEDDINGS API ENDPOINT
+ * ===========================
+ * 
+ * PURPOSE: Generates embeddings for a single document that's already stored in Convex
+ * 
+ * USAGE: Called after a document is uploaded to trigger embedding generation
+ * - Takes a documentId that exists in the Convex database
+ * - Forwards the request to the Convex backend's embedding generation endpoint
+ * - Used by the RAG upload page after successful document upload
+ * 
+ * FLOW: Frontend Upload → Document Saved to Convex → This API → Convex Embedding Generation
+ * 
+ * RECOMMENDATION: KEEP - This is the primary endpoint for generating embeddings after document upload
+ */
 export async function POST(request: NextRequest) {
   try {
     // Get the request body

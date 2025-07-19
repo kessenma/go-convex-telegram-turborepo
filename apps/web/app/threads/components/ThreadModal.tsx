@@ -2,7 +2,7 @@
 import { TelegramMessage } from "../../../models/telegram";
 import React, { useState } from 'react';
 import { useQuery } from "convex/react";
-import { api } from "../../../convexApi1752607591403";
+import { api } from "../../../generated-convex";
 import { type GenericId as Id } from "convex/values";
 import { Card } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";

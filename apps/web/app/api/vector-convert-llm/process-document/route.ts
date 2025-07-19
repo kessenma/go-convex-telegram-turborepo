@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sessionManager, SessionManager } from '../../../../lib/session-manager';
 
+/**
+ * VECTOR CONVERT LLM PROCESS DOCUMENT API ENDPOINT
+ * ===============================================
+ * 
+ * PURPOSE: Proxies document processing requests to the external Python LLM service
+ * 
+ * USAGE: Handles document processing through the vector-convert-llm Python service
+ * - Takes a document_id and forwards it to the Python LLM service
+ * - Manages session/resource allocation to prevent service overload
+ * - Includes timeout handling for long-running operations
+ * 
+ * USED BY:
+ * - External systems that need to process documents through the LLM service
+ * - Batch processing operations
+ * - Alternative processing pipeline (different from direct Convex embedding)
+ * 
+ * FLOW: API Request → Session Management → Python LLM Service → Response
+ * 
+ * RECOMMENDATION: CONSOLIDATE OR REMOVE - This seems to duplicate functionality with the RAG embeddings endpoint.
+ * Consider if this is needed or if it can be merged with the primary embedding workflow.
+ */
+
 export async function POST(request: NextRequest) {
   let sessionId: string | undefined;
   

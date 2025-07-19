@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../../../convexApi1752607591403';
+import { api } from '../../../../generated-convex';
 import { sessionManager, SessionManager } from '../../../../lib/session-manager';
 
 const convex = new ConvexHttpClient(process.env.CONVEX_URL || 'http://localhost:3211');

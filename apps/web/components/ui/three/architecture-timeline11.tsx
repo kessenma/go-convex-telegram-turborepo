@@ -38,7 +38,8 @@ function AnimatedCube({
   hoveredIdx, 
   setHoveredIdx,
   isMobile,
-  isVisible
+  isVisible,
+  animationEnabled
 }: {
   position: [number, number, number];
   color: number;
@@ -48,6 +49,7 @@ function AnimatedCube({
   setHoveredIdx: (idx: number | null) => void;
   isMobile: boolean;
   isVisible: boolean;
+  animationEnabled: boolean;
 }) {
   const meshRef = useRef<THREE.Group>(null);
   const textRef = useRef<THREE.Group>(null);
@@ -55,7 +57,7 @@ function AnimatedCube({
   const cubeSize = isMobile ? 0.8 : 1.2;
   
   useFrame(() => {
-    if (meshRef.current && isVisible) {
+    if (meshRef.current && isVisible && animationEnabled) {
       meshRef.current.rotation.x += 0.01;
       meshRef.current.rotation.y += 0.01;
     }
@@ -185,8 +187,9 @@ function ConnectionLines({
 export function ArchitectureTimeline({
   width = '100%',
   height = 480,
-  className = ''
-}: { width?: number | string; height?: number; className?: string }) {
+  className = '',
+  animationEnabled = true
+}: { width?: number | string; height?: number; className?: string; animationEnabled?: boolean }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const { firstTimelineActive, firstTimelineVersion, addLog } = useArchitectureStore();
   
@@ -265,6 +268,7 @@ export function ArchitectureTimeline({
               setHoveredIdx={setHoveredIdx}
               isMobile={isMobile}
               isVisible={isIntersecting}
+              animationEnabled={animationEnabled}
             />
           ))}
           

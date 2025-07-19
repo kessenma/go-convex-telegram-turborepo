@@ -6,7 +6,7 @@ import { History, MessageCircle, Clock, FileText, Search, Trash2, Edit3, Chevron
 import { renderIcon } from "../../../lib/icon-utils";
 import { ChatConversation } from "../types";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convexApi1752607591403";
+import { api } from "../../../generated-convex";
 import { type GenericId as Id } from "convex/values";
 
 interface ChatHistoryProps {

@@ -6,6 +6,7 @@ import { Upload, FileText, Type, CheckCircle, AlertCircle, Loader2 } from "lucid
 import { renderIcon } from "../../lib/icon-utils";
 import { Button as MovingButton } from "../ui/moving-border";
 import { StickyBanner } from "../ui/sticky-banner";
+import { Tabs } from "../ui/tabs";
 import { toast } from "sonner";
 
 interface UploadFormProps {
@@ -49,9 +50,12 @@ function FileDropzone({ isUploading, onFileAccepted, onMultipleFilesAccepted }: 
     onDrop,
     accept: {
       'text/markdown': ['.md'],
-      'text/plain': ['.txt']
+      'text/plain': ['.txt'],
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/msword': ['.doc']
     },
-    maxSize: 1024 * 1024, // 1MB
+    maxSize: 10 * 1024 * 1024, // 10MB to accommodate PDFs and DOCX files
     multiple: true
   });
 
@@ -65,8 +69,8 @@ function FileDropzone({ isUploading, onFileAccepted, onMultipleFilesAccepted }: 
         <p className="mb-2 text-gray-300">Drop the files here...</p>
       ) : (
         <>
-          <p className="mb-2 text-gray-300">Drop your .md files here or click to browse</p>
-          <p className="mb-4 text-sm text-gray-500">Supports .md and .txt files up to 1MB each. Multiple files supported.</p>
+          <p className="mb-2 text-gray-300">Drop your files here or click to browse</p>
+          <p className="mb-4 text-sm text-gray-500">Supports .md, .txt (max 1MB), .pdf, and .docx/.doc files (max 10MB). Multiple files supported.</p>
         </>
       )}
       <MovingButton
@@ -121,29 +125,37 @@ export function UploadForm({
   return (
     <div className="p-6">
       <h2 className="mb-4 text-xl font-semibold text-white">Choose Upload Method</h2>
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => setUploadMethod('file')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-            uploadMethod === 'file'
-              ? 'bg-curious-cyan-600 border-curious-cyan-500 text-white'
-              : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-          }`}
-        >
-          {renderIcon(FileText, { className: "w-4 h-4" })}
-          Upload
-        </button>
-        <button
-          onClick={() => setUploadMethod('text')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-            uploadMethod === 'text'
-              ? 'bg-curious-cyan-600 border-curious-cyan-500 text-white'
-              : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-          }`}
-        >
-          {renderIcon(Type, { className: "w-4 h-4" })}
-          Paste
-        </button>
+      <div className="mb-6">
+        <Tabs
+          tabs={[
+            {
+              title: (
+                <span className="flex gap-2 items-center">
+                  {renderIcon(FileText, { className: "w-4 h-4" })}
+                  <span>Upload</span>
+                </span>
+              ),
+              value: 'file',
+              content: null
+            },
+            {
+              title: (
+                <span className="flex gap-2 items-center">
+                  {renderIcon(Type, { className: "w-4 h-4" })}
+                  <span>Paste</span>
+                </span>
+              ),
+              value: 'text',
+              content: null
+            }
+          ]}
+          activeTabIndex={uploadMethod === 'file' ? 0 : 1}
+          onTabChange={(tab) => setUploadMethod(tab.value as 'file' | 'text')}
+          variant="skewed"
+          containerClassName="gap-4 justify-center"
+          tabClassName="bg-gray-700 text-gray-300 hover:bg-gray-600 data-[state=active]:bg-curious-cyan-600 data-[state=active]:border-curious-cyan-500 data-[state=active]:text-white transition-colors px-4 py-3"
+          contentClassName="hidden"
+        />
       </div>
 
       {/* Common Fields */}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "framer-motion";
 import { useOutsideClick } from "../hooks/use-outside-clicks";
 import { useConvexStatus } from "../hooks/use-status-operations";
 import { Settings as SettingsIcon, X } from "lucide-react";
@@ -13,6 +13,7 @@ import { ConvexStatusIndicator } from "./convex/convex-status-indicator";
 import { DockerStatus } from "./docker-status";
 import { UserCountIndicator } from "./user-count/user-count-indicator";
 import { ScrollArea } from "../components/ui/scroll-area";
+import { ExpandableCard } from "../components/ui/expandable-card-reusable";
 
 interface SettingsProps {
   className?: string;
@@ -21,7 +22,7 @@ interface SettingsProps {
 export function Settings({ className }: SettingsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [animationLightMode, setAnimationLightMode] = useState(false);
-  const [buttonPosition, setButtonPosition] = useState({ top: 0, right: 0 });
+  const [buttonPosition, setButtonPosition] = useState<{ top: number | 'auto'; bottom?: number; right: number }>({ top: 0, right: 0 });
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -36,14 +37,39 @@ export function Settings({ className }: SettingsProps) {
     }
   }, []);
 
-  // Update button position when opening
+  // Update button position when opening, with mobile responsiveness
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setButtonPosition({
-        top: rect.bottom + 8,
-        right: window.innerWidth - rect.right
-      });
+      const isMobile = window.innerWidth < 640; // sm breakpoint
+      
+      // Calculate available space below button
+      const spaceBelow = window.innerHeight - rect.bottom - 8;
+      // Use top positioning if there's enough space, otherwise position from bottom
+      const useTopPositioning = spaceBelow >= 300; // Minimum height needed
+      
+      if (isMobile) {
+        // Center horizontally on mobile
+        if (useTopPositioning) {
+          setButtonPosition({
+            top: rect.bottom + 8,
+            right: Math.max(8, Math.min(window.innerWidth - 320, window.innerWidth / 2 - 160)) // Center with min margin
+          });
+        } else {
+          // Position from bottom of screen if not enough space below
+          setButtonPosition({
+            top: 'auto',
+            bottom: 16,
+            right: Math.max(8, Math.min(window.innerWidth - 320, window.innerWidth / 2 - 160))
+          });
+        }
+      } else {
+        // Regular positioning for larger screens
+        setButtonPosition({
+          top: rect.bottom + 8,
+          right: window.innerWidth - rect.right
+        });
+      }
     }
   }, [isOpen]);
 
@@ -54,6 +80,41 @@ export function Settings({ className }: SettingsProps) {
       }
     }
 
+    function handleResize() {
+      if (isOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const isMobile = window.innerWidth < 640; // sm breakpoint
+        
+        // Calculate available space below button
+        const spaceBelow = window.innerHeight - rect.bottom - 8;
+        // Use top positioning if there's enough space, otherwise position from bottom
+        const useTopPositioning = spaceBelow >= 300; // Minimum height needed
+        
+        if (isMobile) {
+          // Center horizontally on mobile
+          if (useTopPositioning) {
+            setButtonPosition({
+              top: rect.bottom + 8,
+              right: Math.max(8, Math.min(window.innerWidth - 320, window.innerWidth / 2 - 160))
+            });
+          } else {
+            // Position from bottom of screen if not enough space below
+            setButtonPosition({
+              top: 'auto',
+              bottom: 16,
+              right: Math.max(8, Math.min(window.innerWidth - 320, window.innerWidth / 2 - 160))
+            });
+          }
+        } else {
+          // Regular positioning for larger screens
+          setButtonPosition({
+            top: rect.bottom + 8,
+            right: window.innerWidth - rect.right
+          });
+        }
+      }
+    }
+
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -61,13 +122,26 @@ export function Settings({ className }: SettingsProps) {
     }
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", handleResize);
+    
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", handleResize);
+    };
   }, [isOpen]);
 
   const handleToggleAnimationMode = () => {
     const newValue = !animationLightMode;
     setAnimationLightMode(newValue);
-    setCookie('animationLightMode', newValue.toString());
+    
+    // Only set cookie if user has consented
+    const hasConsented = localStorage.getItem('cookie-consent') === 'true';
+    if (hasConsented) {
+      setCookie('animationLightMode', newValue.toString());
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('animationSettingsChanged'));
+    }
   };
 
   useOutsideClick(ref, (event: MouseEvent | TouchEvent) => setIsOpen(false));
@@ -81,32 +155,16 @@ export function Settings({ className }: SettingsProps) {
       >
         {renderIcon(SettingsIcon, { className: "w-5 h-5 text-gray-600 dark:text-gray-400" })}
       </button>
-  
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 backdrop-blur-sm bg-black/20"
-            />
-            <motion.div
-              ref={ref}
-              layoutId={`card-${id}`}
-              initial={{ opacity: 0, scale: 0.9, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: -10 }}
-              style={{
-                position: 'fixed',
-                top: buttonPosition.top,
-                right: buttonPosition.right,
-                zIndex: 60
-              }}
-              className="w-96 bg-white rounded-xl border border-gray-200 shadow-2xl dark:bg-gray-900 dark:border-gray-700"
-            >
-              <ScrollArea className="h-[calc(60vh)]">
-                <div className="p-6">
+      
+      <ExpandableCard
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        buttonPosition={buttonPosition}
+        liquidGlass={true}
+        layoutId={`settings-card-${id}`}
+      >
+        <ScrollArea className="h-[calc(min(60vh,500px))] overflow-y-auto">
+          <div className="p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                       Settings
@@ -125,42 +183,90 @@ export function Settings({ className }: SettingsProps) {
                       <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
                         System Status
                       </h3>
-                      <div className="space-y-3">
+                      <motion.div 
+                        className="space-y-3"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                          hidden: { opacity: 0 },
+                          visible: {
+                            opacity: 1,
+                            transition: {
+                              staggerChildren: 0.05
+                            }
+                          }
+                        }}
+                      >
                         {/* LLM Status */}
-                        <LightweightLLMStatusIndicator
-                          size="sm"
-                          showLogs={false}
-                          className="bg-gray-50 dark:bg-gray-800/30"
-                        />
+                        <motion.div
+                          variants={{
+                            hidden: { opacity: 0, y: 5 },
+                            visible: { opacity: 1, y: 0 }
+                          }}
+                        >
+                          <LightweightLLMStatusIndicator
+                            size="sm"
+                            showLogs={false}
+                            className="bg-gray-50 dark:bg-gray-800/30"
+                          />
+                        </motion.div>
                         
                         {/* LLM Transformer Status */}
-                        <LLMStatusIndicator
-                          size="sm"
-                          showLogs={false}
-                          className="bg-gray-50 dark:bg-gray-800/30"
-                        />
+                        <motion.div
+                          variants={{
+                            hidden: { opacity: 0, y: 5 },
+                            visible: { opacity: 1, y: 0 }
+                          }}
+                        >
+                          <LLMStatusIndicator
+                            size="sm"
+                            showLogs={false}
+                            className="bg-gray-50 dark:bg-gray-800/30"
+                          />
+                        </motion.div>
                         
                         {/* Convex Status */}
-                        <ConvexStatusIndicator
-                          size="sm"
-                          showLogs={false}
-                          className="bg-gray-50 dark:bg-gray-800/30"
-                        />
+                        <motion.div
+                          variants={{
+                            hidden: { opacity: 0, y: 5 },
+                            visible: { opacity: 1, y: 0 }
+                          }}
+                        >
+                          <ConvexStatusIndicator
+                            size="sm"
+                            showLogs={false}
+                            className="bg-gray-50 dark:bg-gray-800/30"
+                          />
+                        </motion.div>
                         
                         {/* Docker Status */}
-                        <DockerStatus
-                          size="sm"
-                          showLogs={false}
-                          className="bg-gray-50 dark:bg-gray-800/30"
-                        />
+                        <motion.div
+                          variants={{
+                            hidden: { opacity: 0, y: 5 },
+                            visible: { opacity: 1, y: 0 }
+                          }}
+                        >
+                          <DockerStatus
+                            size="sm"
+                            showLogs={false}
+                            className="bg-gray-50 dark:bg-gray-800/30"
+                          />
+                        </motion.div>
                         
                         {/* User Count Status */}
-                        <UserCountIndicator
-                          size="sm"
-                          showLogs={false}
-                          className="bg-gray-50 dark:bg-gray-800/30"
-                        />
-                      </div>
+                        <motion.div
+                          variants={{
+                            hidden: { opacity: 0, y: 5 },
+                            visible: { opacity: 1, y: 0 }
+                          }}
+                        >
+                          <UserCountIndicator
+                            size="sm"
+                            showLogs={false}
+                            className="bg-gray-50 dark:bg-gray-800/30"
+                          />
+                        </motion.div>
+                      </motion.div>
                     </div>
                     
                     {/* Settings Section */}
@@ -168,42 +274,66 @@ export function Settings({ className }: SettingsProps) {
                       <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
                         Preferences
                       </h3>
-                      <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                          Animation Light Mode
-                        </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Enable lighter animations for better performance
-                        </p>
-                      </div>
-                      <button
-                        onClick={handleToggleAnimationMode}
-                        className={cn(
-                          "inline-flex relative items-center w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2",
-                          animationLightMode
-                            ? "bg-cyan-600"
-                            : "bg-gray-200 dark:bg-gray-700"
-                        )}
+                      <motion.div 
+                        className="space-y-4"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                          hidden: { opacity: 0 },
+                          visible: {
+                            opacity: 1,
+                            transition: {
+                              delay: 0.1,
+                              staggerChildren: 0.05
+                            }
+                          }
+                        }}
                       >
-                        <span
-                          className={cn(
-                            "inline-block w-4 h-4 bg-white rounded-full transition-transform transform",
-                            animationLightMode ? "translate-x-6" : "translate-x-1"
-                          )}
-                        />
-                      </button>
-                    </div>
-                      </div>
+                        <motion.div 
+                          className="flex justify-between items-center"
+                          variants={{
+                            hidden: { opacity: 0, y: 5 },
+                            visible: { opacity: 1, y: 0 }
+                          }}
+                        >
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                              Animation Light Mode
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Enable lighter animations for better performance
+                            </p>
+                          </div>
+                          <motion.button
+                            onClick={handleToggleAnimationMode}
+                            className={cn(
+                              "inline-flex relative items-center w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2",
+                              animationLightMode
+                                ? "bg-cyan-600"
+                                : "bg-gray-200 dark:bg-gray-700"
+                            )}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <motion.span
+                              layout
+                              transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 30
+                              }}
+                              className={cn(
+                                "inline-block w-4 h-4 bg-white rounded-full transition-transform transform",
+                                animationLightMode ? "translate-x-6" : "translate-x-1"
+                              )}
+                            />
+                          </motion.button>
+                        </motion.div>
+                      </motion.div>
                     </div>
                   </div>
                 </div>
               </ScrollArea>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </ExpandableCard>
     </div>
   );
 }

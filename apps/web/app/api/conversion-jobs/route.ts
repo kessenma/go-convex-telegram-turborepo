@@ -1,5 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * CONVERSION JOBS API ENDPOINT
+ * ============================
+ * 
+ * PURPOSE: Manages conversion job tracking and monitoring
+ * 
+ * USAGE: Tracks the status and progress of document processing jobs
+ * - GET: Retrieves conversion job history with filtering (status, jobType, documentId)
+ * - POST: Creates new conversion job records for tracking
+ * - PUT: Updates existing conversion job status and results
+ * 
+ * USED BY: 
+ * - LLM conversion service to track processing jobs
+ * - Frontend dashboard to monitor job progress
+ * - Analytics and reporting features
+ * 
+ * FLOW: Job Creation → Processing → Status Updates → Completion Tracking
+ * 
+ * RECOMMENDATION: KEEP - Essential for job tracking and monitoring, especially for async operations
+ */
+
 const CONVEX_URL = process.env.CONVEX_URL;
 
 if (!CONVEX_URL) {

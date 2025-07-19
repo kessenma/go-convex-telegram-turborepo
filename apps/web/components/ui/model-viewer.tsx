@@ -60,6 +60,7 @@ export interface ViewerProps {
   fadeIn?: boolean;
   autoRotate?: boolean;
   autoRotateSpeed?: number;
+  animationEnabled?: boolean;
   onModelLoaded?: () => void;
 }
 
@@ -132,6 +133,7 @@ interface ModelInnerProps {
   fadeIn: boolean;
   autoRotate: boolean;
   autoRotateSpeed: number;
+  animationEnabled: boolean;
   onLoaded?: () => void;
 }
 
@@ -152,6 +154,7 @@ const ModelInner: FC<ModelInnerProps> = ({
   fadeIn,
   autoRotate,
   autoRotateSpeed,
+  animationEnabled,
   onLoaded,
 }) => {
   const outer = useRef<THREE.Group>(null!);
@@ -380,6 +383,8 @@ const ModelInner: FC<ModelInnerProps> = ({
   }, [enableMouseParallax, enableHoverRotation]);
 
   useFrame((_, dt) => {
+    if (!animationEnabled) return;
+    
     let need = false;
     cPar.current.x += (tPar.current.x - cPar.current.x) * PARALLAX_EASE;
     cPar.current.y += (tPar.current.y - cPar.current.y) * PARALLAX_EASE;
@@ -455,6 +460,7 @@ const ModelViewer: FC<ViewerProps> = ({
   fadeIn = false,
   autoRotate = false,
   autoRotateSpeed = 0.35,
+  animationEnabled = true,
   onModelLoaded,
 }) => {
   useEffect(() => void useGLTF.preload(url), [url]);
@@ -571,6 +577,7 @@ const ModelViewer: FC<ViewerProps> = ({
             fadeIn={fadeIn}
             autoRotate={autoRotate}
             autoRotateSpeed={autoRotateSpeed}
+            animationEnabled={animationEnabled}
             onLoaded={onModelLoaded}
           />
         </Suspense>

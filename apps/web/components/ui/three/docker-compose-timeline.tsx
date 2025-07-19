@@ -18,14 +18,15 @@ interface AnimatedCubeProps {
     scrollProgress: number;
     isMobile: boolean;
     isVisible: boolean;
+    animationEnabled: boolean;
 }
 
-function AnimatedCube({ service, scrollProgress, isMobile, isVisible }: AnimatedCubeProps) {
+function AnimatedCube({ service, scrollProgress, isMobile, isVisible, animationEnabled }: AnimatedCubeProps) {
     const groupRef = useRef<THREE.Group>(null!);
     const { addLog } = useArchitectureStore();
 
     useFrame((state) => {
-        if (!groupRef.current || !isVisible) return;
+        if (!groupRef.current || !isVisible || !animationEnabled) return;
 
         // Smooth easing function
         const easeInOutCubic = (t: number): number => {
@@ -38,9 +39,11 @@ function AnimatedCube({ service, scrollProgress, isMobile, isVisible }: Animated
         const currentPos = service.startPosition.clone().lerp(service.endPosition, easedProgress);
         groupRef.current.position.copy(currentPos);
 
-        // Slower cube rotation for better performance
-        groupRef.current.rotation.x += 0.005;
-        groupRef.current.rotation.y += 0.005;
+        if (animationEnabled) {
+            // Slower cube rotation for better performance
+            groupRef.current.rotation.x += 0.005;
+            groupRef.current.rotation.y += 0.005;
+        }
 
         // Optimize material updates - only update when opacity changes significantly
         const opacity = Math.min(1, easedProgress * 2);
@@ -127,8 +130,9 @@ const dockerServices: DockerService[] = [
 export function DockerComposeTimeline({
     width = '100%',
     height = 600,
-    className = ''
-}: { width?: number | string; height?: number; className?: string }) {
+    className = '',
+    animationEnabled = true
+}: { width?: number | string; height?: number; className?: string; animationEnabled?: boolean }) {
     const { scrollProgress, secondTimelineActive, dockerComposeTimelineVisible, setDockerComposeTimelineVisible, addLog } = useArchitectureStore();
     
     // Use intersection observer for performance
@@ -191,6 +195,7 @@ export function DockerComposeTimeline({
                             scrollProgress={scrollProgress}
                             isMobile={isMobile}
                             isVisible={isIntersecting}
+                            animationEnabled={animationEnabled}
                         />
                     ))}
                 </Canvas>

@@ -16,7 +16,7 @@ const statusColors = {
 };
 
 const statusSizes = {
-  sm: "w-2 h-2",
+  sm: "w-z h-2",
   md: "w-3 h-3",
   lg: "w-4 h-4"
 };
@@ -34,7 +34,7 @@ export const StatusIndicator = ({
   className
 }: StatusIndicatorProps) => {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex gap-2 items-center", className)}>
       <div className={cn(
         "rounded-full animate-pulse",
         statusColors[status],

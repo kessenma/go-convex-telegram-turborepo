@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useQuery } from "convex/react";
-import { api } from "../../convexApi1752607591403";
+import { api } from "../../generated-convex";
 import { TelegramThread } from "../../models/telegram";
 import { Hero } from "../../components/ui/hero";
 import { Card } from "../../components/ui/card";

@@ -14,16 +14,23 @@ import { useArchitectureStore } from "../../stores/architecture-store";
 import { useEffect, useRef, useState } from "react";
 import { useIntersectionObserver } from "../../hooks/use-intersection-observer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../../components/ui/accordion";
-import { Car, Check, Copy, ExternalLink } from "lucide-react";
+import { Car, Check, Copy, ExternalLink, Terminal as TerminalIcon, Play, Code, Key, FileText } from "lucide-react";
+import { SetupScriptDemo } from "../../components/ui/helper-demos/setup-script-demo";
+import { ContainerManagementDemo } from "../../components/ui/helper-demos/container-management-demo";
+import { DeployApiDemo } from "../../components/ui/helper-demos/deploy-api-demo";
+import { AdminKeyDemo } from "../../components/ui/helper-demos/admin-key-demo";
+import { LogsDemo } from "../../components/ui/helper-demos/logs-demo";
 import { TextShimmer } from '../../components/ui/text-animations/text-shimmer';
 import TrueFocus from '../../components/ui/text-animations/true-focus';
 import DecryptedText from '../../components/ui/text-animations/decrypted-text';
+import { BackgroundWhale } from '../../components/ui/three/background-whale';
 
 export default function ArchitecturePage(): React.ReactElement {
   const { animationEnabled } = useAnimationSettings();
   const { setFirstTimelineActive, setSecondTimelineActive, setScrollProgress } = useArchitectureStore();
   const secondTimelineRef = useRef<HTMLDivElement>(null);
   const [copiedItems, setCopiedItems] = useState<Record<string, boolean>>({});
+  const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
 
   useEffect(() => {
     function handleScroll() {
@@ -75,10 +82,10 @@ export default function ArchitecturePage(): React.ReactElement {
       >
         {/* Sparkles Effect - Centered */}
         <div className="flex overflow-hidden relative justify-center items-center mx-auto -mt-6 -mb-40 w-full max-w-3xl h-40 rounded-md">
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bg-gradient-to-r from-transparent via-cyan-200 to-transparent h-[2px] w-3/4 blur-sm" />
-          <div className="absolute top-0 left-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent transform -translate-x-1/2" />
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bg-gradient-to-r from-transparent via-cyan-500 to-transparent h-[5px] w-1/4 blur-sm" />
-          <div className="absolute top-0 left-1/2 w-1/4 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent transform -translate-x-1/2" />
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bg-gradient-to-r from-transparent via-white to-transparent h-[2px] w-3/4 blur-sm" />
+          <div className="absolute top-0 left-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-white to-transparent transform -translate-x-1/2" />
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bg-gradient-to-r from-transparent via-white to-transparent h-[5px] w-1/4 blur-sm" />
+          <div className="absolute top-0 left-1/2 w-1/4 h-px bg-gradient-to-r from-transparent via-white to-transparent transform -translate-x-1/2" />
 
           <SparklesCore
             id="tsparticles-data"
@@ -101,8 +108,17 @@ export default function ArchitecturePage(): React.ReactElement {
         <ArchitectureTimeline height={600} />
       </div>
 
+      {/* Background Whale - Positioned behind Docker content, ends before Deployment Details */}
+      <div className="absolute left-0 right-0 -mt-96 pointer-events-none z-0">
+        <BackgroundWhale
+          height={typeof window !== 'undefined' ? window.innerHeight * 2.5 : 1200} // Reduced height to end before Deployment Details
+          animationEnabled={animationEnabled}
+          className="opacity-40"
+        />
+      </div>
+
       {/* Docker Infrastructure Overview */}
-      <div className="mx-auto max-w-4xl">
+      <div className="relative mx-auto max-w-4xl z-10">
         <div className="p-8 rounded-2xl border backdrop-blur-sm bg-slate-800/30 border-slate-700/30">
           <div className="flex items-center mb-6">
             <div className="flex justify-center items-center mr-4 w-10 h-10 rounded-lg bg-blue-600/20">
@@ -119,42 +135,188 @@ export default function ArchitecturePage(): React.ReactElement {
               contains its own <code className="px-2 py-1 text-sm text-cyan-300 rounded bg-slate-700">Dockerfile</code> that connects to the central <code className="px-2 py-1 text-sm text-cyan-300 rounded bg-slate-700">docker-compose.yaml </code>.
             </p>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-3">
-                <h4 className="font-medium text-white">Quick Setup</h4>
-                <div className="flex items-center p-3 space-x-2 rounded-lg border bg-slate-900/50 border-slate-600/30">
-                  <code className="flex-1 font-mono text-sm text-cyan-300">pnpm setup-init</code>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText('pnpm setup-init');
-                      setCopiedItems({...copiedItems, 'setup-init': true});
-                      setTimeout(() => setCopiedItems(prev => ({...prev, 'setup-init': false})), 2000);
-                    }}
-                    className="p-1.5 text-gray-400 hover:text-white transition-colors rounded"
-                    title="Copy command"
-                  >
-                    {copiedItems['setup-init'] ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+            {/* Custom Helper Scripts Section */}
+            <div className="pt-4 border-t border-slate-700/50">
+              <h4 className="mb-4 text-lg font-semibold text-white">Custom Helper Scripts</h4>
+              <p className="mb-6 text-sm text-gray-400">
+                Automated scripts that handle complex setup, deployment, and management tasks with a single command.
+              </p>
 
-              <div className="space-y-3">
-                <h4 className="font-medium text-white">Container Management</h4>
-                <div className="flex items-center p-3 space-x-2 rounded-lg border bg-slate-900/50 border-slate-600/30">
-                  <code className="flex-1 font-mono text-sm text-cyan-300">pnpm docker:manage</code>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText('pnpm docker:manage');
-                      setCopiedItems({...copiedItems, 'docker-manage': true});
-                      setTimeout(() => setCopiedItems(prev => ({...prev, 'docker-manage': false})), 2000);
-                    }}
-                    className="p-1.5 text-gray-400 hover:text-white transition-colors rounded"
-                    title="Copy command"
-                  >
-                    {copiedItems['docker-manage'] ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+              <Accordion
+                className="space-y-3"
+                expandedValue={expandedAccordion}
+                onValueChange={setExpandedAccordion}
+              >
+                <AccordionItem value="setup-script" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-blue-600/20">
+                          <TerminalIcon className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <div className="text-left">
+                          <h5 className="font-medium text-white">Automated Setup</h5>
+                          <p className="text-xs text-gray-400">Complete environment configuration</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm setup-init</code>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText('pnpm setup-init');
+                            setCopiedItems({ ...copiedItems, 'setup-init': true });
+                            setTimeout(() => setCopiedItems(prev => ({ ...prev, 'setup-init': false })), 2000);
+                          }}
+                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          title="Copy command"
+                        >
+                          {copiedItems['setup-init'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <SetupScriptDemo isVisible={expandedAccordion === "setup-script"} />
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="container-management" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-purple-600/20">
+                          <Play className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div className="text-left">
+                          <h5 className="font-medium text-white">Container Management</h5>
+                          <p className="text-xs text-gray-400">Docker service monitoring and control</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm docker:manage</code>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText('pnpm docker:manage');
+                            setCopiedItems({ ...copiedItems, 'docker-manage': true });
+                            setTimeout(() => setCopiedItems(prev => ({ ...prev, 'docker-manage': false })), 2000);
+                          }}
+                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          title="Copy command"
+                        >
+                          {copiedItems['docker-manage'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <ContainerManagementDemo isVisible={expandedAccordion === "container-management"} />
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="api-deployment" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-cyan-600/20">
+                          <Code className="w-4 h-4 text-cyan-400" />
+                        </div>
+                        <div className="text-left">
+                          <h5 className="font-medium text-white">API Generation</h5>
+                          <p className="text-xs text-gray-400">TypeScript API definitions from Convex</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm convex:deploy-api</code>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText('pnpm convex:deploy-api');
+                            setCopiedItems({ ...copiedItems, 'deploy-api': true });
+                            setTimeout(() => setCopiedItems(prev => ({ ...prev, 'deploy-api': false })), 2000);
+                          }}
+                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          title="Copy command"
+                        >
+                          {copiedItems['deploy-api'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <DeployApiDemo isVisible={expandedAccordion === "api-deployment"} />
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="admin-key" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-amber-600/20">
+                          <Key className="w-4 h-4 text-amber-400" />
+                        </div>
+                        <div className="text-left">
+                          <h5 className="font-medium text-white">Admin Key Generation</h5>
+                          <p className="text-xs text-gray-400">Secure Convex dashboard credentials</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm get-admin-key</code>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText('pnpm get-admin-key');
+                            setCopiedItems({ ...copiedItems, 'admin-key': true });
+                            setTimeout(() => setCopiedItems(prev => ({ ...prev, 'admin-key': false })), 2000);
+                          }}
+                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          title="Copy command"
+                        >
+                          {copiedItems['admin-key'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <AdminKeyDemo isVisible={expandedAccordion === "admin-key"} />
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="logs-monitoring" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-emerald-600/20">
+                          <FileText className="w-4 h-4 text-emerald-400" />
+                        </div>
+                        <div className="text-left">
+                          <h5 className="font-medium text-white">Log Monitoring</h5>
+                          <p className="text-xs text-gray-400">Centralized service log collection</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm docker:logs-all</code>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText('pnpm docker:logs-all');
+                            setCopiedItems({ ...copiedItems, 'logs-all': true });
+                            setTimeout(() => setCopiedItems(prev => ({ ...prev, 'logs-all': false })), 2000);
+                          }}
+                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          title="Copy command"
+                        >
+                          {copiedItems['logs-all'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <LogsDemo isVisible={expandedAccordion === "logs-monitoring"} />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
 
             <div className="pt-4 border-t border-slate-700/50">
@@ -190,17 +352,19 @@ export default function ArchitecturePage(): React.ReactElement {
         <DockerComposeTimeline height={600} />
       </div>
 
+
+
       {/* Container Assembly */}
-      <div className="mx-auto max-w-6xl">
+      <div className="relative mx-auto max-w-6xl z-10">
         <div className="mb-24 text-center">
           <h2 className="text-3xl font-bold text-white">One .env file</h2>
-          <p className="mx-auto -mb-64 max-w-3xl text-lg leading-relaxed text-gray-300">
+          <div className="mx-auto -mb-64 max-w-3xl text-lg leading-relaxed text-gray-300">
             {(() => {
               const { ref, isIntersecting } = useIntersectionObserver({
                 triggerOnce: true,
                 threshold: 0.2
               });
-              
+
               return (
                 <div ref={ref}>
                   <TextShimmer
@@ -213,7 +377,7 @@ export default function ArchitecturePage(): React.ReactElement {
                 </div>
               );
             })()}
-          </p>
+          </div>
         </div>
         <div className="relative" style={{ height: '600px' }}>
           <Container height={600} />
@@ -227,7 +391,7 @@ export default function ArchitecturePage(): React.ReactElement {
                 triggerOnce: true,
                 threshold: 0.2
               });
-              
+
               return (
                 <div ref={ref}>
                   <TrueFocus
@@ -246,14 +410,14 @@ export default function ArchitecturePage(): React.ReactElement {
             })()}
 
             <p className="text-sm leading-relaxed text-gray-400">
-              All services communicate through a secure Docker network, preventing external access to internal APIs when deploying locally. The only external connection is to the Telegram bot via the API key provided. 
+              All services communicate through a secure Docker network, preventing external access to internal APIs when deploying locally. The only external connection is to the Telegram bot via the API key provided.
             </p>
           </div>
           <div className="p-6 rounded-xl border bg-slate-800/30 border-slate-700/30">
             <h3 className="mb-3 text-lg font-semibold text-center text-white">TurboRepo MonoRepo</h3>
             <div className="relative">
               <div className="float-left flex-shrink-0 mr-3 mb-2 w-8 h-8">
-                <img 
+                <img
                   src="/turborepo.svg"
                   alt="TurboRepo MonoRepo"
                   className="w-full"
@@ -267,7 +431,7 @@ export default function ArchitecturePage(): React.ReactElement {
           <div className="p-6 rounded-xl border bg-slate-800/30 border-slate-700/30">
             <h3 className="mb-3 text-lg font-semibold text-center text-white">Go Telegram Bot</h3>
             <p className="text-sm leading-relaxed text-gray-400">
-             The Golang Telegram Bot only has one job: to intercept all messages and forward them to the Convex backend. Then the Next.js app can use the same Telegram Bot API key to send messages. 
+              The Golang Telegram Bot only has one job: to intercept all messages and forward them to the Convex backend. Then the Next.js app can use the same Telegram Bot API key to send messages.
             </p>
             <div className="flex justify-center items-center mb-3 space-x-6">
               <div className="flex-shrink-0 w-8 h-8">
@@ -284,12 +448,11 @@ export default function ArchitecturePage(): React.ReactElement {
         </div>
       </div>
 
-
       {/* LLM & Vector Services Section */}
       <div className="object-center relative m-auto mt-32 mb-16">
         <div className="relative z-20 mb-8 text-left">
           <h2 className="mb-4 max-w-3xl text-2xl font-bold text-white">When the system is connected</h2>
-          <p className="-mb-60 text-gray-300"> Text documents are processed into vector embeddings using the mini-llm-v6 sentence transformer, and natural language responses are generated using the DistillGpt2 model.</p>
+          <div className="-mb-60 text-gray-300">Text documents are processed into vector embeddings using the mini-llm-v6 sentence transformer, and natural language responses are generated using the DistillGpt2 model.</div>
         </div>
         <div className="relative" style={{ height: '200vh' }}>
           <Activate height={600} />
@@ -364,10 +527,10 @@ export default function ArchitecturePage(): React.ReactElement {
                 triggerOnce: true,
                 threshold: 0.2
               });
-              
+
               return (
                 <div ref={ref}>
-                  <DecryptedText 
+                  <DecryptedText
                     text="Cloud Deployment"
                     className="text-3xl font-bold text-white"
                     animateOn="view"
@@ -379,9 +542,9 @@ export default function ArchitecturePage(): React.ReactElement {
               );
             })()}
           </div>
-          <p className="mx-auto max-w-3xl text-lg leading-relaxed text-gray-300">
-            Since everything is containerized, deploying this RAG chatbot to your cloud provider of choice is quite easy. 
-          </p>
+          <div className="mx-auto max-w-3xl text-lg leading-relaxed text-gray-300">
+            Since everything is containerized, deploying this RAG chatbot to your cloud provider of choice is quite easy.
+          </div>
         </div>
         <CoolifyTimeline height={600} />
 
@@ -389,25 +552,25 @@ export default function ArchitecturePage(): React.ReactElement {
         <div className="grid grid-cols-1 gap-6 mt-12 md:grid-cols-2 lg:grid-cols-4">
           <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
             <h3 className="mb-3 text-lg font-semibold text-cyan-300">Thoughtful State Management</h3>
-            <p className="text-sm leading-relaxed text-cyan-200/80">
-              Zustand is used to manage client side application state in Next.js. GoLang manages a chronological process queue for incoming messages to be saved to the Convex database. Convex comes with built-in web-sockets for real-time data updates, and the python apps are stateless and will only accept one request at a time. if a process (chat generation or vector conversion) is currently running new processes will be denied till the current process is done. 
+            <p className="text-sm leading-relaxed text-cyan-200/90">
+              Zustand is used to manage client side application state in Next.js. GoLang manages a chronological process queue for incoming messages to be saved to the Convex database. Convex comes with built-in web-sockets for real-time data updates, and the python apps are stateless and will only accept one request at a time. if a python process (chat generation or vector conversion) is currently running new processes will be denied till the current process is done.
             </p>
           </div>
-            <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
-            <h3 className="mb-3 text-lg font-semibold text-green-100">Health Monitoring</h3>
-            <p className="text-sm leading-relaxed text-green-200/80">
-              The settings modal include docker container health checks for the Convex database and the LLM + vector sentence transformer. Checks are every 30 seconds. 
+          <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
+            <h3 className="mb-3 text-lg font-semibold text-cyan-200">Health Monitoring</h3>
+            <p className="text-sm leading-relaxed text-cyan-200/90">
+              The settings modal include docker container health checks for the Convex database and the LLM + vector sentence transformer. Checks are every 30 seconds.
             </p>
           </div>
-           <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
-            <h3 className="mb-3 text-lg font-semibold text-blue-100">Ready to integrate Telegram Bot</h3>
-            <p className="text-sm leading-relaxed text-blue-200/80">
-            The Telegram bot is not currently connected to the LLM yet. I was not sure if I wanted to allow uploading documents from the Telegram bot or how to integrate it with the LLM. It works as a stand alone messaging application currently and text messages are saved. Media (audio notes, picture/video) are not saved currently. One of my goals when building this was to allow organizations to self-host this app in their local docker containers and then connect their app to the world using the Telegram Bot.
+          <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
+            <h3 className="mb-3 text-lg font-semibold text-cyan-100">Ready to integrate Telegram Bot</h3>
+            <p className="text-sm leading-relaxed text-cyan-200/90">
+              The Telegram bot is not currently connected to the LLM yet. I was not sure if I wanted to allow uploading documents from the Telegram bot or how to integrate it with the LLM. It works as a stand alone messaging application currently and text messages are saved. Media (audio notes, picture/video) are not saved currently. One of my goals when building this was to allow organizations to self-host this app in their local docker containers and then connect their app to the world using the Telegram Bot.
             </p>
           </div>
-            <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
-            <h3 className="mb-3 text-lg font-semibold text-white">Modern backend server languages</h3>
-            <p className="text-sm leading-relaxed text-white">
+          <div className="p-6 bg-gradient-to-br rounded-xl border border-cyan-900 from-cyan-0/20 to-cyan-900/20">
+            <h3 className="mb-3 text-lg font-semibold text-cyan-50">Modern backend server languages</h3>
+            <p className="text-sm leading-relaxed text-cyan-200/90">
               The Telegram bot runs on a Golang server, and Convex + TurboRepo both are built with Rust. Python (not that efficient) is only used for LLM services.
             </p>
           </div>

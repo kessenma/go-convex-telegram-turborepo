@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useId } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
-import { api } from "../convexApi1752607591403";
+import { api } from "../generated-convex";
 import { StatusIndicator } from "./ui/status-indicator";
 import { useLLMStatus } from "../hooks/use-status-operations";
 import { useConvexStatus } from "../hooks/use-status-operations";
 import { Bot, HouseWifi, MessagesSquare, DatabaseZapIcon, Upload, Layers, ChevronDown, ExternalLink, Info, Blocks, MessageSquareShare, MessageSquareText, BotMessageSquare, Library } from 'lucide-react';
 import { renderIcon } from "../lib/icon-utils";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Settings } from "./Settings";
 import { Notifications } from "./Notifications";
 import MobileNavigation from "./mobile-navigation";
@@ -20,6 +20,9 @@ export default function Navigation(): React.ReactNode {
   const [isScrolled, setIsScrolled] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [dropdownDimensions, setDropdownDimensions] = useState<{[key: string]: {height: number, width: number}}>({});
+  const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const id = useId();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -186,7 +189,7 @@ interface NavItem {
                   onClick={() => handleItemClick(item)}
                   className={`relative px-3 py-2 rounded-lg transition-colors duration-200 font-medium flex items-center gap-2 ${
                     isActive 
-                      ? 'text-cyan-500 bg-slate-900' 
+                      ? 'text-cyan-500 bg-slate-950' 
                       : 'text-white/80 hover:text-cyan-300'
                   }`}
                   style={{
@@ -230,61 +233,108 @@ interface NavItem {
                   </span>
                 </button>
                 
-                {/* Dropdown with buffer zone */}
-                 {(isMessages || item.label === "Console" || isRAG || isHome) && isHovered && item.dropdown && (
-                   <>
-                     {/* Invisible buffer zone */}
-                     <div className="absolute left-0 top-full z-40 w-48 h-4" />
-                     <motion.div
-                       initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                       animate={{ opacity: 1, scale: 1, y: 0 }}
-                       exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                       transition={{ duration: 0.2 }}
-                       className="absolute left-0 top-full z-50 mt-4 w-48 rounded-lg border shadow-lg backdrop-blur-sm bg-black/90 border-white/10"
-                       data-dropdown
-                       onMouseEnter={() => setHoveredItem(item.label)}
-                       onMouseLeave={() => setHoveredItem(null)}
-                     >
-                       {item.dropdown.map((dropdownItem, index) => (
-                         <button
-                           key={dropdownItem.href}
-                           onClick={() => handleDropdownClick(dropdownItem.href, dropdownItem.external)}
-                           className={`flex items-center justify-between px-4 py-2 w-full text-left transition-colors ${
-                             dropdownItem.href === pathname 
-                               ? 'text-cyan-500 bg-slate-900/50' 
-                               : 'text-white/80 hover:text-white hover:bg-white/10'
-                           } ${
-                             index === 0 ? 'rounded-t-lg' : ''
-                           } ${
-                             index === item.dropdown!.length - 1 ? 'rounded-b-lg' : ''
-                           }`}
-                         >
-                           <div className="flex gap-2 items-center">
-                             {dropdownItem.icon && renderIcon(dropdownItem.icon as any, { className: "w-3 h-3" })}
-                             {dropdownItem.label}
-                           </div>
-                           {isMessages && dropdownItem.href === "/messages" && messageCount > 0 && (
-                             <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
-                               {messageCount}
-                             </span>
-                           )}
-                           {isMessages && dropdownItem.href === "/threads" && threadCount > 0 && (
-                             <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
-                               {threadCount}
-                             </span>
-                           )}
-                           {isRAG && dropdownItem.href === "/RAG-data" && (documentStats?.totalDocuments || 0) > 0 && (
-                             <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
-                               {documentStats?.totalDocuments || 0}
-                             </span>
-                           )}
-                           {isHome && dropdownItem.href === "/about" }
-                           {isArchitecture && dropdownItem.href === "/architecture" }
-                         </button>
-                       ))}
-                     </motion.div>
-                   </>
-                 )}
+                {/* Content-aware dropdown menu with L-shape animation */}
+                <AnimatePresence>
+                  {(isMessages || item.label === "Console" || isRAG || isHome) && isHovered && item.dropdown && (
+                    <>
+                      <motion.div 
+                        ref={(el) => {
+                          if (el) {
+                            dropdownRefs.current[item.label] = el;
+                            // Measure content after render
+                            setTimeout(() => {
+                              const rect = el.getBoundingClientRect();
+                              setDropdownDimensions(prev => ({
+                                ...prev,
+                                [item.label]: { height: rect.height, width: rect.width }
+                              }));
+                            }, 0);
+                          }
+                        }}
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        transition={{ duration: 0.15 }}
+                        className="overflow-hidden absolute left-0 top-full z-[90] mt-1 w-48 rounded-lg shadow-lg bg-slate-950"
+                        data-dropdown
+                        onMouseEnter={() => setHoveredItem(item.label)}
+                        onMouseLeave={() => setHoveredItem(null)}
+                      >
+                        {item.dropdown.map((dropdownItem, index) => (
+                          <button
+                            key={dropdownItem.href}
+                            onClick={() => handleDropdownClick(dropdownItem.href, dropdownItem.external)}
+                            className={`flex items-center justify-between px-4 py-2 w-full text-left transition-colors ml-1 ${
+                              dropdownItem.href === pathname 
+                                ? 'text-cyan-500 bg-slate-900/50' 
+                                : 'text-white/80 hover:text-white hover:bg-white/10'
+                            }`}
+                          >
+                            <div className="flex gap-2 items-center">
+                              {dropdownItem.icon && renderIcon(dropdownItem.icon as any, { className: "w-3 h-3" })}
+                              {dropdownItem.label}
+                            </div>
+                            {isMessages && dropdownItem.href === "/messages" && messageCount > 0 && (
+                              <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
+                                {messageCount}
+                              </span>
+                            )}
+                            {isMessages && dropdownItem.href === "/threads" && threadCount > 0 && (
+                              <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
+                                {threadCount}
+                              </span>
+                            )}
+                            {isRAG && dropdownItem.href === "/RAG-data" && (documentStats?.totalDocuments || 0) > 0 && (
+                              <span className="px-1.5 py-0.5 text-xs bg-cyan-500 text-slate-950 rounded-full">
+                                {documentStats?.totalDocuments || 0}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </motion.div>
+                      
+                      {/* Content-aware animated vertical line */}
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ 
+                          height: dropdownDimensions[item.label]?.height || (item.dropdown.length * 40), 
+                          opacity: 1 
+                        }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ 
+                          type: "spring", 
+                          stiffness: 300, 
+                          damping: 30,
+                          opacity: { duration: 0.2 }
+                        }}
+                        className="absolute left-4 top-full z-[100] w-[1px] bg-white/70"
+                        style={{ pointerEvents: "none" }}
+                      />
+                      
+                      {/* Content-aware animated horizontal line */}
+                      <motion.div 
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ 
+                          width: dropdownDimensions[item.label]?.width || 192, // 192px = w-48
+                          opacity: 1 
+                        }}
+                        exit={{ width: 0, opacity: 0 }}
+                        transition={{ 
+                          type: "spring", 
+                          stiffness: 300, 
+                          damping: 30,
+                          delay: 0.2,
+                          opacity: { duration: 0.2, delay: 0.2 }
+                        }}
+                        className="absolute left-4 z-[100] h-[1px] bg-white/70"
+                        style={{ 
+                          pointerEvents: "none",
+                          top: `calc(100% + ${dropdownDimensions[item.label]?.height || (item.dropdown.length * 40)}px + 4px)`
+                        }}
+                      />
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
             );
           })}

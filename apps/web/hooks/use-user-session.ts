@@ -5,8 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 /**
  * Hook to manage user sessions for tracking active users
  * Automatically creates and maintains a session when the user visits the site
+ * @param enabled - Whether to enable session tracking (defaults to true)
  */
-export function useUserSession() {
+export function useUserSession(enabled: boolean = true) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -92,7 +93,7 @@ export function useUserSession() {
 
   // Initialize session on mount
   useEffect(() => {
-    if (sessionCreatedRef.current) return;
+    if (sessionCreatedRef.current || !enabled) return;
     
     const newSessionId = generateSessionId();
     setSessionId(newSessionId);
@@ -102,10 +103,10 @@ export function useUserSession() {
       if (success) {
         sessionCreatedRef.current = true;
         
-        // Start heartbeat interval (every 2 minutes)
+        // Start heartbeat interval (every 1 minute for more responsive tracking)
         heartbeatIntervalRef.current = setInterval(() => {
           sendHeartbeat(newSessionId);
-        }, 2 * 60 * 1000); // 2 minutes
+        }, 60 * 1000); // 1 minute
       }
     });
 
@@ -113,15 +114,17 @@ export function useUserSession() {
     return () => {
       if (heartbeatIntervalRef.current) {
         clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = null;
       }
-      if (newSessionId && isActive) {
-        endSession(newSessionId);
-      }
+      // Remove problematic cleanup that accesses isActive from closure
+      // Session will expire naturally via server-side timeout
     };
-  }, []);
+  }, [enabled]);
 
   // Handle page visibility changes
   useEffect(() => {
+    if (!enabled) return;
+    
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // Page is hidden, pause heartbeat
@@ -134,7 +137,7 @@ export function useUserSession() {
         if (sessionId && isActive && !heartbeatIntervalRef.current) {
           heartbeatIntervalRef.current = setInterval(() => {
             sendHeartbeat(sessionId);
-          }, 2 * 60 * 1000);
+          }, 60 * 1000); // 1 minute
         }
       }
     };
@@ -144,27 +147,44 @@ export function useUserSession() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [sessionId, isActive]);
+  }, [sessionId, isActive, enabled]);
 
-  // Handle beforeunload to end session
+  // Handle beforeunload and page visibility to end session
   useEffect(() => {
+    if (!enabled) return;
+    
     const handleBeforeUnload = () => {
       if (sessionId && isActive) {
         // Use navigator.sendBeacon for reliable cleanup
-        navigator.sendBeacon('/api/users/active-count', JSON.stringify({
+        const data = new Blob([JSON.stringify({
           sessionId,
           source: 'web',
           action: 'end'
-        }));
+        })], { type: 'application/json' });
+        navigator.sendBeacon('/api/users/active-count', data);
+      }
+    };
+
+    const handlePageHide = () => {
+      if (sessionId && isActive) {
+        // Additional cleanup on page hide (mobile browsers)
+        const data = new Blob([JSON.stringify({
+          sessionId,
+          source: 'web',
+          action: 'end'
+        })], { type: 'application/json' });
+        navigator.sendBeacon('/api/users/active-count', data);
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
     };
-  }, [sessionId, isActive]);
+  }, [sessionId, isActive, enabled]);
 
   return {
     sessionId,

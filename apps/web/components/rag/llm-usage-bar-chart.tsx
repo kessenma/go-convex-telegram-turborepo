@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLLMStatus } from "../../hooks/use-status-operations";
 
 interface UsageSample {
   timestamp: number;
@@ -19,33 +20,55 @@ export const LLMUsageBarChart: React.FC<LLMUsageBarChartProps> = ({
   const [samples, setSamples] = useState<UsageSample[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const { status: llmStatus } = useLLMStatus();
+
   useEffect(() => {
-    let mounted = true;
-    const fetchUsage = async () => {
-      try {
-        const res = await fetch("/api/llm/status");
-        const data = await res.json();
-        const usage = data.memory_usage || {};
-        if (usage.process_memory_mb !== undefined && usage.process_cpu_percent !== undefined) {
-          setSamples(prev => {
-            const next = [
-              ...prev,
-              {
-                timestamp: Date.now(),
-                memory: usage.process_memory_mb,
-                cpu: usage.process_cpu_percent
-              }
-            ];
-            return next.length > maxSamples ? next.slice(next.length - maxSamples) : next;
-          });
-        }
-      } catch {}
-    };
-    fetchUsage();
-    timerRef.current = setInterval(fetchUsage, pollIntervalMs);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    // Extract usage data from centralized LLM status
+    const usage = llmStatus.memory_usage || {};
+    if (usage.process_memory_mb !== undefined && usage.process_cpu_percent !== undefined) {
+      setSamples(prev => {
+        const next = [
+          ...prev,
+          {
+            timestamp: Date.now(),
+            memory: usage.process_memory_mb as number,
+            cpu: usage.process_cpu_percent as number
+          }
+        ];
+        return next.length > maxSamples ? next.slice(next.length - maxSamples) : next;
+      });
+    }
+  }, [llmStatus.memory_usage, maxSamples]);
+
+  // Optional: Still allow manual polling for high-frequency updates
+  useEffect(() => {
+    if (pollIntervalMs <= 5000) { // Only for high-frequency polling (5s or less)
+      const fetchUsage = async () => {
+        try {
+          const res = await fetch("/api/llm/status");
+          const data = await res.json();
+          const usage = data.memory_usage || {};
+           if (usage.process_memory_mb !== undefined && usage.process_cpu_percent !== undefined) {
+             setSamples(prev => {
+               const next = [
+                 ...prev,
+                 {
+                   timestamp: Date.now(),
+                   memory: usage.process_memory_mb as number,
+                   cpu: usage.process_cpu_percent as number
+                 }
+               ];
+               return next.length > maxSamples ? next.slice(next.length - maxSamples) : next;
+             });
+          }
+        } catch {}
+      };
+      
+      timerRef.current = setInterval(fetchUsage, pollIntervalMs);
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+    }
   }, [pollIntervalMs, maxSamples]);
 
   // Find max for scaling

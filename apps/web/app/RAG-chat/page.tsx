@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../convexApi1752607591403";
+import { api } from "../../generated-convex";
 import { DocumentSelector } from "./components/DocumentSelector";
 import { ChatInterface } from "./components/ChatInterface";
 import { ChatHistory } from "./components/ChatHistory";

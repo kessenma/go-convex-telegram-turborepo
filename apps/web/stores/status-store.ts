@@ -315,11 +315,11 @@ export const useStatusStore = create<StatusStore>()(devtools(
       userCount: 0
     },
     pollingIntervals: {
-      llm: 60000, // 60 seconds default (reduced frequency)
-      lightweightLlm: 60000, // 60 seconds default (reduced frequency)
-      convex: 90000, // 90 seconds default (significantly reduced for Convex)
-      docker: 60000, // 60 seconds default for Docker (increased from 30s)
-      userCount: 45000 // 45 seconds default for user count (reduced frequency)
+      llm: 120000, // 2 minutes default (further reduced frequency)
+      lightweightLlm: 120000, // 2 minutes default (further reduced frequency)
+      convex: 180000, // 3 minutes default (significantly reduced for Convex)
+      docker: 150000, // 2.5 minutes default for Docker
+      userCount: 90000 // 1.5 minutes default for user count
     },
     
     // Basic setters
@@ -482,12 +482,12 @@ export const useStatusStore = create<StatusStore>()(devtools(
     // Polling interval management
     updateLLMPollingInterval: () => {
       const { llmStatus, consecutiveErrors } = get();
-      let interval = 60000; // Default 60 seconds (reduced frequency)
+      let interval = 120000; // Default 2 minutes (further reduced frequency)
       
       if (llmStatus.status === 'healthy' && llmStatus.ready && consecutiveErrors.llm === 0) {
-        interval = 120000; // 2 minutes for stable connections
+        interval = 300000; // 5 minutes for stable connections
       } else if (consecutiveErrors.llm > 0) {
-        interval = 30000; // 30 seconds when there are issues
+        interval = 60000; // 1 minute when there are issues
       }
       
       set(
@@ -499,12 +499,12 @@ export const useStatusStore = create<StatusStore>()(devtools(
     
     updateLightweightLlmPollingInterval: () => {
       const { lightweightLlmStatus, consecutiveErrors } = get();
-      let interval = 60000; // Default 60 seconds (reduced frequency)
+      let interval = 120000; // Default 2 minutes (further reduced frequency)
       
       if (lightweightLlmStatus.status === 'healthy' && lightweightLlmStatus.ready && consecutiveErrors.lightweightLlm === 0) {
-        interval = 120000; // 2 minutes for stable connections
+        interval = 300000; // 5 minutes for stable connections
       } else if (consecutiveErrors.lightweightLlm > 0) {
-        interval = 30000; // 30 seconds when there are issues
+        interval = 60000; // 1 minute when there are issues
       }
       
       set(

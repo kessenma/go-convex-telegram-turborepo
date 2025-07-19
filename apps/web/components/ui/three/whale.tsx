@@ -9,12 +9,12 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { useArchitectureStore } from '../../../stores/architecture-store';
 import { useIntersectionObserver } from '../../../hooks/use-intersection-observer';
 
-function FallbackWhale({ scrollProgress, isVisible }: { scrollProgress: number; isVisible: boolean }) {
+function FallbackWhale({ scrollProgress, isVisible, animationEnabled }: { scrollProgress: number; isVisible: boolean; animationEnabled: boolean }) {
     const groupRef = useRef<THREE.Group>(null!);
     const { addLog } = useArchitectureStore();
 
     useFrame((state) => {
-        if (!groupRef.current || scrollProgress === 0 || !isVisible) return;
+        if (!groupRef.current || scrollProgress === 0 || !isVisible || !animationEnabled) return;
 
         const time = state.clock.elapsedTime;
         const circularSpeed = 0.3; // Speed of circular motion
@@ -88,7 +88,7 @@ function FallbackWhale({ scrollProgress, isVisible }: { scrollProgress: number; 
     );
 }
 
-function WhaleModel({ scrollProgress, isVisible }: { scrollProgress: number; isVisible: boolean }) {
+function WhaleModel({ scrollProgress, isVisible, animationEnabled }: { scrollProgress: number; isVisible: boolean; animationEnabled: boolean }) {
     const groupRef = useRef<THREE.Group>(null!);
     const { addLog } = useArchitectureStore();
     const [useFallback, setUseFallback] = useState(false);
@@ -105,7 +105,7 @@ function WhaleModel({ scrollProgress, isVisible }: { scrollProgress: number; isV
     }
 
     useFrame((state) => {
-        if (!groupRef.current || scrollProgress === 0 || !isVisible) return;
+        if (!groupRef.current || scrollProgress === 0 || !isVisible || !animationEnabled) return;
 
         const time = state.clock.elapsedTime;
         const circularSpeed = 0.3; // Speed of circular motion
@@ -135,7 +135,7 @@ function WhaleModel({ scrollProgress, isVisible }: { scrollProgress: number; isV
     });
 
     if (useFallback || !obj) {
-        return <FallbackWhale scrollProgress={scrollProgress} isVisible={isVisible} />;
+        return <FallbackWhale scrollProgress={scrollProgress} isVisible={isVisible} animationEnabled={animationEnabled} />;
     }
 
     return (
@@ -148,8 +148,9 @@ function WhaleModel({ scrollProgress, isVisible }: { scrollProgress: number; isV
 export function Whale({
     width = '100%',
     height = 400,
-    className = ''
-}: { width?: number | string; height?: number; className?: string }) {
+    className = '',
+    animationEnabled = true
+}: { width?: number | string; height?: number; className?: string; animationEnabled?: boolean }) {
     const [scrollProgress, setScrollProgress] = useState(0);
     const { whaleVisible, setWhaleVisible, addLog } = useArchitectureStore();
     
@@ -240,7 +241,7 @@ export function Whale({
                     />
                     
                     {/* Whale Model */}
-                    <WhaleModel scrollProgress={scrollProgress} isVisible={isIntersecting} />
+                    <WhaleModel scrollProgress={scrollProgress} isVisible={isIntersecting} animationEnabled={animationEnabled} />
                 </Canvas>
             )}
         </div>

@@ -49,12 +49,12 @@ const dockerServices: DockerService[] = [
 ];
 
 // Fallback Cloud Component using basic Three.js geometries
-function FallbackCloud({ scrollProgress, isVisible }: { scrollProgress: number; isVisible: boolean }) {
+function FallbackCloud({ scrollProgress, isVisible, animationEnabled }: { scrollProgress: number; isVisible: boolean; animationEnabled: boolean }) {
   const cloudRef = useRef<THREE.Group>(null);
   const { setCoolifyTimelineVisible } = useArchitectureStore();
 
   useFrame(() => {
-    if (cloudRef.current && scrollProgress > 0.1 && isVisible) {
+    if (cloudRef.current && scrollProgress > 0.1 && isVisible && animationEnabled) {
       // Gentle floating motion
       cloudRef.current.position.y = 4 + Math.sin(Date.now() * 0.001) * 0.2;
       // Slow rotation
@@ -144,7 +144,7 @@ function FallbackCloud({ scrollProgress, isVisible }: { scrollProgress: number; 
 }
 
 // Cloud Component using OBJ model with MTL materials
-function Cloud({ scrollProgress, isVisible }: { scrollProgress: number; isVisible: boolean }) {
+function Cloud({ scrollProgress, isVisible, animationEnabled }: { scrollProgress: number; isVisible: boolean; animationEnabled: boolean }) {
   const cloudRef = useRef<THREE.Group>(null!);
   const { setCoolifyTimelineVisible } = useArchitectureStore();
   const [cloudLoaded, setCloudLoaded] = useState(false);
@@ -196,10 +196,12 @@ function Cloud({ scrollProgress, isVisible }: { scrollProgress: number; isVisibl
     const scaleMultiplier = Math.min(1, cloudProgress * 2);
     cloudRef.current.scale.setScalar(baseScale * scaleMultiplier);
 
-    // Gentle floating motion
-    cloudRef.current.position.y = 4 + Math.sin(Date.now() * 0.001) * 0.2;
-    // Slow rotation
-    cloudRef.current.rotation.y += 0.003;
+    if (animationEnabled) {
+      // Gentle floating motion
+      cloudRef.current.position.y = 4 + Math.sin(Date.now() * 0.001) * 0.2;
+      // Slow rotation
+      cloudRef.current.rotation.y += 0.003;
+    }
 
     // Apply opacity based on scroll progress
     const opacity = Math.min(1, cloudProgress * 2);
@@ -237,7 +239,7 @@ function Cloud({ scrollProgress, isVisible }: { scrollProgress: number; isVisibl
 
   // If loading failed or model isn't ready yet, use fallback
   if (useFallback || !cloudLoaded) {
-    return <FallbackCloud scrollProgress={scrollProgress} isVisible={isVisible} />;
+    return <FallbackCloud scrollProgress={scrollProgress} isVisible={isVisible} animationEnabled={animationEnabled} />;
   }
 
   return (
@@ -259,7 +261,8 @@ function AnimatedCube({
   isHovered,
   setIsHovered,
   isVisible,
-  onPositionUpdate
+  onPositionUpdate,
+  animationEnabled
 }: {
   service: DockerService;
   index: number;
@@ -269,13 +272,14 @@ function AnimatedCube({
   setIsHovered: (hovered: boolean) => void;
   isVisible: boolean;
   onPositionUpdate: (index: number, position: THREE.Vector3) => void;
+  animationEnabled: boolean;
 }) {
   const meshRef = useRef<THREE.Group>(null);
   const { addLog } = useArchitectureStore();
   const cubeSize = isMobile ? 0.6 : 0.8;
 
   useFrame((state) => {
-    if (meshRef.current && !isHovered && scrollProgress > 0.1 && isVisible) {
+    if (meshRef.current && !isHovered && scrollProgress > 0.1 && isVisible && animationEnabled) {
       // Slower cube self-rotation
       meshRef.current.rotation.x += 0.003;
       meshRef.current.rotation.y += 0.003;
@@ -381,8 +385,9 @@ function ConnectionLines({
 export function CoolifyTimeline({
   width = '100%',
   height = 600,
-  className = ''
-}: { width?: number | string; height?: number; className?: string }) {
+  className = '',
+  animationEnabled = true
+}: { width?: number | string; height?: number; className?: string; animationEnabled?: boolean }) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [cubePositions, setCubePositions] = useState<THREE.Vector3[]>(
@@ -476,7 +481,7 @@ export function CoolifyTimeline({
           gl={{ alpha: true, antialias: true }}
           onPointerLeave={() => setIsHovered(false)}
         >
-          <Cloud scrollProgress={scrollProgress} isVisible={isIntersecting} />
+          <Cloud scrollProgress={scrollProgress} isVisible={isIntersecting} animationEnabled={animationEnabled} />
 
           {dockerServices.map((service, i) => (
             <AnimatedCube
@@ -489,6 +494,7 @@ export function CoolifyTimeline({
               setIsHovered={setIsHovered}
               isVisible={isIntersecting}
               onPositionUpdate={handleCubePositionUpdate}
+              animationEnabled={animationEnabled}
             />
           ))}
 

@@ -2,18 +2,84 @@
 
 import React, { useState, useEffect, useRef, useId } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Bot, HouseWifi, MessagesSquare, Upload, Menu, X, Info, MessageSquareShare, MessageSquareText, BotMessageSquare, Library, Blocks, DatabaseZapIcon, Layers, ExternalLink } from 'lucide-react';
 import { renderIcon } from "../lib/icon-utils";
 import { Settings } from "./Settings";
 import { Notifications } from "./Notifications";
 import { useOutsideClick } from "../hooks/use-outside-clicks";
 import { cn } from "../lib/utils";
+import { ExpandableCard } from "../components/ui/expandable-card-reusable";
 
 interface NavItem {
   href: string;
   label: string;
   icon: any;
+}
+
+// Content-aware L-shape component for mobile navigation
+function ContentAwareLShape({ pathname, navItems }: { pathname: string; navItems: NavItem[] }) {
+  const [menuDimensions, setMenuDimensions] = useState({ width: 0, activeItemTop: 0 });
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (menuContainerRef.current) {
+      const container = menuContainerRef.current.closest('.relative');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        
+        // Find the active item's position
+        const activeButton = container.querySelector('.text-cyan-500');
+        let activeTop = 0;
+        
+        if (activeButton) {
+          const activeRect = activeButton.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          activeTop = activeRect.top - containerRect.top + (activeRect.height / 2);
+        }
+        
+        setMenuDimensions({
+          width: rect.width - 16, // Account for padding
+          activeItemTop: activeTop
+        });
+      }
+    }
+  }, [pathname]);
+
+  return (
+    <div ref={menuContainerRef}>
+      {/* Horizontal line - full width of content */}
+      <motion.div
+        className="absolute -top-2 right-0 h-[2px] bg-white/70 z-[100]"
+        initial={{ width: 0, opacity: 0 }}
+        animate={{ width: menuDimensions.width || 'calc(100% + 1px)', opacity: 1 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 300, 
+          damping: 30,
+          duration: 0.4,
+          opacity: { duration: 0.2 }
+        }}
+      />
+      
+      {/* Vertical line - to active item */}
+      <motion.div
+        className="absolute left-0 -top-2 w-[2px] bg-white/70 z-[100]"
+        initial={{ height: 0, opacity: 0 }}
+        animate={{
+          height: menuDimensions.activeItemTop || 100,
+          opacity: 1
+        }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 300, 
+          damping: 30,
+          delay: 0.4,
+          opacity: { duration: 0.2, delay: 0.4 }
+        }}
+      />
+    </div>
+  );
 }
 
 export default function MobileNavigation(): React.ReactNode {
@@ -113,17 +179,23 @@ export default function MobileNavigation(): React.ReactNode {
           onClick={() => router.push('/')}
         >
           {renderIcon(Bot, { className: "w-6 h-6" })}
-          <span className={`text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-white transition-opacity duration-200 ${isScrolled ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+          <span className={`text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-white transition-opacity duration-200 ${isScrolled ? 'overflow-hidden w-0 opacity-0' : 'opacity-100'}`}>
             Bot Manager
           </span>
         </div>
         
         {/* Right side - Notifications, Settings, and Hamburger */}
         <div className="flex gap-2 items-center">
-          <div className={`${isScrolled ? 'bg-slate-950 rounded-lg' : ''} transition-colors duration-200`}>
+                    <div className={cn(
+            "transition-colors duration-200",
+            isScrolled && "rounded-lg bg-slate-950"
+          )}>
             <Notifications />
           </div>
-          <div className={`${isScrolled ? 'bg-slate-950 rounded-lg' : ''} transition-colors duration-200`}>
+          <div className={cn(
+            "transition-colors duration-200",
+            isScrolled && "rounded-lg bg-slate-900"
+          )}>
             <Settings />
           </div>
           <div className="relative">
@@ -135,29 +207,16 @@ export default function MobileNavigation(): React.ReactNode {
               {renderIcon(Menu, { className: "w-5 h-5 text-white" })}
             </button>
 
-            <AnimatePresence>
-              {isMenuOpen && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 backdrop-blur-sm bg-black/20"
-                  />
-                  <motion.div
-                    ref={menuRef}
-                    layoutId={`mobile-menu-${id}`}
-                    initial={{ opacity: 0, scale: 0.9, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                    style={{
-                      position: 'fixed',
-                      top: buttonPosition.top,
-                      right: buttonPosition.right,
-                      zIndex: 60
-                    }}
-                    className="w-80 max-h-[90vh] overflow-y-auto bg-gradient-to-b rounded-xl border shadow-2xl backdrop-blur-sm from-slate-900 to-slate-950 border-white/10"
-                  >
+            <ExpandableCard
+              isOpen={isMenuOpen}
+              onClose={() => setIsMenuOpen(false)}
+              buttonPosition={buttonPosition}
+              liquidGlass={true}
+              layoutId={`mobile-menu-${id}`}
+              ref={menuRef}
+              width="w-80"
+              zIndex={60}
+            >
                     <div className="p-6">
                       <div className="flex justify-between items-center mb-4">
                         <button
@@ -168,113 +227,251 @@ export default function MobileNavigation(): React.ReactNode {
                         </button>
                       </div>
 
-                      <div className="space-y-1">
+                      <motion.div 
+                        className="relative space-y-1"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                          hidden: { opacity: 0 },
+                          visible: {
+                            opacity: 1,
+                            transition: {
+                              staggerChildren: 0.05,
+                              delayChildren: 0.1
+                            }
+                          }
+                        }}
+                      >
+                        {/* Content-aware L-shaped line animation */}
+                        {isMenuOpen && (
+                          <ContentAwareLShape 
+                            pathname={pathname}
+                            navItems={navItems}
+                          />
+                        )}
                         {/* Home Section */}
-                        <div className="mb-3">
-                          <div className="text-xs uppercase text-cyan-500/70 font-semibold mb-1 px-2">Home</div>
-                          {navItems.slice(0, 3).map((item) => {
+                        <motion.div 
+                          className="mb-3"
+                          variants={{
+                            hidden: { opacity: 0 },
+                            visible: { opacity: 1 }
+                          }}
+                        >
+                          <motion.div 
+                            className="px-2 mb-1 text-xs font-semibold uppercase text-cyan-500/70"
+                            variants={{
+                              hidden: { opacity: 0, y: -5 },
+                              visible: { opacity: 1, y: 0 }
+                            }}
+                          >
+                            Home
+                          </motion.div>
+                          {navItems.slice(0, 3).map((item, index) => {
                             const IconComponent = item.icon;
                             const isActive = pathname === item.href;
                             
                             return (
-                              <button
+                              <motion.button
                                 key={item.href}
                                 onClick={() => handleNavClick(item.href)}
                                 className={cn(
-                                  "flex gap-2 items-center py-2 px-2 w-full text-left rounded-lg transition-colors text-sm",
+                                  "flex relative gap-2 items-center px-2 py-2 w-full text-sm text-left rounded-lg transition-colors",
                                   isActive 
                                     ? 'text-cyan-500 bg-slate-900' 
                                     : 'text-white/80 hover:text-cyan-300 hover:bg-slate-900/50'
                                 )}
+                                variants={{
+                                  hidden: { opacity: 0, x: -10 },
+                                  visible: { opacity: 1, x: 0 }
+                                }}
+                                whileHover={{ x: 5 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                               >
-                                {renderIcon(IconComponent, { className: "w-4 h-4" })}
+                                <motion.span
+                                  initial={{ scale: 0.8 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: 0.2 + (index * 0.05) }}
+                                >
+                                  {renderIcon(IconComponent, { className: "w-4 h-4" })}
+                                </motion.span>
                                 <span className="font-medium">{item.label}</span>
-                              </button>
+                              </motion.button>
                             );
                           })}
-                        </div>
+                        </motion.div>
                         
                         {/* Messages Section */}
-                        <div className="mb-3">
-                          <div className="text-xs uppercase text-cyan-500/70 font-semibold mb-1 px-2">Messages</div>
-                          {navItems.slice(3, 6).map((item) => {
+                        <motion.div 
+                          className="mb-3"
+                          variants={{
+                            hidden: { opacity: 0 },
+                            visible: { opacity: 1 }
+                          }}
+                        >
+                          <motion.div 
+                            className="px-2 mb-1 text-xs font-semibold uppercase text-cyan-500/70"
+                            variants={{
+                              hidden: { opacity: 0, y: -5 },
+                              visible: { opacity: 1, y: 0 }
+                            }}
+                          >
+                            Messages
+                          </motion.div>
+                          {navItems.slice(3, 6).map((item, index) => {
                             const IconComponent = item.icon;
                             const isActive = pathname === item.href;
                             
                             return (
-                              <button
+                              <motion.button
                                 key={item.href}
                                 onClick={() => handleNavClick(item.href)}
                                 className={cn(
-                                  "flex gap-2 items-center py-2 px-2 w-full text-left rounded-lg transition-colors text-sm",
+                                  "flex relative gap-2 items-center px-2 py-2 w-full text-sm text-left rounded-lg transition-colors",
                                   isActive 
                                     ? 'text-cyan-500 bg-slate-900' 
                                     : 'text-white/80 hover:text-cyan-300 hover:bg-slate-900/50'
                                 )}
+                                variants={{
+                                  hidden: { opacity: 0, x: -10 },
+                                  visible: { opacity: 1, x: 0 }
+                                }}
+                                whileHover={{ x: 5 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                               >
-                                {renderIcon(IconComponent, { className: "w-4 h-4" })}
+                                <motion.span
+                                  initial={{ scale: 0.8 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: 0.2 + (index * 0.05) }}
+                                >
+                                  {renderIcon(IconComponent, { className: "w-4 h-4" })}
+                                </motion.span>
                                 <span className="font-medium">{item.label}</span>
-                              </button>
+                              </motion.button>
                             );
                           })}
-                        </div>
+                        </motion.div>
                         
                         {/* RAG Section */}
-                        <div className="mb-3">
-                          <div className="text-xs uppercase text-cyan-500/70 font-semibold mb-1 px-2">RAG</div>
-                          {navItems.slice(6, 9).map((item) => {
+                        <motion.div 
+                          className="mb-3"
+                          variants={{
+                            hidden: { opacity: 0 },
+                            visible: { opacity: 1 }
+                          }}
+                        >
+                          <motion.div 
+                            className="px-2 mb-1 text-xs font-semibold uppercase text-cyan-500/70"
+                            variants={{
+                              hidden: { opacity: 0, y: -5 },
+                              visible: { opacity: 1, y: 0 }
+                            }}
+                          >
+                            RAG
+                          </motion.div>
+                          {navItems.slice(6, 9).map((item, index) => {
                             const IconComponent = item.icon;
                             const isActive = pathname === item.href;
                             
                             return (
-                              <button
+                              <motion.button
                                 key={item.href}
                                 onClick={() => handleNavClick(item.href)}
                                 className={cn(
-                                  "flex gap-2 items-center py-2 px-2 w-full text-left rounded-lg transition-colors text-sm",
+                                  "flex relative gap-2 items-center px-2 py-2 w-full text-sm text-left rounded-lg transition-colors",
                                   isActive 
                                     ? 'text-cyan-500 bg-slate-900' 
                                     : 'text-white/80 hover:text-cyan-300 hover:bg-slate-900/50'
                                 )}
+                                variants={{
+                                  hidden: { opacity: 0, x: -10 },
+                                  visible: { opacity: 1, x: 0 }
+                                }}
+                                whileHover={{ x: 5 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                               >
-                                {renderIcon(IconComponent, { className: "w-4 h-4" })}
+                                <motion.span
+                                  initial={{ scale: 0.8 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: 0.2 + (index * 0.05) }}
+                                >
+                                  {renderIcon(IconComponent, { className: "w-4 h-4" })}
+                                </motion.span>
                                 <span className="font-medium">{item.label}</span>
-                              </button>
+                              </motion.button>
                             );
                           })}
-                        </div>
+                        </motion.div>
                         
                         {/* Console Section */}
-                        <div>
-                          <div className="text-xs uppercase text-cyan-500/70 font-semibold mb-1 px-2">Console</div>
-                          {navItems.slice(9).map((item) => {
+                        <motion.div
+                          variants={{
+                            hidden: { opacity: 0 },
+                            visible: { opacity: 1 }
+                          }}
+                        >
+                          <motion.div 
+                            className="px-2 mb-1 text-xs font-semibold uppercase text-cyan-500/70"
+                            variants={{
+                              hidden: { opacity: 0, y: -5 },
+                              visible: { opacity: 1, y: 0 }
+                            }}
+                          >
+                            Console
+                          </motion.div>
+                          {navItems.slice(9).map((item, index) => {
                             const IconComponent = item.icon;
                             const isActive = pathname === item.href;
                             const isExternal = item.href.startsWith('http');
                             
                             return (
-                              <button
+                              <motion.button
                                 key={item.href}
                                 onClick={() => handleNavClick(item.href)}
                                 className={cn(
-                                  "flex gap-2 items-center py-2 px-2 w-full text-left rounded-lg transition-colors text-sm",
+                                  "flex relative gap-2 items-center px-2 py-2 w-full text-sm text-left rounded-lg transition-colors",
                                   isActive 
                                     ? 'text-cyan-500 bg-slate-900' 
                                     : 'text-white/80 hover:text-cyan-300 hover:bg-slate-900/50'
                                 )}
+                                variants={{
+                                  hidden: { opacity: 0, x: -10 },
+                                  visible: { opacity: 1, x: 0 }
+                                }}
+                                whileHover={{ x: 5 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                               >
-                                {renderIcon(IconComponent, { className: "w-4 h-4" })}
+                                {isActive && (
+                                  <motion.div
+                                    className="absolute left-0 top-0 w-[2px] h-full bg-white/70 z-[100]"
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: '100%', opacity: 1 }}
+                                    transition={{ 
+                                      type: "spring", 
+                                      stiffness: 300, 
+                                      damping: 30,
+                                      opacity: { duration: 0.2 }
+                                    }}
+                                  />
+                                )}
+                                <motion.span
+                                  initial={{ scale: 0.8 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: 0.2 + (index * 0.05) }}
+                                >
+                                  {renderIcon(IconComponent, { className: "w-4 h-4" })}
+                                </motion.span>
                                 <span className="font-medium">{item.label}</span>
-                              </button>
+                              </motion.button>
                             );
                           })}
-                        </div>
-                      </div>
+                        </motion.div>
+                      </motion.div>
                     </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+                  </ExpandableCard>
           </div>
         </div>
       </div>

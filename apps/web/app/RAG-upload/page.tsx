@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convexApi1752607591403";
+import { api } from "../../generated-convex";
 import { renderIcon } from "../../lib/icon-utils";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
+import { useSafeQuery, useSafeMutation, useConvexConnection } from "../../hooks/use-safe-convex";
 import { Hero, TextAnimationType } from "../../components/ui/hero";
 import { Card } from "../../components/ui/card";
 import { BackgroundGradient } from "../../components/ui/backgrounds/background-gradient";
 import { SparklesCore } from "../../components/ui/sparkles";
+import RippleGrid from "../../components/ui/backgrounds/ripple-grid";
 import { UploadForm } from "../../components/rag/UploadForm";
 import { DocumentStats } from "../../components/rag/DocumentStats";
 import { DocumentHistory } from "../../components/rag/DocumentHistory";
@@ -16,9 +17,12 @@ import { ThreeJSUploadIcon } from "../../components/rag/ThreeJSUploadIcon";
 import { LLMUsageBarChart } from "../../components/rag/llm-usage-bar-chart";
 
 import { ConvexStatusIndicator } from "../../components/convex/convex-status-indicator";
-import { useStatusOperations } from "../../hooks/use-status-operations";
 import { LLMStatusIndicator } from "../../components/rag/llm-status-indicator";
 import { DockerStatusIndicator } from "../../components/docker-status";
+import { AlertTriangle, Home, Database } from "lucide-react";
+import { BasicRAGUploadErrorScreen } from "../../components/ui/basic-error-screen";
+import { extractTextFromPDF, generatePDFSummary, validatePDFFile } from "../../lib/pdf-utils";
+import { extractTextFromDOCX, generateDOCXSummary, validateDOCXFile } from "../../lib/docx-utils";
 
 interface Document {
   _id: string;
@@ -42,12 +46,8 @@ interface UploadedDocument {
   summary?: string;
 }
 
-export default function RAGUploadPage(): React.ReactElement | null {
+export default function RAGUploadPage(): React.ReactElement {
   const { animationEnabled } = useAnimationSettings();
-  const statusOperations = useStatusOperations();
-  const convexStatus = statusOperations.convexStatus;
-  const llmStatus = statusOperations.llmStatus;
-  const dockerStatus = statusOperations.dockerStatus;
   const [uploadMethod, setUploadMethod] = useState<'file' | 'text'>('file');
   const [textContent, setTextContent] = useState('');
   const [title, setTitle] = useState('');
@@ -59,27 +59,55 @@ export default function RAGUploadPage(): React.ReactElement | null {
   const [embeddingMessage, setEmbeddingMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Use Convex hooks for real-time data
-  const documentsQuery = useQuery(api.documents.getAllDocuments, { limit: 5 });
-  const stats = useQuery(api.documents.getDocumentStats);
-  const saveDocument = useMutation(api.documents.saveDocument);
+  // Use safe Convex hooks for real-time data with error handling
+  const { isConnected } = useConvexConnection();
+  const documentsQuery = useSafeQuery(api.documents.getAllDocuments, { limit: 5 });
+  const statsQuery = useSafeQuery(api.documents.getDocumentStats);
+  const { mutate: saveDocument } = useSafeMutation(api.documents.saveDocument);
   
-  const documents = documentsQuery?.page || [];
-  const loadingDocuments = documentsQuery === undefined;
-  const loadingStats = stats === undefined;
+  const documents = documentsQuery.data?.page || [];
+  const loadingDocuments = documentsQuery.isLoading;
+  const loadingStats = statsQuery.isLoading;
+  const stats = statsQuery.data;
 
   // Data is now loaded automatically via Convex hooks
 
-  const handleFileUpload = async (file: File) => {
-    if (!file.name.endsWith('.md') && !file.name.endsWith('.txt')) {
-      setUploadStatus('error');
-      setUploadMessage('Please upload only .md or .txt files');
-      return;
+  const validateFile = (file: File) => {
+    const allowedTypes = [".md", ".txt", ".pdf", ".docx", ".doc"];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+    
+    if (!allowedTypes.includes(fileExtension)) {
+      return `File type not supported. Please upload ${allowedTypes.join(", ")} files.`;
     }
+    
+    // Different size limits for different file types
+    if (fileExtension === ".pdf") {
+      // Use PDF-specific validation
+      const pdfValidation = validatePDFFile(file);
+      if (!pdfValidation.valid) {
+        return pdfValidation.error || "Invalid PDF file.";
+      }
+    } else if (fileExtension === ".docx" || fileExtension === ".doc") {
+      // Use DOCX-specific validation
+      const docxValidation = validateDOCXFile(file);
+      if (!docxValidation.valid) {
+        return docxValidation.error || "Invalid DOCX file.";
+      }
+    } else {
+      // 1MB limit for text files
+      if (file.size > 1024 * 1024) {
+        return "File size must be less than 1MB.";
+      }
+    }
+    
+    return null;
+  };
 
-    if (file.size > 1024 * 1024) { // 1MB limit
+  const handleFileUpload = async (file: File) => {
+    const validationError = validateFile(file);
+    if (validationError) {
       setUploadStatus('error');
-      setUploadMessage('File size must be less than 1MB');
+      setUploadMessage(validationError);
       return;
     }
 
@@ -87,15 +115,49 @@ export default function RAGUploadPage(): React.ReactElement | null {
     setUploadStatus('idle');
 
     try {
-      const content = await file.text();
-      const contentType = file.name.endsWith('.md') ? 'markdown' : 'text';
-      const documentTitle = title || file.name.replace(/\.[^/.]+$/, '');
+      let content: string;
+       let contentType: 'markdown' | 'text';
+       let documentSummary: string | undefined;
+       
+       if (file.name.toLowerCase().endsWith('.pdf')) {
+          // Extract text from PDF
+          const pdfResult = await extractTextFromPDF(file);
+          if ('error' in pdfResult) {
+            setUploadStatus('error');
+            setUploadMessage(`PDF extraction failed: ${pdfResult.error}`);
+            return;
+          }
+          content = pdfResult.text;
+          contentType = 'text';
+          
+          // Generate summary for PDF if not provided
+          documentSummary = summary || (pdfResult.metadata ? generatePDFSummary(pdfResult.metadata) : 'PDF document');
+        } else if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) {
+          // Extract text from DOCX
+          const docxResult = await extractTextFromDOCX(file);
+          if ('error' in docxResult) {
+            setUploadStatus('error');
+            setUploadMessage(`DOCX extraction failed: ${docxResult.error}`);
+            return;
+          }
+          content = docxResult.text;
+          contentType = 'text';
+          
+          // Generate summary for DOCX if not provided
+          documentSummary = summary || (docxResult.metadata ? generateDOCXSummary(docxResult.metadata) : 'DOCX document');
+        } else {
+          content = await file.text();
+          contentType = file.name.endsWith('.md') ? 'markdown' : 'text';
+          documentSummary = summary;
+        }
+        
+        const documentTitle = title || file.name.replace(/\.[^/.]+$/, '');
 
       await saveDocument({
         title: documentTitle,
         content,
         contentType,
-        summary: summary || undefined,
+        summary: documentSummary || undefined,
       });
 
       setUploadStatus('success');
@@ -118,15 +180,10 @@ export default function RAGUploadPage(): React.ReactElement | null {
   const handleBatchFileUpload = async (files: File[]) => {
     // Validate all files first
     for (const file of files) {
-      if (!file.name.endsWith('.md') && !file.name.endsWith('.txt')) {
+      const validationError = validateFile(file);
+      if (validationError) {
         setUploadStatus('error');
-        setUploadMessage(`File "${file.name}" is not a .md or .txt file`);
-        return;
-      }
-
-      if (file.size > 1024 * 1024) { // 1MB limit
-        setUploadStatus('error');
-        setUploadMessage(`File "${file.name}" is too large (max 1MB)`);
+        setUploadMessage(`File "${file.name}": ${validationError}`);
         return;
       }
     }
@@ -139,8 +196,34 @@ export default function RAGUploadPage(): React.ReactElement | null {
       const documents = [];
       
       for (const file of files) {
-        const content = await file.text();
-        const contentType = file.name.endsWith('.md') ? 'markdown' : 'text';
+        let content: string;
+        let contentType: 'markdown' | 'text';
+        
+        if (file.name.toLowerCase().endsWith('.pdf')) {
+          // Extract text from PDF
+          const pdfResult = await extractTextFromPDF(file);
+          if ('error' in pdfResult) {
+            setUploadStatus('error');
+            setUploadMessage(`PDF extraction failed for "${file.name}": ${pdfResult.error}`);
+            return;
+          }
+          content = pdfResult.text;
+          contentType = 'text';
+        } else if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) {
+          // Extract text from DOCX
+          const docxResult = await extractTextFromDOCX(file);
+          if ('error' in docxResult) {
+            setUploadStatus('error');
+            setUploadMessage(`DOCX extraction failed for "${file.name}": ${docxResult.error}`);
+            return;
+          }
+          content = docxResult.text;
+          contentType = 'text';
+        } else {
+          content = await file.text();
+          contentType = file.name.endsWith('.md') ? 'markdown' : 'text';
+        }
+        
         const documentTitle = file.name.replace(/\.[^/.]+$/, '');
         
         documents.push({
@@ -266,6 +349,11 @@ export default function RAGUploadPage(): React.ReactElement | null {
     });
   };
 
+  // Show fallback UI when Convex is not connected
+  if (!isConnected || documentsQuery.isError || statsQuery.isError) {
+    return <BasicRAGUploadErrorScreen />;
+  }
+
   return (
     <div className="pt-20 pb-8 min-h-screen">
       <div className="px-4 mx-auto max-w-4xl">
@@ -309,21 +397,13 @@ export default function RAGUploadPage(): React.ReactElement | null {
           />
         </div>
 
-        {/* Convex Database Status Indicator */}
+        {/* Status Indicators */}
         <div className="mb-6">
           <ConvexStatusIndicator
-            status={convexStatus.status}
-            ready={convexStatus.ready}
-            message={convexStatus.message}
-            uptime={convexStatus.uptime}
-            statistics={convexStatus.statistics}
-            performance={convexStatus.performance}
-            details={convexStatus.details}
             className="mx-auto max-w-md"
             showLogs={true}
           />
         </div>
-        {/* LLM Status Indicator */}
         <div className="mb-6">
           <LLMStatusIndicator
             size="sm"

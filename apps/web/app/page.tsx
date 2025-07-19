@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useQuery } from "convex/react";
-import { api } from "../convexApi1752607591403";
+import { api } from "../generated-convex";
 import { Hero, TextAnimationType } from "../components/ui/hero";
 import { StatCard } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -29,7 +29,7 @@ export default function Home(): React.ReactNode {
     <div className="flex overflow-hidden fixed inset-0 justify-center items-center">
       {/* Position the lamp as a background element */}
       <div className="absolute inset-0 z-0">
-        <LampDemo className="h-full" />
+        <LampDemo className="mt-12 h-full" />
       </div>
       
       {/* Main content positioned on top of the lamp */}
@@ -46,8 +46,8 @@ export default function Home(): React.ReactNode {
           </Hero>
         </div>
 
-        <div className="p-4 w-full max-w-3xl rounded-lg">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-2">
+        <div className="p-4 -mt-6 w-full max-w-3xl rounded-lg">
+          <div className="grid grid-cols-2 ga md:grid-cols-2 lg:grid-cols-2">
             <Button href="/messages" variant="secondary" size="sm">
               {renderIcon(MessageSquareCode, { className: "mr-2 w-4 h-4" })}
               <span className="hidden sm:inline">View</span> Messages
@@ -78,38 +78,38 @@ export default function Home(): React.ReactNode {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-4 w-full max-w-3xl md:grid-cols-4">
-          <div className="flex items-center p-3 rounded-lg backdrop-blur-sm bg-black/20">
+        <div className="grid grid-cols-2 mb-4 w-full max-w-3xl ga md:grid-cols-4">
+          <div className="flex items-center rounded-lg backdrop-blur-sm bg-black/20">
             <StatCard 
               title="Messages" 
               value={messageCount.toString()} 
-              className="w-full text-center"
+              className="w-full text-center -mb-2-mt-2"
             />
           </div>
-          <div className="flex items-center p-3 rounded-lg backdrop-blur-sm bg-black/20">
+          <div className="flex items-center rounded-lg backdrop-blur-sm bg-black/20">
             <StatCard 
               title="Threads" 
               value={(threadStats?.totalThreads || 0).toString()} 
-              className="w-full text-center"
+              className="w-full text-center -mb-2-mt-2"
             />
           </div>
-          <div className="flex items-center p-3 rounded-lg backdrop-blur-sm bg-black/20">
+          <div className="flex items-center rounded-lg backdrop-blur-sm bg-black/20">
             <StatCard 
               title="Documents" 
               value={(documentStats?.totalDocuments || 0).toString()} 
-              className="w-full text-center"
+              className="w-full text-center -mb-2-mt-2"
             />
           </div>
-          <div className="flex items-center p-3 rounded-lg backdrop-blur-sm bg-black/20">
+          <div className="flex items-center rounded-lg backdrop-blur-sm bg-black/20">
             <StatCard 
               title="RAG Size" 
               value={formatFileSize(documentStats?.totalSize || 0)} 
-              className="w-full text-center"
+              className="w-full text-center -mb-2-mt-2"
             />
           </div>
         </div>
         {process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME && (
-            <p className="mb-2 text-lg">
+            <p className="-mt-4 mb-2 ml-4 text-lg">
               Bot username: <a
                 href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}`}
                 target="_blank"

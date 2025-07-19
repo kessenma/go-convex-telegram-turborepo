@@ -16,7 +16,7 @@ type Props = {
   mouseInteractionRadius?: number;
 };
 
-const RippleGrid: React.FC<Props> = ({
+function RippleGrid({
   enableRainbow = false,
   gridColor = "#ffffff",
   rippleIntensity = 0.05,
@@ -29,7 +29,7 @@ const RippleGrid: React.FC<Props> = ({
   gridRotation = 0,
   mouseInteraction = true,
   mouseInteractionRadius = 1,
-}) => {
+}: Props): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const mousePositionRef = useRef({ x: 0.5, y: 0.5 });
   const targetMouseRef = useRef({ x: 0.5, y: 0.5 });
@@ -309,6 +309,6 @@ void main() {
       className="w-full h-full relative overflow-hidden [&_canvas]:block"
     />
   );
-};
+}
 
 export default RippleGrid;

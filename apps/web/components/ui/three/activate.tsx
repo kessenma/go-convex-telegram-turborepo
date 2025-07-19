@@ -19,16 +19,17 @@ interface ActivateAnimationProps {
     isVisible: boolean;
     isMobile: boolean;
     connectionProgress: number;
+    animationEnabled: boolean;
 }
 
 // Scene controller for camera and rotation
-function SceneController({ connectionProgress, children }: { connectionProgress: number; children: React.ReactNode }) {
+function SceneController({ connectionProgress, animationEnabled, children }: { connectionProgress: number; animationEnabled: boolean; children: React.ReactNode }) {
     const { camera, scene } = useThree();
     const sceneRef = useRef<THREE.Group>(null!);
     const plateRotation = useRef(0);
 
     useFrame(() => {
-        if (!sceneRef.current) return;
+        if (!sceneRef.current || !animationEnabled) return;
 
         // Constant plate rotation - both objects rotate together as if on a plate
         plateRotation.current += 0.01;
@@ -45,11 +46,11 @@ function SceneController({ connectionProgress, children }: { connectionProgress:
 }
 
 // Green container component that starts the animation (matching the container.tsx style)
-function GreenContainer({ scrollProgress, isVisible, isMobile, connectionProgress }: ActivateAnimationProps) {
+function GreenContainer({ scrollProgress, isVisible, isMobile, connectionProgress, animationEnabled }: ActivateAnimationProps) {
     const containerRef = useRef<THREE.Group>(null!);
 
     useFrame(() => {
-        if (!containerRef.current || !isVisible) return;
+        if (!containerRef.current || !isVisible || !animationEnabled) return;
 
         // Phase 1: Container appears gradually (0-40% of scroll) - similar to coolify-timeline
         const containerProgress = Math.max(0, Math.min(1, scrollProgress / 0.4));
@@ -103,7 +104,7 @@ function GreenContainer({ scrollProgress, isVisible, isMobile, connectionProgres
 }
 
 // Brain model component
-function BrainModel({ scrollProgress, isVisible, isMobile, connectionProgress }: ActivateAnimationProps) {
+function BrainModel({ scrollProgress, isVisible, isMobile, connectionProgress, animationEnabled }: ActivateAnimationProps) {
     const brainRef = useRef<THREE.Group>(null!);
     const [brainLoaded, setBrainLoaded] = useState(false);
     const [useFallback, setUseFallback] = useState(false);
@@ -138,7 +139,7 @@ function BrainModel({ scrollProgress, isVisible, isMobile, connectionProgress }:
     }, [brainObj]);
 
     useFrame(() => {
-        if (!brainRef.current || !isVisible) return;
+        if (!brainRef.current || !isVisible || !animationEnabled) return;
 
         // Phase 1: Brain appears and scales up (0-40% of scroll) - similar to coolify-timeline
         const brainProgress = Math.max(0, Math.min(1, scrollProgress / 0.4));
@@ -339,8 +340,9 @@ function ConnectionLine({ scrollProgress, isVisible, isMobile, connectionProgres
 export function Activate({
     width = '100%',
     height = window.innerHeight * 2, // 200vh
-    className = ''
-}: { width?: number | string; height?: number; className?: string }) {
+    className = '',
+    animationEnabled = true
+}: { width?: number | string; height?: number; className?: string; animationEnabled?: boolean }) {
     const [scrollProgress, setScrollProgress] = useState(0);
     const [connectionProgress, setConnectionProgress] = useState(0);
     const [activateVisible, setActivateVisible] = useState(false);
@@ -564,6 +566,7 @@ export function Activate({
                     >
                         <SceneController
                             connectionProgress={connectionProgress}
+                            animationEnabled={animationEnabled}
                         >
                             {/* Enhanced lighting for brain */}
                             <ambientLight color={0x4da6ff} intensity={0.3} />
@@ -584,6 +587,7 @@ export function Activate({
                                 isVisible={isIntersecting}
                                 isMobile={isMobile}
                                 connectionProgress={connectionProgress}
+                                animationEnabled={animationEnabled}
                             />
 
                             {/* Connection line */}
@@ -592,6 +596,7 @@ export function Activate({
                                 isVisible={isIntersecting}
                                 isMobile={isMobile}
                                 connectionProgress={connectionProgress}
+                                animationEnabled={animationEnabled}
                             />
 
                             {/* Brain model */}
@@ -600,6 +605,7 @@ export function Activate({
                                 isVisible={isIntersecting}
                                 isMobile={isMobile}
                                 connectionProgress={connectionProgress}
+                                animationEnabled={animationEnabled}
                             />
                         </SceneController>
                     </Canvas>

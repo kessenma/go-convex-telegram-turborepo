@@ -18,9 +18,10 @@ interface AnimatedContainerCubeProps {
     scrollProgress: number;
     isMobile: boolean;
     isVisible: boolean;
+    animationEnabled: boolean;
 }
 
-function AnimatedContainerCube({ cube, scrollProgress, isMobile, isVisible }: AnimatedContainerCubeProps) {
+function AnimatedContainerCube({ cube, scrollProgress, isMobile, isVisible, animationEnabled }: AnimatedContainerCubeProps) {
     const groupRef = useRef<THREE.Group>(null!);
 
     useFrame((state) => {
@@ -37,10 +38,12 @@ function AnimatedContainerCube({ cube, scrollProgress, isMobile, isVisible }: An
         const currentPos = cube.startPosition.clone().lerp(cube.endPosition, easedProgress);
         groupRef.current.position.copy(currentPos);
 
-        // Gentle rotation during animation
-        const rotationSpeed = 0.002 * (1 - easedProgress); // Slow down as they reach destination
-        groupRef.current.rotation.x += rotationSpeed;
-        groupRef.current.rotation.y += rotationSpeed;
+        if (animationEnabled) {
+            // Gentle rotation during animation
+            const rotationSpeed = 0.002 * (1 - easedProgress); // Slow down as they reach destination
+            groupRef.current.rotation.x += rotationSpeed;
+            groupRef.current.rotation.y += rotationSpeed;
+        }
 
         // Scale effect - slightly larger at the end
         const scale = 1 + (easedProgress * 0.1);
@@ -87,11 +90,11 @@ function AnimatedContainerCube({ cube, scrollProgress, isMobile, isVisible }: An
 }
 
 // Container outline component
-function ContainerOutline({ scrollProgress, isMobile }: { scrollProgress: number; isMobile: boolean }) {
+function ContainerOutline({ scrollProgress, isMobile, animationEnabled }: { scrollProgress: number; isMobile: boolean; animationEnabled: boolean }) {
     const outlineRef = useRef<THREE.Group>(null!);
 
     useFrame(() => {
-        if (!outlineRef.current) return;
+        if (!outlineRef.current || !animationEnabled) return;
 
         // Container appears as cubes settle
         const containerProgress = Math.max(0, (scrollProgress - 0.6) / 0.4);
@@ -172,8 +175,9 @@ const containerCubes: ContainerCube[] = [
 export function Container({
     width = '100%',
     height = 600,
-    className = ''
-}: { width?: number | string; height?: number; className?: string }) {
+    className = '',
+    animationEnabled = true
+}: { width?: number | string; height?: number; className?: string; animationEnabled?: boolean }) {
     const [scrollProgress, setScrollProgress] = React.useState(0);
     const { containerVisible, setContainerVisible } = useArchitectureStore();
     
@@ -266,7 +270,7 @@ export function Container({
                     />
                     
                     {/* Container outline */}
-                    <ContainerOutline scrollProgress={scrollProgress} isMobile={isMobile} />
+                    <ContainerOutline scrollProgress={scrollProgress} isMobile={isMobile} animationEnabled={animationEnabled} />
                     
                     {/* Animated cubes */}
                     {containerCubes.map((cube, index) => (
@@ -276,6 +280,7 @@ export function Container({
                             scrollProgress={scrollProgress}
                             isMobile={isMobile}
                             isVisible={isIntersecting}
+                            animationEnabled={animationEnabled}
                         />
                     ))}
                 </Canvas>

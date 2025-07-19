@@ -1,9 +1,9 @@
 // apps/docker-convex/convex/userSessions.ts
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 
-// Session timeout in milliseconds (5 minutes)
-const SESSION_TIMEOUT = 5 * 60 * 1000;
+// Session timeout in milliseconds (2 minutes for more responsive user count)
+const SESSION_TIMEOUT = 2 * 60 * 1000;
 
 /**
  * Create or update a user session
@@ -184,7 +184,7 @@ export const getSessionStats = query({
 });
 
 /**
- * Clean up expired sessions (should be called periodically)
+ * Clean up expired sessions (called by cron job and API)
  */
 export const cleanupExpiredSessions = mutation({
   args: {},

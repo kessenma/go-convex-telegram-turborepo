@@ -1,32 +1,56 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getCookie } from "../lib/utils";
 
 export function useAnimationSettings() {
   const [animationLightMode, setAnimationLightMode] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasConsented, setHasConsented] = useState<boolean | null>(null);
 
+  // Check for cookie consent
   useEffect(() => {
-    const savedSetting = getCookie('animationLightMode');
-    if (savedSetting !== null) {
-      setAnimationLightMode(savedSetting === 'true');
-    }
-    setIsLoaded(true);
+    const consent = localStorage.getItem('cookie-consent');
+    setHasConsented(consent === 'true');
   }, []);
 
-  // Add polling to detect cookie changes from other components
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentSetting = getCookie('animationLightMode');
-      const currentValue = currentSetting === 'true';
-      if (currentValue !== animationLightMode) {
-        setAnimationLightMode(currentValue);
-      }
-    }, 500); // Check every 500ms
+  // Stable function to check and update cookie value
+  const checkCookieValue = useCallback(() => {
+    // Only access cookies if user has consented
+    if (hasConsented !== true) {
+      setAnimationLightMode(false); // Default to full animations
+      return false;
+    }
+    
+    const savedSetting = getCookie('animationLightMode');
+    const currentValue = savedSetting === 'true';
+    setAnimationLightMode(currentValue);
+    return currentValue;
+  }, [hasConsented]);
 
-    return () => clearInterval(interval);
-  }, [animationLightMode]);
+  // Initial load
+  useEffect(() => {
+    if (hasConsented !== null) {
+      checkCookieValue();
+      setIsLoaded(true);
+    }
+  }, [checkCookieValue, hasConsented]);
+
+  // Listen for storage events (when cookies change in other tabs/components)
+  useEffect(() => {
+    if (hasConsented !== true) return;
+    
+    const handleStorageChange = () => {
+      checkCookieValue();
+    };
+
+    // Listen for custom events when cookies are updated
+    window.addEventListener('animationSettingsChanged', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('animationSettingsChanged', handleStorageChange);
+    };
+  }, [checkCookieValue, hasConsented]);
 
   const animationEnabled = !animationLightMode;
 

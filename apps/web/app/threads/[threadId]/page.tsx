@@ -8,7 +8,7 @@ import { renderIcon } from "../../../lib/icon-utils";
 import { cn } from "../../../lib/utils";
 import React, { useState } from 'react';
 import { useQuery } from "convex/react";
-import { api } from "../../../convexApi1752607591403";
+import { api } from "../../../generated-convex";
 import { type GenericId as Id } from "convex/values";
 import {Button} from "../../../components/ui/button";
 

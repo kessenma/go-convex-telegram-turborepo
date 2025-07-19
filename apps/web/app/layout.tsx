@@ -5,6 +5,8 @@ import Navigation from "../components/Navigation";
 import { ConvexClientProvider } from "../providers/ConvexClientProvider";
 import { NotificationsProvider } from "../contexts/NotificationsContext";
 import { SessionProvider } from "../components/SessionProvider";
+import { HealthCheckProvider } from "../components/providers/health-check-provider";
+import { CookieConsentProvider } from "../components/ui/cookie-consent-modal";
 import { Toaster } from "sonner";
 
 const geistSans = localFont({
@@ -31,15 +33,19 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} bg-slate-950 text-white`}>
         <ConvexClientProvider>
-          <NotificationsProvider>
-            <SessionProvider>
-              <Navigation />
-              <main style={{ minHeight: "calc(100vh - 64px)" }}>
-                {children}
-              </main>
-              <Toaster position="bottom-left" theme="dark" />
-            </SessionProvider>
-          </NotificationsProvider>
+          <CookieConsentProvider>
+            <NotificationsProvider>
+              <SessionProvider>
+                <HealthCheckProvider>
+                  <Navigation />
+                  <main style={{ minHeight: "calc(100vh - 64px)" }}>
+                    {children}
+                  </main>
+                  <Toaster position="bottom-left" theme="dark" />
+                </HealthCheckProvider>
+              </SessionProvider>
+            </NotificationsProvider>
+          </CookieConsentProvider>
         </ConvexClientProvider>
       </body>
     </html>

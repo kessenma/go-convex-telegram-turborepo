@@ -1,7 +1,7 @@
 // apps/web/app/api/users/active-count/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../../../convexApi1752607591403';
+import { api } from '../../../../generated-convex';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 const CONVEX_API_BASE = process.env.CONVEX_HTTP_URL || 'http://localhost:3211';

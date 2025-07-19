@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useOutsideClick } from "../../hooks/use-outside-clicks";
 
 export function ExpandableCardDemo() {
@@ -45,6 +45,7 @@ export function ExpandableCardDemo() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             className="fixed inset-0 z-10 w-full h-full bg-black/20"
           />
         )}
@@ -75,6 +76,7 @@ export function ExpandableCardDemo() {
             <motion.div
               layoutId={`card-${active.title}-${id}`}
               ref={ref}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
               className="w-[90vw] max-w-[500px] h-auto max-h-[90vh] md:h-fit md:max-h-[90%] flex flex-col bg-white dark:bg-neutral-900 sm:rounded-3xl overflow-hidden"
             >
               <motion.div layoutId={`image-${active.title}-${id}`}>
@@ -108,6 +110,9 @@ export function ExpandableCardDemo() {
                     layoutId={`button-${active.title}-${id}`}
                     href={active.ctaLink}
                     target="_blank"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 15 }}
                     className="px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-full"
                   >
                     {active.ctaText}
@@ -116,9 +121,10 @@ export function ExpandableCardDemo() {
                 <div className="relative px-4 pt-4 overflow-hidden">
                   <motion.div
                     layout
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     className="text-neutral-600 text-xs md:text-sm lg:text-base max-h-[30vh] md:max-h-[50vh] pb-10 flex flex-col items-start gap-4 overflow-y-auto dark:text-neutral-400 [mask:linear-gradient(to_bottom,white,white,transparent)] [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] overscroll-contain"
                   >
                     {typeof active.content === "function"
@@ -137,6 +143,9 @@ export function ExpandableCardDemo() {
             layoutId={`card-${card.title}-${id}`}
             key={`card-${card.title}-${id}`}
             onClick={() => setActive(card)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
             className="flex flex-col justify-between items-center p-4 rounded-xl cursor-pointer md:flex-row hover:bg-neutral-50 dark:hover:bg-neutral-800"
           >
             <div className="flex flex-col gap-4 md:flex-row">
@@ -166,7 +175,10 @@ export function ExpandableCardDemo() {
             </div>
             <motion.button
               layoutId={`button-${card.title}-${id}`}
-              className="px-4 py-2 mt-4 text-sm font-bold text-black bg-gray-100 rounded-full hover:bg-green-500 hover:text-white md:mt-0"
+              whileHover={{ scale: 1.05, backgroundColor: "#22c55e", color: "#ffffff" }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 500, damping: 15 }}
+              className="px-4 py-2 mt-4 text-sm font-bold text-black bg-gray-100 rounded-full md:mt-0"
             >
               {card.ctaText}
             </motion.button>
@@ -182,15 +194,20 @@ export const CloseIcon = () => {
     <motion.svg
       initial={{
         opacity: 0,
+        scale: 0.8,
       }}
       animate={{
         opacity: 1,
+        scale: 1,
       }}
       exit={{
         opacity: 0,
-        transition: {
-          duration: 0.05,
-        },
+        scale: 0.8,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 400,
+        damping: 20,
       }}
       xmlns="http://www.w3.org/2000/svg"
       width="24"

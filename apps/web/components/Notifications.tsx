@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useOutsideClick } from "../hooks/use-outside-clicks";
 import { useNotifications } from "../contexts/NotificationsContext";
 import { Bell, X, Check, CheckCheck, Clock, Upload, Database } from "lucide-react";
@@ -9,9 +9,10 @@ import { cn } from "../lib/utils";
 import { renderIcon } from "../lib/icon-utils";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../convexApi1752607591403";
+import { api } from "../generated-convex";
 import { type GenericId as Id } from "convex/values";
 import { toast } from "sonner";
+import { ExpandableCard } from "../components/ui/expandable-card-reusable";
 
 interface NotificationsProps {
   className?: string;
@@ -31,7 +32,7 @@ interface Notification {
 
 export function Notifications({ className }: NotificationsProps) {
   const { isOpen, openNotifications, closeNotifications } = useNotifications();
-  const [buttonPosition, setButtonPosition] = useState({ top: 0, right: 0 });
+  const [buttonPosition, setButtonPosition] = useState<{ top: number | 'auto'; bottom?: number; right: number }>({ top: 0, right: 0 });
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -84,14 +85,39 @@ export function Notifications({ className }: NotificationsProps) {
     setPreviousNotifications(notifications);
   }, [notifications]);
 
-  // Update button position when opening
+  // Update button position when opening, with mobile responsiveness
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setButtonPosition({
-        top: rect.bottom + 8,
-        right: window.innerWidth - rect.right
-      });
+      const isMobile = window.innerWidth < 640; // sm breakpoint
+      
+      // Calculate available space below button
+      const spaceBelow = window.innerHeight - rect.bottom - 8;
+      // Use top positioning if there's enough space, otherwise position from bottom
+      const useTopPositioning = spaceBelow >= 300; // Minimum height needed
+      
+      if (isMobile) {
+        // Center horizontally on mobile
+        if (useTopPositioning) {
+          setButtonPosition({
+            top: rect.bottom + 8,
+            right: Math.max(8, Math.min(window.innerWidth - 320, window.innerWidth / 2 - 160)) // Center with min margin
+          });
+        } else {
+          // Position from bottom of screen if not enough space below
+          setButtonPosition({
+            top: 'auto',
+            bottom: 16,
+            right: Math.max(8, Math.min(window.innerWidth - 320, window.innerWidth / 2 - 160))
+          });
+        }
+      } else {
+        // Regular positioning for larger screens
+        setButtonPosition({
+          top: rect.bottom + 8,
+          right: window.innerWidth - rect.right
+        });
+      }
     }
   }, [isOpen]);
 
@@ -102,6 +128,41 @@ export function Notifications({ className }: NotificationsProps) {
       }
     }
 
+    function handleResize() {
+      if (isOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const isMobile = window.innerWidth < 640; // sm breakpoint
+        
+        // Calculate available space below button
+        const spaceBelow = window.innerHeight - rect.bottom - 8;
+        // Use top positioning if there's enough space, otherwise position from bottom
+        const useTopPositioning = spaceBelow >= 300; // Minimum height needed
+        
+        if (isMobile) {
+          // Center horizontally on mobile
+          if (useTopPositioning) {
+            setButtonPosition({
+              top: rect.bottom + 8,
+              right: Math.max(8, Math.min(window.innerWidth - 320, window.innerWidth / 2 - 160))
+            });
+          } else {
+            // Position from bottom of screen if not enough space below
+            setButtonPosition({
+              top: 'auto',
+              bottom: 16,
+              right: Math.max(8, Math.min(window.innerWidth - 320, window.innerWidth / 2 - 160))
+            });
+          }
+        } else {
+          // Regular positioning for larger screens
+          setButtonPosition({
+            top: rect.bottom + 8,
+            right: window.innerWidth - rect.right
+          });
+        }
+      }
+    }
+
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -109,7 +170,12 @@ export function Notifications({ className }: NotificationsProps) {
     }
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", handleResize);
+    
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", handleResize);
+    };
   }, [isOpen, closeNotifications]);
 
   const handleMarkAsRead = async (notificationId: Id<"notifications">) => {
@@ -181,31 +247,16 @@ export function Notifications({ className }: NotificationsProps) {
         )}
       </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 backdrop-blur-sm bg-black/20"
-            />
-            <motion.div
-              ref={ref}
-              layoutId={`card-${id}`}
-              initial={{ opacity: 0, scale: 0.9, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: -10 }}
-              style={{
-                position: 'fixed',
-                top: buttonPosition.top,
-                right: buttonPosition.right,
-                zIndex: 60
-              }}
-              className="w-96 bg-white rounded-xl border border-gray-200 shadow-2xl dark:bg-gray-900 dark:border-gray-700"
-            >
-              <ScrollArea className="h-[calc(60vh)]">
-                <div className="p-6">
+      <ExpandableCard
+        isOpen={isOpen}
+        onClose={closeNotifications}
+        buttonPosition={buttonPosition}
+        liquidGlass={true}
+        layoutId={`notifications-card-${id}`}
+        ref={ref}
+      >
+        <ScrollArea className="h-[calc(min(60vh,500px))] overflow-y-auto">
+          <div className="p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                       Notifications
@@ -229,81 +280,132 @@ export function Notifications({ className }: NotificationsProps) {
                     </div>
                   </div>
 
-                  <div className="space-y-3">
+                  <motion.div 
+                    className="space-y-3"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: {
+                        opacity: 1,
+                        transition: {
+                          staggerChildren: 0.05
+                        }
+                      }
+                    }}
+                  >
                     {!notifications || notifications.length === 0 ? (
-                      <div className="py-8 text-center text-gray-500 dark:text-gray-400">
-                        <div className="mb-2">
-                          {renderIcon(Bell, { className: "w-8 h-8 mx-auto opacity-50" })}
-                        </div>
-                        <p className="text-sm">No notifications yet</p>
-                      </div>
+                      <motion.div 
+                        className="py-8 text-center text-gray-500 dark:text-gray-400"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <motion.div 
+                          className="mb-2"
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 0.5 }}
+                          transition={{ delay: 0.2, duration: 0.3 }}
+                        >
+                          {renderIcon(Bell, { className: "w-8 h-8 mx-auto" })}
+                        </motion.div>
+                        <motion.p 
+                          className="text-sm"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.3, duration: 0.3 }}
+                        >
+                          No notifications yet
+                        </motion.p>
+                      </motion.div>
                     ) : (
-                      notifications.map((notification: Notification) => {
-                        const IconComponent = getNotificationIcon(notification.type);
-                        const iconColor = getNotificationColor(notification.type);
-                        
-                        return (
-                          <div
-                            key={notification._id}
-                            className={cn(
-                              "p-3 rounded-lg border transition-colors cursor-pointer",
-                              notification.isRead
-                                ? "bg-gray-50 dark:bg-gray-800/30 border-gray-200 dark:border-gray-700"
-                                : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
-                            )}
-                            onClick={() => !notification.isRead && handleMarkAsRead(notification._id)}
-                          >
-                            <div className="flex gap-3 items-start">
-                              <div className={cn("mt-0.5", iconColor)}>
-                                {renderIcon(IconComponent, { className: "w-4 h-4" })}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-center mb-1">
-                                  <h4 className={cn(
-                                    "text-sm font-medium truncate",
+                      <AnimatePresence>
+                        {notifications.map((notification: Notification, index: number) => {
+                          const IconComponent = getNotificationIcon(notification.type);
+                          const iconColor = getNotificationColor(notification.type);
+                          
+                          return (
+                            <motion.div
+                              key={notification._id}
+                              className={cn(
+                                "p-3 rounded-lg border transition-colors cursor-pointer",
+                                notification.isRead
+                                  ? "bg-gray-50 dark:bg-gray-800/30 border-gray-200 dark:border-gray-700"
+                                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                              )}
+                              onClick={() => !notification.isRead && handleMarkAsRead(notification._id)}
+                              variants={{
+                                hidden: { opacity: 0, y: 10 },
+                                visible: { opacity: 1, y: 0 }
+                              }}
+                              whileHover={{ scale: 1.01, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)" }}
+                              whileTap={{ scale: 0.99 }}
+                              layout
+                            >
+                              <div className="flex gap-3 items-start">
+                                <motion.div 
+                                  className={cn("mt-0.5", iconColor)}
+                                  initial={{ scale: 0.8 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                                >
+                                  {renderIcon(IconComponent, { className: "w-4 h-4" })}
+                                </motion.div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <h4 className={cn(
+                                      "text-sm font-medium truncate",
+                                      notification.isRead
+                                        ? "text-gray-700 dark:text-gray-300"
+                                        : "text-gray-900 dark:text-white"
+                                    )}>
+                                      {notification.title}
+                                    </h4>
+                                    {!notification.isRead && (
+                                      <motion.div 
+                                        className="flex-shrink-0 ml-2 w-2 h-2 bg-blue-500 rounded-full" 
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.2 }}
+                                      />
+                                    )}
+                                  </div>
+                                  <p className={cn(
+                                    "text-xs mb-2",
                                     notification.isRead
-                                      ? "text-gray-700 dark:text-gray-300"
-                                      : "text-gray-900 dark:text-white"
+                                      ? "text-gray-500 dark:text-gray-400"
+                                      : "text-gray-600 dark:text-gray-300"
                                   )}>
-                                    {notification.title}
-                                  </h4>
-                                  {!notification.isRead && (
-                                    <div className="flex-shrink-0 ml-2 w-2 h-2 bg-blue-500 rounded-full" />
-                                  )}
-                                </div>
-                                <p className={cn(
-                                  "text-xs mb-2",
-                                  notification.isRead
-                                    ? "text-gray-500 dark:text-gray-400"
-                                    : "text-gray-600 dark:text-gray-300"
-                                )}>
-                                  {notification.message}
-                                </p>
-                                <div className="flex justify-between items-center">
-                                  <span className="flex gap-1 items-center text-xs text-gray-400 dark:text-gray-500">
-                                    {renderIcon(Clock, { className: "w-3 h-3" })}
-                                    {formatTimestamp(notification.timestamp)}
-                                  </span>
-                                  {notification.isRead && (
+                                    {notification.message}
+                                  </p>
+                                  <div className="flex justify-between items-center">
                                     <span className="flex gap-1 items-center text-xs text-gray-400 dark:text-gray-500">
-                                      {renderIcon(Check, { className: "w-3 h-3" })}
-                                      Read
+                                      {renderIcon(Clock, { className: "w-3 h-3" })}
+                                      {formatTimestamp(notification.timestamp)}
                                     </span>
-                                  )}
+                                    {notification.isRead && (
+                                      <motion.span 
+                                        className="flex gap-1 items-center text-xs text-gray-400 dark:text-gray-500"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.1 }}
+                                      >
+                                        {renderIcon(Check, { className: "w-3 h-3" })}
+                                        Read
+                                      </motion.span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
                     )}
-                  </div>
+                  </motion.div>
                 </div>
               </ScrollArea>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </ExpandableCard>
     </div>
   );
 }

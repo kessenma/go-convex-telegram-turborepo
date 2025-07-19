@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { useDocumentStore } from '../stores/document-store';
 import { useQuery } from 'convex/react';
-import { api } from '../convexApi1752607591403';
+import { api } from '../generated-convex';
 
 /**
  * Custom hook for document operations with optimized data fetching and state management
