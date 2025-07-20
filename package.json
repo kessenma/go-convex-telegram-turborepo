@@ -1,6 +1,10 @@
 {
   "name": "go-convex-telegram-turborepo",
   "private": true,
+  "resolutions": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1"
+  },
   "scripts": {
     "setup-init": "./setup.sh",
     "docker:reset": "docker compose down -v && docker network prune -f && docker system prune -af && echo 'docker containters:' && docker ps -a",
@@ -12,7 +16,8 @@
     "get-admin-key": "docker compose exec convex-backend ./generate_admin_key.sh",
     "convex:dev:bot": "docker compose up convex-backend convex-dashboard telegram-bot -d && cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     "docker:restart-web-convex": "docker compose stop web-dashboard convex-backend convex-dashboard && docker compose up web-dashboard convex-backend convex-dashboard -d",
-    "docker:llm-only": "docker compose up vector-convert-llm -d",
+    "docker:vectorConvert-only": "docker compose up vector-convert-llm -d",
+    "docker:llm-rebuild": "docker compose stop lightweight-llm && docker compose build lightweight-llm && docker compose up lightweight-llm -d",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
@@ -53,6 +58,7 @@
     "docker:web-reset": "docker compose stop web-dashboard && docker compose rm -f web-dashboard && docker compose up web-dashboard -d",
     "docker:llm-transformer-logs": "docker logs telegram-bot-vector-convert-llm-1 --tail 100",
     "docker:llm-logs": "docker logs telegram-bot-lightweight-llm-1 --tail 100",
+    "docker:llm-logs-follow": "docker logs telegram-bot-lightweight-llm-1 --follow",
     "docker:web-app-logs": "docker logs telegram-bot-web-dashboard-1 --tail 100",
     "docker:convex-backend-logs": "docker logs telegram-bot-convex-backend-1 --tail 100",
     "docker:logs-all": "pnpm docker:web-app-logs && pnpm docker:convex-backend-logs && pnpm docker:llm-transformer-logs && pnpm docker:llm-logs"

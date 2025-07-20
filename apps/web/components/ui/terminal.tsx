@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { motion } from "framer-motion";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "../../lib/utils";
 
 interface TerminalProps {
   children: React.ReactNode;
@@ -36,7 +37,13 @@ interface AnimatedSpanProps {
 }
 
 // Terminal Root Component
-export function Terminal({ children, className, delay = 0, speed = 1, onComplete }: TerminalProps) {
+export function Terminal({
+  children,
+  className,
+  delay = 0,
+  speed = 1,
+  onComplete,
+}: TerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new content is added
@@ -47,10 +54,12 @@ export function Terminal({ children, className, delay = 0, speed = 1, onComplete
   });
 
   return (
-    <div className={cn(
-      "bg-gray-900 rounded-lg border border-gray-700 overflow-hidden font-mono text-sm",
-      className
-    )}>
+    <div
+      className={cn(
+        "bg-gray-900 rounded-lg border border-gray-700 overflow-hidden font-mono text-sm",
+        className
+      )}
+    >
       {/* Terminal Header */}
       <div className="flex items-center px-4 py-2 bg-gray-800 border-b border-gray-700">
         <div className="flex space-x-2">
@@ -58,13 +67,11 @@ export function Terminal({ children, className, delay = 0, speed = 1, onComplete
           <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
         </div>
-        <div className="flex-1 text-center text-gray-400 text-xs">
-          Terminal
-        </div>
+        <div className="flex-1 text-center text-gray-400 text-xs">Terminal</div>
       </div>
-      
+
       {/* Terminal Content */}
-      <div 
+      <div
         ref={terminalRef}
         className="p-4 min-h-[300px] max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
       >
@@ -81,14 +88,14 @@ export function Terminal({ children, className, delay = 0, speed = 1, onComplete
 }
 
 // Typewriter Animation Component
-export function TypingAnimation({ 
-  children, 
-  className, 
-  delay = 0, 
+export function TypingAnimation({
+  children,
+  className,
+  delay = 0,
   speed = 1,
-  onComplete 
+  onComplete,
 }: TypingAnimationProps) {
-  const [displayedText, setDisplayedText] = useState('');
+  const [displayedText, setDisplayedText] = useState("");
   const [isComplete, setIsComplete] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -126,7 +133,11 @@ export function TypingAnimation({
       {!isComplete && (
         <motion.span
           animate={{ opacity: [1, 0] }}
-          transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
+          transition={{
+            duration: 0.8,
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
           className="text-green-400"
         >
           |
@@ -137,22 +148,22 @@ export function TypingAnimation({
 }
 
 // Loading Animation Component
-export function Loading({ 
-  loadingMessage, 
-  completeMessage, 
-  duration = 3000, 
-  delay = 0, 
+export function Loading({
+  loadingMessage,
+  completeMessage,
+  duration = 3000,
+  delay = 0,
   className,
-  onComplete 
+  onComplete,
 }: LoadingProps) {
   const [isLoading, setIsLoading] = useState(true);
-  const [dots, setDots] = useState('');
+  const [dots, setDots] = useState("");
 
   useEffect(() => {
     const startDelay = setTimeout(() => {
       // Animate dots
       const dotsInterval = setInterval(() => {
-        setDots(prev => prev.length >= 3 ? '' : prev + '.');
+        setDots((prev) => (prev.length >= 3 ? "" : `${prev}.`));
       }, 500);
 
       // Complete loading after duration
@@ -174,7 +185,10 @@ export function Loading({
   return (
     <div className={cn("text-yellow-400", className)}>
       {isLoading ? (
-        <span>{loadingMessage}{dots}</span>
+        <span>
+          {loadingMessage}
+          {dots}
+        </span>
       ) : (
         <motion.span
           initial={{ opacity: 0, x: -10 }}
@@ -189,7 +203,11 @@ export function Loading({
 }
 
 // Animated Span Component
-export function AnimatedSpan({ children, className, delay = 0 }: AnimatedSpanProps) {
+export function AnimatedSpan({
+  children,
+  className,
+  delay = 0,
+}: AnimatedSpanProps) {
   return (
     <motion.span
       initial={{ opacity: 0, y: 10 }}
@@ -203,22 +221,22 @@ export function AnimatedSpan({ children, className, delay = 0 }: AnimatedSpanPro
 }
 
 // Command Line Component
-export function CommandLine({ 
-  command, 
-  delay = 0, 
+export function CommandLine({
+  command,
+  delay = 0,
   speed = 1,
-  onComplete 
-}: { 
-  command: string; 
-  delay?: number; 
+  onComplete,
+}: {
+  command: string;
+  delay?: number;
   speed?: number;
   onComplete?: () => void;
 }) {
   return (
     <div className="flex items-start space-x-2 mb-2">
       <span className="text-blue-400 shrink-0">$</span>
-      <TypingAnimation 
-        delay={delay} 
+      <TypingAnimation
+        delay={delay}
         speed={speed}
         onComplete={onComplete}
         className="text-white"
@@ -230,22 +248,22 @@ export function CommandLine({
 }
 
 // Output Line Component
-export function OutputLine({ 
-  children, 
-  delay = 0, 
+export function OutputLine({
+  children,
+  delay = 0,
   className,
-  type = 'success'
-}: { 
-  children: React.ReactNode; 
-  delay?: number; 
+  type = "success",
+}: {
+  children: React.ReactNode;
+  delay?: number;
   className?: string;
-  type?: 'success' | 'error' | 'info' | 'warning';
+  type?: "success" | "error" | "info" | "warning";
 }) {
   const typeColors = {
-    success: 'text-green-400',
-    error: 'text-red-400',
-    info: 'text-blue-400',
-    warning: 'text-yellow-400'
+    success: "text-green-400",
+    error: "text-red-400",
+    info: "text-blue-400",
+    warning: "text-yellow-400",
   };
 
   return (

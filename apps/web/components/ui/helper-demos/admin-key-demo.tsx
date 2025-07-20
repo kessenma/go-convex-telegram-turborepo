@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Terminal, CommandLine, OutputLine, Loading } from '../terminal';
-import { motion } from 'framer-motion';
-import { cn } from '../../../lib/utils';
+import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { cn } from "../../../lib/utils";
+import { CommandLine, Loading, OutputLine, Terminal } from "../terminal";
 
 interface AdminKeyDemoProps {
   className?: string;
@@ -12,20 +12,20 @@ interface AdminKeyDemoProps {
 }
 
 type CommandStep = {
-  type: 'command';
+  type: "command";
   content: string;
   delay: number;
 };
 
 type OutputStep = {
-  type: 'output';
+  type: "output";
   content: string;
   delay: number;
-  outputType?: 'success' | 'error' | 'warning' | 'info';
+  outputType?: "success" | "error" | "warning" | "info";
 };
 
 type LoadingStep = {
-  type: 'loading';
+  type: "loading";
   loadingMessage: string;
   completeMessage: string;
   duration: number;
@@ -34,17 +34,27 @@ type LoadingStep = {
 
 type Step = CommandStep | OutputStep | LoadingStep;
 
-export function AdminKeyDemo({ className, autoStart = false, isVisible = false }: AdminKeyDemoProps) {
-  const [executedSteps, setExecutedSteps] = useState<Array<{type: string, content: string, outputType?: string}>>([]);
+export function AdminKeyDemo({
+  className,
+  autoStart = false,
+  isVisible = false,
+}: AdminKeyDemoProps) {
+  const [executedSteps, setExecutedSteps] = useState<
+    Array<{ type: string; content: string; outputType?: string }>
+  >([]);
   const [currentStep, setCurrentStep] = useState(autoStart ? 0 : -1);
   const [isComplete, setIsComplete] = useState(false);
 
-  const addToHistory = (step: {type: string, content: string, outputType?: string}) => {
-    setExecutedSteps(prev => [...prev, step]);
+  const addToHistory = (step: {
+    type: string;
+    content: string;
+    outputType?: string;
+  }) => {
+    setExecutedSteps((prev) => [...prev, step]);
   };
 
   const nextStep = () => {
-    setCurrentStep(prev => prev + 1);
+    setCurrentStep((prev) => prev + 1);
   };
 
   const startDemo = () => {
@@ -55,91 +65,107 @@ export function AdminKeyDemo({ className, autoStart = false, isVisible = false }
 
   const steps: Step[] = [
     {
-      type: 'command',
-      content: 'pnpm get-admin-key',
-      delay: 0
+      type: "command",
+      content: "pnpm get-admin-key",
+      delay: 0,
     },
     {
-      type: 'loading',
-      loadingMessage: '🔑 Generating Convex admin key',
-      completeMessage: 'Admin key generation complete',
+      type: "loading",
+      loadingMessage: "🔑 Generating Convex admin key",
+      completeMessage: "Admin key generation complete",
       duration: 2000,
-      delay: 800
+      delay: 800,
     },
     {
-      type: 'output',
-      content: 'convex-instance|a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456',
+      type: "output",
+      content:
+        "convex-instance|a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
       delay: 500,
-      outputType: 'success' as const
+      outputType: "success" as const,
     },
     {
-      type: 'output',
-      content: 'Admin key saved to: /convex/admin-key/admin_key_20241219_143052.md',
+      type: "output",
+      content:
+        "Admin key saved to: /convex/admin-key/admin_key_20241219_143052.md",
       delay: 700,
-      outputType: 'info' as const
+      outputType: "info" as const,
     },
     {
-      type: 'output',
-      content: '',
+      type: "output",
+      content: "",
       delay: 900,
-      outputType: 'info' as const
+      outputType: "info" as const,
     },
     {
-      type: 'output',
-      content: '🎯 Use this admin key to:',
+      type: "output",
+      content: "🎯 Use this admin key to:",
       delay: 1100,
-      outputType: 'info' as const
+      outputType: "info" as const,
     },
     {
-      type: 'output',
-      content: '  • Access Convex Dashboard at http://localhost:6791',
+      type: "output",
+      content: "  • Access Convex Dashboard at http://localhost:6791",
       delay: 1200,
-      outputType: 'info' as const
+      outputType: "info" as const,
     },
     {
-      type: 'output',
-      content: '  • Manage your self-hosted Convex instance',
+      type: "output",
+      content: "  • Manage your self-hosted Convex instance",
       delay: 1300,
-      outputType: 'info' as const
+      outputType: "info" as const,
     },
     {
-      type: 'output',
-      content: '  • Configure deployment settings',
+      type: "output",
+      content: "  • Configure deployment settings",
       delay: 1400,
-      outputType: 'info' as const
-    }
+      outputType: "info" as const,
+    },
   ];
 
   // Auto-advance output steps after their delay + a small buffer
   React.useEffect(() => {
     if (currentStep >= 0 && currentStep < steps.length) {
       const step = steps[currentStep];
-      if (step && step.type === 'output') {
+      if (step && step.type === "output") {
         const timer = setTimeout(() => {
           // Add completed step to history
-          addToHistory({ type: 'output', content: step.content, outputType: step.outputType });
+          addToHistory({
+            type: "output",
+            content: step.content,
+            outputType: step.outputType,
+          });
           nextStep();
         }, step.delay + 500); // Add 500ms buffer for the animation
-        
+
         return () => clearTimeout(timer);
       }
     }
-  }, [currentStep]);
+  }, [
+    currentStep, // Add completed step to history
+    addToHistory,
+    nextStep,
+    steps.length,
+    steps[currentStep],
+  ]);
 
   const renderStep = (step: Step, index: number) => {
     if (index > currentStep) return null;
 
     const handleStepComplete = () => {
-      if (step.type === 'command') {
-        addToHistory({ type: 'command', content: step.content });
-      } else if (step.type === 'loading') {
-        addToHistory({ type: 'output', content: `✅ ${step.completeMessage}`, outputType: 'success' });
+      if (step.type === "command") {
+        addToHistory({ type: "command", content: step.content });
+      } else if (step.type === "loading") {
+        addToHistory({
+          type: "output",
+          content: `✅ ${step.completeMessage}`,
+          outputType: "success",
+        });
       }
       nextStep();
     };
 
     switch (step.type) {
-      case 'command':
+      case "command":
         return (
           <CommandLine
             key={index}
@@ -148,19 +174,15 @@ export function AdminKeyDemo({ className, autoStart = false, isVisible = false }
             onComplete={handleStepComplete}
           />
         );
-      
-      case 'output':
+
+      case "output":
         return (
-          <OutputLine
-            key={index}
-            delay={step.delay}
-            type={step.outputType}
-          >
+          <OutputLine key={index} delay={step.delay} type={step.outputType}>
             {step.content}
           </OutputLine>
         );
-      
-      case 'loading':
+
+      case "loading":
         return (
           <div key={index} className="mb-2 ml-4">
             <Loading
@@ -172,7 +194,7 @@ export function AdminKeyDemo({ className, autoStart = false, isVisible = false }
             />
           </div>
         );
-      
+
       default:
         return null;
     }
@@ -183,7 +205,7 @@ export function AdminKeyDemo({ className, autoStart = false, isVisible = false }
     if (isVisible && currentStep === -1) {
       setTimeout(() => startDemo(), 500); // Small delay for smooth transition
     }
-  }, [isVisible]);
+  }, [isVisible, currentStep, startDemo]);
 
   React.useEffect(() => {
     if (currentStep >= steps.length - 1 && currentStep !== -1) {
@@ -213,28 +235,35 @@ export function AdminKeyDemo({ className, autoStart = false, isVisible = false }
             {/* Show completed steps in history */}
             {executedSteps.map((step, index) => (
               <div key={`history-${index}`} className="mb-1">
-                {step.type === 'command' ? (
+                {step.type === "command" ? (
                   <div className="flex items-start space-x-2">
                     <span className="text-blue-400 shrink-0">$</span>
                     <span className="text-white">{step.content}</span>
                   </div>
                 ) : (
-                  <div className={cn(
-                    "ml-4",
-                    step.outputType === 'success' ? 'text-green-400' :
-                    step.outputType === 'error' ? 'text-red-400' :
-                    step.outputType === 'warning' ? 'text-yellow-400' :
-                    'text-blue-400'
-                  )}>
+                  <div
+                    className={cn(
+                      "ml-4",
+                      step.outputType === "success"
+                        ? "text-green-400"
+                        : step.outputType === "error"
+                          ? "text-red-400"
+                          : step.outputType === "warning"
+                            ? "text-yellow-400"
+                            : "text-blue-400"
+                    )}
+                  >
                     {step.content}
                   </div>
                 )}
               </div>
             ))}
-            
+
             {/* Show current step */}
-            {currentStep < steps.length && steps[currentStep] && renderStep(steps[currentStep], currentStep)}
-            
+            {currentStep < steps.length &&
+              steps[currentStep] &&
+              renderStep(steps[currentStep], currentStep)}
+
             {isComplete && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}

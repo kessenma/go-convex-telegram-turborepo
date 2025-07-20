@@ -1,29 +1,29 @@
 import {
-  FC,
-  Suspense,
-  useRef,
-  useLayoutEffect,
-  useEffect,
-  useMemo,
-} from "react";
+  ContactShadows,
+  Environment,
+  Html,
+  OrbitControls,
+  useFBX,
+  useGLTF,
+  useProgress,
+} from "@react-three/drei";
 import {
   Canvas,
+  invalidate,
   useFrame,
   useLoader,
   useThree,
-  invalidate,
 } from "@react-three/fiber";
 import {
-  OrbitControls,
-  useGLTF,
-  useFBX,
-  useProgress,
-  Html,
-  Environment,
-  ContactShadows,
-} from "@react-three/drei";
-import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
+  type FC,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import * as THREE from "three";
+import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 
 export interface ViewerProps {
   url: string;
@@ -167,7 +167,7 @@ const ModelInner: FC<ModelInnerProps> = ({
   const tHov = useRef({ x: 0, y: 0 });
   const cHov = useRef({ x: 0, y: 0 });
 
-  const ext = useMemo(() => url.split(".").pop()!.toLowerCase(), [url]);
+  const ext = useMemo(() => url.split(".").pop()?.toLowerCase(), [url]);
   const content = useMemo<THREE.Object3D | null>(() => {
     if (ext === "glb" || ext === "gltf") return useGLTF(url).scene.clone();
     if (ext === "fbx") return useFBX(url).clone();
@@ -235,7 +235,16 @@ const ModelInner: FC<ModelInnerProps> = ({
       }, 16);
       return () => clearInterval(id);
     } else onLoaded?.();
-  }, [content]);
+  }, [
+    content,
+    autoFrame,
+    camera,
+    fadeIn,
+    initPitch,
+    initYaw,
+    onLoaded,
+    pivot.copy,
+  ]);
 
   useEffect(() => {
     if (!enableManualRotation || isTouch) return;
@@ -294,7 +303,7 @@ const ModelInner: FC<ModelInnerProps> = ({
       } else if (pts.size === 2 && enableManualZoom) {
         mode = "pinch";
         const [p1, p2] = [...pts.values()];
-        const [point1, point2] = [...pts.values()];
+        const [_point1, _point2] = [...pts.values()];
         if (p1 && p2) {
           startDist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
         }
@@ -364,7 +373,14 @@ const ModelInner: FC<ModelInnerProps> = ({
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", up);
     };
-  }, [gl, enableManualRotation, enableManualZoom, minZoom, maxZoom]);
+  }, [
+    gl,
+    enableManualRotation,
+    enableManualZoom,
+    minZoom,
+    maxZoom,
+    camera.position,
+  ]);
 
   useEffect(() => {
     if (isTouch) return;
@@ -384,7 +400,7 @@ const ModelInner: FC<ModelInnerProps> = ({
 
   useFrame((_, dt) => {
     if (!animationEnabled) return;
-    
+
     let need = false;
     cPar.current.x += (tPar.current.x - cPar.current.x) * PARALLAX_EASE;
     cPar.current.y += (tPar.current.y - cPar.current.y) * PARALLAX_EASE;

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import type React from "react";
+import { useEffect, useId, useRef } from "react";
 import { useOutsideClick } from "../../hooks/use-outside-clicks";
 import { cn } from "../../lib/utils";
 
@@ -10,7 +11,7 @@ export interface ExpandableCardProps {
   onClose: () => void;
   children: React.ReactNode;
   buttonRef?: React.RefObject<HTMLElement>;
-  buttonPosition?: { top: number | 'auto'; bottom?: number; right: number };
+  buttonPosition?: { top: number | "auto"; bottom?: number; right: number };
   width?: string;
   maxWidth?: string;
   maxHeight?: string;
@@ -32,7 +33,7 @@ export function ExpandableCard({
   liquidGlass = false,
   className,
   layoutId,
-  zIndex = 50
+  zIndex = 50,
 }: ExpandableCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
@@ -93,7 +94,7 @@ export function ExpandableCard({
               type: "spring",
               stiffness: 500,
               damping: 30,
-              mass: 1
+              mass: 1,
             }}
             style={{
               position: "fixed",
@@ -124,11 +125,11 @@ export const CloseIcon = () => {
     <motion.svg
       initial={{
         opacity: 0,
-        scale: 0.8
+        scale: 0.8,
       }}
       animate={{
         opacity: 1,
-        scale: 1
+        scale: 1,
       }}
       exit={{
         opacity: 0,
@@ -140,7 +141,7 @@ export const CloseIcon = () => {
       transition={{
         type: "spring",
         stiffness: 500,
-        damping: 25
+        damping: 25,
       }}
       xmlns="http://www.w3.org/2000/svg"
       width="24"

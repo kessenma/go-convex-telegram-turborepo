@@ -1,27 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../generated-convex";
-import { DocumentSelector } from "./components/DocumentSelector";
-import { ChatInterface } from "./components/ChatInterface";
-import { ChatHistory } from "./components/ChatHistory";
-import { Document, ChatConversation } from "./types";
-import { Card } from "../../components/ui/card";
 import { Loader2 } from "lucide-react";
-import { renderIcon } from "../../lib/icon-utils";
-import { ParticlesBackground } from "../../components/ui/backgrounds/particles-background";
-import { Hero, TextAnimationType } from "../../components/ui/hero";
+import { useEffect, useState } from "react";
 import { LightweightLLMStatusIndicator } from "../../components/rag/lightweight-llm-status-indicator";
+import { ParticlesBackground } from "../../components/ui/backgrounds/particles-background";
+import { Card } from "../../components/ui/card";
+import { Hero, TextAnimationType } from "../../components/ui/hero";
+import { api } from "../../generated-convex";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
+import { renderIcon } from "../../lib/icon-utils";
+import { ChatHistory } from "./components/ChatHistory";
+import { ChatInterface } from "./components/ChatInterface";
+import { DocumentSelector } from "./components/DocumentSelector";
+import type { ChatConversation, Document } from "./types";
 
-export default function RAGChatPage() {
+export default function RAGChatPage(): React.ReactElement {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [showChat, setShowChat] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [selectedDocumentObjects, setSelectedDocumentObjects] = useState<Document[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string>('');
-  
+  const [selectedDocumentObjects, setSelectedDocumentObjects] = useState<
+    Document[]
+  >([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>("");
+
   // Get animation settings
   const { animationEnabled } = useAnimationSettings();
 
@@ -30,8 +32,8 @@ export default function RAGChatPage() {
 
   // Update selected document objects when selection changes
   useEffect(() => {
-    if (documents && documents.page && selectedDocuments.length > 0) {
-      const docObjects = documents.page.filter((doc: any) => 
+    if (documents?.page && selectedDocuments.length > 0) {
+      const docObjects = documents.page.filter((doc: any) =>
         selectedDocuments.includes(doc._id)
       ) as Document[];
       setSelectedDocumentObjects(docObjects);
@@ -41,9 +43,9 @@ export default function RAGChatPage() {
   }, [documents, selectedDocuments]);
 
   const handleDocumentToggle = (documentId: string) => {
-    setSelectedDocuments(prev => 
+    setSelectedDocuments((prev) =>
       prev.includes(documentId)
-        ? prev.filter(id => id !== documentId)
+        ? prev.filter((id) => id !== documentId)
         : [...prev, documentId]
     );
   };
@@ -51,7 +53,9 @@ export default function RAGChatPage() {
   const handleStartChat = () => {
     if (selectedDocuments.length > 0) {
       // Generate a new session ID for the new chat
-      setCurrentSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+      setCurrentSessionId(
+        `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      );
       setShowChat(true);
       setShowHistory(false);
     }
@@ -79,7 +83,7 @@ export default function RAGChatPage() {
     setShowHistory(false);
     setShowChat(false);
     setSelectedDocuments([]);
-    setCurrentSessionId('');
+    setCurrentSessionId("");
   };
 
   if (documents === undefined) {
@@ -87,7 +91,9 @@ export default function RAGChatPage() {
       <div className="container px-4 py-8 mx-auto">
         <Card className="p-8 text-center border-gray-700 bg-gray-800/50">
           <div className="flex flex-col gap-4 items-center">
-            {renderIcon(Loader2, { className: "w-8 h-8 animate-spin text-curious-cyan-400" })}
+            {renderIcon(Loader2, {
+              className: "w-8 h-8 animate-spin text-curious-cyan-400",
+            })}
             <p className="text-gray-300">Loading your documents...</p>
           </div>
         </Card>
@@ -100,8 +106,8 @@ export default function RAGChatPage() {
 
   return (
     <div className="relative min-h-screen">
-      <ParticlesBackground 
-        className="fixed z-0" 
+      <ParticlesBackground
+        className="fixed z-0"
         animationEnabled={animationEnabled}
         meshCount={50}
         selectedCount={selectedDocuments.length}
@@ -113,14 +119,13 @@ export default function RAGChatPage() {
           titleAnimation={TextAnimationType.TextRoll}
           subtitleAnimation={TextAnimationType.Shimmer}
           animationSpeed={75}
-        >
-        </Hero>
+        ></Hero>
 
         {/* LLM Status Indicator */}
         <div className="mx-auto mr-80 mb-4 ml-80 max-w-6xl">
-          <LightweightLLMStatusIndicator 
-            size="md" 
-            showLabel={true} 
+          <LightweightLLMStatusIndicator
+            size="md"
+            showLabel={true}
             showLogs={true}
             className="w-full"
           />

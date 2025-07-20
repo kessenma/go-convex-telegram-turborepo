@@ -5,7 +5,22 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "skipLibCheck": true,
+    "jsx": "preserve",
+    "jsxImportSource": "react",
+    "noImplicitAny": false,
+    "strict": false,
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": false,
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitThis": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false
   },
   "include": [
     "**/*.ts",
@@ -19,5 +34,10 @@
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "ts-node": {
+    "compilerOptions": {
+      "strict": false
+    }
+  }
 }

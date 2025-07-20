@@ -1,6 +1,7 @@
 "use client";
-import React, { SVGProps, useState, useEffect } from "react";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
+import type React from "react";
+import { type SVGProps, useState } from "react";
 import { cn } from "../../lib/utils";
 
 export const StickyBanner = ({
@@ -33,7 +34,7 @@ export const StickyBanner = ({
     <motion.div
       className={cn(
         "flex sticky inset-x-0 top-0 z-40 justify-center items-center px-4 py-1 w-full bg-transparent min-h-14",
-        className,
+        className
       )}
       initial={{
         y: -100,

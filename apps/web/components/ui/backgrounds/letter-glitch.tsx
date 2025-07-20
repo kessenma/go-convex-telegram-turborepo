@@ -1,5 +1,5 @@
-import { useRef, useEffect } from "react";
-import React from "react";
+import type React from "react";
+import { useEffect, useRef } from "react";
 
 const LetterGlitch: React.FC<{
   glitchColors?: string[];
@@ -105,16 +105,16 @@ const LetterGlitch: React.FC<{
 
   const hexToRgb = (hex: string) => {
     const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, (m, r, g, b) => {
+    hex = hex.replace(shorthandRegex, (_m, r, g, b) => {
       return r + r + g + g + b + b;
     });
 
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-          r: parseInt(result[1] || '0', 16),
-          g: parseInt(result[2] || '0', 16),
-          b: parseInt(result[3] || '0', 16),
+          r: parseInt(result[1] || "0", 16),
+          g: parseInt(result[2] || "0", 16),
+          b: parseInt(result[3] || "0", 16),
         }
       : null;
   };
@@ -142,9 +142,9 @@ const LetterGlitch: React.FC<{
     grid.current = { columns, rows };
     const totalLetters = columns * rows;
     letters.current = Array.from({ length: totalLetters }, () => ({
-      char: getRandomChar() || '',
-      color: getRandomColor() || '#000000',
-      targetColor: getRandomColor() || '#000000',
+      char: getRandomChar() || "",
+      color: getRandomColor() || "#000000",
+      targetColor: getRandomColor() || "#000000",
       colorProgress: 1,
     }));
   };
@@ -174,7 +174,8 @@ const LetterGlitch: React.FC<{
   };
 
   const drawLetters = () => {
-    if (!context.current || letters.current.length === 0 || !canvasRef.current) return;
+    if (!context.current || letters.current.length === 0 || !canvasRef.current)
+      return;
     const ctx = context.current;
     const { width, height } = canvasRef.current.getBoundingClientRect();
     ctx.clearRect(0, 0, width, height);
@@ -282,20 +283,16 @@ const LetterGlitch: React.FC<{
       window.removeEventListener("resize", handleResize);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [glitchSpeed, smooth]);
+  }, [animate, resizeCanvas]);
 
   return (
     <div className="overflow-hidden relative w-full h-full bg-black">
       <canvas ref={canvasRef} className="block w-full h-full" />
       {outerVignette && (
-        <div
-          className="absolute top-0 left-0 w-full h-full pointer-events-none bg-[radial-gradient(circle,_rgba(0,0,0,0)_60%,_rgba(0,0,0,1)_100%)]"
-        ></div>
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-[radial-gradient(circle,_rgba(0,0,0,0)_60%,_rgba(0,0,0,1)_100%)]"></div>
       )}
       {centerVignette && (
-        <div
-          className="absolute top-0 left-0 w-full h-full pointer-events-none bg-[radial-gradient(circle,_rgba(0,0,0,0.8)_0%,_rgba(0,0,0,0)_60%)]"
-        ></div>
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-[radial-gradient(circle,_rgba(0,0,0,0.8)_0%,_rgba(0,0,0,0)_60%)]"></div>
       )}
     </div>
   );

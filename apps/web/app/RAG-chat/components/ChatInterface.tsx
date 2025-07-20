@@ -1,13 +1,22 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { MessageCircle, Send, Bot, User, Loader2, ArrowLeft, History } from "lucide-react";
-import { renderIcon } from "../../../lib/icon-utils";
-import { Document, ChatMessage } from "../types";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../generated-convex";
-import { type GenericId as Id } from "convex/values";
+import { useQuery } from "convex/react";
+import type { GenericId as Id } from "convex/values";
+import {
+  ArrowLeft,
+  Bot,
+  History,
+  Loader2,
+  MessageCircle,
+  Send,
+  User,
+} from "lucide-react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { api } from "../../../generated-convex";
+import { renderIcon } from "../../../lib/icon-utils";
+import type { ChatMessage, Document } from "../types";
 
 interface ChatInterfaceProps {
   selectedDocuments: Document[];
@@ -16,30 +25,42 @@ interface ChatInterfaceProps {
   onShowHistory: () => void;
 }
 
-export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId, onShowHistory }: ChatInterfaceProps) {
+export function ChatInterface({
+  selectedDocuments,
+  onBackToSelection,
+  sessionId,
+  onShowHistory,
+}: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [_conversationId, _setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Convex queries and mutations
-  const existingConversation = useQuery(api.ragChat.getConversationBySessionId, { sessionId });
+  const existingConversation = useQuery(
+    api.ragChat.getConversationBySessionId,
+    { sessionId }
+  );
   const conversationMessages = useQuery(
-    api.ragChat.getConversationMessages, 
-    existingConversation ? { conversationId: existingConversation._id as Id<"rag_conversations"> } : "skip"
+    api.ragChat.getConversationMessages,
+    existingConversation
+      ? { conversationId: existingConversation._id as Id<"rag_conversations"> }
+      : "skip"
   );
 
   // Load existing messages when conversation is found
   useEffect(() => {
     if (conversationMessages && conversationMessages.length > 0) {
-      const loadedMessages: ChatMessage[] = conversationMessages.map((msg: any) => ({
-        id: msg.messageId,
-        type: msg.role as 'user' | 'assistant',
-        content: msg.content,
-        timestamp: msg.timestamp,
-        sources: msg.sources,
-      }));
+      const loadedMessages: ChatMessage[] = conversationMessages.map(
+        (msg: any) => ({
+          id: msg.messageId,
+          type: msg.role as "user" | "assistant",
+          content: msg.content,
+          timestamp: msg.timestamp,
+          sources: msg.sources,
+        })
+      );
       setMessages(loadedMessages);
     }
   }, [conversationMessages]);
@@ -50,37 +71,38 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [scrollToBottom]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      type: 'user',
+      type: "user",
       content: inputMessage.trim(),
       timestamp: Date.now(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     const currentInput = inputMessage.trim();
-    setInputMessage('');
+    setInputMessage("");
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/RAG/chat', {
-        method: 'POST',
+      const response = await fetch("/api/RAG/chat", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           message: currentInput,
-          documentIds: selectedDocuments.map(doc => doc._id),
+          documentIds: selectedDocuments.map((doc) => doc._id),
           sessionId: sessionId,
-          conversationHistory: messages.slice(-10).map(msg => ({
-            role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
-            content: msg.content
-          }))
+          conversationHistory: messages.slice(-10).map((msg) => ({
+            role:
+              msg.type === "user" ? ("user" as const) : ("assistant" as const),
+            content: msg.content,
+          })),
         }),
       });
 
@@ -89,44 +111,48 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
       if (response.ok) {
         const assistantMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
-          type: 'assistant',
+          type: "assistant",
           content: result.response,
           timestamp: Date.now(),
-          sources: result.sources
+          sources: result.sources,
         };
-        setMessages(prev => [...prev, assistantMessage]);
+        setMessages((prev) => [...prev, assistantMessage]);
       } else {
         // Handle service unavailable (503) or other errors
         if (response.status === 503 && result.serviceUnavailable) {
-          toast.error(result.error || 'Chat service is currently unavailable');
+          toast.error(result.error || "Chat service is currently unavailable");
           const errorMessage: ChatMessage = {
             id: (Date.now() + 1).toString(),
-            type: 'assistant',
-            content: result.error || 'Someone else is using the chat service right now. Please try again in a minute or two.',
+            type: "assistant",
+            content:
+              result.error ||
+              "Someone else is using the chat service right now. Please try again in a minute or two.",
             timestamp: Date.now(),
           };
-          setMessages(prev => [...prev, errorMessage]);
+          setMessages((prev) => [...prev, errorMessage]);
         } else {
-          throw new Error(result.error || 'Chat request failed');
+          throw new Error(result.error || "Chat request failed");
         }
       }
     } catch (error) {
-      console.error('Chat error:', error);
+      console.error("Chat error:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+        type: "assistant",
+        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : "Unknown error"}. Please try again.`,
         timestamp: Date.now(),
       };
-      setMessages(prev => [...prev, errorMessage]);
-      toast.error(error instanceof Error ? error.message : 'Unknown error occurred');
+      setMessages((prev) => [...prev, errorMessage]);
+      toast.error(
+        error instanceof Error ? error.message : "Unknown error occurred"
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -139,11 +165,13 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
         <div>
           <h2 className="text-xl font-bold text-white">Chat with Documents</h2>
           <p className="text-sm text-gray-300">
-            Chatting with: {selectedDocuments.map(d => d.title).join(', ')}
+            Chatting with: {selectedDocuments.map((d) => d.title).join(", ")}
           </p>
           <div className="flex gap-2 items-center mt-1">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-xs text-green-400">Powered by Lightweight LLM</span>
+            <span className="text-xs text-green-400">
+              Powered by Lightweight LLM
+            </span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -171,31 +199,51 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
             <div className="mb-4">
               {renderIcon(MessageCircle, { className: "mx-auto w-12 h-12" })}
             </div>
-            <p>Start a conversation by asking a question about your documents.</p>
+            <p>
+              Start a conversation by asking a question about your documents.
+            </p>
           </div>
         )}
 
         {messages.map((message) => (
-          <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-lg p-3 ${
-              message.type === 'user' 
-                ? 'bg-curious-cyan-600 text-white' 
-                : 'bg-gray-700 text-gray-100'
-            }`}>
+          <div
+            key={message.id}
+            className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
+          >
+            <div
+              className={`max-w-[80%] rounded-lg p-3 ${
+                message.type === "user"
+                  ? "bg-curious-cyan-600 text-white"
+                  : "bg-gray-700 text-gray-100"
+              }`}
+            >
               <div className="flex gap-2 items-start">
-                {message.type === 'assistant' && renderIcon(Bot, { className: "w-4 h-4 mt-1 text-curious-cyan-400" })}
-                {message.type === 'user' && renderIcon(User, { className: "w-4 h-4 mt-1" })}
+                {message.type === "assistant" &&
+                  renderIcon(Bot, {
+                    className: "w-4 h-4 mt-1 text-curious-cyan-400",
+                  })}
+                {message.type === "user" &&
+                  renderIcon(User, { className: "w-4 h-4 mt-1" })}
                 <div className="flex-1">
                   <p className="whitespace-pre-wrap">{message.content}</p>
-                  
+
                   {message.sources && message.sources.length > 0 && (
                     <div className="mt-3 space-y-2">
-                      <p className="text-xs font-semibold text-gray-300">Sources:</p>
+                      <p className="text-xs font-semibold text-gray-300">
+                        Sources:
+                      </p>
                       {message.sources.map((source, index) => (
-                        <div key={index} className="p-2 text-xs bg-gray-800 rounded">
+                        <div
+                          key={index}
+                          className="p-2 text-xs bg-gray-800 rounded"
+                        >
                           <div className="flex justify-between items-center mb-1">
-                            <span className="font-medium text-curious-cyan-400">{source.title}</span>
-                            <span className="text-gray-400">{(source.score * 100).toFixed(1)}% match</span>
+                            <span className="font-medium text-curious-cyan-400">
+                              {source.title}
+                            </span>
+                            <span className="text-gray-400">
+                              {(source.score * 100).toFixed(1)}% match
+                            </span>
                           </div>
                           <p className="text-gray-300">{source.snippet}</p>
                         </div>
@@ -212,14 +260,16 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
           <div className="flex justify-start">
             <div className="max-w-[80%] p-3 rounded-lg bg-gray-700">
               <div className="flex gap-2 items-center">
-                {renderIcon(Bot, { className: "w-4 h-4 text-curious-cyan-400" })}
+                {renderIcon(Bot, {
+                  className: "w-4 h-4 text-curious-cyan-400",
+                })}
                 {renderIcon(Loader2, { className: "w-4 h-4 animate-spin" })}
                 <span className="text-gray-300">Thinking...</span>
               </div>
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -240,8 +290,8 @@ export function ChatInterface({ selectedDocuments, onBackToSelection, sessionId,
             disabled={!inputMessage.trim() || isLoading}
             className={`px-4 py-2 rounded-lg transition-colors ${
               !inputMessage.trim() || isLoading
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                : 'bg-curious-cyan-600 text-white hover:bg-curious-cyan-700'
+                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-curious-cyan-600 text-white hover:bg-curious-cyan-700"
             }`}
           >
             {renderIcon(Send, { className: "w-4 h-4" })}

@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Validate required fields
     if (!body.documents || !Array.isArray(body.documents)) {
       return NextResponse.json(
-        { error: 'Missing or invalid documents array' },
+        { error: "Missing or invalid documents array" },
         { status: 400 }
       );
     }
@@ -17,15 +17,19 @@ export async function POST(request: NextRequest) {
       const doc = body.documents[i];
       if (!doc.title || !doc.content || !doc.contentType) {
         return NextResponse.json(
-          { error: `Document ${i + 1}: Missing required fields: title, content, contentType` },
+          {
+            error: `Document ${i + 1}: Missing required fields: title, content, contentType`,
+          },
           { status: 400 }
         );
       }
 
       // Validate content type
-      if (!['markdown', 'text'].includes(doc.contentType)) {
+      if (!["markdown", "text"].includes(doc.contentType)) {
         return NextResponse.json(
-          { error: `Document ${i + 1}: contentType must be 'markdown' or 'text'` },
+          {
+            error: `Document ${i + 1}: contentType must be 'markdown' or 'text'`,
+          },
           { status: 400 }
         );
       }
@@ -33,27 +37,32 @@ export async function POST(request: NextRequest) {
       // Validate content length (max 1MB)
       if (doc.content.length > 1024 * 1024) {
         return NextResponse.json(
-          { error: `Document ${i + 1}: Content too large. Maximum size is 1MB` },
+          {
+            error: `Document ${i + 1}: Content too large. Maximum size is 1MB`,
+          },
           { status: 400 }
         );
       }
     }
 
     // Get Convex URL from environment
-    const convexUrl = process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || 'http://localhost:3211';
+    const convexUrl =
+      process.env.CONVEX_URL ||
+      process.env.NEXT_PUBLIC_CONVEX_URL ||
+      "http://localhost:3211";
     if (!convexUrl) {
-      console.error('CONVEX_URL not configured');
+      console.error("CONVEX_URL not configured");
       return NextResponse.json(
-        { error: 'Server configuration error' },
+        { error: "Server configuration error" },
         { status: 500 }
       );
     }
 
     // Forward request to Convex HTTP API
     const convexResponse = await fetch(`${convexUrl}/api/documents/batch`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         documents: body.documents,
@@ -63,9 +72,9 @@ export async function POST(request: NextRequest) {
     const convexResult = await convexResponse.json();
 
     if (!convexResponse.ok) {
-      console.error('Convex API error:', convexResult);
+      console.error("Convex API error:", convexResult);
       return NextResponse.json(
-        { error: convexResult.error || 'Failed to save documents' },
+        { error: convexResult.error || "Failed to save documents" },
         { status: convexResponse.status }
       );
     }
@@ -79,13 +88,12 @@ export async function POST(request: NextRequest) {
       errors: convexResult.errors,
       message: convexResult.message,
     });
-
   } catch (error) {
-    console.error('Batch upload API error:', error);
+    console.error("Batch upload API error:", error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

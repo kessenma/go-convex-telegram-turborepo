@@ -4,6 +4,14 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 
+# Set environment variables before importing torch to prevent OpenBLAS warnings
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1" 
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 import torch
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,14 +34,16 @@ model = None
 tokenizer = None
 text_generator = None
 
-# Model configuration - Using a lightweight model optimized for RAG
-MODEL_NAME = "distilgpt2"  # Ultra-lightweight, reliable for M1 Pro
-# Best lightweight options for RAG on M1 Pro:
-# MODEL_NAME = "distilgpt2"  # Ultra-lightweight, reliable
-# MODEL_NAME = "gpt2"  # Slightly larger but good quality
-# MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # Good but may be too large
+# Model configuration - Using Phi-3-mini for excellent RAG performance
+MODEL_NAME = os.getenv("LLM_MODEL", "microsoft/Phi-3-mini-4k-instruct")
+# Alternative options (in order of RAG quality):
+# "microsoft/Phi-3-mini-4k-instruct"  # BEST: Fast, excellent for RAG
+# "Qwen/Qwen2-1.5B-Instruct"  # Great: Very fast, good RAG, 32k context
+# "google/gemma-2-2b-it"  # Good: Excellent instruction following
+# "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # OK: Slower but decent for RAG
+# AVOID: "distilgpt2", "gpt2", "microsoft/DialoGPT-small" - Poor for RAG
 
-MAX_LENGTH = 1024  # DistilGPT2 supports up to 1024 tokens
+MAX_LENGTH = 4096  # Phi-3-mini supports up to 4k tokens
 TEMPERATURE = 0.7
 TOP_P = 0.9
 DO_SAMPLE = True
@@ -107,15 +117,21 @@ def load_model():
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
         
-        # Load model
+        # Load model with optimizations for CPU inference
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
             quantization_config=quantization_config,
             device_map="auto" if device == "cuda" else None,
             torch_dtype=torch.float16 if device == "cuda" else torch.float32,
             trust_remote_code=True,
-            cache_dir="/app/cache/transformers"
+            cache_dir="/app/cache/transformers",
+            low_cpu_mem_usage=True,  # Optimize memory usage
+            use_safetensors=True,    # Use safer tensor format
         )
+        
+        # Optimize model for inference
+        if device == "cpu":
+            model = torch.jit.optimize_for_inference(model)  # JIT optimization for CPU
         
         # Create text generation pipeline
         text_generator = pipeline(
@@ -187,36 +203,45 @@ app.add_middleware(
 )
 
 def format_chat_prompt(message: str, context: str = "", conversation_history: List[Dict[str, str]] = None) -> str:
-    """Format the chat prompt for DistilGPT2 with simple instruction format"""
+    """Format the chat prompt for Phi-3 with proper chat template and RAG support"""
     if conversation_history is None:
         conversation_history = []
     
-    # DistilGPT2 works best with simple text completion format
-    # Build a simple prompt with context and conversation
+    # Phi-3 uses this format: <|system|>system<|end|><|user|>user<|end|><|assistant|>assistant<|end|>
     
-    prompt = "You are a helpful AI assistant that answers questions based on the provided context.\n\n"
-    
-    # Add context if provided (allow more context for RAG)
+    # System message for RAG
     if context.strip():
-        # For RAG, we want to include more context
-        max_context_length = 400  # Reduced for DistilGPT2's smaller context window
+        # For RAG, include context in system message
+        max_context_length = 1500  # Phi-3 can handle more context
         if len(context) > max_context_length:
-            truncated_context = context[:max_context_length] + "..."
+            # Try to truncate at sentence boundaries
+            truncated_context = context[:max_context_length]
+            last_period = truncated_context.rfind('.')
+            if last_period > max_context_length * 0.7:
+                truncated_context = truncated_context[:last_period + 1]
+            else:
+                truncated_context = truncated_context + "..."
         else:
             truncated_context = context
-        prompt += f"Context: {truncated_context}\n\n"
+        
+        system_msg = f"You are a helpful AI assistant. Answer questions based on the provided document information. Be concise and accurate.\n\nDocument Information:\n{truncated_context}"
+    else:
+        system_msg = "You are a helpful AI assistant. Provide clear, concise, and accurate responses."
     
-    # Add conversation history (keep last 1 exchange to save tokens)
+    # Build the chat prompt using Phi-3's format
+    prompt = f"<|system|>\n{system_msg}<|end|>\n"
+    
+    # Add conversation history (keep last 2 exchanges)
     if conversation_history:
-        recent_history = conversation_history[-1:]
+        recent_history = conversation_history[-2:]
         for exchange in recent_history:
             if exchange.get('role') == 'user':
-                prompt += f"Human: {exchange['content']}\n"
+                prompt += f"<|user|>\n{exchange['content']}<|end|>\n"
             elif exchange.get('role') == 'assistant':
-                prompt += f"Assistant: {exchange['content']}\n"
+                prompt += f"<|assistant|>\n{exchange['content']}<|end|>\n"
     
     # Add current message
-    prompt += f"Human: {message}\nAssistant:"
+    prompt += f"<|user|>\n{message}<|end|>\n<|assistant|>\n"
     
     return prompt
 
@@ -254,9 +279,9 @@ async def chat(request: ChatRequest):
         input_tokens = len(tokenizer.encode(prompt))
         logger.info(f"Initial prompt tokens: {input_tokens}")
         
-        # DistilGPT2 has a max length of 1024 tokens
+        # Phi-3-mini has a max length of 4096 tokens
         # We need to ensure input + output doesn't exceed this
-        max_input_tokens = 700  # Conservative for DistilGPT2
+        max_input_tokens = 3000  # Conservative for Phi-3
         
         if input_tokens > max_input_tokens:
             # Truncate the prompt if it's too long
@@ -267,7 +292,7 @@ async def chat(request: ChatRequest):
             logger.warning(f"Prompt truncated from {len(encoded_prompt)} to {input_tokens} tokens")
         
         # Adjust max_new_tokens to ensure total doesn't exceed model limit
-        max_new_tokens = min(max_length, 1024 - input_tokens - 50)  # 50 token safety buffer
+        max_new_tokens = min(max_length, 4096 - input_tokens - 50)  # 50 token safety buffer
         max_new_tokens = max(10, max_new_tokens)  # Ensure at least 10 tokens for output
         
         logger.info(f"Final prompt tokens: {input_tokens}, max_new_tokens: {max_new_tokens}")
@@ -275,11 +300,11 @@ async def chat(request: ChatRequest):
         # For DistilGPT2, encode the prompt properly
         input_ids = tokenizer.encode(prompt, return_tensors='pt')
         
-        # Generate response using the model directly
+        # Generate response using the model directly with optimized settings
         with torch.no_grad():
             outputs = model.generate(
                 input_ids,
-                max_new_tokens=max_new_tokens,
+                max_new_tokens=min(max_new_tokens, 100),  # Limit output length for faster responses
                 temperature=temperature,
                 top_p=TOP_P,
                 do_sample=DO_SAMPLE,
@@ -288,20 +313,24 @@ async def chat(request: ChatRequest):
                 no_repeat_ngram_size=2,
                 repetition_penalty=1.1,
                 early_stopping=True,
-                num_return_sequences=1
+                num_return_sequences=1,
+                use_cache=True,  # Enable KV cache for faster generation
+                num_beams=1,     # Use greedy decoding for speed
             )
         
         # Decode the full output and extract the response
         full_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
         
-        # Extract only the assistant's response (everything after "Assistant:")
-        if "Assistant:" in full_output:
-            # Split by "Assistant:" and take the last part
-            assistant_responses = full_output.split("Assistant:")
-            if len(assistant_responses) > 1:
-                generated_text = assistant_responses[-1].strip()
+        # Extract only the assistant's response for Phi-3 format
+        if "<|assistant|>" in full_output:
+            # Split by the last <|assistant|> token and take everything after it
+            assistant_parts = full_output.split("<|assistant|>")
+            if len(assistant_parts) > 1:
+                generated_text = assistant_parts[-1].strip()
                 # Clean up any remaining conversation markers
-                generated_text = generated_text.split("Human:")[0].strip()
+                generated_text = generated_text.split("<|end|>")[0].strip()
+                generated_text = generated_text.split("<|user|>")[0].strip()
+                generated_text = generated_text.split("<|system|>")[0].strip()
             else:
                 generated_text = ""
         else:

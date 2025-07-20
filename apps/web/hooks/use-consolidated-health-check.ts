@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from 'react';
-import { useStatusStore } from '../stores/status-store';
+import { useCallback, useEffect, useRef } from "react";
+import { useStatusStore } from "../stores/status-store";
 
 /**
  * Consolidated health check hook that manages all status polling from a single source
@@ -10,7 +10,7 @@ import { useStatusStore } from '../stores/status-store';
 export function useConsolidatedHealthCheck() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isPollingRef = useRef(false);
-  
+
   const {
     checkLLMStatus,
     checkLightweightLlmStatus,
@@ -18,15 +18,15 @@ export function useConsolidatedHealthCheck() {
     checkDockerStatus,
     checkUserCountStatus,
     pollingIntervals,
-    consecutiveErrors
+    consecutiveErrors,
   } = useStatusStore();
 
   // Calculate the greatest common divisor to find optimal polling interval
-  const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
   const findOptimalInterval = useCallback(() => {
     const intervals = Object.values(pollingIntervals);
     return intervals.reduce((acc, curr) => gcd(acc, curr));
-  }, [pollingIntervals]);
+  }, [pollingIntervals, gcd]);
 
   // Track last check times for each service
   const lastCheckTimes = useRef({
@@ -34,12 +34,12 @@ export function useConsolidatedHealthCheck() {
     lightweightLlm: 0,
     convex: 0,
     docker: 0,
-    userCount: 0
+    userCount: 0,
   });
 
   const performHealthChecks = useCallback(async () => {
     if (isPollingRef.current) return; // Prevent overlapping calls
-    
+
     isPollingRef.current = true;
     const now = Date.now();
     const checks: Promise<any>[] = [];
@@ -50,7 +50,10 @@ export function useConsolidatedHealthCheck() {
       checks.push(checkLLMStatus().catch(() => false));
     }
 
-    if (now - lastCheckTimes.current.lightweightLlm >= pollingIntervals.lightweightLlm) {
+    if (
+      now - lastCheckTimes.current.lightweightLlm >=
+      pollingIntervals.lightweightLlm
+    ) {
       lastCheckTimes.current.lightweightLlm = now;
       checks.push(checkLightweightLlmStatus().catch(() => false));
     }
@@ -68,14 +71,14 @@ export function useConsolidatedHealthCheck() {
     if (now - lastCheckTimes.current.userCount >= pollingIntervals.userCount) {
       lastCheckTimes.current.userCount = now;
       checks.push(checkUserCountStatus().catch(() => false));
-      
+
       // Trigger session cleanup when checking user count (every 75 seconds)
       // This provides additional cleanup beyond the cron job
       checks.push(
-        fetch('/api/users/active-count/cleanup', { method: 'POST' })
+        fetch("/api/users/active-count/cleanup", { method: "POST" })
           .then(() => true)
           .catch((error) => {
-            console.debug('Session cleanup request failed:', error);
+            console.debug("Session cleanup request failed:", error);
             return false;
           })
       );
@@ -85,25 +88,32 @@ export function useConsolidatedHealthCheck() {
     if (checks.length > 0) {
       try {
         await Promise.allSettled(checks);
-      } catch (error) {
+      } catch (_error) {
         // Silently handle errors as individual status checks handle their own error states
       }
     }
 
     isPollingRef.current = false;
-  }, [checkLLMStatus, checkLightweightLlmStatus, checkConvexStatus, checkDockerStatus, checkUserCountStatus, pollingIntervals]);
+  }, [
+    checkLLMStatus,
+    checkLightweightLlmStatus,
+    checkConvexStatus,
+    checkDockerStatus,
+    checkUserCountStatus,
+    pollingIntervals,
+  ]);
 
   // Start consolidated polling
   const startPolling = useCallback(() => {
     if (intervalRef.current) return; // Already polling
-    
+
     // Use a base interval that's the GCD of all polling intervals
     // This ensures we check each service at its required frequency
     const baseInterval = Math.max(findOptimalInterval(), 5000); // Minimum 5 seconds
-    
+
     // Perform initial check
     performHealthChecks();
-    
+
     intervalRef.current = setInterval(performHealthChecks, baseInterval);
   }, [performHealthChecks, findOptimalInterval]);
 
@@ -118,7 +128,7 @@ export function useConsolidatedHealthCheck() {
   // Auto-start polling on mount
   useEffect(() => {
     startPolling();
-    
+
     return () => {
       stopPolling();
     };
@@ -128,13 +138,13 @@ export function useConsolidatedHealthCheck() {
   useEffect(() => {
     stopPolling();
     startPolling();
-  }, [pollingIntervals, startPolling, stopPolling]);
+  }, [startPolling, stopPolling]);
 
   return {
     startPolling,
     stopPolling,
     isPolling: !!intervalRef.current,
-    performHealthChecks
+    performHealthChecks,
   };
 }
 
@@ -154,7 +164,7 @@ export function useStatusData() {
     consecutiveErrors,
     pollingIntervals,
     getSystemHealth,
-    isSystemReady
+    isSystemReady,
   } = useStatusStore();
 
   return {
@@ -175,36 +185,36 @@ export function useStatusData() {
         lastUpdated: lastUpdated.llm,
         consecutiveErrors: consecutiveErrors.llm,
         pollingInterval: pollingIntervals.llm,
-        loading: loading.llm
+        loading: loading.llm,
       },
       lightweightLlm: {
         ...lightweightLlmStatus,
         lastUpdated: lastUpdated.lightweightLlm,
         consecutiveErrors: consecutiveErrors.lightweightLlm,
         pollingInterval: pollingIntervals.lightweightLlm,
-        loading: loading.lightweightLlm
+        loading: loading.lightweightLlm,
       },
       convex: {
         ...convexStatus,
         lastUpdated: lastUpdated.convex,
         consecutiveErrors: consecutiveErrors.convex,
         pollingInterval: pollingIntervals.convex,
-        loading: loading.convex
+        loading: loading.convex,
       },
       docker: {
         ...dockerStatus,
         lastUpdated: lastUpdated.docker,
         consecutiveErrors: consecutiveErrors.docker,
         pollingInterval: pollingIntervals.docker,
-        loading: loading.docker
+        loading: loading.docker,
       },
       userCount: {
         ...userCountStatus,
         lastUpdated: lastUpdated.userCount,
         consecutiveErrors: consecutiveErrors.userCount,
         pollingInterval: pollingIntervals.userCount,
-        loading: loading.userCount
-      }
-    }
+        loading: loading.userCount,
+      },
+    },
   };
 }

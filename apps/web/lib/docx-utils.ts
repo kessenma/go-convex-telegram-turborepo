@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
 /**
  * DOCX TEXT EXTRACTION UTILITY
  * ============================
- * 
+ *
  * PURPOSE: Client-side DOCX text extraction for RAG document upload
- * 
+ *
  * FEATURES:
  * - Extracts text content from DOCX files using mammoth.js
  * - Preserves basic formatting and structure
@@ -14,7 +14,7 @@
  * - Browser-compatible without native dependencies
  */
 
-import * as mammoth from 'mammoth';
+import * as mammoth from "mammoth";
 
 export interface DOCXExtractionResult {
   text: string;
@@ -40,49 +40,56 @@ export type DOCXExtractionResponse = DOCXExtractionResult | DOCXExtractionError;
  * @param file - The DOCX file to extract text from
  * @returns Promise with extracted text and metadata or error
  */
-export async function extractTextFromDOCX(file: File): Promise<DOCXExtractionResponse> {
+export async function extractTextFromDOCX(
+  file: File
+): Promise<DOCXExtractionResponse> {
   // Validate file type
-  if (!file.type.includes('wordprocessingml') && 
-      !file.type.includes('msword') && 
-      !file.name.toLowerCase().endsWith('.docx') && 
-      !file.name.toLowerCase().endsWith('.doc')) {
+  if (
+    !file.type.includes("wordprocessingml") &&
+    !file.type.includes("msword") &&
+    !file.name.toLowerCase().endsWith(".docx") &&
+    !file.name.toLowerCase().endsWith(".doc")
+  ) {
     return {
       success: false as const,
-      error: 'Invalid file type. Please provide a DOCX or DOC file.',
+      error: "Invalid file type. Please provide a DOCX or DOC file.",
     };
   }
 
   try {
     // Convert file to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
-    
+
     // Extract raw text using mammoth
     const result = await mammoth.extractRawText({ arrayBuffer });
-    
+
     // Clean the extracted text
     const cleanedText = cleanDOCXText(result.value);
-    
+
     // Calculate basic metadata
     const wordCount = countWords(cleanedText);
     const characterCount = cleanedText.length;
-    
+
     const extractionResult: DOCXExtractionResult = {
       text: cleanedText,
       metadata: {
         wordCount,
         characterCount,
-        title: file.name.replace(/\.[^/.]+$/, ''), // Use filename as title
-        lastModified: file.lastModified ? new Date(file.lastModified) : undefined,
+        title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
+        lastModified: file.lastModified
+          ? new Date(file.lastModified)
+          : undefined,
       },
     };
-    
+
     return extractionResult;
   } catch (error) {
-    console.error('DOCX extraction error:', error);
+    console.error("DOCX extraction error:", error);
     return {
       success: false as const,
-      error: 'Failed to extract text from DOCX file',
-      details: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: "Failed to extract text from DOCX file",
+      details:
+        error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
@@ -93,13 +100,15 @@ export async function extractTextFromDOCX(file: File): Promise<DOCXExtractionRes
  * @returns Cleaned and formatted text
  */
 function cleanDOCXText(rawText: string): string {
-  return rawText
-    // Remove excessive whitespace
-    .replace(/\s+/g, ' ')
-    // Normalize line breaks
-    .replace(/\n\s*\n/g, '\n\n')
-    // Remove leading/trailing whitespace
-    .trim();
+  return (
+    rawText
+      // Remove excessive whitespace
+      .replace(/\s+/g, " ")
+      // Normalize line breaks
+      .replace(/\n\s*\n/g, "\n\n")
+      // Remove leading/trailing whitespace
+      .trim()
+  );
 }
 
 /**
@@ -117,15 +126,20 @@ function countWords(text: string): number {
  * @param file - File to validate
  * @returns Validation result
  */
-export function validateDOCXFile(file: File): { valid: boolean; error?: string } {
+export function validateDOCXFile(file: File): {
+  valid: boolean;
+  error?: string;
+} {
   // Check file type
-  if (!file.type.includes('wordprocessingml') && 
-      !file.type.includes('msword') && 
-      !file.name.toLowerCase().endsWith('.docx') && 
-      !file.name.toLowerCase().endsWith('.doc')) {
+  if (
+    !file.type.includes("wordprocessingml") &&
+    !file.type.includes("msword") &&
+    !file.name.toLowerCase().endsWith(".docx") &&
+    !file.name.toLowerCase().endsWith(".doc")
+  ) {
     return {
       valid: false,
-      error: 'File must be a DOCX or DOC file (.docx or .doc extension)',
+      error: "File must be a DOCX or DOC file (.docx or .doc extension)",
     };
   }
 
@@ -134,7 +148,7 @@ export function validateDOCXFile(file: File): { valid: boolean; error?: string }
   if (file.size > maxSize) {
     return {
       valid: false,
-      error: 'DOCX file size must be less than 10MB',
+      error: "DOCX file size must be less than 10MB",
     };
   }
 
@@ -142,7 +156,7 @@ export function validateDOCXFile(file: File): { valid: boolean; error?: string }
   if (file.size === 0) {
     return {
       valid: false,
-      error: 'DOCX file appears to be empty',
+      error: "DOCX file appears to be empty",
     };
   }
 
@@ -154,18 +168,22 @@ export function validateDOCXFile(file: File): { valid: boolean; error?: string }
  * @param metadata - DOCX metadata
  * @returns Generated summary string
  */
-export function generateDOCXSummary(metadata: DOCXExtractionResult['metadata']): string {
+export function generateDOCXSummary(
+  metadata: DOCXExtractionResult["metadata"]
+): string {
   if (!metadata) {
-    return 'DOCX document';
+    return "DOCX document";
   }
 
   const parts: string[] = [];
 
   if (metadata.wordCount) {
-    parts.push(`${metadata.wordCount} word${metadata.wordCount > 1 ? 's' : ''}`);
+    parts.push(
+      `${metadata.wordCount} word${metadata.wordCount > 1 ? "s" : ""}`
+    );
   }
 
-  if (metadata.title && metadata.title !== 'Untitled') {
+  if (metadata.title && metadata.title !== "Untitled") {
     parts.push(`titled "${metadata.title}"`);
   }
 
@@ -173,5 +191,7 @@ export function generateDOCXSummary(metadata: DOCXExtractionResult['metadata']):
     parts.push(`modified ${metadata.lastModified.toLocaleDateString()}`);
   }
 
-  return parts.length > 0 ? `DOCX document (${parts.join(', ')})` : 'DOCX document';
+  return parts.length > 0
+    ? `DOCX document (${parts.join(", ")})`
+    : "DOCX document";
 }

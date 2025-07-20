@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
-import { useState, useEffect } from "react";
-import { FunctionReference, OptionalRestArgs } from "convex/server";
+import { useMutation, useQuery } from "convex/react";
+import type { FunctionReference, OptionalRestArgs } from "convex/server";
+import { useEffect, useState } from "react";
 
 /**
  * Safe wrapper around useQuery that handles Convex connection failures gracefully
@@ -18,7 +18,7 @@ export function useSafeQuery<Query extends FunctionReference<"query">>(
   retry: () => void;
 } {
   const [error, setError] = useState<Error | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
+  const [_retryKey, setRetryKey] = useState(0);
 
   let data: Query["_returnType"] | undefined;
   let convexError: Error | null = null;
@@ -27,7 +27,8 @@ export function useSafeQuery<Query extends FunctionReference<"query">>(
     // eslint-disable-next-line react-hooks/rules-of-hooks
     data = useQuery(query, ...args);
   } catch (err) {
-    convexError = err instanceof Error ? err : new Error("Unknown Convex error");
+    convexError =
+      err instanceof Error ? err : new Error("Unknown Convex error");
   }
 
   useEffect(() => {
@@ -36,11 +37,11 @@ export function useSafeQuery<Query extends FunctionReference<"query">>(
     } else {
       setError(null);
     }
-  }, [convexError, retryKey]);
+  }, [convexError]);
 
   const retry = () => {
     setError(null);
-    setRetryKey(prev => prev + 1);
+    setRetryKey((prev) => prev + 1);
   };
 
   return {
@@ -48,7 +49,7 @@ export function useSafeQuery<Query extends FunctionReference<"query">>(
     error,
     isLoading: data === undefined && !error,
     isError: !!error,
-    retry
+    retry,
   };
 }
 
@@ -58,14 +59,20 @@ export function useSafeQuery<Query extends FunctionReference<"query">>(
 export function useSafeMutation<Mutation extends FunctionReference<"mutation">>(
   mutation: Mutation
 ): {
-  mutate: (...args: OptionalRestArgs<Mutation>) => Promise<Mutation["_returnType"] | null>;
+  mutate: (
+    ...args: OptionalRestArgs<Mutation>
+  ) => Promise<Mutation["_returnType"] | null>;
   isLoading: boolean;
   error: Error | null;
 } {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  let convexMutation: ((...args: OptionalRestArgs<Mutation>) => Promise<Mutation["_returnType"]>) | null = null;
+  let convexMutation:
+    | ((
+        ...args: OptionalRestArgs<Mutation>
+      ) => Promise<Mutation["_returnType"]>)
+    | null = null;
 
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -74,9 +81,13 @@ export function useSafeMutation<Mutation extends FunctionReference<"mutation">>(
     console.error("Failed to initialize Convex mutation:", err);
   }
 
-  const mutate = async (...args: OptionalRestArgs<Mutation>): Promise<Mutation["_returnType"] | null> => {
+  const mutate = async (
+    ...args: OptionalRestArgs<Mutation>
+  ): Promise<Mutation["_returnType"] | null> => {
     if (!convexMutation) {
-      const error = new Error("Convex mutation not available - database may be down");
+      const error = new Error(
+        "Convex mutation not available - database may be down"
+      );
       setError(error);
       throw error;
     }
@@ -99,7 +110,7 @@ export function useSafeMutation<Mutation extends FunctionReference<"mutation">>(
   return {
     mutate,
     isLoading,
-    error
+    error,
   };
 }
 
@@ -121,7 +132,7 @@ export function useConvexConnection(): {
     try {
       // Try to make a simple query to test connection
       // This is a basic connectivity test
-      const response = await fetch('/api/convex/status');
+      const response = await fetch("/api/convex/status");
       setIsConnected(response.ok);
     } catch (error) {
       console.error("Convex connection check failed:", error);
@@ -134,17 +145,17 @@ export function useConvexConnection(): {
 
   useEffect(() => {
     checkConnection();
-    
+
     // Check connection every 30 seconds
     const interval = setInterval(checkConnection, 30000);
-    
+
     return () => clearInterval(interval);
-  }, []);
+  }, [checkConnection]);
 
   return {
     isConnected,
     isChecking,
     lastChecked,
-    checkConnection
+    checkConnection,
   };
 }

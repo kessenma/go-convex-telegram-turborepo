@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
 
 type Tab = {
@@ -32,17 +32,24 @@ export function Tabs({
   variant = "default",
 }: TabsProps): React.JSX.Element | null {
   // Use activeTabIndex prop or default to first tab
-  const currentActiveIndex = activeTabIndex !== undefined && activeTabIndex >= 0 ? activeTabIndex : 0;
+  const currentActiveIndex =
+    activeTabIndex !== undefined && activeTabIndex >= 0 ? activeTabIndex : 0;
   const [active, setActive] = useState<Tab>(() => {
     if (!propTabs || propTabs.length === 0) {
-      return { title: '', value: '', content: '' };
+      return { title: "", value: "", content: "" };
     }
     return propTabs[currentActiveIndex] || propTabs[0]!;
   });
 
   // Update active tab when activeTabIndex prop changes
   useEffect(() => {
-    if (propTabs && propTabs.length > 0 && activeTabIndex !== undefined && activeTabIndex >= 0 && propTabs[activeTabIndex]) {
+    if (
+      propTabs &&
+      propTabs.length > 0 &&
+      activeTabIndex !== undefined &&
+      activeTabIndex >= 0 &&
+      propTabs[activeTabIndex]
+    ) {
       setActive(propTabs[activeTabIndex]!);
     }
   }, [activeTabIndex, propTabs]);
@@ -70,14 +77,20 @@ export function Tabs({
       >
         {propTabs.map((tab, idx) => (
           <button
-            key={typeof tab.title === 'string' ? tab.title : tab.value}
+            key={typeof tab.title === "string" ? tab.title : tab.value}
             onClick={() => {
               handleTabClick(idx);
             }}
             className={cn(
-              variant === "default" ? "relative px-4 py-2 rounded-full" : "relative px-4 py-2 -skew-x-12",
-              variant === "skewed" && active.value === tab.value ? "border border-b-[3px] border-primary" : "",
-              variant === "skewed" && active.value !== tab.value ? "border border-transparent" : "",
+              variant === "default"
+                ? "relative px-4 py-2 rounded-full"
+                : "relative px-4 py-2 -skew-x-12",
+              variant === "skewed" && active.value === tab.value
+                ? "border border-b-[3px] border-primary"
+                : "",
+              variant === "skewed" && active.value !== tab.value
+                ? "border border-transparent"
+                : "",
               tabClassName
             )}
             style={{
@@ -95,10 +108,12 @@ export function Tabs({
               />
             )}
 
-            <span className={cn(
-              "block relative", 
-              variant === "default" ? "text-black dark:text-white" : ""
-            )}>
+            <span
+              className={cn(
+                "block relative",
+                variant === "default" ? "text-black dark:text-white" : ""
+              )}
+            >
               {tab.title}
             </span>
           </button>
@@ -114,7 +129,7 @@ export function Tabs({
       )}
     </>
   );
-};
+}
 
 type FadeInDivProps = {
   className?: string;
@@ -132,9 +147,7 @@ export function FadeInDiv({
   return (
     <div className="relative w-full h-full">
       {variant === "default" ? (
-        <div className={cn("w-full h-full", className)}>
-          {active.content}
-        </div>
+        <div className={cn("w-full h-full", className)}>{active.content}</div>
       ) : (
         <div className={cn("w-full h-full", className)}>
           <div className="-ml-2 flex items-center justify-between border gap-2 -skew-x-12 pl-3 pr-1.5">
@@ -144,4 +157,4 @@ export function FadeInDiv({
       )}
     </div>
   );
-};
+}

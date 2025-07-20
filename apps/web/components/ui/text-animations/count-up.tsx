@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from "react";
 import { useInView, useMotionValue, useSpring } from "framer-motion";
+import type React from "react";
+import { useEffect, useRef } from "react";
 
 interface CountUpProps {
   to: number;

@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-
 interface BasicErrorScreenProps {
   title: string;
   message: string;
@@ -15,39 +13,48 @@ export function BasicErrorScreen({
   message,
   bulletPoints = [],
   buttonText = "Return to Homepage",
-  buttonHref = "/"
-}: BasicErrorScreenProps) {
+  buttonHref = "/",
+}: BasicErrorScreenProps): React.ReactNode {
   return (
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4 relative overflow-hidden">
       {/* Grid Pattern Background */}
       <div className="absolute inset-0 w-full h-full opacity-20">
-        <div 
+        <div
           className="w-full h-full"
           style={{
             backgroundImage: `
               linear-gradient(rgba(255, 0, 0, 0.3) 1px, transparent 1px),
               linear-gradient(90deg, rgba(255, 0, 0, 0.3) 1px, transparent 1px)
             `,
-            backgroundSize: '50px 50px'
+            backgroundSize: "50px 50px",
           }}
         />
       </div>
-      
+
       {/* Error Card */}
       <div className="relative z-10 max-w-md w-full">
         <div className="bg-gradient-to-br from-red-500/20 via-red-500/10 to-transparent p-[1px] rounded-xl">
           <div className="bg-slate-900/90 backdrop-blur-sm border border-red-500/50 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-red-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-6 h-6 text-red-400"
+              >
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                 <line x1="12" y1="9" x2="12" y2="13"></line>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
               </svg>
               <h2 className="text-xl font-semibold text-red-300">{title}</h2>
             </div>
-            <p className="text-red-200 mb-4">
-              {message}
-            </p>
+            <p className="text-red-200 mb-4">{message}</p>
             {bulletPoints.length > 0 && (
               <div className="text-sm text-red-300 mb-6">
                 <p>This could be due to:</p>
@@ -62,7 +69,18 @@ export function BasicErrorScreen({
               href={buttonHref}
               className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4"
+              >
                 <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
               </svg>
@@ -75,34 +93,47 @@ export function BasicErrorScreen({
   );
 }
 
-export function BasicOfflineScreen() {
+export function BasicOfflineScreen(): React.ReactNode {
   return (
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4 relative overflow-hidden">
       {/* Grid Pattern Background */}
       <div className="absolute inset-0 w-full h-full opacity-20">
-        <div 
+        <div
           className="w-full h-full"
           style={{
             backgroundImage: `
               linear-gradient(rgba(59, 130, 246, 0.3) 1px, transparent 1px),
               linear-gradient(90deg, rgba(59, 130, 246, 0.3) 1px, transparent 1px)
             `,
-            backgroundSize: '50px 50px'
+            backgroundSize: "50px 50px",
           }}
         />
       </div>
-      
+
       {/* Error Card */}
       <div className="relative z-10 max-w-md w-full">
         <div className="bg-gradient-to-br from-blue-500/20 via-blue-500/10 to-transparent p-[1px] rounded-xl">
           <div className="bg-slate-900/90 backdrop-blur-sm border border-blue-500/50 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-blue-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-6 h-6 text-blue-400"
+              >
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
                 <line x1="12" y1="9" x2="12" y2="13"></line>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
               </svg>
-              <h2 className="text-xl font-semibold text-blue-300">No Internet Connection</h2>
+              <h2 className="text-xl font-semibold text-blue-300">
+                No Internet Connection
+              </h2>
             </div>
             <p className="text-slate-300 mb-4">
               Please check your internet connection and try again.
@@ -111,7 +142,18 @@ export function BasicOfflineScreen() {
               href="/"
               className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4"
+              >
                 <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
               </svg>
@@ -124,7 +166,7 @@ export function BasicOfflineScreen() {
   );
 }
 
-export function BasicDatabaseErrorScreen() {
+export function BasicDatabaseErrorScreen(props?: any): React.ReactNode {
   return (
     <BasicErrorScreen
       title="Database Connection Error"
@@ -132,13 +174,13 @@ export function BasicDatabaseErrorScreen() {
       bulletPoints={[
         "Database server is temporarily down",
         "Network connectivity issues",
-        "Configuration problems"
+        "Configuration problems",
       ]}
     />
   );
 }
 
-export function BasicRAGUploadErrorScreen() {
+export function BasicRAGUploadErrorScreen(props?: any): React.ReactNode {
   return (
     <BasicErrorScreen
       title="RAG Upload Page Not Available"
@@ -146,7 +188,7 @@ export function BasicRAGUploadErrorScreen() {
       bulletPoints={[
         "Database server is temporarily down",
         "Network connectivity issues",
-        "Configuration problems"
+        "Configuration problems",
       ]}
     />
   );

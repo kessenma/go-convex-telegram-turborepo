@@ -1,8 +1,10 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-export function LLMLogs() {
-  const [logs, setLogs] = useState<{ timestamp: number; message: string }[]>([]);
+export function LLMLogs(): React.ReactElement {
+  const [logs, setLogs] = useState<{ timestamp: number; message: string }[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

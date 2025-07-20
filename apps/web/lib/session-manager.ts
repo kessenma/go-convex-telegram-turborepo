@@ -11,10 +11,10 @@ interface ServiceSession {
 class SessionManager {
   private sessions: Map<string, ServiceSession> = new Map();
   private readonly SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes timeout
-  
+
   // Service IDs
-  static readonly LIGHTWEIGHT_LLM = 'lightweight-llm';
-  static readonly VECTOR_CONVERT = 'vector-convert';
+  static readonly LIGHTWEIGHT_LLM = "lightweight-llm";
+  static readonly VECTOR_CONVERT = "vector-convert";
 
   private generateSessionId(): string {
     return Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -30,25 +30,29 @@ class SessionManager {
     }
   }
 
-  public acquireService(serviceId: string): { success: boolean; sessionId?: string; message?: string } {
+  public acquireService(serviceId: string): {
+    success: boolean;
+    sessionId?: string;
+    message?: string;
+  } {
     this.cleanupExpiredSessions();
-    
+
     const existingSession = this.sessions.get(serviceId);
     if (existingSession) {
       return {
         success: false,
-        message: `Someone else is using the ${this.getServiceDisplayName(serviceId)} right now. Please try again in a minute or two.`
+        message: `Someone else is using the ${this.getServiceDisplayName(serviceId)} right now. Please try again in a minute or two.`,
       };
     }
 
     const sessionId = this.generateSessionId();
     const now = Date.now();
-    
+
     this.sessions.set(serviceId, {
       serviceId,
       sessionId,
       startTime: now,
-      lastActivity: now
+      lastActivity: now,
     });
 
     console.log(`Service acquired: ${serviceId} with session: ${sessionId}`);
@@ -79,28 +83,31 @@ class SessionManager {
     return !this.sessions.has(serviceId);
   }
 
-  public getServiceStatus(serviceId: string): { available: boolean; message?: string } {
+  public getServiceStatus(serviceId: string): {
+    available: boolean;
+    message?: string;
+  } {
     this.cleanupExpiredSessions();
     const session = this.sessions.get(serviceId);
-    
+
     if (session) {
       return {
         available: false,
-        message: `Someone else is using the ${this.getServiceDisplayName(serviceId)} right now. Please try again in a minute or two.`
+        message: `Someone else is using the ${this.getServiceDisplayName(serviceId)} right now. Please try again in a minute or two.`,
       };
     }
-    
+
     return { available: true };
   }
 
   private getServiceDisplayName(serviceId: string): string {
     switch (serviceId) {
       case SessionManager.LIGHTWEIGHT_LLM:
-        return 'chat service';
+        return "chat service";
       case SessionManager.VECTOR_CONVERT:
-        return 'document conversion service';
+        return "document conversion service";
       default:
-        return 'service';
+        return "service";
     }
   }
 

@@ -1,13 +1,29 @@
 "use client";
 
-import React, { useEffect, useState, useId, useRef } from 'react';
-import { X, FileText, Calendar, Hash, BarChart3, Zap, ZapOff, ChevronDown, Trash2 } from 'lucide-react';
+import {
+  BarChart3,
+  Calendar,
+  ChevronDown,
+  FileText,
+  Hash,
+  Trash2,
+  X,
+  Zap,
+  ZapOff,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useOutsideClick } from '../../hooks/use-outside-clicks';
-import { renderIcon } from '../../lib/icon-utils';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
+import type React from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useNotifications } from '../../contexts/NotificationsContext';
+import { useNotifications } from "../../contexts/NotificationsContext";
+import { useOutsideClick } from "../../hooks/use-outside-clicks";
+import { renderIcon } from "../../lib/icon-utils";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../ui/accordion";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -41,20 +57,27 @@ interface EmbeddingData {
   isActive: boolean;
 }
 
-export default function DocumentViewer({ documentId, isOpen, onClose, animationOrigin }: DocumentViewerProps): React.ReactElement | null {
+export default function DocumentViewer({
+  documentId,
+  isOpen,
+  onClose,
+  animationOrigin,
+}: DocumentViewerProps): React.ReactElement | null {
   const { openNotifications } = useNotifications();
   const deleteDocument = async () => {
     try {
       const response = await fetch(`/api/documents/${documentId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
       if (!response.ok) {
-        throw new Error('Failed to delete document');
+        throw new Error("Failed to delete document");
       }
       setDeleting(true);
-      toast.success('Document deleted successfully');
+      toast.success("Document deleted successfully");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete document');
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete document"
+      );
     }
   };
   const [documentData, setDocumentData] = useState<DocumentData | null>(null);
@@ -64,10 +87,27 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [generatingEmbedding, setGeneratingEmbedding] = useState(false);
-  const [embeddingStatus, setEmbeddingStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [embeddingMessage, setEmbeddingMessage] = useState('');
+  const [_embeddingStatus, setEmbeddingStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+  const [_embeddingMessage, setEmbeddingMessage] = useState("");
   const ref = useRef<HTMLDivElement>(null);
-  const id = useId();
+  const _id = useId();
+
+  const fetchEmbeddings = async (docId: string) => {
+    setLoadingEmbeddings(true);
+    try {
+      const response = await fetch(`/api/documents/${docId}/embeddings`);
+      if (response.ok) {
+        const embeddings = await response.json();
+        setEmbeddingData(embeddings);
+      }
+    } catch (err) {
+      console.error("Failed to fetch embeddings:", err);
+    } finally {
+      setLoadingEmbeddings(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen || !documentId) {
@@ -83,39 +123,24 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
       try {
         const response = await fetch(`/api/documents/${documentId}`);
         if (!response.ok) {
-          throw new Error('Failed to fetch document');
+          throw new Error("Failed to fetch document");
         }
         const data = await response.json();
         setDocumentData(data);
-        
+
         // Fetch embeddings if document has them
         if (data.hasEmbedding) {
           await fetchEmbeddings(documentId);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         setLoading(false);
       }
     };
 
     fetchDocument();
-  }, [documentId, isOpen]);
-
-  const fetchEmbeddings = async (docId: string) => {
-    setLoadingEmbeddings(true);
-    try {
-      const response = await fetch(`/api/documents/${docId}/embeddings`);
-      if (response.ok) {
-        const embeddings = await response.json();
-        setEmbeddingData(embeddings);
-      }
-    } catch (err) {
-      console.error('Failed to fetch embeddings:', err);
-    } finally {
-      setLoadingEmbeddings(false);
-    }
-  };
+  }, [documentId, isOpen, fetchEmbeddings]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -138,26 +163,27 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
 
   const generateEmbedding = async () => {
     if (!documentData) return;
-    
+
     setGeneratingEmbedding(true);
-    setEmbeddingStatus('idle');
-    setEmbeddingMessage('');
-    
+    setEmbeddingStatus("idle");
+    setEmbeddingMessage("");
+
     try {
       // Call the API route which handles session management
-      const response = await fetch('/api/vector-convert-llm/process-document', {
-        method: 'POST',
+      const response = await fetch("/api/vector-convert-llm/process-document", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           document_id: documentData._id,
-          convex_url: process.env.NEXT_PUBLIC_CONVEX_URL || 'http://localhost:3210'
+          convex_url:
+            process.env.NEXT_PUBLIC_CONVEX_URL || "http://localhost:3210",
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (response.ok && result.success) {
         // Refresh document data to show updated embedding status
         const docResponse = await fetch(`/api/documents/${documentId}`);
@@ -168,27 +194,31 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
           if (updatedData.hasEmbedding) {
             await fetchEmbeddings(documentId);
           }
-          setEmbeddingStatus('success');
-          setEmbeddingMessage(`Embedding generated successfully for "${documentData.title}"`);
+          setEmbeddingStatus("success");
+          setEmbeddingMessage(
+            `Embedding generated successfully for "${documentData.title}"`
+          );
         }
       } else {
         // Handle service unavailable (503) or other errors
         if (response.status === 503 && result.serviceUnavailable) {
-          setEmbeddingStatus('error');
-          setEmbeddingMessage(result.error || 'Service is currently unavailable');
-          toast.error(result.error || 'Service is currently unavailable');
+          setEmbeddingStatus("error");
+          setEmbeddingMessage(
+            result.error || "Service is currently unavailable"
+          );
+          toast.error(result.error || "Service is currently unavailable");
         } else {
-          const errorMessage = result.error || 'Failed to generate embedding';
+          const errorMessage = result.error || "Failed to generate embedding";
           setError(errorMessage);
-          setEmbeddingStatus('error');
+          setEmbeddingStatus("error");
           setEmbeddingMessage(errorMessage);
           toast.error(errorMessage);
         }
       }
     } catch (error) {
-      const errorMessage = `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const errorMessage = `Network error: ${error instanceof Error ? error.message : "Unknown error"}`;
       setError(errorMessage);
-      setEmbeddingStatus('error');
+      setEmbeddingStatus("error");
       setEmbeddingMessage(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -197,20 +227,20 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
+    const sizes = ["Bytes", "KB", "MB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(timestamp).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -218,14 +248,14 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
 
   // Calculate animation origin for the modal
   const getAnimationOrigin = () => {
-    if (!animationOrigin) return { originX: '50%', originY: '50%' };
-    
+    if (!animationOrigin) return { originX: "50%", originY: "50%" };
+
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    
+
     const originX = `${(animationOrigin.x / viewportWidth) * 100}%`;
     const originY = `${(animationOrigin.y / viewportHeight) * 100}%`;
-    
+
     return { originX, originY };
   };
 
@@ -248,22 +278,28 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
           <div className="fixed inset-0 grid place-items-center z-[100] p-4">
             <motion.div
               ref={ref}
-              initial={{ 
-                opacity: 0, 
+              initial={{
+                opacity: 0,
                 scale: 0.1,
-                transformOrigin: `${originX} ${originY}`
+                transformOrigin: `${originX} ${originY}`,
               }}
               className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-gray-900 rounded-lg border border-gray-700 overflow-hidden"
               animate={{
                 opacity: deleting ? [1, 0.8, 0.4, 0] : 1,
-                scale: deleting ? [1, 0.8, 0.6, 0.2] : animationOrigin ? 1 : 0.1,
+                scale: deleting
+                  ? [1, 0.8, 0.6, 0.2]
+                  : animationOrigin
+                    ? 1
+                    : 0.1,
                 rotate: deleting ? [0, 360, 720, 1080] : 0,
-                transformOrigin: animationOrigin ? `${originX} ${originY}` : undefined
+                transformOrigin: animationOrigin
+                  ? `${originX} ${originY}`
+                  : undefined,
               }}
-              exit={{ 
-                opacity: 0, 
+              exit={{
+                opacity: 0,
                 scale: 0.1,
-                transformOrigin: `${originX} ${originY}`
+                transformOrigin: `${originX} ${originY}`,
               }}
               transition={{
                 type: deleting ? undefined : "spring",
@@ -272,7 +308,9 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                 duration: deleting ? 1.5 : 0.4,
                 delay: !deleting && animationOrigin ? 0.35 : 0,
                 ease: deleting ? [0.25, 0.46, 0.45, 0.94] : undefined,
-                rotate: deleting ? { duration: 1.5, ease: "easeIn" } : undefined
+                rotate: deleting
+                  ? { duration: 1.5, ease: "easeIn" }
+                  : undefined,
               }}
               onAnimationComplete={() => {
                 if (deleting) {
@@ -288,23 +326,32 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-white">
-                      {documentData?.title || 'Loading...'}
+                      {documentData?.title || "Loading..."}
                     </h2>
                     {documentData && (
                       <div className="flex gap-2 items-center">
                         <p className="text-sm text-gray-400">
-                          {documentData.contentType} • {formatFileSize(documentData.fileSize)}
+                          {documentData.contentType} •{" "}
+                          {formatFileSize(documentData.fileSize)}
                         </p>
                         <div className="flex gap-1 items-center">
                           {documentData.hasEmbedding ? (
                             <>
-                              {renderIcon(Zap, { className: "w-4 h-4 text-green-400" })}
-                              <span className="text-xs text-green-400">Embedded</span>
+                              {renderIcon(Zap, {
+                                className: "w-4 h-4 text-green-400",
+                              })}
+                              <span className="text-xs text-green-400">
+                                Embedded
+                              </span>
                             </>
                           ) : (
                             <>
-                              {renderIcon(ZapOff, { className: "w-4 h-4 text-gray-500" })}
-                              <span className="text-xs text-gray-500">Not Embedded</span>
+                              {renderIcon(ZapOff, {
+                                className: "w-4 h-4 text-gray-500",
+                              })}
+                              <span className="text-xs text-gray-500">
+                                Not Embedded
+                              </span>
                             </>
                           )}
                         </div>
@@ -319,7 +366,9 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                       disabled={generatingEmbedding}
                       className="px-3 py-1 text-sm text-white rounded-lg bg-curious-cyan-600 hover:bg-curious-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {generatingEmbedding ? 'Generating...' : 'Generate Embedding'}
+                      {generatingEmbedding
+                        ? "Generating..."
+                        : "Generate Embedding"}
                     </button>
                   )}
                   <div className="flex gap-2">
@@ -358,36 +407,54 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                     {/* Document Stats */}
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                       <div className="flex gap-3 items-center p-3 bg-gray-800 rounded-lg">
-                        {renderIcon(Calendar, { className: "w-5 h-5 text-curious-cyan-400" })}
+                        {renderIcon(Calendar, {
+                          className: "w-5 h-5 text-curious-cyan-400",
+                        })}
                         <div>
                           <p className="text-sm text-gray-400">Uploaded</p>
-                          <p className="font-medium text-white">{formatDate(documentData.uploadedAt)}</p>
+                          <p className="font-medium text-white">
+                            {formatDate(documentData.uploadedAt)}
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-3 items-center p-3 bg-gray-800 rounded-lg">
-                        {renderIcon(Hash, { className: "w-5 h-5 text-curious-cyan-400" })}
+                        {renderIcon(Hash, {
+                          className: "w-5 h-5 text-curious-cyan-400",
+                        })}
                         <div>
                           <p className="text-sm text-gray-400">Word Count</p>
-                          <p className="font-medium text-white">{documentData.wordCount.toLocaleString()}</p>
+                          <p className="font-medium text-white">
+                            {documentData.wordCount.toLocaleString()}
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-3 items-center p-3 bg-gray-800 rounded-lg">
-                        {renderIcon(BarChart3, { className: "w-5 h-5 text-curious-cyan-400" })}
+                        {renderIcon(BarChart3, {
+                          className: "w-5 h-5 text-curious-cyan-400",
+                        })}
                         <div>
                           <p className="text-sm text-gray-400">File Size</p>
-                          <p className="font-medium text-white">{formatFileSize(documentData.fileSize)}</p>
+                          <p className="font-medium text-white">
+                            {formatFileSize(documentData.fileSize)}
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-3 items-center p-3 bg-gray-800 rounded-lg">
-                        {documentData.hasEmbedding ? (
-                          renderIcon(Zap, { className: "w-5 h-5 text-green-400" })
-                        ) : (
-                          renderIcon(ZapOff, { className: "w-5 h-5 text-gray-500" })
-                        )}
+                        {documentData.hasEmbedding
+                          ? renderIcon(Zap, {
+                              className: "w-5 h-5 text-green-400",
+                            })
+                          : renderIcon(ZapOff, {
+                              className: "w-5 h-5 text-gray-500",
+                            })}
                         <div>
                           <p className="text-sm text-gray-400">Vector Status</p>
-                          <p className={`font-medium ${documentData.hasEmbedding ? 'text-green-400' : 'text-gray-500'}`}>
-                            {documentData.hasEmbedding ? 'Embedded' : 'Not Embedded'}
+                          <p
+                            className={`font-medium ${documentData.hasEmbedding ? "text-green-400" : "text-gray-500"}`}
+                          >
+                            {documentData.hasEmbedding
+                              ? "Embedded"
+                              : "Not Embedded"}
                           </p>
                         </div>
                       </div>
@@ -396,18 +463,31 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                     {/* Embedded Vector Section */}
                     {documentData.hasEmbedding && embeddingData.length > 0 && (
                       <Accordion className="space-y-2">
-                        <AccordionItem value="embeddings" className="bg-gray-800 rounded-lg border border-gray-700">
+                        <AccordionItem
+                          value="embeddings"
+                          className="bg-gray-800 rounded-lg border border-gray-700"
+                        >
                           <AccordionTrigger className="flex justify-between items-center p-4 w-full text-left rounded-lg transition-colors hover:bg-gray-750">
                             <div className="flex gap-3 items-center">
-                              {renderIcon(Zap, { className: "w-5 h-5 text-green-400" })}
+                              {renderIcon(Zap, {
+                                className: "w-5 h-5 text-green-400",
+                              })}
                               <div>
-                                <h3 className="text-lg font-semibold text-white">Embedded Vectors</h3>
+                                <h3 className="text-lg font-semibold text-white">
+                                  Embedded Vectors
+                                </h3>
                                 <p className="text-sm text-gray-400">
-                                  {embeddingData.length} embedding{embeddingData.length !== 1 ? 's' : ''} • {embeddingData[0]?.embeddingDimensions || 0} dimensions
+                                  {embeddingData.length} embedding
+                                  {embeddingData.length !== 1 ? "s" : ""} •{" "}
+                                  {embeddingData[0]?.embeddingDimensions || 0}{" "}
+                                  dimensions
                                 </p>
                               </div>
                             </div>
-                            {renderIcon(ChevronDown, { className: "w-5 h-5 text-gray-400 transition-transform group-data-[expanded]:rotate-180" })}
+                            {renderIcon(ChevronDown, {
+                              className:
+                                "w-5 h-5 text-gray-400 transition-transform group-data-[expanded]:rotate-180",
+                            })}
                           </AccordionTrigger>
                           <AccordionContent className="px-4 pb-4">
                             <div className="space-y-4">
@@ -416,48 +496,87 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                                   <div className="w-6 h-6 rounded-full border-2 border-gray-600 animate-spin border-t-curious-cyan-500"></div>
                                 </div>
                               ) : (
-                                embeddingData.map((embedding, index) => (
-                                  <div key={embedding._id} className="p-4 bg-gray-900 rounded-lg border border-gray-600">
+                                embeddingData.map((embedding, _index) => (
+                                  <div
+                                    key={embedding._id}
+                                    className="p-4 bg-gray-900 rounded-lg border border-gray-600"
+                                  >
                                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                       <div>
-                                        <p className="text-sm text-gray-400">Model</p>
-                                        <p className="font-medium text-white">{embedding.embeddingModel}</p>
+                                        <p className="text-sm text-gray-400">
+                                          Model
+                                        </p>
+                                        <p className="font-medium text-white">
+                                          {embedding.embeddingModel}
+                                        </p>
                                       </div>
                                       <div>
-                                        <p className="text-sm text-gray-400">Dimensions</p>
-                                        <p className="font-medium text-white">{embedding.embeddingDimensions}</p>
+                                        <p className="text-sm text-gray-400">
+                                          Dimensions
+                                        </p>
+                                        <p className="font-medium text-white">
+                                          {embedding.embeddingDimensions}
+                                        </p>
                                       </div>
                                       <div>
-                                        <p className="text-sm text-gray-400">Created</p>
-                                        <p className="font-medium text-white">{formatDate(embedding.createdAt)}</p>
+                                        <p className="text-sm text-gray-400">
+                                          Created
+                                        </p>
+                                        <p className="font-medium text-white">
+                                          {formatDate(embedding.createdAt)}
+                                        </p>
                                       </div>
                                       {embedding.processingTimeMs && (
                                         <div>
-                                          <p className="text-sm text-gray-400">Processing Time</p>
-                                          <p className="font-medium text-white">{embedding.processingTimeMs}ms</p>
+                                          <p className="text-sm text-gray-400">
+                                            Processing Time
+                                          </p>
+                                          <p className="font-medium text-white">
+                                            {embedding.processingTimeMs}ms
+                                          </p>
                                         </div>
                                       )}
                                     </div>
                                     {embedding.chunkText && (
                                       <div className="mt-3">
-                                        <p className="text-sm text-gray-400">Chunk Text</p>
+                                        <p className="text-sm text-gray-400">
+                                          Chunk Text
+                                        </p>
                                         <p className="p-2 mt-1 text-sm text-gray-300 bg-gray-800 rounded border">
-                                          {embedding.chunkText.substring(0, 200)}{embedding.chunkText.length > 200 ? '...' : ''}
+                                          {embedding.chunkText.substring(
+                                            0,
+                                            200
+                                          )}
+                                          {embedding.chunkText.length > 200
+                                            ? "..."
+                                            : ""}
                                         </p>
                                       </div>
                                     )}
                                     <div className="mt-3">
                                       <Accordion className="space-y-2">
-                                        <AccordionItem value="vector-preview" className="bg-gray-700 rounded-lg border border-gray-600">
+                                        <AccordionItem
+                                          value="vector-preview"
+                                          className="bg-gray-700 rounded-lg border border-gray-600"
+                                        >
                                           <AccordionTrigger className="flex justify-between items-center p-4 w-full text-left rounded-lg transition-colors hover:bg-gray-650">
                                             <div className="flex gap-3 items-center">
-                                              <p className="text-sm text-gray-400">Vector Preview</p>
-                                              <span className="text-xs text-gray-500">({embedding.embedding.length} values)</span>
+                                              <p className="text-sm text-gray-400">
+                                                Vector Preview
+                                              </p>
+                                              <span className="text-xs text-gray-500">
+                                                ({embedding.embedding.length}{" "}
+                                                values)
+                                              </span>
                                             </div>
                                           </AccordionTrigger>
                                           <AccordionContent className="px-4 pb-4">
                                             <p className="p-2 font-mono text-xs text-gray-500 bg-gray-800 rounded border">
-                                              [{embedding.embedding.map(v => v.toFixed(4)).join(', ')}]
+                                              [
+                                              {embedding.embedding
+                                                .map((v) => v.toFixed(4))
+                                                .join(", ")}
+                                              ]
                                             </p>
                                           </AccordionContent>
                                         </AccordionItem>
@@ -475,16 +594,22 @@ export default function DocumentViewer({ documentId, isOpen, onClose, animationO
                     {/* Summary */}
                     {documentData.summary && (
                       <div>
-                        <h3 className="mb-3 text-lg font-semibold text-white">Summary</h3>
+                        <h3 className="mb-3 text-lg font-semibold text-white">
+                          Summary
+                        </h3>
                         <div className="p-4 bg-gray-800 rounded-lg">
-                          <p className="text-gray-300">{documentData.summary}</p>
+                          <p className="text-gray-300">
+                            {documentData.summary}
+                          </p>
                         </div>
                       </div>
                     )}
 
                     {/* Content */}
                     <div>
-                      <h3 className="mb-3 text-lg font-semibold text-white">Content</h3>
+                      <h3 className="mb-3 text-lg font-semibold text-white">
+                        Content
+                      </h3>
                       <div className="overflow-y-auto p-4 max-h-96 bg-gray-800 rounded-lg">
                         <pre className="font-mono text-sm text-gray-300 whitespace-pre-wrap">
                           {documentData.content}

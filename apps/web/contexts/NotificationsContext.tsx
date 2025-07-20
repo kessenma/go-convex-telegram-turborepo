@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, type ReactNode, useContext, useState } from "react";
 
 interface NotificationsContextType {
   isOpen: boolean;
@@ -8,16 +8,20 @@ interface NotificationsContextType {
   closeNotifications: () => void;
 }
 
-const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
+const NotificationsContext = createContext<
+  NotificationsContextType | undefined
+>(undefined);
 
-export function NotificationsProvider({ children }: { children: ReactNode }) {
+export function NotificationsProvider({ children }: { children: ReactNode }): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
 
   const openNotifications = () => setIsOpen(true);
   const closeNotifications = () => setIsOpen(false);
 
   return (
-    <NotificationsContext.Provider value={{ isOpen, openNotifications, closeNotifications }}>
+    <NotificationsContext.Provider
+      value={{ isOpen, openNotifications, closeNotifications }}
+    >
       {children}
     </NotificationsContext.Provider>
   );
@@ -26,7 +30,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 export function useNotifications() {
   const context = useContext(NotificationsContext);
   if (context === undefined) {
-    throw new Error('useNotifications must be used within a NotificationsProvider');
+    throw new Error(
+      "useNotifications must be used within a NotificationsProvider"
+    );
   }
   return context;
 }

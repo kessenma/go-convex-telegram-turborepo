@@ -1,5 +1,5 @@
-import { useRef, useEffect } from "react";
-import { Renderer, Program, Triangle, Mesh } from "ogl";
+import { Mesh, Program, Renderer, Triangle } from "ogl";
+import { useEffect, useRef } from "react";
 
 type Props = {
   enableRainbow?: boolean;
@@ -260,7 +260,20 @@ void main() {
       renderer.gl.getExtension("WEBGL_lose_context")?.loseContext();
       containerRef.current?.removeChild(gl.canvas);
     };
-  }, []);
+  }, [
+    enableRainbow,
+    fadeDistance,
+    glowIntensity,
+    gridColor,
+    gridRotation,
+    gridSize,
+    gridThickness,
+    mouseInteraction,
+    mouseInteractionRadius,
+    opacity,
+    rippleIntensity,
+    vignetteStrength,
+  ]);
 
   useEffect(() => {
     if (!uniformsRef.current) return;
@@ -281,7 +294,7 @@ void main() {
     uniformsRef.current.rippleIntensity.value = rippleIntensity;
     uniformsRef.current.gridSize.value = gridSize;
     uniformsRef.current.gridThickness.value = gridThickness;
-    uniformsRef.current.fadeDistance.value = fadeDistance;  
+    uniformsRef.current.fadeDistance.value = fadeDistance;
     uniformsRef.current.vignetteStrength.value = vignetteStrength;
     uniformsRef.current.glowIntensity.value = glowIntensity;
     uniformsRef.current.opacity.value = opacity;

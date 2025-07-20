@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useEffect } from 'react';
-import { useConsolidatedHealthCheck } from '../../hooks/use-consolidated-health-check';
+import type React from "react";
+import { createContext, useContext, useEffect } from "react";
+import { useConsolidatedHealthCheck } from "../../hooks/use-consolidated-health-check";
 
 interface HealthCheckContextType {
   startPolling: () => void;
@@ -21,7 +22,10 @@ interface HealthCheckProviderProps {
  * Provider component that manages centralized health checking for the entire application
  * This ensures only one polling mechanism is active at a time, reducing API call spam
  */
-export function HealthCheckProvider({ children, autoStart = true }: HealthCheckProviderProps) {
+export function HealthCheckProvider({
+  children,
+  autoStart = true,
+}: HealthCheckProviderProps) {
   const healthCheck = useConsolidatedHealthCheck();
 
   useEffect(() => {
@@ -47,7 +51,9 @@ export function HealthCheckProvider({ children, autoStart = true }: HealthCheckP
 export function useHealthCheckContext() {
   const context = useContext(HealthCheckContext);
   if (!context) {
-    throw new Error('useHealthCheckContext must be used within a HealthCheckProvider');
+    throw new Error(
+      "useHealthCheckContext must be used within a HealthCheckProvider"
+    );
   }
   return context;
 }

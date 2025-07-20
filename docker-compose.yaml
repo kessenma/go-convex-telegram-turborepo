@@ -161,11 +161,11 @@ services:
         - TRANSFORMERS_CACHE=/app/cache/transformers
         - HF_HOME=/app/cache/huggingface
         - TOKENIZERS_PARALLELISM=false
-        - OMP_NUM_THREADS=2
-        - MKL_NUM_THREADS=2
-        - OPENBLAS_NUM_THREADS=2
-        - NUMEXPR_NUM_THREADS=2
-        - VECLIB_MAXIMUM_THREADS=2
+        - OMP_NUM_THREADS=1
+        - MKL_NUM_THREADS=1
+        - OPENBLAS_NUM_THREADS=1
+        - NUMEXPR_NUM_THREADS=1
+        - VECLIB_MAXIMUM_THREADS=1
         - PYTORCH_TRANSFORMERS_CACHE=/app/cache/transformers
         - TRANSFORMERS_OFFLINE=0
       depends_on:

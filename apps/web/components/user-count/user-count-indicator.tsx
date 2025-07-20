@@ -1,10 +1,9 @@
 "use client";
 
-import React from "react";
 import { Users } from "lucide-react";
-import { cn } from "../../lib/utils";
-import { renderIcon } from "../../lib/icon-utils";
 import { useUserCountStatus } from "../../hooks/use-status-operations";
+import { renderIcon } from "../../lib/icon-utils";
+import { cn } from "../../lib/utils";
 import CountUp from "../ui/text-animations/count-up";
 
 interface UserCountIndicatorProps {
@@ -16,25 +15,25 @@ interface UserCountIndicatorProps {
 export function UserCountIndicator({
   size = "md",
   showLogs = true,
-  className
-}: UserCountIndicatorProps) {
+  className,
+}: UserCountIndicatorProps): React.ReactElement {
   const { status, loading } = useUserCountStatus();
 
   const sizeClasses = {
     sm: "p-3 text-sm",
     md: "p-4 text-base",
-    lg: "p-6 text-lg"
+    lg: "p-6 text-lg",
   };
 
   const iconSizes = {
     sm: "w-4 h-4",
     md: "w-5 h-5",
-    lg: "w-6 h-6"
+    lg: "w-6 h-6",
   };
 
   const getStatusColor = () => {
     if (loading) return "text-yellow-500";
-    
+
     switch (status.status) {
       case "connected":
         return "text-green-500";
@@ -48,55 +47,62 @@ export function UserCountIndicator({
   };
 
   const getStatusBgColor = () => {
-    if (loading) return "bg-yellow-50 dark:bg-yellow-900/20";
-    
+    if (loading) return "bg-slate-900/80 backdrop-blur-sm";
+
     switch (status.status) {
       case "connected":
-        return "bg-green-50 dark:bg-green-900/20";
+        return "bg-slate-900/80 backdrop-blur-sm";
       case "connecting":
-        return "bg-yellow-50 dark:bg-yellow-900/20";
+        return "bg-slate-900/80 backdrop-blur-sm";
       case "disconnected":
-        return "bg-red-50 dark:bg-red-900/20";
+        return "bg-slate-900/80 backdrop-blur-sm";
       default:
-        return "bg-gray-50 dark:bg-gray-900/20";
+        return "bg-slate-900/80 backdrop-blur-sm";
     }
   };
 
   return (
-    <div className={cn(
-      "rounded-lg border transition-all duration-200",
-      sizeClasses[size],
-      getStatusBgColor(),
-      "border-gray-200 dark:border-gray-700",
-      className
-    )}>
+    <div
+      className={cn(
+        "rounded-lg border transition-all duration-200",
+        sizeClasses[size],
+        getStatusBgColor(),
+        "border-slate-700/50",
+        className
+      )}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className={cn(
-            "flex items-center justify-center rounded-full p-1.5",
-            getStatusBgColor()
-          )}>
+          <div
+            className={cn(
+              "flex items-center justify-center rounded-full p-1.5",
+              getStatusBgColor()
+            )}
+          >
             {renderIcon(Users, {
-              className: cn(iconSizes[size], getStatusColor())
+              className: cn(iconSizes[size], getStatusColor()),
             })}
           </div>
-          
+
           <div className="flex-1">
             <div className="flex items-center space-x-2">
-              <h3 className="font-medium text-gray-900 dark:text-white">
-                Active Users
-              </h3>
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                loading ? "bg-yellow-400 animate-pulse" : 
-                status.status === "connected" ? "bg-green-400" :
-                status.status === "connecting" ? "bg-yellow-400 animate-pulse" :
-                "bg-red-400"
-              )} />
+              <h3 className="font-medium text-slate-200">Active Users</h3>
+              <div
+                className={cn(
+                  "w-2 h-2 rounded-full",
+                  loading
+                    ? "bg-yellow-400 animate-pulse"
+                    : status.status === "connected"
+                      ? "bg-cyan-400"
+                      : status.status === "connecting"
+                        ? "bg-yellow-400 animate-pulse"
+                        : "bg-red-400"
+                )}
+              />
             </div>
-            
+
             <div className="flex items-center space-x-2 mt-1">
-              <span className="text-2xl font-bold text-gray-900 dark:text-white">
+              <span className="text-2xl font-bold text-slate-100">
                 {loading ? (
                   <span className="animate-pulse">--</span>
                 ) : (
@@ -107,16 +113,12 @@ export function UserCountIndicator({
                   />
                 )}
               </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                online
-              </span>
+              <span className="text-sm text-slate-400">online</span>
             </div>
-            
+
             {status.bySource && (
-              <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                {status.bySource.web && (
-                  <span>Web: {status.bySource.web}</span>
-                )}
+              <div className="flex items-center space-x-4 mt-2 text-xs text-slate-400">
+                {status.bySource.web && <span>Web: {status.bySource.web}</span>}
                 {status.bySource.mobile && (
                   <span>Mobile: {status.bySource.mobile}</span>
                 )}
@@ -128,11 +130,12 @@ export function UserCountIndicator({
           </div>
         </div>
       </div>
-      
+
       {showLogs && status.details?.lastUpdated && (
-        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Last updated: {new Date(status.details.lastUpdated).toLocaleTimeString()}
+        <div className="mt-3 pt-3 border-t border-slate-700/50">
+          <p className="text-xs text-slate-400">
+            Last updated:{" "}
+            {new Date(status.details.lastUpdated).toLocaleTimeString()}
           </p>
           {status.details.error && (
             <p className="text-xs text-red-500 mt-1">

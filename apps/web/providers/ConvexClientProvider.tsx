@@ -1,8 +1,18 @@
 "use client";
 
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { ReactNode, ReactElement, Component, ErrorInfo, useState, useEffect } from "react";
-import { BasicDatabaseErrorScreen, BasicOfflineScreen } from "../components/ui/basic-error-screen";
+import {
+  Component,
+  type ErrorInfo,
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
+import {
+  BasicDatabaseErrorScreen,
+  BasicOfflineScreen,
+} from "../components/ui/basic-error-screen";
 
 // Create Convex client with error handling
 let convex: ConvexReactClient;
@@ -47,10 +57,10 @@ class ConvexErrorBoundary extends Component<
   }
 
   handleRetry = () => {
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       hasError: false,
       error: undefined,
-      retryCount: prevState.retryCount + 1
+      retryCount: prevState.retryCount + 1,
     }));
     this.props.onRetry();
   };
@@ -64,7 +74,9 @@ class ConvexErrorBoundary extends Component<
   }
 }
 
-export function ConvexClientProvider({ children }: ConvexClientProviderProps): ReactElement {
+export function ConvexClientProvider({
+  children,
+}: ConvexClientProviderProps): ReactElement {
   const [key, setKey] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
 
@@ -72,17 +84,17 @@ export function ConvexClientProvider({ children }: ConvexClientProviderProps): R
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
   const handleRetry = () => {
-    setKey(prev => prev + 1);
+    setKey((prev) => prev + 1);
   };
 
   if (!isOnline) {

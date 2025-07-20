@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Hook to manage user sessions for tracking active users
@@ -21,14 +21,14 @@ export function useUserSession(enabled: boolean = true) {
   // Create or update session
   const createSession = async (sessionId: string) => {
     try {
-      const response = await fetch('/api/users/active-count', {
-        method: 'POST',
+      const response = await fetch("/api/users/active-count", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           sessionId,
-          source: 'web',
+          source: "web",
           userAgent: navigator.userAgent,
           metadata: JSON.stringify({
             url: window.location.href,
@@ -41,11 +41,11 @@ export function useUserSession(enabled: boolean = true) {
         setIsActive(true);
         return true;
       } else {
-        console.error('Failed to create session:', response.statusText);
+        console.error("Failed to create session:", response.statusText);
         return false;
       }
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error("Error creating session:", error);
       return false;
     }
   };
@@ -53,14 +53,14 @@ export function useUserSession(enabled: boolean = true) {
   // Send heartbeat to keep session alive
   const sendHeartbeat = async (sessionId: string) => {
     try {
-      const response = await fetch('/api/users/active-count', {
-        method: 'POST',
+      const response = await fetch("/api/users/active-count", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           sessionId,
-          source: 'web',
+          source: "web",
           userAgent: navigator.userAgent,
           metadata: JSON.stringify({
             url: window.location.href,
@@ -71,38 +71,38 @@ export function useUserSession(enabled: boolean = true) {
       });
 
       if (!response.ok) {
-        console.error('Failed to send heartbeat:', response.statusText);
+        console.error("Failed to send heartbeat:", response.statusText);
         setIsActive(false);
       }
     } catch (error) {
-      console.error('Error sending heartbeat:', error);
+      console.error("Error sending heartbeat:", error);
       setIsActive(false);
     }
   };
 
   // End session
-  const endSession = async (sessionId: string) => {
+  const _endSession = async (_sessionId: string) => {
     try {
       // Note: We would need to add an endpoint to end sessions
       // For now, we'll just stop the heartbeat and let it expire naturally
       setIsActive(false);
     } catch (error) {
-      console.error('Error ending session:', error);
+      console.error("Error ending session:", error);
     }
   };
 
   // Initialize session on mount
   useEffect(() => {
     if (sessionCreatedRef.current || !enabled) return;
-    
+
     const newSessionId = generateSessionId();
     setSessionId(newSessionId);
-    
+
     // Create session
     createSession(newSessionId).then((success) => {
       if (success) {
         sessionCreatedRef.current = true;
-        
+
         // Start heartbeat interval (every 1 minute for more responsive tracking)
         heartbeatIntervalRef.current = setInterval(() => {
           sendHeartbeat(newSessionId);
@@ -119,12 +119,17 @@ export function useUserSession(enabled: boolean = true) {
       // Remove problematic cleanup that accesses isActive from closure
       // Session will expire naturally via server-side timeout
     };
-  }, [enabled]);
+  }, [
+    enabled, // Create session
+    createSession,
+    generateSessionId,
+    sendHeartbeat,
+  ]);
 
   // Handle page visibility changes
   useEffect(() => {
     if (!enabled) return;
-    
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // Page is hidden, pause heartbeat
@@ -142,47 +147,57 @@ export function useUserSession(enabled: boolean = true) {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [sessionId, isActive, enabled]);
+  }, [sessionId, isActive, enabled, sendHeartbeat]);
 
   // Handle beforeunload and page visibility to end session
   useEffect(() => {
     if (!enabled) return;
-    
+
     const handleBeforeUnload = () => {
       if (sessionId && isActive) {
         // Use navigator.sendBeacon for reliable cleanup
-        const data = new Blob([JSON.stringify({
-          sessionId,
-          source: 'web',
-          action: 'end'
-        })], { type: 'application/json' });
-        navigator.sendBeacon('/api/users/active-count', data);
+        const data = new Blob(
+          [
+            JSON.stringify({
+              sessionId,
+              source: "web",
+              action: "end",
+            }),
+          ],
+          { type: "application/json" }
+        );
+        navigator.sendBeacon("/api/users/active-count", data);
       }
     };
 
     const handlePageHide = () => {
       if (sessionId && isActive) {
         // Additional cleanup on page hide (mobile browsers)
-        const data = new Blob([JSON.stringify({
-          sessionId,
-          source: 'web',
-          action: 'end'
-        })], { type: 'application/json' });
-        navigator.sendBeacon('/api/users/active-count', data);
+        const data = new Blob(
+          [
+            JSON.stringify({
+              sessionId,
+              source: "web",
+              action: "end",
+            }),
+          ],
+          { type: "application/json" }
+        );
+        navigator.sendBeacon("/api/users/active-count", data);
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handlePageHide);
-    
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handlePageHide);
+
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handlePageHide);
     };
   }, [sessionId, isActive, enabled]);
 
