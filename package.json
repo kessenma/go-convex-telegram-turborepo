@@ -17,6 +17,7 @@
     "convex:dev:bot": "docker compose up convex-backend convex-dashboard telegram-bot -d && cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     "docker:restart-web-convex": "docker compose stop web-dashboard convex-backend convex-dashboard && docker compose up web-dashboard convex-backend convex-dashboard -d",
     "docker:vectorConvert-only": "docker compose up vector-convert-llm -d",
+    "docker:vectorLLM-only": "docker compose up lightweight-llm -d",
     "docker:llm-rebuild": "docker compose stop lightweight-llm && docker compose build lightweight-llm && docker compose up lightweight-llm -d",
     "build": "turbo run build",
     "dev": "turbo run dev",

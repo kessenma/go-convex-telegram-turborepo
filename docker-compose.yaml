@@ -158,30 +158,27 @@ services:
         - PORT=8082
         - PYTHONUNBUFFERED=1
         - PYTHONDONTWRITEBYTECODE=1
-        - TRANSFORMERS_CACHE=/app/cache/transformers
-        - HF_HOME=/app/cache/huggingface
-        - TOKENIZERS_PARALLELISM=false
-        - OMP_NUM_THREADS=1
-        - MKL_NUM_THREADS=1
-        - OPENBLAS_NUM_THREADS=1
-        - NUMEXPR_NUM_THREADS=1
-        - VECLIB_MAXIMUM_THREADS=1
-        - PYTORCH_TRANSFORMERS_CACHE=/app/cache/transformers
-        - TRANSFORMERS_OFFLINE=0
+        - MODEL_PATH=./Phi-3-mini-4k-instruct-q4.gguf
+        - N_CTX=4096
+        - N_THREADS=8
+        - N_GPU_LAYERS=0
+        - OMP_NUM_THREADS=8
+        - MKL_NUM_THREADS=8
+        - OPENBLAS_NUM_THREADS=8
+        - NUMEXPR_NUM_THREADS=8
+        - VECLIB_MAXIMUM_THREADS=8
       depends_on:
         convex-backend:
           condition: service_healthy
       restart: on-failure:3
       networks:
         - telegram-bot-network
-      volumes:
-        - lightweight_llm_cache:/app/cache
       healthcheck:
         test: curl -f http://localhost:8082/health || exit 1
         interval: 30s
         timeout: 15s
-        start_period: 300s
-        retries: 3
+        start_period: 180s
+        retries: 5
 
    # Next.js Web Dashboard Service
   web-dashboard:
@@ -225,7 +222,6 @@ services:
 
 volumes:
   convex_data:
-  lightweight_llm_cache:
 
 networks:
   telegram-bot-network:

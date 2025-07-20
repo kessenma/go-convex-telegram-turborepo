@@ -1,70 +1,64 @@
+# Stage 1: Build stage with secret to download the model
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+# Install huggingface-hub for model downloading
+RUN pip install huggingface-hub>=0.17.1
+
+# Set the environment variable for the huggingface-cli
+ENV HUGGINGFACE_HUB_ADD_TOKEN_AS_GIT_CREDENTIAL=false
+
+# Use ARG to pass the secret token for use only during the build
+ARG HF_AUTH_TOKEN
+
+# Download a compatible GGUF model
+# Using Llama-3.2-1B which is well supported by llama-cpp-python
+RUN echo "Downloading Llama-3.2-1B model for better compatibility..."; \
+    huggingface-cli download bartowski/Llama-3.2-1B-Instruct-GGUF Llama-3.2-1B-Instruct-Q4_K_M.gguf --local-dir . --local-dir-use-symlinks False && \
+    mv Llama-3.2-1B-Instruct-Q4_K_M.gguf Phi-3-mini-4k-instruct-q4.gguf
+
+# Stage 2: Final image without secrets
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV TRANSFORMERS_CACHE=/app/cache/transformers
-ENV HF_HOME=/app/cache/huggingface
-ENV TOKENIZERS_PARALLELISM=false
-ENV PYTORCH_TRANSFORMERS_CACHE=/app/cache/transformers
-ENV TRANSFORMERS_OFFLINE=0
+ENV MODEL_PATH=./Phi-3-mini-4k-instruct-q4.gguf
+ENV N_CTX=4096
+ENV N_THREADS=8
+ENV N_GPU_LAYERS=0
+ENV PORT=8082
 
-# Create cache directory with proper permissions
-RUN mkdir -p /app/cache/transformers /app/cache/huggingface && \
-    chmod -R 755 /app/cache
-
-# Install system dependencies
+# Install system dependencies required for llama-cpp-python
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
     ca-certificates \
     build-essential \
     python3-dev \
-    git \
+    cmake \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
+# Copy requirements and install Python dependencies
 COPY requirements.txt .
-
-# Install Python dependencies with better error handling
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --timeout 300 -r requirements.txt
+    pip install --no-cache-dir --timeout 600 -r requirements.txt
 
-# Copy application code
+# Copy the downloaded model from the builder stage
+COPY --from=builder /app/Phi-3-mini-4k-instruct-q4.gguf .
+
+# Copy the application code
 COPY main.py .
 
-# Create a script to pre-download the smaller model
-RUN echo '#!/usr/bin/env python3\n\
-import os\n\
-from transformers import AutoTokenizer, AutoModelForCausalLM\n\
-print("Pre-downloading model...")\n\
-try:\n\
-    tokenizer = AutoTokenizer.from_pretrained(\n\
-        "microsoft/DialoGPT-small",\n\
-        cache_dir="/app/cache/transformers",\n\
-        trust_remote_code=True\n\
-    )\n\
-    model = AutoModelForCausalLM.from_pretrained(\n\
-        "microsoft/DialoGPT-small",\n\
-        cache_dir="/app/cache/transformers",\n\
-        trust_remote_code=True,\n\
-        torch_dtype="auto"\n\
-    )\n\
-    print("Model pre-download completed successfully")\n\
-except Exception as e:\n\
-    print(f"Model pre-download failed: {e}")\n\
-    # Do not fail the build, let the app handle it at runtime\n\
-' > /app/preload_model.py && \
-    python /app/preload_model.py || echo "Model preload failed, will download at runtime"
-
-# Expose port
+# Expose the port the app runs on
 EXPOSE 8082
 
 # Health check with longer start period for model loading
-HEALTHCHECK --interval=30s --timeout=15s --start-period=300s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=15s --start-period=180s --retries=5 \
     CMD curl -f http://localhost:8082/health || exit 1
 
 # Run the application

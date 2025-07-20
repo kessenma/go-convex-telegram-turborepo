@@ -4,49 +4,37 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 
-# Set environment variables before importing torch to prevent OpenBLAS warnings
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1" 
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
-os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+# Set environment variables for optimal CPU performance
+os.environ["OMP_NUM_THREADS"] = "8"  # Increased for llama-cpp
+os.environ["MKL_NUM_THREADS"] = "8" 
+os.environ["OPENBLAS_NUM_THREADS"] = "8"
+os.environ["NUMEXPR_NUM_THREADS"] = "8"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "8"
 
-import torch
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from transformers import (
-    AutoTokenizer, 
-    AutoModelForCausalLM, 
-    pipeline,
-    BitsAndBytesConfig
-)
+from llama_cpp import Llama
 import psutil
 import gc
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global variables for model and tokenizer
-model = None
-tokenizer = None
-text_generator = None
+# Global variables for model
+llm = None
 
-# Model configuration - Using Phi-3-mini for excellent RAG performance
-MODEL_NAME = os.getenv("LLM_MODEL", "microsoft/Phi-3-mini-4k-instruct")
-# Alternative options (in order of RAG quality):
-# "microsoft/Phi-3-mini-4k-instruct"  # BEST: Fast, excellent for RAG
-# "Qwen/Qwen2-1.5B-Instruct"  # Great: Very fast, good RAG, 32k context
-# "google/gemma-2-2b-it"  # Good: Excellent instruction following
-# "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # OK: Slower but decent for RAG
-# AVOID: "distilgpt2", "gpt2", "microsoft/DialoGPT-small" - Poor for RAG
+# Model configuration - Using Phi-3 GGUF for fast RAG performance
+MODEL_PATH = os.getenv("MODEL_PATH", "./Phi-3-mini-4k-instruct-q4.gguf")
+N_CTX = int(os.getenv("N_CTX", "4096"))  # Context window
+N_THREADS = int(os.getenv("N_THREADS", "8"))  # CPU threads
+N_GPU_LAYERS = int(os.getenv("N_GPU_LAYERS", "0"))  # GPU layers (0 for CPU only)
 
-MAX_LENGTH = 4096  # Phi-3-mini supports up to 4k tokens
+MAX_TOKENS = 512
 TEMPERATURE = 0.7
 TOP_P = 0.9
-DO_SAMPLE = True
 
 class ChatRequest(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -70,7 +58,7 @@ class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
     memory_usage: Dict[str, Any]
-    gpu_available: bool
+    model_path: str
 
 def get_memory_usage():
     """Get current memory usage statistics"""
@@ -85,64 +73,31 @@ def get_memory_usage():
     }
 
 def load_model():
-    """Load the lightweight LLM model"""
-    global model, tokenizer, text_generator
+    """Load the Phi-3 GGUF model using llama-cpp-python"""
+    global llm
     
     try:
-        logger.info(f"Loading model: {MODEL_NAME}")
+        logger.info(f"Loading Phi-3 model from: {MODEL_PATH}")
+        logger.info(f"Context window: {N_CTX}, Threads: {N_THREADS}, GPU layers: {N_GPU_LAYERS}")
         
-        # Check if CUDA is available
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        logger.info(f"Using device: {device}")
+        # Check if model file exists
+        if not os.path.exists(MODEL_PATH):
+            raise FileNotFoundError(f"Model file not found: {MODEL_PATH}")
         
-        # Configure quantization for memory efficiency
-        if device == "cuda":
-            quantization_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.float16,
-                bnb_4bit_use_double_quant=True,
-                bnb_4bit_quant_type="nf4"
-            )
-        else:
-            quantization_config = None
-        
-        # Load tokenizer
-        tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_NAME,
-            trust_remote_code=True,
-            cache_dir="/app/cache/transformers"
+        # Initialize the Llama model with conservative settings
+        llm = Llama(
+            model_path=MODEL_PATH,
+            n_ctx=N_CTX,
+            n_threads=N_THREADS,
+            n_gpu_layers=N_GPU_LAYERS,
+            verbose=True,   # Enable verbose for debugging
+            use_mmap=True,  # Use memory mapping for efficiency
+            use_mlock=False, # Disable mlock to avoid permission issues
+            n_batch=256,    # Smaller batch size for stability
+            f16_kv=True,    # Use 16-bit for key-value cache
         )
         
-        # Add padding token if it doesn't exist
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-        
-        # Load model with optimizations for CPU inference
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME,
-            quantization_config=quantization_config,
-            device_map="auto" if device == "cuda" else None,
-            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-            trust_remote_code=True,
-            cache_dir="/app/cache/transformers",
-            low_cpu_mem_usage=True,  # Optimize memory usage
-            use_safetensors=True,    # Use safer tensor format
-        )
-        
-        # Optimize model for inference
-        if device == "cpu":
-            model = torch.jit.optimize_for_inference(model)  # JIT optimization for CPU
-        
-        # Create text generation pipeline
-        text_generator = pipeline(
-            "text-generation",
-            model=model,
-            tokenizer=tokenizer,
-            device_map="auto" if device == "cuda" else None,
-            torch_dtype=torch.float16 if device == "cuda" else torch.float32
-        )
-        
-        logger.info("Model loaded successfully")
+        logger.info("Phi-3 model loaded successfully")
         logger.info(f"Memory usage after loading: {get_memory_usage()}")
         
     except Exception as e:
@@ -151,26 +106,14 @@ def load_model():
 
 def cleanup_model():
     """Clean up model resources"""
-    global model, tokenizer, text_generator
+    global llm
     
-    if model is not None:
-        del model
-        model = None
-    
-    if tokenizer is not None:
-        del tokenizer
-        tokenizer = None
-        
-    if text_generator is not None:
-        del text_generator
-        text_generator = None
+    if llm is not None:
+        del llm
+        llm = None
     
     # Force garbage collection
     gc.collect()
-    
-    # Clear CUDA cache if available
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
     
     logger.info("Model cleanup completed")
 
@@ -203,16 +146,16 @@ app.add_middleware(
 )
 
 def format_chat_prompt(message: str, context: str = "", conversation_history: List[Dict[str, str]] = None) -> str:
-    """Format the chat prompt for Phi-3 with proper chat template and RAG support"""
+    """Format the chat prompt for Llama-3.2 with proper chat template and RAG support"""
     if conversation_history is None:
         conversation_history = []
     
-    # Phi-3 uses this format: <|system|>system<|end|><|user|>user<|end|><|assistant|>assistant<|end|>
+    # Llama-3.2 uses this format: <|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nsystem_message<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nuser_message<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n
     
     # System message for RAG
     if context.strip():
         # For RAG, include context in system message
-        max_context_length = 1500  # Phi-3 can handle more context
+        max_context_length = 1500  # Be conservative with context length
         if len(context) > max_context_length:
             # Try to truncate at sentence boundaries
             truncated_context = context[:max_context_length]
@@ -228,20 +171,20 @@ def format_chat_prompt(message: str, context: str = "", conversation_history: Li
     else:
         system_msg = "You are a helpful AI assistant. Provide clear, concise, and accurate responses."
     
-    # Build the chat prompt using Phi-3's format
-    prompt = f"<|system|>\n{system_msg}<|end|>\n"
+    # Build the chat prompt using Llama-3.2's format
+    prompt = f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_msg}<|eot_id|>"
     
     # Add conversation history (keep last 2 exchanges)
     if conversation_history:
         recent_history = conversation_history[-2:]
         for exchange in recent_history:
             if exchange.get('role') == 'user':
-                prompt += f"<|user|>\n{exchange['content']}<|end|>\n"
+                prompt += f"<|start_header_id|>user<|end_header_id|>\n\n{exchange['content']}<|eot_id|>"
             elif exchange.get('role') == 'assistant':
-                prompt += f"<|assistant|>\n{exchange['content']}<|end|>\n"
+                prompt += f"<|start_header_id|>assistant<|end_header_id|>\n\n{exchange['content']}<|eot_id|>"
     
     # Add current message
-    prompt += f"<|user|>\n{message}<|end|>\n<|assistant|>\n"
+    prompt += f"<|start_header_id|>user<|end_header_id|>\n\n{message}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
     
     return prompt
 
@@ -250,15 +193,15 @@ async def health_check():
     """Health check endpoint"""
     return HealthResponse(
         status="healthy",
-        model_loaded=model is not None,
+        model_loaded=llm is not None,
         memory_usage=get_memory_usage(),
-        gpu_available=torch.cuda.is_available()
+        model_path=MODEL_PATH
     )
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    """Generate a chat response using the lightweight LLM"""
-    if model is None or tokenizer is None or text_generator is None:
+    """Generate a chat response using Phi-3 via llama-cpp"""
+    if llm is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
     
     try:
@@ -270,95 +213,59 @@ async def chat(request: ChatRequest):
         )
         
         logger.info(f"Generating response for message: {request.message[:100]}...")
+        logger.info(f"Formatted prompt: {prompt[:200]}...")
         
-        # Generate response
-        max_length = min(request.max_length or MAX_LENGTH, MAX_LENGTH)
+        # Generate response using llama-cpp
+        max_tokens = min(request.max_length or MAX_TOKENS, MAX_TOKENS)
         temperature = request.temperature or TEMPERATURE
         
-        # Count input tokens and ensure we don't exceed model limits
-        input_tokens = len(tokenizer.encode(prompt))
-        logger.info(f"Initial prompt tokens: {input_tokens}")
+        start_time = time.time()
         
-        # Phi-3-mini has a max length of 4096 tokens
-        # We need to ensure input + output doesn't exceed this
-        max_input_tokens = 3000  # Conservative for Phi-3
+        # Generate response
+        output = llm(
+            prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=TOP_P,
+            stop=["<|eot_id|>", "<|start_header_id|>", "<|end_of_text|>"],  # Stop tokens for Llama-3.2
+            echo=False  # Don't include the prompt in the output
+        )
         
-        if input_tokens > max_input_tokens:
-            # Truncate the prompt if it's too long
-            encoded_prompt = tokenizer.encode(prompt)
-            truncated_prompt = tokenizer.decode(encoded_prompt[:max_input_tokens], skip_special_tokens=True)
-            prompt = truncated_prompt
-            input_tokens = len(tokenizer.encode(prompt))
-            logger.warning(f"Prompt truncated from {len(encoded_prompt)} to {input_tokens} tokens")
+        generation_time = time.time() - start_time
         
-        # Adjust max_new_tokens to ensure total doesn't exceed model limit
-        max_new_tokens = min(max_length, 4096 - input_tokens - 50)  # 50 token safety buffer
-        max_new_tokens = max(10, max_new_tokens)  # Ensure at least 10 tokens for output
+        # Extract the response text
+        generated_text = output["choices"][0]["text"].strip()
         
-        logger.info(f"Final prompt tokens: {input_tokens}, max_new_tokens: {max_new_tokens}")
-        
-        # For DistilGPT2, encode the prompt properly
-        input_ids = tokenizer.encode(prompt, return_tensors='pt')
-        
-        # Generate response using the model directly with optimized settings
-        with torch.no_grad():
-            outputs = model.generate(
-                input_ids,
-                max_new_tokens=min(max_new_tokens, 100),  # Limit output length for faster responses
-                temperature=temperature,
-                top_p=TOP_P,
-                do_sample=DO_SAMPLE,
-                pad_token_id=tokenizer.eos_token_id,
-                eos_token_id=tokenizer.eos_token_id,
-                no_repeat_ngram_size=2,
-                repetition_penalty=1.1,
-                early_stopping=True,
-                num_return_sequences=1,
-                use_cache=True,  # Enable KV cache for faster generation
-                num_beams=1,     # Use greedy decoding for speed
-            )
-        
-        # Decode the full output and extract the response
-        full_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        # Extract only the assistant's response for Phi-3 format
-        if "<|assistant|>" in full_output:
-            # Split by the last <|assistant|> token and take everything after it
-            assistant_parts = full_output.split("<|assistant|>")
-            if len(assistant_parts) > 1:
-                generated_text = assistant_parts[-1].strip()
-                # Clean up any remaining conversation markers
-                generated_text = generated_text.split("<|end|>")[0].strip()
-                generated_text = generated_text.split("<|user|>")[0].strip()
-                generated_text = generated_text.split("<|system|>")[0].strip()
-            else:
-                generated_text = ""
-        else:
-            # Fallback: take everything after the original prompt
-            generated_text = full_output[len(prompt):].strip()
+        # Clean up any remaining special tokens
+        generated_text = generated_text.replace("<|eot_id|>", "").replace("<|start_header_id|>", "").replace("<|end_of_text|>", "").strip()
         
         # If no text was generated, provide a fallback
         if not generated_text or len(generated_text.strip()) == 0:
             generated_text = "I'm here and ready to help! How can I assist you today?"
             logger.warning("No text generated, using fallback response")
         
-        # Count output tokens
-        output_tokens = len(tokenizer.encode(generated_text))
+        # Extract usage information
+        usage = output.get("usage", {})
+        prompt_tokens = usage.get("prompt_tokens", 0)
+        completion_tokens = usage.get("completion_tokens", 0)
+        total_tokens = usage.get("total_tokens", 0)
         
-        logger.info(f"Response generated successfully. Input tokens: {input_tokens}, Output tokens: {output_tokens}")
+        logger.info(f"Response generated successfully in {generation_time:.2f}s")
+        logger.info(f"Tokens - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}")
         
         return ChatResponse(
             response=generated_text,
             model_info={
-                "model_name": MODEL_NAME,
-                "device": "cuda" if torch.cuda.is_available() else "cpu",
-                "max_length": max_length,
-                "temperature": temperature
+                "model_name": "Llama-3.2-1B-Instruct",
+                "model_path": MODEL_PATH,
+                "context_window": N_CTX,
+                "temperature": temperature,
+                "generation_time_s": round(generation_time, 2)
             },
             usage={
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "total_tokens": input_tokens + output_tokens
+                "input_tokens": prompt_tokens,
+                "output_tokens": completion_tokens,
+                "total_tokens": total_tokens
             }
         )
         
@@ -369,15 +276,17 @@ async def chat(request: ChatRequest):
 @app.get("/model-info")
 async def get_model_info():
     """Get information about the loaded model"""
-    if model is None:
+    if llm is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
     
     return {
-        "model_name": MODEL_NAME,
-        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "model_name": "Phi-3-mini-4k-instruct",
+        "model_path": MODEL_PATH,
+        "context_window": N_CTX,
+        "threads": N_THREADS,
+        "gpu_layers": N_GPU_LAYERS,
         "memory_usage": get_memory_usage(),
-        "model_parameters": sum(p.numel() for p in model.parameters()),
-        "model_size_mb": sum(p.numel() * p.element_size() for p in model.parameters()) / 1024 / 1024
+        "model_exists": os.path.exists(MODEL_PATH)
     }
 
 if __name__ == "__main__":
