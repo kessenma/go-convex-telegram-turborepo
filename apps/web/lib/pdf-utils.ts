@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * PDF TEXT EXTRACTION UTILITY
  * ===========================

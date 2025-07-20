@@ -1,7 +1,18 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import * as THREE from 'three';
+
+// Ensure this component is only rendered on the client side
+const ThreeJSUploadIconComponent = dynamic(() => Promise.resolve(ThreeJSUploadIconImpl), {
+  ssr: false,
+}) as React.ComponentType<ThreeJSUploadIconProps>;
+
+// Export the client-side only component
+export function ThreeJSUploadIcon(props: ThreeJSUploadIconProps): React.ReactElement {
+  return React.createElement(ThreeJSUploadIconComponent, props);
+}
 
 interface ThreeJSUploadIconProps {
   width?: number;
@@ -10,7 +21,8 @@ interface ThreeJSUploadIconProps {
   animationEnabled?: boolean;
 }
 
-export function ThreeJSUploadIcon({ 
+// Implementation that will only be rendered on client-side
+function ThreeJSUploadIconImpl({ 
   width = 600, 
   height = 300, 
   className = '',

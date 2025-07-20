@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * DOCX TEXT EXTRACTION UTILITY
  * ============================

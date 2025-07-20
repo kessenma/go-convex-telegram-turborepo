@@ -1,4 +1,6 @@
-"use client";
+'use client';
+
+export const runtime = 'edge'; // Optional: use edge runtime
 
 import React, { useState, useRef } from "react";
 import { api } from "../../generated-convex";
@@ -391,10 +393,10 @@ export default function RAGUploadPage(): React.ReactElement {
 
         {/* Three.js Upload Animation */}
         <div className="flex relative z-10 justify-center -mt-20 mb-12">
-          <ThreeJSUploadIcon 
-            className="mx-auto"
-            animationEnabled={animationEnabled}
-          />
+          {React.createElement(ThreeJSUploadIcon, {
+            className: "mx-auto",
+            animationEnabled: animationEnabled
+          })}
         </div>
 
         {/* Status Indicators */}
@@ -477,3 +479,6 @@ export default function RAGUploadPage(): React.ReactElement {
     </div>
   );
 }
+
+
+export const dynamic = 'force-dynamic';

@@ -109,7 +109,7 @@ export default function ArchitecturePage(): React.ReactElement {
       </div>
 
       {/* Background Whale - Positioned behind Docker content, ends before Deployment Details */}
-      <div className="absolute left-0 right-0 -mt-96 pointer-events-none z-0">
+      <div className="absolute right-0 left-0 z-0 -mt-96 pointer-events-none">
         <BackgroundWhale
           height={typeof window !== 'undefined' ? window.innerHeight * 2.5 : 1200} // Reduced height to end before Deployment Details
           animationEnabled={animationEnabled}
@@ -118,7 +118,7 @@ export default function ArchitecturePage(): React.ReactElement {
       </div>
 
       {/* Docker Infrastructure Overview */}
-      <div className="relative mx-auto max-w-4xl z-10">
+      <div className="relative z-10 mx-auto max-w-4xl">
         <div className="p-8 rounded-2xl border backdrop-blur-sm bg-slate-800/30 border-slate-700/30">
           <div className="flex items-center mb-6">
             <div className="flex justify-center items-center mr-4 w-10 h-10 rounded-lg bg-blue-600/20">
@@ -147,9 +147,9 @@ export default function ArchitecturePage(): React.ReactElement {
                 expandedValue={expandedAccordion}
                 onValueChange={(value) => setExpandedAccordion(value as string | null)}
               >
-                <AccordionItem value="setup-script" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
-                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
-                    <div className="flex items-center justify-between w-full">
+                <AccordionItem value="setup-script" className="rounded-lg border border-slate-600/30 bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 rounded-t-lg hover:bg-slate-700/30">
+                    <div className="flex justify-between items-center w-full">
                       <div className="flex items-center space-x-3">
                         <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-blue-600/20">
                           <TerminalIcon className="w-4 h-4 text-blue-400" />
@@ -160,7 +160,7 @@ export default function ArchitecturePage(): React.ReactElement {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm setup-init</code>
+                        <code className="px-2 py-1 text-xs text-cyan-300 rounded bg-slate-700">pnpm setup-init</code>
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
@@ -168,7 +168,7 @@ export default function ArchitecturePage(): React.ReactElement {
                             setCopiedItems({ ...copiedItems, 'setup-init': true });
                             setTimeout(() => setCopiedItems(prev => ({ ...prev, 'setup-init': false })), 2000);
                           }}
-                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          className="p-1 text-gray-400 rounded transition-colors cursor-pointer hover:text-white"
                           title="Copy command"
                         >
                           {copiedItems['setup-init'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
@@ -181,9 +181,9 @@ export default function ArchitecturePage(): React.ReactElement {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="container-management" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
-                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
-                    <div className="flex items-center justify-between w-full">
+                <AccordionItem value="container-management" className="rounded-lg border border-slate-600/30 bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 rounded-t-lg hover:bg-slate-700/30">
+                    <div className="flex justify-between items-center w-full">
                       <div className="flex items-center space-x-3">
                         <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-purple-600/20">
                           <Play className="w-4 h-4 text-purple-400" />
@@ -194,7 +194,7 @@ export default function ArchitecturePage(): React.ReactElement {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm docker:manage</code>
+                        <code className="px-2 py-1 text-xs text-cyan-300 rounded bg-slate-700">pnpm docker:manage</code>
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
@@ -202,7 +202,7 @@ export default function ArchitecturePage(): React.ReactElement {
                             setCopiedItems({ ...copiedItems, 'docker-manage': true });
                             setTimeout(() => setCopiedItems(prev => ({ ...prev, 'docker-manage': false })), 2000);
                           }}
-                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          className="p-1 text-gray-400 rounded transition-colors cursor-pointer hover:text-white"
                           title="Copy command"
                         >
                           {copiedItems['docker-manage'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
@@ -215,9 +215,9 @@ export default function ArchitecturePage(): React.ReactElement {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="api-deployment" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
-                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
-                    <div className="flex items-center justify-between w-full">
+                <AccordionItem value="api-deployment" className="rounded-lg border border-slate-600/30 bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 rounded-t-lg hover:bg-slate-700/30">
+                    <div className="flex justify-between items-center w-full">
                       <div className="flex items-center space-x-3">
                         <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-cyan-600/20">
                           <Code className="w-4 h-4 text-cyan-400" />
@@ -228,7 +228,7 @@ export default function ArchitecturePage(): React.ReactElement {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm convex:deploy-api</code>
+                        <code className="px-2 py-1 text-xs text-cyan-300 rounded bg-slate-700">pnpm convex:deploy-api</code>
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
@@ -236,7 +236,7 @@ export default function ArchitecturePage(): React.ReactElement {
                             setCopiedItems({ ...copiedItems, 'deploy-api': true });
                             setTimeout(() => setCopiedItems(prev => ({ ...prev, 'deploy-api': false })), 2000);
                           }}
-                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          className="p-1 text-gray-400 rounded transition-colors cursor-pointer hover:text-white"
                           title="Copy command"
                         >
                           {copiedItems['deploy-api'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
@@ -249,9 +249,9 @@ export default function ArchitecturePage(): React.ReactElement {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="admin-key" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
-                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
-                    <div className="flex items-center justify-between w-full">
+                <AccordionItem value="admin-key" className="rounded-lg border border-slate-600/30 bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 rounded-t-lg hover:bg-slate-700/30">
+                    <div className="flex justify-between items-center w-full">
                       <div className="flex items-center space-x-3">
                         <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-amber-600/20">
                           <Key className="w-4 h-4 text-amber-400" />
@@ -262,7 +262,7 @@ export default function ArchitecturePage(): React.ReactElement {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm get-admin-key</code>
+                        <code className="px-2 py-1 text-xs text-cyan-300 rounded bg-slate-700">pnpm get-admin-key</code>
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
@@ -270,7 +270,7 @@ export default function ArchitecturePage(): React.ReactElement {
                             setCopiedItems({ ...copiedItems, 'admin-key': true });
                             setTimeout(() => setCopiedItems(prev => ({ ...prev, 'admin-key': false })), 2000);
                           }}
-                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          className="p-1 text-gray-400 rounded transition-colors cursor-pointer hover:text-white"
                           title="Copy command"
                         >
                           {copiedItems['admin-key'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
@@ -283,9 +283,9 @@ export default function ArchitecturePage(): React.ReactElement {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="logs-monitoring" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
-                  <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
-                    <div className="flex items-center justify-between w-full">
+                <AccordionItem value="logs-monitoring" className="rounded-lg border border-slate-600/30 bg-slate-800/20">
+                  <AccordionTrigger className="px-4 py-3 rounded-t-lg hover:bg-slate-700/30">
+                    <div className="flex justify-between items-center w-full">
                       <div className="flex items-center space-x-3">
                         <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-emerald-600/20">
                           <FileText className="w-4 h-4 text-emerald-400" />
@@ -296,7 +296,7 @@ export default function ArchitecturePage(): React.ReactElement {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <code className="px-2 py-1 text-xs text-cyan-300 bg-slate-700 rounded">pnpm docker:logs-all</code>
+                        <code className="px-2 py-1 text-xs text-cyan-300 rounded bg-slate-700">pnpm docker:logs-all</code>
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
@@ -304,7 +304,7 @@ export default function ArchitecturePage(): React.ReactElement {
                             setCopiedItems({ ...copiedItems, 'logs-all': true });
                             setTimeout(() => setCopiedItems(prev => ({ ...prev, 'logs-all': false })), 2000);
                           }}
-                          className="p-1 text-gray-400 hover:text-white transition-colors rounded cursor-pointer"
+                          className="p-1 text-gray-400 rounded transition-colors cursor-pointer hover:text-white"
                           title="Copy command"
                         >
                           {copiedItems['logs-all'] ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
@@ -355,7 +355,7 @@ export default function ArchitecturePage(): React.ReactElement {
 
 
       {/* Container Assembly */}
-      <div className="relative mx-auto max-w-6xl z-10">
+      <div className="relative z-10 mx-auto max-w-6xl">
         <div className="mb-24 text-center">
           <h2 className="text-3xl font-bold text-white">One .env file</h2>
           <div className="mx-auto -mb-64 max-w-3xl text-lg leading-relaxed text-gray-300">
