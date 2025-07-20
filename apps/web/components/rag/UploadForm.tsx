@@ -112,14 +112,21 @@ export function UploadForm({
   handleGenerateEmbeddings,
   embeddingMessage,
 }: UploadFormProps): React.ReactElement | null {
-  // Show toast on upload status change
+  // Track previous upload status to prevent duplicate toasts
+  const prevUploadStatusRef = React.useRef<'idle' | 'success' | 'error'>('idle');
+  
+  // Show toast on upload status change (only for final states)
   React.useEffect(() => {
-    if (uploadStatus === "success" && uploadMessage) {
+    // Only show toast if status changed TO success/error FROM a different state
+    if (uploadStatus === "success" && uploadMessage && prevUploadStatusRef.current !== "success") {
       toast.success(uploadMessage);
     }
-    if (uploadStatus === "error" && uploadMessage) {
+    if (uploadStatus === "error" && uploadMessage && prevUploadStatusRef.current !== "error") {
       toast.error(uploadMessage);
     }
+    
+    // Update the previous status
+    prevUploadStatusRef.current = uploadStatus;
   }, [uploadStatus, uploadMessage]);
 
   return (

@@ -145,7 +145,7 @@ export default function ArchitecturePage(): React.ReactElement {
               <Accordion
                 className="space-y-3"
                 expandedValue={expandedAccordion}
-                onValueChange={setExpandedAccordion}
+                onValueChange={(value) => setExpandedAccordion(value as string | null)}
               >
                 <AccordionItem value="setup-script" className="border border-slate-600/30 rounded-lg bg-slate-800/20">
                   <AccordionTrigger className="px-4 py-3 hover:bg-slate-700/30 rounded-t-lg">
