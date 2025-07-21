@@ -77,7 +77,6 @@ services:
         condition: service_healthy
     networks:
       - telegram-bot-network
-      - coolify
 
   # Telegram bot written in Go
   telegram-bot:
@@ -103,7 +102,6 @@ services:
       restart: unless-stopped
       networks:
         - telegram-bot-network
-        - coolify
 
 
 
@@ -139,7 +137,6 @@ services:
     restart: unless-stopped
     networks:
       - telegram-bot-network
-      - coolify
     healthcheck:
       test: curl -f http://localhost:8081/health || exit 1
       interval: 30s
@@ -179,7 +176,6 @@ services:
       restart: on-failure:3
       networks:
         - telegram-bot-network
-        - coolify
       healthcheck:
         test: curl -f http://localhost:8082/health || exit 1
         interval: 30s
@@ -222,11 +218,6 @@ services:
       - NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=${NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL:-https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2}
       - NEXT_PUBLIC_LLM_MODEL=${NEXT_PUBLIC_LLM_MODEL:-Meta Llama 3.2}
       - NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL=${NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL:-https://huggingface.co/meta-llama/Llama-2-7b-chat-hf}
-    labels:
-      caddy: rag-bot.chat
-      caddy.reverse_proxy: "{{upstreams 3000}}"
-      caddy.network: coolify 
-      caddy.tls: "internal" 
     depends_on:
       convex-backend:
         condition: service_healthy
@@ -235,7 +226,6 @@ services:
     restart: unless-stopped
     networks:
       - telegram-bot-network
-      - coolify
 
 volumes:
   convex_data:
@@ -243,6 +233,4 @@ volumes:
 networks:
   telegram-bot-network:
     driver: bridge
-  coolify:
-    external: true 
 
