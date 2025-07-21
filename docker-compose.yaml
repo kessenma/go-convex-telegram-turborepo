@@ -230,6 +230,7 @@ services:
     restart: unless-stopped
     networks:
       - telegram-bot-network
+      - coolify
 
 volumes:
   convex_data:
@@ -237,4 +238,6 @@ volumes:
 networks:
   telegram-bot-network:
     driver: bridge
+  coolify:
+    external: true 
 
