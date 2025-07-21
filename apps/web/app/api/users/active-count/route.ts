@@ -4,7 +4,11 @@ import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "../../../../generated-convex";
 
-const convex = new ConvexHttpClient(process.env.CONVEX_HTTP_URL!);
+// Initialize Convex client only when environment variable is available
+let convex: ConvexHttpClient | null = null;
+if (process.env.CONVEX_HTTP_URL) {
+  convex = new ConvexHttpClient(process.env.CONVEX_HTTP_URL);
+}
 const CONVEX_API_BASE = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
 
 export async function GET(_request: NextRequest) {
@@ -29,22 +33,26 @@ export async function GET(_request: NextRequest) {
     console.error("Error fetching active user count from Convex HTTP:", error);
 
     // Fallback to direct Convex query if HTTP endpoint fails
-    try {
-      console.log("Falling back to direct Convex query...");
-      const userCount = await convex.query(api.userSessions.getActiveUserCount);
+    if (convex) {
+      try {
+        console.log("Falling back to direct Convex query...");
+        const userCount = await convex.query(api.userSessions.getActiveUserCount);
 
-      return NextResponse.json({
-        status: "success",
-        data: {
-          activeUsers: userCount.total,
-          bySource: userCount.bySource,
-          timestamp: userCount.timestamp,
-          lastUpdated: new Date().toISOString(),
-        },
-        message: `${userCount.total} active users (fallback)`,
-      });
-    } catch (fallbackError) {
-      console.error("Fallback query also failed:", fallbackError);
+        return NextResponse.json({
+          status: "success",
+          data: {
+            activeUsers: userCount.total,
+            bySource: userCount.bySource,
+            timestamp: userCount.timestamp,
+            lastUpdated: new Date().toISOString(),
+          },
+          message: `${userCount.total} active users (fallback)`,
+        });
+      } catch (fallbackError) {
+        console.error("Fallback query also failed:", fallbackError);
+      }
+    } else {
+      console.log("Convex client not available during build time");
 
       return NextResponse.json(
         {
@@ -80,6 +88,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { status: "error", message: "Session ID is required" },
         { status: 400 }
+      );
+    }
+
+    // Check if Convex client is available
+    if (!convex) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message: "Convex client not available during build time",
+        },
+        { status: 503 }
       );
     }
 
