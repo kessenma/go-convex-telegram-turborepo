@@ -14,14 +14,41 @@ import {
   BasicOfflineScreen,
 } from "../components/ui/basic-error-screen";
 
+// Convert HTTP/HTTPS/WSS URLs to the appropriate format for ConvexReactClient
+function getConvexUrl(): string {
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL is not defined");
+  }
+  
+  // Handle WSS URLs by converting to HTTPS
+  if (url.startsWith('wss://')) {
+    return url.replace('wss://', 'https://');
+  }
+  
+  // Handle WS URLs by converting to HTTP
+  if (url.startsWith('ws://')) {
+    return url.replace('ws://', 'http://');
+  }
+  
+  // If it's already a proper deployment URL, use it as-is
+  if (url.startsWith('https://') && !url.includes('localhost')) {
+    return url;
+  }
+  
+  // For local development, ensure it's HTTP
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return url.replace('https://', 'http://');
+  }
+  
+  return url;
+}
+
 // Create Convex client with error handling
 let convex: ConvexReactClient;
 
 try {
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!convexUrl) {
-    throw new Error("NEXT_PUBLIC_CONVEX_URL is not defined");
-  }
+  const convexUrl = getConvexUrl();
   convex = new ConvexReactClient(convexUrl);
 } catch (error) {
   console.error("Failed to initialize Convex client:", error);
