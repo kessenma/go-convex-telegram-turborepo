@@ -442,21 +442,20 @@ export function BackgroundWhale({
         if (sceneElement) {
           const progress = self.progress;
 
-          // Smooth scale animation based on scroll progress
-          // Scale up from 0.8 to 1.0 in first 20%, then scale down from 1.0 to 0.8 in last 20%
+          // Smooth scale animation - grow from nothing, stay full size, then shrink to nothing
           let scale = 1;
-          if (progress < 0.2) {
-            scale = 0.8 + (progress / 0.2) * 0.2; // 0.8 to 1.0
-          } else if (progress > 0.8) {
-            scale = 1.0 - ((progress - 0.8) / 0.2) * 0.2; // 1.0 to 0.8
+          if (progress < 0.15) {
+            scale = progress / 0.15; // 0 to 1.0 (grow from nothing)
+          } else if (progress > 0.85) {
+            scale = 1.0 - ((progress - 0.85) / 0.15); // 1.0 to 0 (shrink to nothing)
           }
 
           // Smooth opacity animation
           let opacity = 1;
-          if (progress < 0.15) {
-            opacity = progress / 0.15; // Fade in
-          } else if (progress > 0.85) {
-            opacity = 1 - (progress - 0.85) / 0.15; // Fade out
+          if (progress < 0.1) {
+            opacity = progress / 0.1; // Fade in
+          } else if (progress > 0.9) {
+            opacity = 1 - (progress - 0.9) / 0.1; // Fade out
           }
 
           sceneElement.style.transform = `scale(${scale})`;
@@ -479,27 +478,29 @@ export function BackgroundWhale({
         }
       },
       onLeave: () => {
-        // When leaving the section, ensure it's hidden
+        // When leaving the section, shrink to nothing with smooth transition
         const sceneElement = element.querySelector(
           ".whale-canvas"
         ) as HTMLElement;
         if (sceneElement) {
+          sceneElement.style.transition = "opacity 0.6s ease-in, transform 0.6s ease-in";
           sceneElement.style.opacity = "0";
-          sceneElement.style.transform = "scale(0.8)";
+          sceneElement.style.transform = "scale(0)"; // Shrink completely to nothing
         }
       },
       onLeaveBack: () => {
-        // When leaving back, ensure it's hidden
+        // When leaving back, shrink to nothing with smooth transition
         const sceneElement = element.querySelector(
           ".whale-canvas"
         ) as HTMLElement;
         if (sceneElement) {
+          sceneElement.style.transition = "opacity 0.6s ease-in, transform 0.6s ease-in";
           sceneElement.style.opacity = "0";
-          sceneElement.style.transform = "scale(0.8)";
+          sceneElement.style.transform = "scale(0)"; // Shrink completely to nothing
         }
       },
       onEnterBack: () => {
-        // When re-entering from below
+        // When re-entering from below, grow from nothing to full size
         const sceneElement = element.querySelector(
           ".whale-canvas"
         ) as HTMLElement;
@@ -510,7 +511,21 @@ export function BackgroundWhale({
           sceneElement.style.width = "100vw";
           sceneElement.style.height = "100vh";
           sceneElement.style.zIndex = "-1";
+          sceneElement.style.transform = "scale(0)"; // Start from nothing
+          sceneElement.style.opacity = "0";
           sceneElement.style.transition = "none";
+
+          // Force a reflow to ensure the styles are applied
+          sceneElement.offsetHeight;
+
+          // Then grow and fade in smoothly
+          requestAnimationFrame(() => {
+            if (sceneElement) {
+              sceneElement.style.transition = "opacity 0.6s ease-out, transform 0.6s ease-out";
+              sceneElement.style.opacity = "1";
+              sceneElement.style.transform = "scale(1)"; // Grow to full size
+            }
+          });
         }
       },
     });
