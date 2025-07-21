@@ -32,6 +32,6 @@ export CONVEX_SELF_HOSTED_URL=http://convex-backend:3211
 export CONVEX_URL=http://convex-backend:3211
 
 # Deploy using the self-hosted target (skips the cloud login prompt)
-npx convex deploy -y --env-file "$PROJECT_ROOT/.env"
+npx convex deploy -y --env-file .env.docker
 
 echo "✅ Convex production deployment complete!"
