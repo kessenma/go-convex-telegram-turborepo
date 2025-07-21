@@ -43,10 +43,16 @@ if ! command -v convex &> /dev/null; then
 fi
 
 # Get the actual server IP and port for self-hosted deployment
-# Use the container's exposed port mapping to find the correct URL
-SERVER_IP=$(curl -s ifconfig.me || echo "localhost")
+# Force IPv4 to avoid IPv6 URL issues with Convex CLI
+SERVER_IP=$(curl -4 -s ifconfig.me 2>/dev/null || curl -s ipv4.icanhazip.com 2>/dev/null || echo "localhost")
 CONVEX_PORT=$(docker port "$BACKEND_CONTAINER" 3210 | cut -d: -f2)
 CONVEX_SITE_PORT=$(docker port "$BACKEND_CONTAINER" 3211 | cut -d: -f2)
+
+# Validate that we got an IPv4 address
+if [[ ! $SERVER_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+  echo "⚠️  Could not get valid IPv4 address, using localhost"
+  SERVER_IP="localhost"
+fi
 
 if [ -z "$CONVEX_PORT" ]; then
   echo "❌ Could not determine Convex backend port mapping"

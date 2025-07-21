@@ -104,6 +104,21 @@ This occurs when:
 - Ensure you're using port 3210 (backend) not 3211 (site proxy) for deployment
 - The scripts now dynamically update .env.docker with correct configuration
 
+### Invalid URL / IPv6 Address Error
+
+If you see errors like:
+```
+Using Convex URL: http://2a01:4f9:c011:aaef::1:3210
+TypeError: Invalid URL
+```
+
+This occurs when the server has an IPv6 address that the Convex CLI cannot handle properly.
+
+**Solution:**
+- The updated scripts now force IPv4 detection using `curl -4`
+- Falls back to alternative IPv4 services if needed
+- Uses `localhost` as final fallback if no valid IPv4 address is found
+
 ### Permission Denied
 
 Make sure the script is executable:
