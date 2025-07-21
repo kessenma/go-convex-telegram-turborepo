@@ -39,7 +39,7 @@ fi
 # Install Convex CLI if not present
 if ! command -v convex &> /dev/null; then
   echo "📦 Installing Convex CLI…"
-  npm install convex@latest --no-save
+  npm install convex@latest --no-save --legacy-peer-deps
 fi
 
 # Get the actual server IP and port for self-hosted deployment

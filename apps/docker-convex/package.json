@@ -30,6 +30,9 @@
   },
   "devDependencies": {
     "@types/node": "^18.17.0",
-    "typescript": "~5.0.3"
+    "typescript": "^5.5.0"
+  },
+  "overrides": {
+    "typescript": "^5.5.0"
   }
 }
