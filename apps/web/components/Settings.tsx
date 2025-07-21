@@ -13,6 +13,7 @@ import { DockerStatus } from "./docker-status";
 import { LightweightLLMStatusIndicator } from "./rag/lightweight-llm-status-indicator";
 import { LLMStatusIndicator } from "./rag/llm-status-indicator";
 import { UserCountIndicator } from "./user-count/user-count-indicator";
+import { ChangelogModal } from "./change-log/ChangelogModal";
 
 interface SettingsProps {
   className?: string;
@@ -346,6 +347,53 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                         )}
                       />
                     </motion.button>
+                  </motion.div>
+                </motion.div>
+              </div>
+              
+              {/* Changelog Section */}
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                  Project Updates
+                </h3>
+                <motion.div
+                  className="space-y-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                      opacity: 1,
+                      transition: {
+                        delay: 0.2,
+                        staggerChildren: 0.05,
+                      },
+                    },
+                  }}
+                >
+                  <motion.div
+                    variants={{
+                      hidden: { opacity: 0, y: 5 },
+                      visible: { opacity: 1, y: 0 },
+                    }}
+                    className="p-3 bg-gray-50 rounded-lg dark:bg-gray-800/30"
+                  >
+                    <div className="space-y-4">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Stay updated with the latest changes and improvements to the project.
+                      </p>
+                      
+                      <div className="flex justify-center">
+                        <ChangelogModal 
+                          trigger={
+                            <button className="flex gap-1 items-center text-sm text-cyan-500 transition-colors hover:text-cyan-600">
+                              View Changelog
+                            </button>
+                          }
+                          maxCommits={-1}
+                        />
+                      </div>
+                    </div>
                   </motion.div>
                 </motion.div>
               </div>

@@ -514,17 +514,17 @@ export function Activate({
         }
       },
       onLeave: () => {
-        // When leaving the section (scrolling down), fade out gracefully
+        // When leaving the section (scrolling down), shrink to nothing
         const sceneElement = element.querySelector(
           ".three-js-canvas"
         ) as HTMLElement;
         if (sceneElement) {
           sceneElement.style.transition =
-            "opacity 0.4s ease-out, transform 0.4s ease-out";
+            "opacity 0.8s ease-in, transform 0.8s ease-in";
           sceneElement.style.opacity = "0";
-          sceneElement.style.transform = "scale(0.95)";
+          sceneElement.style.transform = "scale(0)"; // Shrink completely to nothing
 
-          // After fade completes, move to absolute positioning
+          // After animation completes, move to absolute positioning
           setTimeout(() => {
             if (sceneElement && sceneElement.style.opacity === "0") {
               sceneElement.style.position = "absolute";
@@ -533,19 +533,19 @@ export function Activate({
               sceneElement.style.width = "100vw";
               sceneElement.style.height = "100vh";
             }
-          }, 400);
+          }, 800);
         }
       },
       onLeaveBack: () => {
-        // When leaving the section (scrolling up), fade out gracefully
+        // When leaving the section (scrolling up), shrink to nothing
         const sceneElement = element.querySelector(
           ".three-js-canvas"
         ) as HTMLElement;
         if (sceneElement) {
           sceneElement.style.transition =
-            "opacity 0.4s ease-out, transform 0.4s ease-out";
+            "opacity 0.8s ease-in, transform 0.8s ease-in";
           sceneElement.style.opacity = "0";
-          sceneElement.style.transform = "scale(0.95)";
+          sceneElement.style.transform = "scale(0)"; // Shrink completely to nothing
 
           setTimeout(() => {
             if (sceneElement && sceneElement.style.opacity === "0") {
@@ -555,11 +555,11 @@ export function Activate({
               sceneElement.style.width = "100vw";
               sceneElement.style.height = "100vh";
             }
-          }, 400);
+          }, 800);
         }
       },
       onEnterBack: () => {
-        // When re-entering from below, set up for smooth fade-in
+        // When re-entering from below, grow from nothing to full size
         const sceneElement = element.querySelector(
           ".three-js-canvas"
         ) as HTMLElement;
@@ -570,20 +570,20 @@ export function Activate({
           sceneElement.style.left = "0";
           sceneElement.style.width = "100vw";
           sceneElement.style.height = "100vh";
-          sceneElement.style.transform = "scale(0.95)";
+          sceneElement.style.transform = "scale(0)"; // Start from nothing
           sceneElement.style.opacity = "0";
           sceneElement.style.transition = "none";
 
           // Force a reflow to ensure the styles are applied
           sceneElement.offsetHeight;
 
-          // Then fade in smoothly
+          // Then grow and fade in smoothly
           requestAnimationFrame(() => {
             if (sceneElement) {
               sceneElement.style.transition =
-                "opacity 0.5s ease-out, transform 0.5s ease-out";
+                "opacity 0.8s ease-out, transform 0.8s ease-out";
               sceneElement.style.opacity = "1";
-              sceneElement.style.transform = "none";
+              sceneElement.style.transform = "scale(1)"; // Grow to full size
             }
           });
         }
