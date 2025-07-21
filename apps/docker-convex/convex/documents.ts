@@ -148,6 +148,60 @@ export const searchDocuments = query({
   },
 });
 
+// Save multiple documents in batch
+export const saveDocumentsBatch = mutation({
+  args: {
+    documents: v.array(v.object({
+      title: v.string(),
+      content: v.string(),
+      contentType: v.string(),
+      tags: v.optional(v.array(v.string())),
+      summary: v.optional(v.string()),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const results = [];
+    const errors = [];
+
+    for (let i = 0; i < args.documents.length; i++) {
+      try {
+        const doc = args.documents[i];
+        const wordCount = doc.content.split(/\s+/).filter(word => word.length > 0).length;
+        const fileSize = doc.content.length;
+
+        const documentId = await ctx.db.insert("rag_documents", {
+          title: doc.title,
+          content: doc.content,
+          contentType: doc.contentType as "markdown" | "text",
+          tags: doc.tags || [],
+          summary: doc.summary,
+          wordCount,
+          fileSize,
+          isActive: true,
+          hasEmbedding: false,
+          uploadedAt: now,
+          lastModified: now,
+        });
+
+        results.push({ index: i, documentId, title: doc.title });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        errors.push({ index: i, title: args.documents[i].title, error: errorMessage });
+      }
+    }
+
+    return {
+      processed: args.documents.length,
+      successful: results.length,
+      failed: errors.length,
+      results,
+      errors,
+      message: `Batch upload completed: ${results.length} successful, ${errors.length} failed`,
+    };
+  },
+});
+
 // Get document statistics
 export const getDocumentStats = query({
   args: {},
@@ -171,6 +225,8 @@ export const getDocumentStats = query({
       totalWords,
       totalSize,
       contentTypes,
+      averageWordsPerDocument: totalDocuments > 0 ? Math.round(totalWords / totalDocuments) : 0,
+      averageSizePerDocument: totalDocuments > 0 ? Math.round(totalSize / totalDocuments) : 0,
     };
   },
 });

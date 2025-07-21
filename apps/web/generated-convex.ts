@@ -1,5 +1,5 @@
-import { anyApi, type FunctionReference } from "convex/server";
-import type { GenericId as Id } from "convex/values";
+import { type FunctionReference, anyApi } from "convex/server";
+import { type GenericId as Id } from "convex/values";
 
 export const api: PublicApiType = anyApi as unknown as PublicApiType;
 export const internal: InternalApiType = anyApi as unknown as InternalApiType;
@@ -179,6 +179,18 @@ export type PublicApiType = {
       { documentId: Id<"rag_documents"> },
       any
     >;
+    getEmbeddingById: FunctionReference<
+      "query",
+      "public",
+      { embeddingId: Id<"document_embeddings"> },
+      any
+    >;
+    getAllDocumentEmbeddings: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      any
+    >;
     processDocumentWithChunking: FunctionReference<
       "action",
       "public",
@@ -194,7 +206,11 @@ export type PublicApiType = {
     searchDocumentsByVector: FunctionReference<
       "action",
       "public",
-      { limit?: number; queryText: string },
+      {
+        documentIds?: Array<Id<"rag_documents">>;
+        limit?: number;
+        queryText: string;
+      },
       any
     >;
   };
@@ -469,44 +485,6 @@ export type PublicApiType = {
       any
     >;
   };
-  ragSearch: {
-    generateEmbedding: FunctionReference<
-      "action",
-      "public",
-      { text: string },
-      any
-    >;
-    vectorSearch: FunctionReference<
-      "action",
-      "public",
-      {
-        query: string;
-        documentIds?: Array<Id<"rag_documents">>;
-        limit?: number;
-      },
-      any
-    >;
-    ragSearch: FunctionReference<
-      "action",
-      "public",
-      {
-        query: string;
-        documentIds: Array<Id<"rag_documents">>;
-        limit?: number;
-      },
-      any
-    >;
-    getRagContext: FunctionReference<
-      "action",
-      "public",
-      {
-        query: string;
-        documentIds: Array<Id<"rag_documents">>;
-        maxContextLength?: number;
-      },
-      any
-    >;
-  };
   userSessions: {
     upsertSession: FunctionReference<
       "mutation",
@@ -554,6 +532,44 @@ export type PublicApiType = {
       "query",
       "public",
       Record<string, never>,
+      any
+    >;
+  };
+  ragSearch: {
+    generateEmbedding: FunctionReference<
+      "action",
+      "public",
+      { text: string },
+      any
+    >;
+    vectorSearch: FunctionReference<
+      "action",
+      "public",
+      {
+        documentIds?: Array<Id<"rag_documents">>;
+        limit?: number;
+        query: string;
+      },
+      any
+    >;
+    ragSearch: FunctionReference<
+      "action",
+      "public",
+      {
+        documentIds: Array<Id<"rag_documents">>;
+        limit?: number;
+        query: string;
+      },
+      any
+    >;
+    getRagContext: FunctionReference<
+      "action",
+      "public",
+      {
+        documentIds: Array<Id<"rag_documents">>;
+        maxContextLength?: number;
+        query: string;
+      },
       any
     >;
   };

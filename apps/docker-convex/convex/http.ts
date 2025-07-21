@@ -402,6 +402,49 @@ export const saveDocumentAPI = httpAction(async (ctx, request) => {
   }
 });
 
+export const saveDocumentsBatchAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    
+    // Validate required fields
+    if (!body.documents || !Array.isArray(body.documents)) {
+      return errorResponse("Missing or invalid documents array", 400);
+    }
+
+    // Validate each document
+    for (let i = 0; i < body.documents.length; i++) {
+      const doc = body.documents[i];
+      if (!doc.title || !doc.content || !doc.contentType) {
+        return errorResponse(`Document ${i + 1}: Missing required fields: title, content, contentType`, 400);
+      }
+      
+      // Validate content type
+       if (!["markdown", "text"].includes(doc.contentType)) {
+         return errorResponse(`Document ${i + 1}: contentType must be 'markdown' or 'text'`, 400);
+       }
+      
+      // Validate content length (max 1MB)
+      if (doc.content.length > 1024 * 1024) {
+        return errorResponse(`Document ${i + 1}: Content too large. Maximum size is 1MB`, 400);
+      }
+    }
+
+    const result = await ctx.runMutation(api.documents.saveDocumentsBatch, { documents: body.documents });
+    return new Response(JSON.stringify(result), { 
+      status: 201,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return errorResponse("Internal server error", 500, message);
+  }
+});
+
 export const getDocumentsAPI = httpAction(async (ctx, request) => {
   try {
     const { searchParams } = new URL(request.url);
@@ -1291,6 +1334,12 @@ http.route({
   path: "/api/documents",
   method: "POST",
   handler: saveDocumentAPI,
+});
+
+http.route({
+  path: "/api/documents/batch",
+  method: "POST",
+  handler: saveDocumentsBatchAPI,
 });
 
 http.route({
