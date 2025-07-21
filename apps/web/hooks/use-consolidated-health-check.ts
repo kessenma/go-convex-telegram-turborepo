@@ -109,7 +109,7 @@ export function useConsolidatedHealthCheck() {
 
     // Use a base interval that's the GCD of all polling intervals
     // This ensures we check each service at its required frequency
-    const baseInterval = Math.max(findOptimalInterval(), 5000); // Minimum 5 seconds
+    const baseInterval = Math.max(findOptimalInterval(), 30000); // Minimum 30 seconds (much more conservative)
 
     // Perform initial check
     performHealthChecks();
@@ -134,11 +134,15 @@ export function useConsolidatedHealthCheck() {
     };
   }, [startPolling, stopPolling]);
 
-  // Restart polling when intervals change
+  // Restart polling when intervals change (but debounce it)
   useEffect(() => {
-    stopPolling();
-    startPolling();
-  }, [startPolling, stopPolling]);
+    const timeoutId = setTimeout(() => {
+      stopPolling();
+      startPolling();
+    }, 1000); // Debounce for 1 second
+
+    return () => clearTimeout(timeoutId);
+  }, [pollingIntervals, startPolling, stopPolling]);
 
   return {
     startPolling,

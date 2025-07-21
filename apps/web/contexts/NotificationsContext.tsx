@@ -12,7 +12,11 @@ const NotificationsContext = createContext<
   NotificationsContextType | undefined
 >(undefined);
 
-export function NotificationsProvider({ children }: { children: ReactNode }): React.ReactElement {
+export function NotificationsProvider({
+  children,
+}: {
+  children: ReactNode;
+}): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
 
   const openNotifications = () => setIsOpen(true);

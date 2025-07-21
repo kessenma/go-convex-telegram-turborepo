@@ -8,7 +8,16 @@
     "TELEGRAM_BOT_TOKEN",
     "CONVEX_URL",
     "NEXT_PUBLIC_CONVEX_URL",
-    "CONVEX_INSTANCE_SECRET"
+    "CONVEX_INSTANCE_SECRET",
+    "CONVEX_HTTP_URL",
+    "LIGHTWEIGHT_LLM_URL",
+    "LIGHTWEIGHT_LLM_INTERNAL_URL",
+    "VECTOR_CONVERT_LLM_URL",
+    "VECTOR_CONVERT_LLM_INTERNAL_URL",
+    "DOCKER_HOST",
+    "WEB_DASHBOARD_PORT",
+    "CONVEX_DASHBOARD_PORT",
+    "VECTOR_CONVERT_LLM_PORT"
   ],
   "tasks": {
     "build": {
@@ -38,7 +47,21 @@
         "build/**",
         "convex/_generated/**"
       ],
-      "env": ["NODE_ENV", "NEXT_PUBLIC_CONVEX_URL", "TELEGRAM_BOT_TOKEN", "CONVEX_URL"]
+      "env": [
+        "NODE_ENV",
+        "NEXT_PUBLIC_CONVEX_URL",
+        "TELEGRAM_BOT_TOKEN",
+        "CONVEX_URL",
+        "CONVEX_HTTP_URL",
+        "LIGHTWEIGHT_LLM_URL",
+        "LIGHTWEIGHT_LLM_INTERNAL_URL",
+        "VECTOR_CONVERT_LLM_URL",
+        "VECTOR_CONVERT_LLM_INTERNAL_URL",
+        "DOCKER_HOST",
+        "WEB_DASHBOARD_PORT",
+        "CONVEX_DASHBOARD_PORT",
+        "VECTOR_CONVERT_LLM_PORT"
+      ]
     },
     "dev": {
       "cache": false,
@@ -48,7 +71,16 @@
         "TELEGRAM_TOKEN",
         "CONVEX_URL",
         "NEXT_PUBLIC_CONVEX_URL",
-        "CONVEX_INSTANCE_SECRET"
+        "CONVEX_INSTANCE_SECRET",
+        "CONVEX_HTTP_URL",
+        "LIGHTWEIGHT_LLM_URL",
+        "LIGHTWEIGHT_LLM_INTERNAL_URL",
+        "VECTOR_CONVERT_LLM_URL",
+        "VECTOR_CONVERT_LLM_INTERNAL_URL",
+        "DOCKER_HOST",
+        "WEB_DASHBOARD_PORT",
+        "CONVEX_DASHBOARD_PORT",
+        "VECTOR_CONVERT_LLM_PORT"
       ]
     },
     "start": {

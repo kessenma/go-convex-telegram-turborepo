@@ -5,6 +5,7 @@ This document explains the consolidated health check system implemented to reduc
 ## Problem
 
 Previously, multiple components were making individual health check calls to various status endpoints:
+
 - `/api/llm/status`
 - `/api/lightweight-llm/status`
 - `/api/convex/status`
@@ -12,6 +13,7 @@ Previously, multiple components were making individual health check calls to var
 - `/api/users/active-count`
 
 This resulted in:
+
 - Excessive console logging
 - Multiple concurrent API calls
 - Inefficient resource usage
@@ -24,6 +26,7 @@ This resulted in:
 **File**: `components/providers/health-check-provider.tsx`
 
 A React context provider that manages all health checking from a single location. This provider:
+
 - Runs at the application root level
 - Coordinates all status polling
 - Prevents duplicate API calls
@@ -34,6 +37,7 @@ A React context provider that manages all health checking from a single location
 **File**: `hooks/use-consolidated-health-check.ts`
 
 A custom hook that:
+
 - Calculates optimal polling intervals using GCD (Greatest Common Divisor)
 - Tracks last check times for each service
 - Only polls services when they're due for a check
@@ -45,6 +49,7 @@ A custom hook that:
 **File**: `hooks/use-consolidated-health-check.ts` (useStatusData)
 
 A hook for components that need status data but don't want to trigger polling:
+
 - Provides read-only access to centralized status
 - No side effects or polling
 - Optimized for performance
@@ -54,6 +59,7 @@ A hook for components that need status data but don't want to trigger polling:
 **File**: `hooks/use-status-operations.ts`
 
 Existing hooks (`useLLMStatus`, `useConvexStatus`, etc.) have been updated to:
+
 - Use centralized data instead of individual polling
 - Maintain the same API for backward compatibility
 - Marked as deprecated where appropriate
@@ -90,12 +96,15 @@ The `HealthCheckProvider` is integrated at the root level in `app/layout.tsx`:
 ## Migration Guide
 
 ### For New Components
+
 Use `useStatusData()` for read-only access to status information.
 
 ### For Existing Components
+
 No changes required - existing hooks continue to work but now use centralized data.
 
 ### For High-Frequency Updates
+
 Components like `LLMUsageBarChart` can still make direct API calls for real-time data (≤5 seconds intervals) while benefiting from centralized status for general health information.
 
 ## Files Modified

@@ -15,11 +15,10 @@ interface LLMUsageBarChartProps {
 }
 
 export const LLMUsageBarChart: React.FC<LLMUsageBarChartProps> = ({
-  pollIntervalMs = 2000,
+  pollIntervalMs = 30000, // Increased default to 30 seconds to reduce API spam
   maxSamples = 40,
 }) => {
   const [samples, setSamples] = useState<UsageSample[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { status: llmStatus } = useLLMStatus();
 
@@ -46,42 +45,8 @@ export const LLMUsageBarChart: React.FC<LLMUsageBarChartProps> = ({
     }
   }, [llmStatus.memory_usage, maxSamples]);
 
-  // Optional: Still allow manual polling for high-frequency updates
-  useEffect(() => {
-    if (pollIntervalMs <= 5000) {
-      // Only for high-frequency polling (5s or less)
-      const fetchUsage = async () => {
-        try {
-          const res = await fetch("/api/llm/status");
-          const data = await res.json();
-          const usage = data.memory_usage || {};
-          if (
-            usage.process_memory_mb !== undefined &&
-            usage.process_cpu_percent !== undefined
-          ) {
-            setSamples((prev) => {
-              const next = [
-                ...prev,
-                {
-                  timestamp: Date.now(),
-                  memory: usage.process_memory_mb as number,
-                  cpu: usage.process_cpu_percent as number,
-                },
-              ];
-              return next.length > maxSamples
-                ? next.slice(next.length - maxSamples)
-                : next;
-            });
-          }
-        } catch {}
-      };
-
-      timerRef.current = setInterval(fetchUsage, pollIntervalMs);
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-      };
-    }
-  }, [pollIntervalMs, maxSamples]);
+  // Note: Removed the additional polling mechanism to prevent API spam
+  // The component now relies entirely on the centralized health check system
 
   // Find max for scaling
   const maxMemory = Math.max(...samples.map((s) => s.memory), 1);

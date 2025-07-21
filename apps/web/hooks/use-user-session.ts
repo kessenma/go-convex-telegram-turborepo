@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 /**
  * Hook to manage user sessions for tracking active users
  * Automatically creates and maintains a session when the user visits the site
+ * Uses cookies to cache session data and prevent excessive API calls
  * @param enabled - Whether to enable session tracking (defaults to true)
  */
 export function useUserSession(enabled: boolean = true) {
@@ -12,10 +13,56 @@ export function useUserSession(enabled: boolean = true) {
   const [isActive, setIsActive] = useState(false);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const sessionCreatedRef = useRef(false);
+  const lastHeartbeatRef = useRef<number>(0);
+
+  // Cookie utilities
+  const setCookie = (name: string, value: string, minutes: number) => {
+    const expires = new Date(Date.now() + minutes * 60 * 1000).toUTCString();
+    document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Strict`;
+  };
+
+  const getCookie = (name: string): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      const cookieValue = parts.pop()?.split(';').shift();
+      return cookieValue || null;
+    }
+    return null;
+  };
+
+  const deleteCookie = (name: string) => {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+  };
 
   // Generate a unique session ID
   const generateSessionId = () => {
     return `web_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  // Get or create session ID from cookie
+  const getOrCreateSessionId = (): string => {
+    const existingSessionId = getCookie('user-session-id');
+    const lastActivity = getCookie('user-session-activity');
+    
+    // Check if existing session is still valid (within 3 minutes)
+    if (existingSessionId && lastActivity) {
+      const lastActivityTime = parseInt(lastActivity, 10);
+      const now = Date.now();
+      const sessionTimeout = 3 * 60 * 1000; // 3 minutes
+      
+      if (now - lastActivityTime < sessionTimeout) {
+        // Update activity timestamp
+        setCookie('user-session-activity', now.toString(), 5);
+        return existingSessionId;
+      }
+    }
+    
+    // Create new session
+    const newSessionId = generateSessionId();
+    setCookie('user-session-id', newSessionId, 5); // 5 minutes
+    setCookie('user-session-activity', Date.now().toString(), 5);
+    return newSessionId;
   };
 
   // Create or update session
@@ -91,115 +138,120 @@ export function useUserSession(enabled: boolean = true) {
     }
   };
 
-  // Initialize session on mount
-  useEffect(() => {
-    if (sessionCreatedRef.current || !enabled) return;
-
-    const newSessionId = generateSessionId();
-    setSessionId(newSessionId);
-
-    // Create session
-    createSession(newSessionId).then((success) => {
-      if (success) {
-        sessionCreatedRef.current = true;
-
-        // Start heartbeat interval (every 1 minute for more responsive tracking)
-        heartbeatIntervalRef.current = setInterval(() => {
-          sendHeartbeat(newSessionId);
-        }, 60 * 1000); // 1 minute
+  // Start heartbeat with throttling
+  const startHeartbeat = (sessionId: string) => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+    }
+    
+    heartbeatIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      // Throttle heartbeats to prevent excessive API calls (minimum 30 seconds between calls)
+      if (now - lastHeartbeatRef.current >= 30000) {
+        sendHeartbeat(sessionId);
+        lastHeartbeatRef.current = now;
+        // Update activity timestamp in cookie
+        setCookie('user-session-activity', now.toString(), 5);
       }
-    });
+    }, 60 * 1000); // Check every minute, but only send if 30+ seconds have passed
+  };
+
+  // Cleanup function
+  const cleanup = () => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  };
+
+  // Main effect to handle session lifecycle
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    const initSession = async () => {
+      try {
+        const sessionId = getOrCreateSessionId();
+        setSessionId(sessionId);
+        
+        // Check if we need to create a new session (not in cookie or expired)
+        const existingSessionId = getCookie('user-session-id');
+        const sessionExists = getCookie('user-session-exists');
+        
+        if (!sessionExists || existingSessionId !== sessionId) {
+          await createSession(sessionId);
+          setCookie('user-session-exists', 'true', 5);
+          sessionCreatedRef.current = true;
+        }
+        
+        setIsActive(true);
+        
+        // Start heartbeat with throttling
+        startHeartbeat(sessionId);
+      } catch (error) {
+        console.error('Failed to initialize session:', error);
+      }
+    };
+
+    initSession();
 
     // Cleanup on unmount
     return () => {
-      if (heartbeatIntervalRef.current) {
-        clearInterval(heartbeatIntervalRef.current);
-        heartbeatIntervalRef.current = null;
-      }
-      // Remove problematic cleanup that accesses isActive from closure
-      // Session will expire naturally via server-side timeout
+      cleanup();
     };
-  }, [
-    enabled, // Create session
-    createSession,
-    generateSessionId,
-    sendHeartbeat,
-  ]);
+  }, [enabled]);
 
   // Handle page visibility changes
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !sessionId) return;
 
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Page is hidden, pause heartbeat
-        if (heartbeatIntervalRef.current) {
-          clearInterval(heartbeatIntervalRef.current);
-          heartbeatIntervalRef.current = null;
-        }
-      } else {
-        // Page is visible, resume heartbeat
-        if (sessionId && isActive && !heartbeatIntervalRef.current) {
-          heartbeatIntervalRef.current = setInterval(() => {
-            sendHeartbeat(sessionId);
-          }, 60 * 1000); // 1 minute
+      if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        // Only send heartbeat if enough time has passed (throttling)
+        if (now - lastHeartbeatRef.current >= 30000) {
+          sendHeartbeat(sessionId);
+          lastHeartbeatRef.current = now;
+          // Update activity timestamp in cookie
+          setCookie('user-session-activity', now.toString(), 5);
         }
       }
     };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [sessionId, isActive, enabled, sendHeartbeat]);
+  }, [enabled, sessionId]);
 
-  // Handle beforeunload and page visibility to end session
+  // Handle page unload
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !sessionId) return;
 
     const handleBeforeUnload = () => {
-      if (sessionId && isActive) {
-        // Use navigator.sendBeacon for reliable cleanup
-        const data = new Blob(
-          [
-            JSON.stringify({
-              sessionId,
-              source: "web",
-              action: "end",
-            }),
-          ],
-          { type: "application/json" }
-        );
-        navigator.sendBeacon("/api/users/active-count", data);
+      // Clean up cookies on page unload
+      deleteCookie('user-session-exists');
+      
+      // Send final heartbeat before leaving
+      // Use sendBeacon for reliability during page unload
+      if (navigator.sendBeacon) {
+        const data = JSON.stringify({
+          sessionId,
+          timestamp: Date.now(),
+          action: 'heartbeat',
+        });
+        navigator.sendBeacon('/api/users/active-count', data);
       }
     };
 
-    const handlePageHide = () => {
-      if (sessionId && isActive) {
-        // Additional cleanup on page hide (mobile browsers)
-        const data = new Blob(
-          [
-            JSON.stringify({
-              sessionId,
-              source: "web",
-              action: "end",
-            }),
-          ],
-          { type: "application/json" }
-        );
-        navigator.sendBeacon("/api/users/active-count", data);
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [sessionId, isActive, enabled]);
+  }, [enabled, sessionId]);
 
   return {
     sessionId,

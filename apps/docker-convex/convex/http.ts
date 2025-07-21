@@ -510,15 +510,41 @@ export const generateDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
 
 export const searchDocumentsVectorAPI = httpAction(async (ctx, request) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get("query");
-    if (!query) {
-      return errorResponse("Missing query parameter", 400);
+    // Handle both GET (query params) and POST (JSON body) requests
+    let queryText: string;
+    let limit: number = 10;
+    let documentIds: string[] | undefined;
+
+    if (request.method === "POST") {
+      const body = await request.json();
+      queryText = body.queryText;
+      limit = body.limit || 10;
+      documentIds = body.documentIds;
+    } else {
+      const { searchParams } = new URL(request.url);
+      queryText = searchParams.get("query") || searchParams.get("queryText") || "";
+      limit = parseInt(searchParams.get("limit") || "10");
+      const docIdsParam = searchParams.get("documentIds");
+      documentIds = docIdsParam ? docIdsParam.split(",") : undefined;
     }
-    const results = await ctx.runQuery(api.documents.searchDocuments, { searchTerm: query });
-    return new Response(JSON.stringify(results));
+
+    if (!queryText) {
+      return errorResponse("Missing queryText parameter", 400);
+    }
+
+    // Use the proper vector search function
+    const results = await ctx.runAction(api.embeddings.searchDocumentsByVector, {
+      queryText,
+      limit,
+      documentIds: documentIds as any,
+    });
+
+    return new Response(JSON.stringify(results), {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
+    console.error("Vector search API error:", e);
     return errorResponse("Internal server error", 500, message);
   }
 });
@@ -538,6 +564,34 @@ export const checkLLMServiceStatusAPI = httpAction(async (ctx, request) => {
   try {
     const status = await ctx.runAction(api.embeddings.checkLLMServiceStatus, {});
     return new Response(JSON.stringify(status));
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return errorResponse("Internal server error", 500, message);
+  }
+});
+
+export const getDocumentEmbeddingsAPI = httpAction(async (ctx, request) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const documentId = searchParams.get("documentId") as Id<"rag_documents">;
+    
+    if (!documentId) {
+      return errorResponse("Missing documentId parameter", 400);
+    }
+    
+    const embeddings = await ctx.runQuery(api.embeddings.getDocumentEmbeddings, { documentId });
+    return new Response(JSON.stringify(embeddings));
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return errorResponse("Internal server error", 500, message);
+  }
+});
+
+export const getAllDocumentEmbeddingsAPI = httpAction(async (ctx, request) => {
+  try {
+    // Get all active document embeddings for vector search
+    const embeddings = await ctx.runQuery(api.embeddings.getAllDocumentEmbeddings, {});
+    return new Response(JSON.stringify(embeddings));
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return errorResponse("Internal server error", 500, message);
@@ -1280,6 +1334,18 @@ http.route({
   path: "/api/embeddings/llm-status",
   method: "GET",
   handler: checkLLMServiceStatusAPI,
+});
+
+http.route({
+  path: "/api/embeddings/document",
+  method: "GET",
+  handler: getDocumentEmbeddingsAPI,
+});
+
+http.route({
+  path: "/api/embeddings/all",
+  method: "GET",
+  handler: getAllDocumentEmbeddingsAPI,
 });
 
 // CONVERSION JOBS API ENDPOINTS

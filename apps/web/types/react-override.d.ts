@@ -22,7 +22,7 @@ declare module "react" {
   type ComponentType<P = {}> = any;
   type FunctionComponent<P = {}> = any;
   type FC<P = {}> = any;
-  
+
   // Override ReactNode to be more permissive
   type ReactNode = any;
   type ReactElement<P = any, T = any> = any;

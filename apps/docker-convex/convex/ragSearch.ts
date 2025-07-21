@@ -16,7 +16,7 @@ export const generateEmbedding = action({
   },
 });
 
-// Enhanced vector search using your existing vector service
+// Enhanced vector search using your existing vector service with chunk support
 export const vectorSearch = action({
   args: {
     query: v.string(),
@@ -27,56 +27,57 @@ export const vectorSearch = action({
     const limit = args.limit || VECTOR_SEARCH_LIMIT;
     
     try {
-      // Generate embedding for the query using your vector service
-      const queryEmbedding = await ctx.runAction(api.embeddings.generateEmbedding, { 
-        text: args.query 
+      // Use the enhanced vector search with chunk support
+      const searchResults = await ctx.runAction(api.embeddings.searchDocumentsByVector, {
+        queryText: args.query,
+        limit: limit * 2, // Get more candidates
+        documentIds: args.documentIds,
       });
       
-      // Perform vector search
-      const searchResults = await ctx.vectorSearch("document_embeddings", "by_embedding", {
-        vector: queryEmbedding,
-        limit: limit * 2, // Get more results to filter
-        filter: (q) => q.eq("isActive", true),
+      console.log(`Vector search returned ${searchResults.length} results`);
+      
+      // Format results with enhanced chunk information
+      const results: any[] = searchResults.slice(0, limit).map((result: any) => {
+        const snippet = result.expandedContext || result.chunkText || 
+                       (result.document?.content?.substring(0, 300) || "");
+        
+        return {
+          documentId: result.documentId,
+          title: result.document?.title || "Unknown Document",
+          content: result.document?.content || "",
+          snippet: snippet,
+          score: result._score,
+          isChunkResult: result.isChunkResult || false,
+          chunkIndex: result.chunkIndex,
+          chunkText: result.chunkText,
+          expandedContext: result.expandedContext,
+          embedding: result,
+        };
       });
 
-      // Filter by document IDs if specified
-      let filteredResults = searchResults;
-      if (args.documentIds && args.documentIds.length > 0) {
-        filteredResults = searchResults.filter((result: any) => 
-          args.documentIds!.includes(result.documentId)
-        );
-      }
-
-      // Get document details and format results
-      const results: any[] = await Promise.all(
-        filteredResults.slice(0, limit).map(async (result: any) => {
-          const document: any = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
-            documentId: result.documentId,
-          });
-          
-          if (!document || !document.isActive) {
-            return null;
-          }
-
-          return {
-            documentId: result.documentId,
-            title: document.title,
-            content: document.content,
-            snippet: result.chunkText || document.content.substring(0, 300),
-            score: result._score,
-            embedding: result,
-          };
-        })
-      );
-
-      return results.filter(Boolean);
+      return results.filter(r => r.title !== "Unknown Document");
     } catch (error) {
-      console.error("Error in vector search:", error);
-      // Fallback to existing search method
-      return await ctx.runAction(api.embeddings.searchDocumentsByVector, {
-        queryText: args.query,
-        limit,
-      });
+      console.error("Error in enhanced vector search:", error);
+      // Fallback to basic search if enhanced search fails
+      try {
+        const fallbackResults = await ctx.runAction(api.embeddings.searchDocumentsByVector, {
+          queryText: args.query,
+          limit,
+        });
+        
+        return fallbackResults.map((result: any) => ({
+          documentId: result.documentId,
+          title: result.document?.title || "Unknown Document",
+          content: result.document?.content || "",
+          snippet: result.document?.content?.substring(0, 300) || "",
+          score: result._score,
+          isChunkResult: false,
+          embedding: result,
+        })).filter(r => r.title !== "Unknown Document");
+      } catch (fallbackError) {
+        console.error("Fallback search also failed:", fallbackError);
+        return [];
+      }
     }
   },
 });
@@ -99,7 +100,31 @@ export const ragSearch = action({
         limit: limit * 2,
       });
 
-      // If vector search returns good results, use them
+      // Prioritize chunk-based results from vector search
+      const chunkResults = vectorResults.filter((r: any) => r.isChunkResult);
+      const documentResults = vectorResults.filter((r: any) => !r.isChunkResult);
+      
+      console.log(`Vector search: ${chunkResults.length} chunk results, ${documentResults.length} document results`);
+      
+      // If we have good chunk results, prioritize them
+      if (chunkResults.length > 0) {
+        const prioritizedResults = [
+          ...chunkResults.slice(0, Math.min(limit, chunkResults.length)),
+          ...documentResults.slice(0, Math.max(0, limit - chunkResults.length))
+        ];
+        
+        return prioritizedResults.map((result: any) => ({
+          documentId: result.documentId,
+          title: result.title,
+          snippet: result.expandedContext || result.snippet,
+          score: result.score,
+          searchType: result.isChunkResult ? "vector-chunk" : "vector-document",
+          isChunkResult: result.isChunkResult,
+          chunkIndex: result.chunkIndex,
+        }));
+      }
+      
+      // If vector search returns good document results, use them
       if (vectorResults.length >= limit) {
         return vectorResults.slice(0, limit).map((result: any) => ({
           documentId: result.documentId,
@@ -107,6 +132,7 @@ export const ragSearch = action({
           snippet: result.snippet,
           score: result.score,
           searchType: "vector",
+          isChunkResult: result.isChunkResult || false,
         }));
       }
 

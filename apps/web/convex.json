@@ -1,10 +1,6 @@
 {
   "functions": "../docker-convex/convex/",
   "node": {
-    "externalPackages": [
-      "@node-rs/argon2",
-      "@node-rs/bcrypt",
-      "sharp"
-    ]
+    "externalPackages": ["@node-rs/argon2", "@node-rs/bcrypt", "sharp"]
   }
 }

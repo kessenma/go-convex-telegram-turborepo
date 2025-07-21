@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../generated-convex";
 import { renderIcon } from "../../../lib/icon-utils";
+import DocumentFolderIcon from "../../../components/rag/DocumentFolderIcon";
 import type { ChatMessage, Document } from "../types";
 
 interface ChatInterfaceProps {
@@ -71,10 +72,13 @@ export function ChatInterface({
 
   useEffect(() => {
     scrollToBottom();
-  }, [scrollToBottom]);
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
+
+    // Prevent double submission
+    if (isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -89,7 +93,7 @@ export function ChatInterface({
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/RAG/chat", {
+      const response = await fetch("/api/RAG/simple-chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,12 +101,6 @@ export function ChatInterface({
         body: JSON.stringify({
           message: currentInput,
           documentIds: selectedDocuments.map((doc) => doc._id),
-          sessionId: sessionId,
-          conversationHistory: messages.slice(-10).map((msg) => ({
-            role:
-              msg.type === "user" ? ("user" as const) : ("assistant" as const),
-            content: msg.content,
-          })),
         }),
       });
 
@@ -159,18 +157,24 @@ export function ChatInterface({
   };
 
   return (
-    <div className="flex flex-col h-[1000px]">
+    <div className="flex flex-col h-[600px]">
       {/* Header */}
       <div className="flex justify-between items-center p-4 border-b border-gray-700">
         <div>
           <h2 className="text-xl font-bold text-white">Chat with Documents</h2>
-          <p className="text-sm text-gray-300">
-            Chatting with: {selectedDocuments.map((d) => d.title).join(", ")}
-          </p>
+          <div className="flex flex-wrap gap-2 items-center">
+            <p className="text-sm text-gray-300">Chatting with:</p>
+            {selectedDocuments.map((doc) => (
+              <div key={doc._id} className="flex items-center gap-1">
+                <DocumentFolderIcon documentId={doc._id} className="" />
+                <span className="text-sm text-gray-300">{doc.title}</span>
+              </div>
+            ))}
+          </div>
           <div className="flex gap-2 items-center mt-1">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             <span className="text-xs text-green-400">
-              Powered by Lightweight LLM
+              Powered by all-MiniLM-L6-v2 embeddings + Llama 3.2 1B LLM
             </span>
           </div>
         </div>
@@ -211,11 +215,10 @@ export function ChatInterface({
             className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] rounded-lg p-3 ${
-                message.type === "user"
-                  ? "bg-curious-cyan-600 text-white"
-                  : "bg-gray-700 text-gray-100"
-              }`}
+              className={`max-w-[80%] rounded-lg p-3 ${message.type === "user"
+                ? "bg-curious-cyan-600 text-white"
+                : "bg-gray-700 text-gray-100"
+                }`}
             >
               <div className="flex gap-2 items-start">
                 {message.type === "assistant" &&
@@ -288,11 +291,10 @@ export function ChatInterface({
           <button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isLoading}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              !inputMessage.trim() || isLoading
-                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                : "bg-curious-cyan-600 text-white hover:bg-curious-cyan-700"
-            }`}
+            className={`px-4 py-2 rounded-lg transition-colors ${!inputMessage.trim() || isLoading
+              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+              : "bg-curious-cyan-600 text-white hover:bg-curious-cyan-700"
+              }`}
           >
             {renderIcon(Send, { className: "w-4 h-4" })}
           </button>

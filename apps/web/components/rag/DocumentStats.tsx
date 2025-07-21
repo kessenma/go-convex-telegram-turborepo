@@ -93,7 +93,7 @@ export function DocumentStats({
           to={stats.totalSize}
           duration={2}
           className="text-2xl font-bold text-white"
-        />
+        /> kb
       </div>
       <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
         <div className="text-sm font-medium text-curious-cyan-400">

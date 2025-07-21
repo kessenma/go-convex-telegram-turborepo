@@ -406,7 +406,14 @@ export default function AboutPage(): React.ReactElement {
                   sending them to the vector embeddings
                 </li>
                 <li>
-                  all-MiniLM-L6-v2 for converting raw text to vector embeddings
+                  <a 
+                    href={process.env.NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL || "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-400 hover:underline"
+                  >
+                    {process.env.NEXT_PUBLIC_VECTOR_CONVERT_MODEL || 'all-MiniLM-L6-v2'}
+                  </a> for converting raw text to vector embeddings
                   (so LLM's can read the data)
                 </li>
                 <li>

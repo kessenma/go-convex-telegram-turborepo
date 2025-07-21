@@ -27,6 +27,48 @@ interface VectorSearchResult {
   title: string;
   snippet: string;
   score: number;
+  chunkIndex?: number;
+  isChunkResult?: boolean;
+}
+
+// Expand chunk context by including surrounding content
+function expandChunkContext(
+  chunkText: string,
+  fullContent: string,
+  chunkIndex: number
+): string {
+  try {
+    // Find the chunk in the full content
+    const chunkStart = fullContent.indexOf(chunkText);
+    if (chunkStart === -1) {
+      return chunkText; // Fallback to original chunk
+    }
+
+    // Expand context by including some surrounding text
+    const contextBefore = 200; // characters before
+    const contextAfter = 200; // characters after
+
+    const expandedStart = Math.max(0, chunkStart - contextBefore);
+    const expandedEnd = Math.min(
+      fullContent.length,
+      chunkStart + chunkText.length + contextAfter
+    );
+
+    let expandedText = fullContent.substring(expandedStart, expandedEnd);
+
+    // Add ellipsis if we truncated
+    if (expandedStart > 0) {
+      expandedText = "..." + expandedText;
+    }
+    if (expandedEnd < fullContent.length) {
+      expandedText = expandedText + "...";
+    }
+
+    return expandedText;
+  } catch (error) {
+    console.error("Error expanding chunk context:", error);
+    return chunkText;
+  }
 }
 
 // Generate a session ID if not provided
@@ -34,53 +76,100 @@ function generateSessionId(): string {
   return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Perform vector search using your existing embedding system
+// Perform enhanced vector search using your existing embedding system
 async function performVectorSearch(
   query: string,
   documentIds: string[],
   limit: number = 5
 ): Promise<VectorSearchResult[]> {
-  console.log("Starting vector search with query:", query);
+  console.log("Starting enhanced vector search with query:", query);
   console.log("Document IDs:", documentIds);
 
   try {
-    // First, try to use your existing vector search from Convex
-    console.log("Trying Convex vector search...");
+    // First, try to use your existing vector search from Convex with document filtering
+    console.log("Trying Convex vector search with document filtering...");
     const vectorResults = await convex.action(
       api.embeddings.searchDocumentsByVector,
       {
         queryText: query,
-        limit: limit * 2, // Get more results to filter by document IDs
+        limit: limit * 4, // Get more results to filter and rank
+        documentIds: documentIds as any[], // Pass document IDs for filtering
       }
     );
 
-    console.log("Vector search results:", vectorResults ? vectorResults.length : 0);
-    console.log("First result structure:", vectorResults && vectorResults.length > 0 ? JSON.stringify(vectorResults[0]).substring(0, 200) : "No results");
-
+    console.log(
+      "Vector search results:",
+      vectorResults ? vectorResults.length : 0
+    );
+    
     if (vectorResults && vectorResults.length > 0) {
-      // Filter results by document IDs if specified
-      const filteredResults = vectorResults.filter((result: any) => {
-        // Check if document exists and has the expected structure
-        if (!result.document || !result.document._id) {
-          console.log("Skipping result with invalid document structure:", result);
-          return false;
-        }
-        return documentIds.includes(result.document._id);
+      console.log("Sample result structure:", {
+        hasDocument: !!vectorResults[0]?.document,
+        hasChunkText: !!vectorResults[0]?.chunkText,
+        hasScore: !!vectorResults[0]?._score,
+        isChunkResult: !!vectorResults[0]?.isChunkResult,
+        expandedContext: !!vectorResults[0]?.expandedContext
       });
 
-      console.log("Filtered vector results:", filteredResults.length);
+      // Process and enhance results
+      const processedResults = vectorResults
+        .filter((result: any) => {
+          // Ensure we have valid document structure
+          if (!result.document || !result.document._id) {
+            console.log("Skipping result with invalid document structure");
+            return false;
+          }
+          return true;
+        })
+        .map((result: any) => {
+          // Use the best available text content
+          let snippet = "";
+          
+          if (result.expandedContext) {
+            // Use expanded context if available (includes surrounding chunks)
+            snippet = result.expandedContext;
+          } else if (result.chunkText) {
+            // Use chunk text if available
+            snippet = result.chunkText;
+            
+            // Try to expand context around the chunk
+            if (result.chunkIndex !== undefined) {
+              snippet = expandChunkContext(
+                result.chunkText,
+                result.document.content,
+                result.chunkIndex
+              );
+            }
+          } else {
+            // Fallback to document content
+            snippet = result.document.content.substring(0, 400);
+          }
 
-      if (filteredResults.length > 0) {
-        return filteredResults.slice(0, limit).map((result: any) => ({
-          documentId: result.document._id,
-          title: result.document.title,
-          snippet: result.chunkText || result.document.content.substring(0, 300),
-          score: result._score || 0.8,
-        }));
-      }
+          return {
+            documentId: result.document._id,
+            title: result.document.title,
+            snippet: snippet.trim(),
+            score: result._score || 0.8,
+            chunkIndex: result.chunkIndex,
+            isChunkResult: !!result.chunkText,
+          };
+        })
+        .sort((a: any, b: any) => {
+          // Prioritize chunk results with higher scores
+          if (a.isChunkResult && !b.isChunkResult) return -1;
+          if (!a.isChunkResult && b.isChunkResult) return 1;
+          return b.score - a.score;
+        })
+        .slice(0, limit);
+
+      console.log(`Returning ${processedResults.length} processed vector results`);
+      console.log("Result scores:", processedResults.map(r => r.score));
+      
+      return processedResults;
     }
   } catch (vectorError) {
     console.error("Vector search failed:", vectorError);
+    console.error("Error details:", vectorError);
   }
 
   // Fallback to keyword matching if vector search fails
@@ -181,9 +270,13 @@ async function getDocumentContext(documentIds: string[]): Promise<string> {
     const documents = await Promise.all(
       documentIds.map(async (docId) => {
         try {
-          const response = await fetch(`http://localhost:3211/api/documents/${docId}`);
+          const response = await fetch(
+            `http://localhost:3211/api/documents/${docId}`
+          );
           if (!response.ok) {
-            console.error(`Failed to fetch document ${docId}: ${response.status}`);
+            console.error(
+              `Failed to fetch document ${docId}: ${response.status}`
+            );
             return null;
           }
           const doc = await response.json();
@@ -251,25 +344,79 @@ export async function POST(request: NextRequest) {
 
     const vectorResults = await performVectorSearch(message, documentIds, 5);
 
-    // Step 2: Build context from search results
+    // Step 2: Build enhanced context from search results
     let context = "";
     if (vectorResults.length > 0) {
-      // Use enhanced search results as context with better formatting
-      context = `Based on the following relevant information from your documents:\n\n${vectorResults
-        .map(
-          (result, index) =>
-            `${index + 1}. From "${result.title}":\n${result.snippet}`
-        )
-        .join(
-          "\n\n"
-        )}\n\nPlease answer the question based on this information. If the information doesn't contain the answer, say you don't know.`;
-    } else {
-      // Fallback to full document content if no vector results
-      console.log("No vector results, using full document context...");
-      context = await getDocumentContext(documentIds);
+      console.log(
+        `Building enhanced context from ${vectorResults.length} search results`
+      );
+
+      // Separate chunk-based and document-based results
+      const chunkResults = vectorResults.filter((r) => r.isChunkResult);
+      const documentResults = vectorResults.filter((r) => !r.isChunkResult);
+
+      console.log(
+        `Found ${chunkResults.length} chunk results and ${documentResults.length} document results`
+      );
+
+      // Build structured context for better LLM understanding
+      const contextParts = [];
       
-      // Add better instructions for the fallback case
-      context = `I couldn't find specific information related to your question, but here is the content of the documents you selected:\n\n${context}\n\nPlease answer the question based on this information if possible. If the information doesn't contain the answer, say you don't know.`;
+      // Add system instruction
+      contextParts.push("You are answering questions based on specific document content. Use the information below to provide accurate, detailed answers.");
+      
+      if (chunkResults.length > 0) {
+        contextParts.push("\n\nRELEVANT DOCUMENT SECTIONS:");
+        chunkResults.forEach((result, index) => {
+          const relevancePercent = (result.score * 100).toFixed(1);
+          contextParts.push(
+            `\n--- Section ${index + 1} from "${result.title}" (${relevancePercent}% relevant) ---`
+          );
+          contextParts.push(result.snippet);
+          contextParts.push("--- End Section ---");
+        });
+      }
+
+      if (documentResults.length > 0 && chunkResults.length < 3) {
+        contextParts.push("\n\nADDITIONAL CONTEXT:");
+        documentResults.slice(0, 2).forEach((result, index) => {
+          contextParts.push(
+            `\n--- From "${result.title}" ---`
+          );
+          contextParts.push(result.snippet);
+          contextParts.push("--- End Context ---");
+        });
+      }
+
+      // Add specific instructions for the LLM
+      contextParts.push("\n\nINSTRUCTIONS:");
+      contextParts.push("- Answer based ONLY on the information provided above");
+      contextParts.push("- Be specific and reference document sections when possible");
+      contextParts.push("- If asked about steps, list them clearly and in order");
+      contextParts.push("- If the information doesn't contain the answer, clearly state that you don't know");
+      contextParts.push("- Keep your response concise but complete");
+
+      context = contextParts.join("\n");
+    } else {
+      // Enhanced fallback to full document content
+      console.log("No vector results, using enhanced full document context...");
+      const fullContext = await getDocumentContext(documentIds);
+
+      if (fullContext.trim()) {
+        context = `You are answering questions based on the following document content:
+
+DOCUMENT CONTENT:
+${fullContext}
+
+INSTRUCTIONS:
+- Answer the user's question based on the document content above
+- Be specific and reference relevant sections
+- If asked about steps, list them clearly and in order
+- If the information doesn't contain the answer, clearly state that you don't know
+- Keep your response concise but complete`;
+      } else {
+        context = "I don't have access to the document content to answer your question.";
+      }
     }
 
     // Step 3: Call the lightweight LLM service
@@ -283,7 +430,7 @@ export async function POST(request: NextRequest) {
         message,
         context,
         conversation_history: conversationHistory,
-        max_length: 150,  // Reduced for faster responses
+        max_length: 150, // Reduced for faster responses
         temperature: 0.7,
       }),
     });

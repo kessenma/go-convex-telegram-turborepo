@@ -1,4 +1,3 @@
-/// <reference path="../../types/react-override.d.ts" />
 "use client";
 
 export const runtime = "edge"; // Optional: use edge runtime
@@ -23,16 +22,8 @@ import {
   useSafeMutation,
   useSafeQuery,
 } from "../../hooks/use-safe-convex";
-import {
-  extractTextFromDOCX,
-  generateDOCXSummary,
-  validateDOCXFile,
-} from "../../lib/docx-utils";
-import {
-  extractTextFromPDF,
-  generatePDFSummary,
-  validatePDFFile,
-} from "../../lib/pdf-utils";
+// Dynamic imports for PDF and DOCX utilities to avoid Edge runtime issues
+// These will be loaded only when needed on the client side
 
 interface Document {
   _id: string;
@@ -86,7 +77,7 @@ export default function RAGUploadPage(): React.ReactElement {
 
   // Data is now loaded automatically via Convex hooks
 
-  const validateFile = (file: File) => {
+  const validateFile = async (file: File) => {
     const allowedTypes = [".md", ".txt", ".pdf", ".docx", ".doc"];
     const fileExtension = file.name
       .toLowerCase()
@@ -98,16 +89,28 @@ export default function RAGUploadPage(): React.ReactElement {
 
     // Different size limits for different file types
     if (fileExtension === ".pdf") {
-      // Use PDF-specific validation
-      const pdfValidation = validatePDFFile(file);
-      if (!pdfValidation.valid) {
-        return pdfValidation.error || "Invalid PDF file.";
+      // Use PDF-specific validation with dynamic import
+      try {
+        const { validatePDFFile } = await import("../../lib/pdf-utils");
+        const pdfValidation = validatePDFFile(file);
+        if (!pdfValidation.valid) {
+          return pdfValidation.error || "Invalid PDF file.";
+        }
+      } catch (error) {
+        console.error("Failed to load PDF utilities:", error);
+        return "PDF processing is not available.";
       }
     } else if (fileExtension === ".docx" || fileExtension === ".doc") {
-      // Use DOCX-specific validation
-      const docxValidation = validateDOCXFile(file);
-      if (!docxValidation.valid) {
-        return docxValidation.error || "Invalid DOCX file.";
+      // Use DOCX-specific validation with dynamic import
+      try {
+        const { validateDOCXFile } = await import("../../lib/docx-utils");
+        const docxValidation = validateDOCXFile(file);
+        if (!docxValidation.valid) {
+          return docxValidation.error || "Invalid DOCX file.";
+        }
+      } catch (error) {
+        console.error("Failed to load DOCX utilities:", error);
+        return "DOCX processing is not available.";
       }
     } else {
       // 1MB limit for text files
@@ -120,7 +123,7 @@ export default function RAGUploadPage(): React.ReactElement {
   };
 
   const handleFileUpload = async (file: File) => {
-    const validationError = validateFile(file);
+    const validationError = await validateFile(file);
     if (validationError) {
       setUploadStatus("error");
       setUploadMessage(validationError);
@@ -136,42 +139,60 @@ export default function RAGUploadPage(): React.ReactElement {
       let documentSummary: string | undefined;
 
       if (file.name.toLowerCase().endsWith(".pdf")) {
-        // Extract text from PDF
-        const pdfResult = await extractTextFromPDF(file);
-        if ("error" in pdfResult) {
+        // Extract text from PDF with dynamic import
+        try {
+          const { extractTextFromPDF, generatePDFSummary } = await import(
+            "../../lib/pdf-utils"
+          );
+          const pdfResult = await extractTextFromPDF(file);
+          if ("error" in pdfResult) {
+            setUploadStatus("error");
+            setUploadMessage(`PDF extraction failed: ${pdfResult.error}`);
+            return;
+          }
+          content = pdfResult.text;
+          contentType = "text";
+
+          // Generate summary for PDF if not provided
+          documentSummary =
+            summary ||
+            (pdfResult.metadata
+              ? generatePDFSummary(pdfResult.metadata)
+              : "PDF document");
+        } catch (error) {
           setUploadStatus("error");
-          setUploadMessage(`PDF extraction failed: ${pdfResult.error}`);
+          setUploadMessage("PDF processing is not available.");
           return;
         }
-        content = pdfResult.text;
-        contentType = "text";
-
-        // Generate summary for PDF if not provided
-        documentSummary =
-          summary ||
-          (pdfResult.metadata
-            ? generatePDFSummary(pdfResult.metadata)
-            : "PDF document");
       } else if (
         file.name.toLowerCase().endsWith(".docx") ||
         file.name.toLowerCase().endsWith(".doc")
       ) {
-        // Extract text from DOCX
-        const docxResult = await extractTextFromDOCX(file);
-        if ("error" in docxResult) {
+        // Extract text from DOCX with dynamic import
+        try {
+          const { extractTextFromDOCX, generateDOCXSummary } = await import(
+            "../../lib/docx-utils"
+          );
+          const docxResult = await extractTextFromDOCX(file);
+          if ("error" in docxResult) {
+            setUploadStatus("error");
+            setUploadMessage(`DOCX extraction failed: ${docxResult.error}`);
+            return;
+          }
+          content = docxResult.text;
+          contentType = "text";
+
+          // Generate summary for DOCX if not provided
+          documentSummary =
+            summary ||
+            (docxResult.metadata
+              ? generateDOCXSummary(docxResult.metadata)
+              : "DOCX document");
+        } catch (error) {
           setUploadStatus("error");
-          setUploadMessage(`DOCX extraction failed: ${docxResult.error}`);
+          setUploadMessage("DOCX processing is not available.");
           return;
         }
-        content = docxResult.text;
-        contentType = "text";
-
-        // Generate summary for DOCX if not provided
-        documentSummary =
-          summary ||
-          (docxResult.metadata
-            ? generateDOCXSummary(docxResult.metadata)
-            : "DOCX document");
       } else {
         content = await file.text();
         contentType = file.name.endsWith(".md") ? "markdown" : "text";
@@ -207,7 +228,7 @@ export default function RAGUploadPage(): React.ReactElement {
   const handleBatchFileUpload = async (files: File[]) => {
     // Validate all files first
     for (const file of files) {
-      const validationError = validateFile(file);
+      const validationError = await validateFile(file);
       if (validationError) {
         setUploadStatus("error");
         setUploadMessage(`File "${file.name}": ${validationError}`);
@@ -227,32 +248,52 @@ export default function RAGUploadPage(): React.ReactElement {
         let contentType: "markdown" | "text";
 
         if (file.name.toLowerCase().endsWith(".pdf")) {
-          // Extract text from PDF
-          const pdfResult = await extractTextFromPDF(file);
-          if ("error" in pdfResult) {
+          // Extract text from PDF with dynamic import
+          try {
+            const { extractTextFromPDF } = await import("../../lib/pdf-utils");
+            const pdfResult = await extractTextFromPDF(file);
+            if ("error" in pdfResult) {
+              setUploadStatus("error");
+              setUploadMessage(
+                `PDF extraction failed for "${file.name}": ${pdfResult.error}`
+              );
+              return;
+            }
+            content = pdfResult.text;
+            contentType = "text";
+          } catch (error) {
             setUploadStatus("error");
             setUploadMessage(
-              `PDF extraction failed for "${file.name}": ${pdfResult.error}`
+              `PDF processing failed for "${file.name}": PDF utilities not available`
             );
             return;
           }
-          content = pdfResult.text;
-          contentType = "text";
         } else if (
           file.name.toLowerCase().endsWith(".docx") ||
           file.name.toLowerCase().endsWith(".doc")
         ) {
-          // Extract text from DOCX
-          const docxResult = await extractTextFromDOCX(file);
-          if ("error" in docxResult) {
+          // Extract text from DOCX with dynamic import
+          try {
+            const { extractTextFromDOCX } = await import(
+              "../../lib/docx-utils"
+            );
+            const docxResult = await extractTextFromDOCX(file);
+            if ("error" in docxResult) {
+              setUploadStatus("error");
+              setUploadMessage(
+                `DOCX extraction failed for "${file.name}": ${docxResult.error}`
+              );
+              return;
+            }
+            content = docxResult.text;
+            contentType = "text";
+          } catch (error) {
             setUploadStatus("error");
             setUploadMessage(
-              `DOCX extraction failed for "${file.name}": ${docxResult.error}`
+              `DOCX processing failed for "${file.name}": DOCX utilities not available`
             );
             return;
           }
-          content = docxResult.text;
-          contentType = "text";
         } else {
           content = await file.text();
           contentType = file.name.endsWith(".md") ? "markdown" : "text";

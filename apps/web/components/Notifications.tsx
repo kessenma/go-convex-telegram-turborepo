@@ -38,7 +38,9 @@ interface Notification {
   source?: string;
 }
 
-export function Notifications({ className }: NotificationsProps): React.ReactElement {
+export function Notifications({
+  className,
+}: NotificationsProps): React.ReactElement {
   const { isOpen, openNotifications, closeNotifications } = useNotifications();
   const [buttonPosition, setButtonPosition] = useState<{
     top: number | "auto";

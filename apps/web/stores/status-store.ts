@@ -324,11 +324,11 @@ export const useStatusStore = create<StatusStore>()(
         userCount: 0,
       },
       pollingIntervals: {
-        llm: 120000, // 2 minutes default (further reduced frequency)
-        lightweightLlm: 120000, // 2 minutes default (further reduced frequency)
-        convex: 180000, // 3 minutes default (significantly reduced for Convex)
-        docker: 150000, // 2.5 minutes default for Docker
-        userCount: 90000, // 1.5 minutes default for user count
+        llm: 300000, // 5 minutes default (much less aggressive)
+        lightweightLlm: 300000, // 5 minutes default (much less aggressive)
+        convex: 600000, // 10 minutes default (very conservative for Convex)
+        docker: 180000, // 3 minutes default for Docker
+        userCount: 120000, // 2 minutes default for user count
       },
 
       // Basic setters
@@ -580,16 +580,16 @@ export const useStatusStore = create<StatusStore>()(
 
       updateConvexPollingInterval: () => {
         const { convexStatus, consecutiveErrors } = get();
-        let interval = 90000; // Default 90 seconds (significantly reduced for Convex)
+        let interval = 600000; // Default 10 minutes (very conservative for Convex)
 
         if (
           convexStatus.status === "connected" &&
           convexStatus.ready &&
           consecutiveErrors.convex === 0
         ) {
-          interval = 180000; // 3 minutes for stable connections
+          interval = 900000; // 15 minutes for stable connections
         } else if (consecutiveErrors.convex > 0) {
-          interval = 60000; // 1 minute when there are issues
+          interval = 300000; // 5 minutes when there are issues (still conservative)
         }
 
         set(

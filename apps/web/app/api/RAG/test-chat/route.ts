@@ -26,9 +26,13 @@ async function getDocumentContext(documentIds: string[]): Promise<string> {
     const documents = await Promise.all(
       documentIds.map(async (docId) => {
         try {
-          const response = await fetch(`http://localhost:3211/api/documents/${docId}`);
+          const response = await fetch(
+            `http://localhost:3211/api/documents/${docId}`
+          );
           if (!response.ok) {
-            console.error(`Failed to fetch document ${docId}: ${response.status}`);
+            console.error(
+              `Failed to fetch document ${docId}: ${response.status}`
+            );
             return null;
           }
           const doc = await response.json();
@@ -97,7 +101,7 @@ export async function POST(request: NextRequest) {
         message,
         context: `Based on the following document content, please answer the question:\n\n${context}\n\nQuestion: ${message}`,
         conversation_history: conversationHistory,
-        max_length: 150,  // Reduced for faster responses
+        max_length: 150, // Reduced for faster responses
         temperature: 0.7,
       }),
     });
@@ -106,7 +110,10 @@ export async function POST(request: NextRequest) {
       const errorText = await llmResponse.text();
       console.error("LLM service error:", errorText);
       return NextResponse.json(
-        { error: "Failed to generate response from LLM service", details: errorText },
+        {
+          error: "Failed to generate response from LLM service",
+          details: errorText,
+        },
         { status: 500 }
       );
     }
@@ -135,9 +142,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Test Chat API error:", error);
     return NextResponse.json(
-      { 
-        error: "Internal server error", 
-        details: error instanceof Error ? error.message : "Unknown error" 
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

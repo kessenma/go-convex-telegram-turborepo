@@ -240,6 +240,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' "s#CONVEX_URL=.*#CONVEX_URL=http://localhost:3210#" .env.local
     sed -i '' "s#TELEGRAM_BOT_TOKEN=.*#TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}#" .env.local
     sed -i '' "s#VECTOR_CONVERT_LLM_URL=.*#VECTOR_CONVERT_LLM_URL=http://localhost:8081#" .env.local
+    sed -i '' "s#NEXT_PUBLIC_VECTOR_CONVERT_MODEL=.*#NEXT_PUBLIC_VECTOR_CONVERT_MODEL=all-MiniLM-L6-v2#" .env.local
+    sed -i '' "s#NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=.*#NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2#" .env.local
+    sed -i '' "s#NEXT_PUBLIC_LLM_MODEL=.*#NEXT_PUBLIC_LLM_MODEL=Meta Llama 3.2#" .env.local
+    sed -i '' "s#NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL=.*#NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL=https://huggingface.co/meta-llama/Llama-2-7b-chat-hf#" .env.local
     if [ ! -z "$TELEGRAM_BOT_USERNAME" ]; then
         sed -i '' "s#NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=.*#NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}#" .env.local
     fi
@@ -250,6 +254,10 @@ else
     sed -i "s#CONVEX_URL=.*#CONVEX_URL=http://localhost:3210#" .env.local
     sed -i "s#TELEGRAM_BOT_TOKEN=.*#TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}#" .env.local
     sed -i "s#VECTOR_CONVERT_LLM_URL=.*#VECTOR_CONVERT_LLM_URL=http://localhost:8081#" .env.local
+    sed -i "s#NEXT_PUBLIC_VECTOR_CONVERT_MODEL=.*#NEXT_PUBLIC_VECTOR_CONVERT_MODEL=all-MiniLM-L6-v2#" .env.local
+    sed -i "s#NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=.*#NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2#" .env.local
+    sed -i "s#NEXT_PUBLIC_LLM_MODEL=.*#NEXT_PUBLIC_LLM_MODEL=Meta Llama 3.2#" .env.local
+    sed -i "s#NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL=.*#NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL=https://huggingface.co/meta-llama/Llama-2-7b-chat-hf#" .env.local
     if [ ! -z "$TELEGRAM_BOT_USERNAME" ]; then
         sed -i "s#NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=.*#NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}#" .env.local
     fi

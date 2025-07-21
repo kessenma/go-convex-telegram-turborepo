@@ -21,7 +21,7 @@ export function LLMLogs(): React.ReactElement {
       }
     };
     fetchLogs();
-    const interval = setInterval(fetchLogs, 5000);
+    const interval = setInterval(fetchLogs, 30000); // Reduced from 5s to 30s
     return () => clearInterval(interval);
   }, []);
 

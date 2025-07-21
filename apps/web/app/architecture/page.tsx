@@ -130,7 +130,7 @@ export default function ArchitecturePage(): React.ReactElement {
       {/* Header */}
       <Hero
         title="Architecture"
-        subtitle="Did I know how to make an LLM app before this? No. My goal was to see how far I could push a linux server and a self-hosted convex database for a chatbot with 8gb of ram and 4 cpu cores and no GPU. The DistillGPT2 model is not that great for RAG tasks and I plan to  tinker with different libraries and models in the future."
+        subtitle={`Did I know how to make an LLM app before this? No. My goal was to see how far I could push a linux server and a self-hosted convex database for a chatbot with 8gb of ram and 4 cpu cores and no GPU. The ${process.env.NEXT_PUBLIC_LLM_MODEL || 'DistillGPT2'} model is not that great for RAG tasks and I plan to  tinker with different libraries and models in the future.`}
         textAlign="center"
         titleAnimation={TextAnimationType.Shimmer}
         animationSpeed={75}
@@ -892,9 +892,24 @@ export default function ArchitecturePage(): React.ReactElement {
             When the system is connected
           </h2>
           <div className="-mb-60 text-gray-300">
-            Text documents are processed into vector embeddings using the
-            mini-llm-v6 sentence transformer, and natural language responses are
-            generated using the DistillGpt2 model.
+            Text documents are processed into vector embeddings using the{" "}
+            <a 
+              href={process.env.NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL || "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              {process.env.NEXT_PUBLIC_VECTOR_CONVERT_MODEL || 'all-MiniLM-L6-v2'}
+            </a> sentence transformer, and natural language responses are
+            generated using the{" "}
+            <a 
+              href={process.env.NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL || "https://huggingface.co/meta-llama/Llama-2-7b-chat-hf"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              {process.env.NEXT_PUBLIC_LLM_MODEL || 'Meta Llama 3.2'}
+            </a> model.
           </div>
         </div>
         <div className="relative" style={{ height: "200vh" }}>
@@ -929,7 +944,15 @@ export default function ArchitecturePage(): React.ReactElement {
               App: Lightweight LLM
             </h3>
             <p className="mb-4 text-gray-300">
-              FastAPI service running the DistillGPT2 model for natural language
+              FastAPI service running the{" "}
+              <a 
+                href={process.env.NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL || "https://huggingface.co/meta-llama/Llama-2-7b-chat-hf"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                {process.env.NEXT_PUBLIC_LLM_MODEL || 'Meta Llama 3.2'}
+              </a> model for natural language
               generation and document-based Q&A.
             </p>
             <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
@@ -939,12 +962,19 @@ export default function ArchitecturePage(): React.ReactElement {
                 </h4>
                 <ul className="space-y-1 text-gray-400">
                   <li>
-                    • DistilGPT2 (short for Distilled-GPT2) is an
-                    English-language model pre-trained with the supervision of
-                    the smallest version of Generative Pre-trained Transformer 2
-                    (GPT-2)
+                    •{" "}
+                    <a 
+                      href={process.env.NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL || "https://huggingface.co/meta-llama/Llama-2-7b-chat-hf"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 underline"
+                    >
+                      {process.env.NEXT_PUBLIC_LLM_MODEL || 'Meta Llama 3.2'}
+                    </a> is a large language model
+                    developed by Meta, designed for natural language understanding
+                    and generation tasks with improved performance and efficiency.
                   </li>
-                  <li>• 88.2M parameters</li>
+                  <li>• Advanced transformer architecture</li>
                 </ul>
               </div>
             </div>
@@ -1072,7 +1102,14 @@ export default function ArchitecturePage(): React.ReactElement {
                   LLM Response
                 </h4>
                 <p className="text-left text-cyan-200/80">
-                  DistillGPT2 generates contextual answers
+                  <a 
+                    href={process.env.NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL || "https://huggingface.co/meta-llama/Llama-2-7b-chat-hf"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline"
+                  >
+                    {process.env.NEXT_PUBLIC_LLM_MODEL || 'Meta Llama 3.2'}
+                  </a> generates contextual answers
                 </p>
               </div>
             </div>

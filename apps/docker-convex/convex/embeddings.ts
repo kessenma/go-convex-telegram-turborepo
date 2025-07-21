@@ -2,11 +2,9 @@ import { action, internalAction, internalQuery, mutation, query } from "./_gener
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { getDocumentById } from "./documents";
 
 // Constants
 const VECTOR_SEARCH_LIMIT = 10;
-const VECTOR_DIMENSIONS = 384; // all-MiniLM-L6-v2 model
 
 // Types
 interface EmbeddingResult {
@@ -118,6 +116,27 @@ export const getDocumentEmbeddings = query({
   },
 });
 
+// Get embedding by ID
+export const getEmbeddingById = query({
+  args: {
+    embeddingId: v.id("document_embeddings"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.embeddingId);
+  },
+});
+
+// Get all document embeddings
+export const getAllDocumentEmbeddings = query({
+  args: {},
+  handler: async (ctx, _args) => {
+    return await ctx.db
+      .query("document_embeddings")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+  },
+});
+
 // Process document with chunking
 export const processDocumentWithChunking = action({
   args: {
@@ -209,7 +228,7 @@ export const processDocumentEmbedding = internalAction({
 // Check LLM service status
 export const checkLLMServiceStatus = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (_ctx) => {
     try {
       // Get the vector-convert-llm service URL from environment
       const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:8081";
@@ -244,41 +263,146 @@ export const checkLLMServiceStatus = action({
   },
 });
 
-// Search documents by vector similarity
+// Search documents by vector similarity with enhanced chunk support
 export const searchDocumentsByVector = action({
   args: {
     queryText: v.string(),
     limit: v.optional(v.number()),
+    documentIds: v.optional(v.array(v.id("rag_documents"))),
   },
   handler: async (ctx, args) => {
     try {
+      console.log(`Starting vector search for query: "${args.queryText}"`);
+      console.log(`Document filter: ${args.documentIds ? args.documentIds.length + ' documents' : 'all documents'}`);
+      
       // Generate embedding for the query
       const queryEmbedding = await ctx.runAction(api.embeddings.generateEmbedding, {
         text: args.queryText,
       });
       
-      // Perform vector search
+      console.log(`Generated query embedding with ${queryEmbedding.length} dimensions`);
+      
+      // Build filter for vector search - use simple filter only
+      const filter = (q: any) => q.eq("isActive", true);
+      
+      console.log("Using simple isActive filter for vector search");
+      
+      // Perform vector search with higher limit to get more candidates
+      const searchLimit = Math.min((args.limit || VECTOR_SEARCH_LIMIT) * 4, 100);
       const searchResults = await ctx.vectorSearch("document_embeddings", "by_embedding", {
         vector: queryEmbedding,
-        limit: args.limit || VECTOR_SEARCH_LIMIT,
-        filter: (q) => q.eq("isActive", true),
+        limit: searchLimit,
+        filter,
       });
       
-      // Get document details for each result
-      const results: EmbeddingResult[] = await Promise.all(
+      console.log(`Vector search found ${searchResults.length} embedding results`);
+      
+      // Get document details for each result and enhance with chunk information
+      const results: (EmbeddingResult & { 
+        isChunkResult: boolean; 
+        chunkIndex?: number; 
+        chunkText?: string;
+        expandedContext?: string;
+      })[] = await Promise.all(
         searchResults.map(async (result: any) => {
           const document = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
             documentId: result.documentId,
           });
           
+          // Get the embedding record to access chunk information
+          const embeddingRecord = await ctx.runQuery(api.embeddings.getEmbeddingById, {
+            embeddingId: result._id,
+          });
+          
+          // Check if this is a chunk-based result
+          const isChunkResult = embeddingRecord?.chunkIndex !== undefined && embeddingRecord?.chunkText;
+          
+          let expandedContext = "";
+          if (isChunkResult && embeddingRecord?.chunkText) {
+            // For chunk results, try to get surrounding context
+            try {
+              const allChunks = await ctx.runQuery(api.embeddings.getDocumentEmbeddings, {
+                documentId: result.documentId,
+              });
+              
+              // Sort chunks by index and get surrounding chunks (±1 chunk for context)
+              const sortedChunks = allChunks
+                .filter(chunk => chunk.chunkIndex !== undefined)
+                .sort((a, b) => (a.chunkIndex || 0) - (b.chunkIndex || 0));
+              
+              const currentIndex = embeddingRecord.chunkIndex;
+              const contextChunks = sortedChunks.filter(chunk => {
+                const chunkIdx = chunk.chunkIndex || 0;
+                return currentIndex !== undefined && chunkIdx >= currentIndex - 1 && chunkIdx <= currentIndex + 1;
+              });
+              
+              expandedContext = contextChunks
+                .map(chunk => chunk.chunkText || "")
+                .filter(text => text.trim().length > 0)
+                .join("\n\n");
+            } catch (contextError) {
+              console.error("Error building expanded context:", contextError);
+              expandedContext = embeddingRecord.chunkText || "";
+            }
+          }
+          
           return {
             ...result,
             document,
+            isChunkResult,
+            chunkIndex: embeddingRecord?.chunkIndex,
+            chunkText: embeddingRecord?.chunkText,
+            expandedContext: expandedContext || embeddingRecord?.chunkText || "",
           };
         })
       );
       
-      return results.filter(result => result.document && result.document.isActive);
+      // Filter out invalid results and apply document ID filtering
+      const validResults = results.filter(result => {
+        if (!result.document || !result.document.isActive) {
+          console.log("Filtering out inactive or missing document");
+          return false;
+        }
+        
+        // Filter by document IDs if specified
+        if (args.documentIds && args.documentIds.length > 0) {
+          if (!args.documentIds.includes(result.documentId)) {
+            console.log(`Filtering out document ${result.documentId} - not in requested list`);
+            return false;
+          }
+        }
+        
+        return true;
+      });
+      
+      console.log(`${validResults.length} valid results after filtering`);
+      
+      // Enhanced sorting: prioritize chunk results with higher scores
+      const sortedResults = validResults.sort((a, b) => {
+        // First, prioritize chunk results (they're more specific)
+        if (a.isChunkResult && !b.isChunkResult) return -1;
+        if (!a.isChunkResult && b.isChunkResult) return 1;
+        
+        // Then sort by relevance score
+        const scoreDiff = b._score - a._score;
+        if (Math.abs(scoreDiff) > 0.01) return scoreDiff; // Significant score difference
+        
+        // If scores are similar, prefer results with expanded context
+        if (a.expandedContext && !b.expandedContext) return -1;
+        if (!a.expandedContext && b.expandedContext) return 1;
+        
+        return 0;
+      });
+      
+      const finalLimit = args.limit || VECTOR_SEARCH_LIMIT;
+      const finalResults = sortedResults.slice(0, finalLimit);
+      
+      console.log(`Returning ${finalResults.length} results:`);
+      finalResults.forEach((result, index) => {
+        console.log(`  ${index + 1}. ${result.document.title} (score: ${result._score.toFixed(3)}, chunk: ${result.isChunkResult})`);
+      });
+      
+      return finalResults;
     } catch (error) {
       console.error("Error searching documents by vector:", error);
       throw error;

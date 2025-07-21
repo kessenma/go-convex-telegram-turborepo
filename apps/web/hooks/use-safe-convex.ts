@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReference, OptionalRestArgs } from "convex/server";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 /**
  * Safe wrapper around useQuery that handles Convex connection failures gracefully
@@ -116,6 +116,8 @@ export function useSafeMutation<Mutation extends FunctionReference<"mutation">>(
 
 /**
  * Hook to check if Convex is available and connected
+ * Note: This now uses the centralized status from HealthCheckProvider
+ * to avoid duplicate API calls
  */
 export function useConvexConnection(): {
   isConnected: boolean;
@@ -127,7 +129,7 @@ export function useConvexConnection(): {
   const [isChecking, setIsChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     setIsChecking(true);
     try {
       // Try to make a simple query to test connection
@@ -141,15 +143,12 @@ export function useConvexConnection(): {
       setIsChecking(false);
       setLastChecked(new Date());
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // Only do an initial check, don't set up polling
+    // The HealthCheckProvider handles regular status checks
     checkConnection();
-
-    // Check connection every 30 seconds
-    const interval = setInterval(checkConnection, 30000);
-
-    return () => clearInterval(interval);
   }, [checkConnection]);
 
   return {

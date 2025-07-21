@@ -9,10 +9,7 @@
     "start": "next start",
     "lint": "next lint --max-warnings 0",
     "lint:fix": "next lint --fix",
-    "biome:check": "biome check .",
-    "biome:fix": "biome check --write .",
-    "clean:unused": "biome check --write . --unsafe",
-    "format": "biome format --write .",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "check-types": "tsc --noEmit",
     "clean": "rm -rf .next dist node_modules/.cache"
   },
@@ -54,7 +51,6 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.1.2",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
@@ -65,6 +61,7 @@
     "eslint": "^9.29.0",
     "eslint-plugin-unused-imports": "^4.1.4",
     "postcss": "^8.4.49",
+    "prettier": "^3.6.0",
     "tailwindcss": "^3.4.17",
     "typescript": "5.8.2"
   }

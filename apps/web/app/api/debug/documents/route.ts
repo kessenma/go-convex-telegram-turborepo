@@ -15,7 +15,7 @@ export async function GET() {
       limit: 10,
     });
     console.log("Documents response:", documents);
-    
+
     // Handle different response structures
     const documentsList = documents.documents || documents || [];
     console.log("Found documents:", documentsList.length);
