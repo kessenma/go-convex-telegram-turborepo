@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 const _CONVEX_URL =
   process.env.CONVEX_HTTP_URL ||
   process.env.CONVEX_URL ||
-  process.env.NEXT_PUBLIC_CONVEX_URL ||
+  process.env.CONVEX_HTTP_URL ||
   "http://localhost:3211";
 
 export async function GET(
@@ -24,7 +24,7 @@ export async function GET(
     const convexUrl =
       process.env.CONVEX_HTTP_URL ||
       process.env.CONVEX_URL ||
-      process.env.NEXT_PUBLIC_CONVEX_URL ||
+      process.env.CONVEX_HTTP_URL ||
       "http://localhost:3211";
     if (!convexUrl) {
       console.error("CONVEX_URL not configured");

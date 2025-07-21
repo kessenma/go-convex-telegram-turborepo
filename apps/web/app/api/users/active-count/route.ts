@@ -4,7 +4,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "../../../../generated-convex";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const convex = new ConvexHttpClient(process.env.CONVEX_HTTP_URL!);
 const CONVEX_API_BASE = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
 
 export async function GET(_request: NextRequest) {

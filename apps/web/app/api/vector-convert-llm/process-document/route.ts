@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         document_id: body.document_id,
         convex_url:
           body.convex_url ||
-          process.env.NEXT_PUBLIC_CONVEX_URL ||
+          process.env.CONVEX_HTTP_URL ||
           "http://localhost:3210",
       }),
       // Add timeout to prevent hanging

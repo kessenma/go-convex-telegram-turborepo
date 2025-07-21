@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     // Get Convex URL from environment
     const convexUrl =
       process.env.CONVEX_URL ||
-      process.env.NEXT_PUBLIC_CONVEX_URL ||
+      process.env.CONVEX_HTTP_URL ||
       "http://localhost:3211";
     if (!convexUrl) {
       console.error("CONVEX_URL not configured");
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     // Get Convex URL from environment
     const convexUrl =
       process.env.CONVEX_URL ||
-      process.env.NEXT_PUBLIC_CONVEX_URL ||
+      process.env.CONVEX_HTTP_URL ||
       "http://localhost:3211";
     if (!convexUrl) {
       console.error("CONVEX_URL not configured");

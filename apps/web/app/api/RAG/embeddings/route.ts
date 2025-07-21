@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const convexUrl =
       process.env.CONVEX_HTTP_URL ||
       process.env.CONVEX_URL ||
-      process.env.NEXT_PUBLIC_CONVEX_URL ||
+      process.env.CONVEX_HTTP_URL ||
       "http://localhost:3211";
 
     // Call the Convex individual document embedding API

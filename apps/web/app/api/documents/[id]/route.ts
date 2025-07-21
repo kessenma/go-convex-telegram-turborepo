@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 const CONVEX_URL =
   process.env.CONVEX_HTTP_URL ||
   process.env.CONVEX_URL ||
-  process.env.NEXT_PUBLIC_CONVEX_URL ||
+  process.env.CONVEX_HTTP_URL ||
   "http://localhost:3211";
 
 export async function DELETE(

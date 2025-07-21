@@ -3,9 +3,9 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function POST(_request: NextRequest) {
   try {
     // Get Convex URL from environment
-    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    const convexUrl = process.env.CONVEX_HTTP_URL;
     if (!convexUrl) {
-      console.error("NEXT_PUBLIC_CONVEX_URL not configured");
+      console.error("CONVEX_HTTP_URL not configured");
       return NextResponse.json(
         { error: "Server configuration error" },
         { status: 500 }
