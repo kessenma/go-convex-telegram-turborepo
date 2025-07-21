@@ -188,6 +188,18 @@ else
     sed -i "s#CONVEX_SELF_HOSTED_ADMIN_KEY=#CONVEX_SELF_HOSTED_ADMIN_KEY=${ADMIN_KEY}#" .env.local
 fi
 
+# Configure .env.docker for production deployment
+echo "⚙️ Configuring Docker environment for production deployment..."
+cp .env.docker.example .env.docker
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    sed -i '' "s#CONVEX_INSTANCE_SECRET=.*#CONVEX_INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}#" .env.docker
+else
+    # Linux
+    sed -i "s#CONVEX_INSTANCE_SECRET=.*#CONVEX_INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}#" .env.docker
+fi
+echo "✅ Docker environment configured for production deployment"
+
 # Deploy functions
 echo "🚀 Deploying Convex functions..."
 pnpm convex dev --once

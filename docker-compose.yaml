@@ -45,6 +45,9 @@ services:
       - S3_STORAGE_SEARCH_BUCKET=${S3_STORAGE_SEARCH_BUCKET:-}
       - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - CONVEX_URL=${CONVEX_URL:-http://localhost:3210}
+      - CONVEX_SELF_HOSTED_URL=${CONVEX_SELF_HOSTED_URL:-http://localhost:3210}
+      - CONVEX_DEPLOYMENT=${CONVEX_DEPLOYMENT:-self-hosted}
     healthcheck:
       test: curl -f http://localhost:3210/version
       interval: 5s
