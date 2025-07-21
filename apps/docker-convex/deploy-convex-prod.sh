@@ -25,7 +25,13 @@ echo -e "\n🚀 Deploying Convex functions to $BACKEND_CONTAINER…"
 # Go to docker-convex directory no matter where we are
 cd "$PROJECT_ROOT/apps/docker-convex"
 
-# Run deployment — Convex defaults to production deployment
-CONVEX_URL=http://convex-backend:3211 npx convex deploy -y
+# Explicitly tell Convex CLI to use the self-hosted backend, not Convex Cloud
+export CONVEX_SELF_HOSTED_URL=http://convex-backend:3211
+
+# Optional: also export CONVEX_URL so other parts of your app still work
+export CONVEX_URL=http://convex-backend:3211
+
+# Deploy using the self-hosted target (skips the cloud login prompt)
+npx convex deploy -y --env-file .env.docker
 
 echo "✅ Convex production deployment complete!"
