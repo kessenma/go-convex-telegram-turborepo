@@ -18,6 +18,7 @@
     "self-hosted:stop": "docker compose down",
     "self-hosted:reset": "pnpm run self-hosted:stop && pnpm run docker:reset-full",
     "deploy-functions": "convex dev --once",
+    "deploy:prod": "CONVEX_URL=http://convex-backend:3211 convex deploy --prod",
     "post-create": "./.devcontainer/post-create.sh",
     "post-start": "./.devcontainer/post-start.sh"
   },
