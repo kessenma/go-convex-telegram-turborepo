@@ -20,6 +20,7 @@ The RAG data page was optimized to eliminate the inefficient `window.location.re
   - Better error handling with rollback capability
 
 **Key Features**:
+
 - Optimistic document deletion with automatic rollback on failure
 - Centralized loading states
 - Real-time stats updates
@@ -27,12 +28,14 @@ The RAG data page was optimized to eliminate the inefficient `window.location.re
 
 ### 2. Memoized Components
 
-**Files**: 
+**Files**:
+
 - `/components/rag/DocumentCard.tsx`
-- `/components/rag/DocumentHistory.tsx` 
+- `/components/rag/DocumentHistory.tsx`
 - `/app/RAG-data/components/DocumentStats.tsx`
 
 **Benefits**:
+
 - Prevents unnecessary re-renders when unrelated data changes
 - Improves performance with large document lists
 - Maintains component isolation
@@ -44,6 +47,7 @@ The RAG data page was optimized to eliminate the inefficient `window.location.re
 **Purpose**: Encapsulates document-related logic and provides optimized data fetching
 
 **Benefits**:
+
 - Separation of concerns
 - Reusable across components
 - Optimized data synchronization
@@ -59,6 +63,7 @@ The RAG data page was optimized to eliminate the inefficient `window.location.re
 4. **Failure**: Document is restored to the UI with error handling
 
 **Benefits**:
+
 - Better user experience (no loading states)
 - Faster perceived performance
 - Graceful error handling
@@ -66,6 +71,7 @@ The RAG data page was optimized to eliminate the inefficient `window.location.re
 ## Performance Improvements
 
 ### Before Optimization
+
 - Used `window.location.reload()` on document deletion
 - Full page refresh caused:
   - Loss of scroll position
@@ -74,6 +80,7 @@ The RAG data page was optimized to eliminate the inefficient `window.location.re
   - Poor user experience
 
 ### After Optimization
+
 - Optimistic updates with instant UI feedback
 - Selective re-rendering with React.memo
 - Centralized state management
@@ -84,16 +91,16 @@ The RAG data page was optimized to eliminate the inefficient `window.location.re
 ### Using the Document Store
 
 ```typescript
-import { useDocumentStore } from '../stores/document-store';
+import { useDocumentStore } from "../stores/document-store";
 
 function MyComponent() {
   const { documents, deleteDocument, deletingIds } = useDocumentStore();
-  
+
   const handleDelete = async (id: string) => {
     const success = await deleteDocument(id);
     if (!success) {
       // Handle error - document is already restored in UI
-      console.error('Failed to delete document');
+      console.error("Failed to delete document");
     }
   };
 }
@@ -102,16 +109,12 @@ function MyComponent() {
 ### Using the Document Operations Hook
 
 ```typescript
-import { useDocumentOperations } from '../hooks/use-document-operations';
+import { useDocumentOperations } from "../hooks/use-document-operations";
 
 function DocumentPage() {
-  const {
-    documents,
-    stats,
-    loadingDocuments,
-    deleteDocument
-  } = useDocumentOperations(10);
-  
+  const { documents, stats, loadingDocuments, deleteDocument } =
+    useDocumentOperations(10);
+
   // Component automatically syncs with Convex queries
 }
 ```
@@ -119,16 +122,19 @@ function DocumentPage() {
 ## Best Practices
 
 ### 1. Component Memoization
+
 - Use `React.memo` for components that receive stable props
 - Use `useCallback` for event handlers passed to memoized components
 - Use selective Zustand subscriptions to prevent unnecessary re-renders
 
 ### 2. State Management
+
 - Keep UI state (like selected document) in component state
 - Keep shared data (documents, stats) in Zustand store
 - Use optimistic updates for better UX
 
 ### 3. Error Handling
+
 - Always provide rollback mechanisms for optimistic updates
 - Show user-friendly error messages
 - Log errors for debugging
@@ -136,11 +142,13 @@ function DocumentPage() {
 ## Monitoring Performance
 
 ### React DevTools Profiler
+
 - Use to identify unnecessary re-renders
 - Check component render times
 - Verify memoization is working
 
 ### Zustand DevTools
+
 - Monitor state changes
 - Debug optimistic updates
 - Track action history

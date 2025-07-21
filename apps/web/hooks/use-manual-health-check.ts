@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback } from 'react';
-import { useStatusStore } from '../stores/status-store';
-import { useHealthCheckContext } from '../components/providers/health-check-provider';
+import { useCallback } from "react";
+import { useHealthCheckContext } from "../components/providers/health-check-provider";
+import { useStatusStore } from "../stores/status-store";
 
 /**
  * Hook for components that need to manually trigger health checks
@@ -15,7 +15,7 @@ export function useManualHealthCheck() {
     checkConvexStatus,
     checkDockerStatus,
     checkUserCountStatus,
-    checkAllStatus
+    checkAllStatus,
   } = useStatusStore();
 
   const { performHealthChecks } = useHealthCheckContext();
@@ -25,7 +25,7 @@ export function useManualHealthCheck() {
     try {
       return await checkLLMStatus();
     } catch (error) {
-      console.warn('Manual LLM health check failed:', error);
+      console.warn("Manual LLM health check failed:", error);
       return false;
     }
   }, [checkLLMStatus]);
@@ -34,7 +34,7 @@ export function useManualHealthCheck() {
     try {
       return await checkLightweightLlmStatus();
     } catch (error) {
-      console.warn('Manual Lightweight LLM health check failed:', error);
+      console.warn("Manual Lightweight LLM health check failed:", error);
       return false;
     }
   }, [checkLightweightLlmStatus]);
@@ -43,7 +43,7 @@ export function useManualHealthCheck() {
     try {
       return await checkConvexStatus();
     } catch (error) {
-      console.warn('Manual Convex health check failed:', error);
+      console.warn("Manual Convex health check failed:", error);
       return false;
     }
   }, [checkConvexStatus]);
@@ -52,7 +52,7 @@ export function useManualHealthCheck() {
     try {
       return await checkDockerStatus();
     } catch (error) {
-      console.warn('Manual Docker health check failed:', error);
+      console.warn("Manual Docker health check failed:", error);
       return false;
     }
   }, [checkDockerStatus]);
@@ -61,7 +61,7 @@ export function useManualHealthCheck() {
     try {
       return await checkUserCountStatus();
     } catch (error) {
-      console.warn('Manual User Count check failed:', error);
+      console.warn("Manual User Count check failed:", error);
       return false;
     }
   }, [checkUserCountStatus]);
@@ -71,13 +71,13 @@ export function useManualHealthCheck() {
     try {
       return await checkAllStatus();
     } catch (error) {
-      console.warn('Manual all services health check failed:', error);
+      console.warn("Manual all services health check failed:", error);
       return {
         llm: false,
         lightweightLlm: false,
         convex: false,
         docker: false,
-        userCount: false
+        userCount: false,
       };
     }
   }, [checkAllStatus]);
@@ -87,7 +87,7 @@ export function useManualHealthCheck() {
     try {
       await performHealthChecks();
     } catch (error) {
-      console.warn('Manual centralized health check failed:', error);
+      console.warn("Manual centralized health check failed:", error);
     }
   }, [performHealthChecks]);
 
@@ -99,9 +99,9 @@ export function useManualHealthCheck() {
     checkDocker,
     checkUserCount,
     checkAll,
-    
+
     // Centralized check (respects timing constraints)
-    triggerCentralizedCheck
+    triggerCentralizedCheck,
   };
 }
 
@@ -111,16 +111,16 @@ export function useManualHealthCheck() {
  */
 export function useRefreshStatus() {
   const { checkAll } = useManualHealthCheck();
-  
+
   const refreshAll = useCallback(async () => {
-    console.log('Refreshing all status checks...');
+    console.log("Refreshing all status checks...");
     const results = await checkAll();
-    console.log('Status refresh completed:', results);
+    console.log("Status refresh completed:", results);
     return results;
   }, [checkAll]);
 
   return {
     refreshAll,
-    isRefreshing: false // Could be enhanced with loading state if needed
+    isRefreshing: false, // Could be enhanced with loading state if needed
   };
 }

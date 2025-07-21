@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useRef } from "react";
 import gsap from "gsap";
+import type React from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 interface Gap {
   row: number;
@@ -105,7 +106,8 @@ const Cubes: React.FC<CubesProps> = ({
       userActiveRef.current = true;
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
 
-      const rect = sceneRef.current!.getBoundingClientRect();
+      const rect = sceneRef.current?.getBoundingClientRect();
+      if (!rect) return;
       const cellW = rect.width / gridSize;
       const cellH = rect.height / gridSize;
       const colCenter = (e.clientX - rect.left) / cellW;
@@ -265,10 +267,7 @@ const Cubes: React.FC<CubesProps> = ({
   } as React.CSSProperties;
 
   return (
-    <div
-      className="relative w-full aspect-square"
-      style={wrapperStyle}
-    >
+    <div className="relative w-full aspect-square" style={wrapperStyle}>
       <div ref={sceneRef} className="grid w-full h-full" style={sceneStyle}>
         {cells.map((_, r) =>
           cells.map((__, c) => (

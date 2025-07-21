@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useId, useRef, useState } from "react";
 import { useOutsideClick } from "../../hooks/use-outside-clicks";
 
 export function ExpandableCardDemo() {
@@ -138,7 +138,7 @@ export function ExpandableCardDemo() {
         ) : null}
       </AnimatePresence>
       <ul className="gap-4 mx-auto w-full max-w-2xl">
-        {cards.map((card, index) => (
+        {cards.map((card, _index) => (
           <motion.div
             layoutId={`card-${card.title}-${id}`}
             key={`card-${card.title}-${id}`}
@@ -175,7 +175,11 @@ export function ExpandableCardDemo() {
             </div>
             <motion.button
               layoutId={`button-${card.title}-${id}`}
-              whileHover={{ scale: 1.05, backgroundColor: "#22c55e", color: "#ffffff" }}
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "#22c55e",
+                color: "#ffffff",
+              }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 500, damping: 15 }}
               className="px-4 py-2 mt-4 text-sm font-bold text-black bg-gray-100 rounded-full md:mt-0"

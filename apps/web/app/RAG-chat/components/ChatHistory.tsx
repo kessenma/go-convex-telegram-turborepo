@@ -1,13 +1,23 @@
 // /Users/kyleessenmacher/WS/go-convex-telegram-turborepo/apps/web/app/RAG-chat/components/ChatHistory.tsx
 "use client";
 
-import React, { useState } from "react";
-import { History, MessageCircle, Clock, FileText, Search, Trash2, Edit3, ChevronRight, ArrowLeft } from "lucide-react";
-import { renderIcon } from "../../../lib/icon-utils";
-import { ChatConversation } from "../types";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import type { GenericId as Id } from "convex/values";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Clock,
+  Edit3,
+  FileText,
+  History,
+  MessageCircle,
+  Search,
+  Trash2,
+} from "lucide-react";
+import { useState } from "react";
 import { api } from "../../../generated-convex";
-import { type GenericId as Id } from "convex/values";
+import { renderIcon } from "../../../lib/icon-utils";
+import type { ChatConversation } from "../types";
 
 interface ChatHistoryProps {
   onSelectConversation: (conversation: ChatConversation) => void;
@@ -16,38 +26,53 @@ interface ChatHistoryProps {
   currentSessionId?: string;
 }
 
-export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection, currentSessionId }: ChatHistoryProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+export function ChatHistory({
+  onSelectConversation,
+  onNewChat,
+  onBackToSelection,
+  currentSessionId,
+}: ChatHistoryProps): React.ReactElement {
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState('');
+  const [newTitle, setNewTitle] = useState("");
 
   // Fetch recent conversations
-  const conversations = useQuery(api.ragChat.getRecentConversations, { limit: 50 });
-  
+  const conversations = useQuery(api.ragChat.getRecentConversations, {
+    limit: 50,
+  });
+
   // Mutations
   const updateTitle = useMutation(api.ragChat.updateConversationTitle);
-  const deactivateConversation = useMutation(api.ragChat.deactivateConversation);
+  const deactivateConversation = useMutation(
+    api.ragChat.deactivateConversation
+  );
 
   // Filter conversations based on search term
-  const filteredConversations = conversations?.filter((conversation: ChatConversation) => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      conversation.title?.toLowerCase().includes(searchLower) ||
-      conversation.documents?.some((doc: { _id: string; title: string }) => doc.title.toLowerCase().includes(searchLower))
-    );
-  }) || [];
+  const filteredConversations =
+    conversations?.filter((conversation: ChatConversation) => {
+      if (!searchTerm) return true;
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        conversation.title?.toLowerCase().includes(searchLower) ||
+        conversation.documents?.some((doc: { _id: string; title: string }) =>
+          doc.title.toLowerCase().includes(searchLower)
+        )
+      );
+    }) || [];
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     } else if (diffDays === 1) {
-      return 'Yesterday';
+      return "Yesterday";
     } else if (diffDays < 7) {
       return `${diffDays} days ago`;
     } else {
@@ -58,32 +83,32 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
   const getConversationTitle = (conversation: ChatConversation) => {
     if (conversation.title) return conversation.title;
     if (conversation.documents && conversation.documents.length > 0) {
-      return `Chat with ${conversation.documents.map(d => d.title).join(', ')}`;
+      return `Chat with ${conversation.documents.map((d) => d.title).join(", ")}`;
     }
-    return 'Untitled Conversation';
+    return "Untitled Conversation";
   };
 
   const handleEditTitle = async (conversationId: string, title: string) => {
     try {
       await updateTitle({
         conversationId: conversationId as Id<"rag_conversations">,
-        title: title.trim() || 'Untitled Conversation'
+        title: title.trim() || "Untitled Conversation",
       });
       setEditingTitle(null);
-      setNewTitle('');
+      setNewTitle("");
     } catch (error) {
-      console.error('Failed to update title:', error);
+      console.error("Failed to update title:", error);
     }
   };
 
   const handleDeleteConversation = async (conversationId: string) => {
-    if (confirm('Are you sure you want to delete this conversation?')) {
+    if (confirm("Are you sure you want to delete this conversation?")) {
       try {
         await deactivateConversation({
-          conversationId: conversationId as Id<"rag_conversations">
+          conversationId: conversationId as Id<"rag_conversations">,
         });
       } catch (error) {
-        console.error('Failed to delete conversation:', error);
+        console.error("Failed to delete conversation:", error);
       }
     }
   };
@@ -160,8 +185,8 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
                 key={conversation._id}
                 className={`group relative p-3 rounded-lg border transition-colors cursor-pointer ${
                   conversation.sessionId === currentSessionId
-                    ? 'bg-curious-cyan-900/30 border-curious-cyan-600'
-                    : 'bg-gray-700/50 border-gray-600 hover:bg-gray-700'
+                    ? "bg-curious-cyan-900/30 border-curious-cyan-600"
+                    : "bg-gray-700/50 border-gray-600 hover:bg-gray-700"
                 }`}
                 onClick={() => onSelectConversation(conversation)}
               >
@@ -172,34 +197,40 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
                         type="text"
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
-                        onBlur={() => handleEditTitle(conversation._id, newTitle)}
+                        onBlur={() =>
+                          handleEditTitle(conversation._id, newTitle)
+                        }
                         onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             handleEditTitle(conversation._id, newTitle);
-                          } else if (e.key === 'Escape') {
+                          } else if (e.key === "Escape") {
                             setEditingTitle(null);
-                            setNewTitle('');
+                            setNewTitle("");
                           }
                         }}
                         onClick={(e) => e.stopPropagation()}
                         className="px-2 py-1 w-full text-sm text-white bg-gray-600 rounded border border-gray-500 focus:outline-none focus:ring-1 focus:ring-curious-cyan-500"
-                        autoFocus
                       />
                     ) : (
                       <h3 className="text-sm font-medium text-white truncate">
                         {getConversationTitle(conversation)}
                       </h3>
                     )}
-                    
-                    {conversation.documents && conversation.documents.length > 0 && (
-                      <div className="flex gap-1 items-center mt-1">
-                        {renderIcon(FileText, { className: "w-3 h-3 text-gray-400" })}
-                        <span className="text-xs text-gray-400 truncate">
-                          {conversation.documents.map(d => d.title).join(', ')}
-                        </span>
-                      </div>
-                    )}
-                    
+
+                    {conversation.documents &&
+                      conversation.documents.length > 0 && (
+                        <div className="flex gap-1 items-center mt-1">
+                          {renderIcon(FileText, {
+                            className: "w-3 h-3 text-gray-400",
+                          })}
+                          <span className="text-xs text-gray-400 truncate">
+                            {conversation.documents
+                              .map((d) => d.title)
+                              .join(", ")}
+                          </span>
+                        </div>
+                      )}
+
                     <div className="flex gap-4 items-center mt-2 text-xs text-gray-400">
                       <div className="flex gap-1 items-center">
                         {renderIcon(Clock, { className: "w-3 h-3" })}
@@ -211,7 +242,7 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-1 items-center ml-2">
                     {/* Action buttons - only show on hover */}
                     <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -236,7 +267,9 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
                         {renderIcon(Trash2, { className: "w-3 h-3" })}
                       </button>
                     </div>
-                    {renderIcon(ChevronRight, { className: "w-4 h-4 text-gray-400" })}
+                    {renderIcon(ChevronRight, {
+                      className: "w-4 h-4 text-gray-400",
+                    })}
                   </div>
                 </div>
               </div>
@@ -251,7 +284,14 @@ export function ChatHistory({ onSelectConversation, onNewChat, onBackToSelection
           <div className="flex justify-between">
             <span>{filteredConversations.length} conversations</span>
             <span>
-              {conversations.reduce((sum: number, conv: ChatConversation) => sum + conv.totalTokensUsed, 0).toLocaleString()} total tokens
+              {conversations
+                .reduce(
+                  (sum: number, conv: ChatConversation) =>
+                    sum + conv.totalTokensUsed,
+                  0
+                )
+                .toLocaleString()}{" "}
+              total tokens
             </span>
           </div>
         </div>

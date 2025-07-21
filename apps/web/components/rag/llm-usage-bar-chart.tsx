@@ -1,11 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLLMStatus } from "../../hooks/use-status-operations";
 
 interface UsageSample {
   timestamp: number;
   memory: number; // in MB
-  cpu: number;    // in %
+  cpu: number; // in %
 }
 
 interface LLMUsageBarChartProps {
@@ -14,70 +15,46 @@ interface LLMUsageBarChartProps {
 }
 
 export const LLMUsageBarChart: React.FC<LLMUsageBarChartProps> = ({
-  pollIntervalMs = 2000,
-  maxSamples = 40
+  pollIntervalMs = 30000, // Increased default to 30 seconds to reduce API spam
+  maxSamples = 40,
 }) => {
   const [samples, setSamples] = useState<UsageSample[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { status: llmStatus } = useLLMStatus();
 
   useEffect(() => {
     // Extract usage data from centralized LLM status
     const usage = llmStatus.memory_usage || {};
-    if (usage.process_memory_mb !== undefined && usage.process_cpu_percent !== undefined) {
-      setSamples(prev => {
+    if (
+      usage.process_memory_mb !== undefined &&
+      usage.process_cpu_percent !== undefined
+    ) {
+      setSamples((prev) => {
         const next = [
           ...prev,
           {
             timestamp: Date.now(),
             memory: usage.process_memory_mb as number,
-            cpu: usage.process_cpu_percent as number
-          }
+            cpu: usage.process_cpu_percent as number,
+          },
         ];
-        return next.length > maxSamples ? next.slice(next.length - maxSamples) : next;
+        return next.length > maxSamples
+          ? next.slice(next.length - maxSamples)
+          : next;
       });
     }
   }, [llmStatus.memory_usage, maxSamples]);
 
-  // Optional: Still allow manual polling for high-frequency updates
-  useEffect(() => {
-    if (pollIntervalMs <= 5000) { // Only for high-frequency polling (5s or less)
-      const fetchUsage = async () => {
-        try {
-          const res = await fetch("/api/llm/status");
-          const data = await res.json();
-          const usage = data.memory_usage || {};
-           if (usage.process_memory_mb !== undefined && usage.process_cpu_percent !== undefined) {
-             setSamples(prev => {
-               const next = [
-                 ...prev,
-                 {
-                   timestamp: Date.now(),
-                   memory: usage.process_memory_mb as number,
-                   cpu: usage.process_cpu_percent as number
-                 }
-               ];
-               return next.length > maxSamples ? next.slice(next.length - maxSamples) : next;
-             });
-          }
-        } catch {}
-      };
-      
-      timerRef.current = setInterval(fetchUsage, pollIntervalMs);
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-      };
-    }
-  }, [pollIntervalMs, maxSamples]);
+  // Note: Removed the additional polling mechanism to prevent API spam
+  // The component now relies entirely on the centralized health check system
 
   // Find max for scaling
-  const maxMemory = Math.max(...samples.map(s => s.memory), 1);
-  const maxCPU = Math.max(...samples.map(s => s.cpu), 1);
+  const maxMemory = Math.max(...samples.map((s) => s.memory), 1);
+  const maxCPU = Math.max(...samples.map((s) => s.cpu), 1);
 
   // Tailwind slate palette
-  const bgColor = "#020617"; // slate-950
-  const borderColor = "#64748b"; // slate-500
+  const _bgColor = "#020617"; // slate-950
+  const _borderColor = "#64748b"; // slate-500
   const memColor = "#f1f5f9"; // slate-50 (white-ish)
   const cpuColor = "#38bdf8"; // sky-400 for contrast, or use "#94a3b8" (slate-400)
   const axisColor = "#64748b"; // slate-500
@@ -92,10 +69,7 @@ export const LLMUsageBarChart: React.FC<LLMUsageBarChartProps> = ({
     if (samples.length === 0) return [];
     return samples.map((s, i) => {
       const x = padding + (i * (width - 2 * padding)) / (maxSamples - 1);
-      const y =
-        height -
-        padding -
-        ((s[key] / maxValue) * (height - 2 * padding));
+      const y = height - padding - (s[key] / maxValue) * (height - 2 * padding);
       return [x, y];
     });
   };
@@ -114,10 +88,12 @@ export const LLMUsageBarChart: React.FC<LLMUsageBarChartProps> = ({
       className="rounded-lg border border-slate-800 bg-slate-950 p-4"
       style={{
         width: width,
-        fontFamily: "monospace"
+        fontFamily: "monospace",
       }}
     >
-      <div className="text-xs text-slate-50 mb-2">LLM Usage (Heartbeat Monitor)</div>
+      <div className="text-xs text-slate-50 mb-2">
+        LLM Usage (Heartbeat Monitor)
+      </div>
       <svg width={width} height={height}>
         {/* Axes */}
         <line
@@ -162,11 +138,15 @@ export const LLMUsageBarChart: React.FC<LLMUsageBarChartProps> = ({
         {last && (
           <>
             <circle
-              cx={padding + ((samples.length - 1) * (width - 2 * padding)) / (maxSamples - 1)}
+              cx={
+                padding +
+                ((samples.length - 1) * (width - 2 * padding)) /
+                  (maxSamples - 1)
+              }
               cy={
                 height -
                 padding -
-                ((last.memory / maxMemory) * (height - 2 * padding))
+                (last.memory / maxMemory) * (height - 2 * padding)
               }
               r={3}
               fill={memColor}
@@ -174,11 +154,13 @@ export const LLMUsageBarChart: React.FC<LLMUsageBarChartProps> = ({
               strokeWidth={1}
             />
             <circle
-              cx={padding + ((samples.length - 1) * (width - 2 * padding)) / (maxSamples - 1)}
+              cx={
+                padding +
+                ((samples.length - 1) * (width - 2 * padding)) /
+                  (maxSamples - 1)
+              }
               cy={
-                height -
-                padding -
-                ((last.cpu / maxCPU) * (height - 2 * padding))
+                height - padding - (last.cpu / maxCPU) * (height - 2 * padding)
               }
               r={3}
               fill={cpuColor}
@@ -195,20 +177,10 @@ export const LLMUsageBarChart: React.FC<LLMUsageBarChartProps> = ({
           CPU
         </text>
         {/* Y axis ticks */}
-        <text
-          x={4}
-          y={height - padding}
-          fill={labelColor}
-          fontSize={10}
-        >
+        <text x={4} y={height - padding} fill={labelColor} fontSize={10}>
           0
         </text>
-        <text
-          x={4}
-          y={padding + 8}
-          fill={labelColor}
-          fontSize={10}
-        >
+        <text x={4} y={padding + 8} fill={labelColor} fontSize={10}>
           Max
         </text>
       </svg>

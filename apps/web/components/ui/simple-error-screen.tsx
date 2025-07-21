@@ -1,10 +1,9 @@
 "use client";
 
-import React from "react";
-import { Card } from "./card";
-import { BackgroundGradient } from "./backgrounds/background-gradient";
 import { AlertTriangle, Home } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
+import { BackgroundGradient } from "./backgrounds/background-gradient";
+import { Card } from "./card";
 
 interface SimpleErrorScreenProps {
   title: string;
@@ -21,24 +20,24 @@ export function SimpleErrorScreen({
   bulletPoints = [],
   buttonText = "Return to Homepage",
   buttonHref = "/",
-  gradientColor = "red"
+  gradientColor = "red",
 }: SimpleErrorScreenProps) {
   return (
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4 relative overflow-hidden">
       {/* Grid Pattern Background */}
       <div className="absolute inset-0 w-full h-full opacity-20">
-        <div 
+        <div
           className="w-full h-full"
           style={{
             backgroundImage: `
               linear-gradient(rgba(255, 0, 0, 0.3) 1px, transparent 1px),
               linear-gradient(90deg, rgba(255, 0, 0, 0.3) 1px, transparent 1px)
             `,
-            backgroundSize: '50px 50px'
+            backgroundSize: "50px 50px",
           }}
         />
       </div>
-      
+
       {/* Error Card with Background Gradient */}
       <div className="relative z-10">
         <BackgroundGradient color={gradientColor} className="rounded-xl">
@@ -47,9 +46,7 @@ export function SimpleErrorScreen({
               {renderIcon(AlertTriangle, { className: "w-6 h-6 text-red-400" })}
               <h2 className="text-xl font-semibold text-red-300">{title}</h2>
             </div>
-            <p className="text-red-200 mb-4">
-              {message}
-            </p>
+            <p className="text-red-200 mb-4">{message}</p>
             {bulletPoints.length > 0 && (
               <div className="text-sm text-red-300 mb-6">
                 <p>This could be due to:</p>
@@ -93,7 +90,7 @@ export function SimpleDatabaseErrorScreen() {
       bulletPoints={[
         "Database server is temporarily down",
         "Network connectivity issues",
-        "Configuration problems"
+        "Configuration problems",
       ]}
     />
   );
@@ -107,7 +104,7 @@ export function SimpleRAGUploadErrorScreen() {
       bulletPoints={[
         "Database server is temporarily down",
         "Network connectivity issues",
-        "Configuration problems"
+        "Configuration problems",
       ]}
     />
   );

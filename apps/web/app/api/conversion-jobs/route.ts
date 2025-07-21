@@ -1,40 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from "next/server";
 
 /**
  * CONVERSION JOBS API ENDPOINT
  * ============================
- * 
+ *
  * PURPOSE: Manages conversion job tracking and monitoring
- * 
+ *
  * USAGE: Tracks the status and progress of document processing jobs
  * - GET: Retrieves conversion job history with filtering (status, jobType, documentId)
  * - POST: Creates new conversion job records for tracking
  * - PUT: Updates existing conversion job status and results
- * 
- * USED BY: 
+ *
+ * USED BY:
  * - LLM conversion service to track processing jobs
  * - Frontend dashboard to monitor job progress
  * - Analytics and reporting features
- * 
+ *
  * FLOW: Job Creation → Processing → Status Updates → Completion Tracking
- * 
+ *
  * RECOMMENDATION: KEEP - Essential for job tracking and monitoring, especially for async operations
  */
 
 const CONVEX_URL = process.env.CONVEX_URL;
 
 if (!CONVEX_URL) {
-  throw new Error('CONVEX_URL environment variable is required');
+  throw new Error("CONVEX_URL environment variable is required");
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = searchParams.get('page') || '1';
-    const limit = searchParams.get('limit') || '20';
-    const status = searchParams.get('status');
-    const jobType = searchParams.get('jobType');
-    const documentId = searchParams.get('documentId');
+    const page = searchParams.get("page") || "1";
+    const limit = searchParams.get("limit") || "20";
+    const status = searchParams.get("status");
+    const jobType = searchParams.get("jobType");
+    const documentId = searchParams.get("documentId");
 
     const params = new URLSearchParams({
       page,
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     });
 
     const response = await fetch(`${CONVEX_URL}/api/conversion-jobs?${params}`);
-    
+
     if (!response.ok) {
       throw new Error(`Convex API error: ${response.status}`);
     }
@@ -53,9 +53,9 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching conversion jobs:', error);
+    console.error("Error fetching conversion jobs:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch conversion jobs' },
+      { error: "Failed to fetch conversion jobs" },
       { status: 500 }
     );
   }
@@ -64,15 +64,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     const response = await fetch(`${CONVEX_URL}/api/conversion-jobs`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
-    
+
     if (!response.ok) {
       throw new Error(`Convex API error: ${response.status}`);
     }
@@ -80,9 +80,9 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating conversion job:', error);
+    console.error("Error creating conversion job:", error);
     return NextResponse.json(
-      { error: 'Failed to create conversion job' },
+      { error: "Failed to create conversion job" },
       { status: 500 }
     );
   }
@@ -91,15 +91,15 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     const response = await fetch(`${CONVEX_URL}/api/conversion-jobs`, {
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
-    
+
     if (!response.ok) {
       throw new Error(`Convex API error: ${response.status}`);
     }
@@ -107,9 +107,9 @@ export async function PUT(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error updating conversion job:', error);
+    console.error("Error updating conversion job:", error);
     return NextResponse.json(
-      { error: 'Failed to update conversion job' },
+      { error: "Failed to update conversion job" },
       { status: 500 }
     );
   }

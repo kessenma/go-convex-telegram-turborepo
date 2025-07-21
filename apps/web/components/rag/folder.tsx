@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import type React from "react";
+import { useState } from "react";
 
 interface FolderProps {
   color?: string;
@@ -71,12 +72,12 @@ const Folder: React.FC<FolderProps> = ({
     if (onFolderClick) {
       // Trigger flying paper animation
       setShowFlyingPaper(true);
-      
+
       // Call the folder click handler after a short delay
       setTimeout(() => {
         onFolderClick();
       }, 300);
-      
+
       // Reset flying paper after animation
       setTimeout(() => {
         setShowFlyingPaper(false);
@@ -84,7 +85,9 @@ const Folder: React.FC<FolderProps> = ({
     } else if (!keepOpen) {
       setOpen((prev) => !prev);
       if (open) {
-        setPaperOffsets(Array.from({ length: maxItems }, () => ({ x: 0, y: 0 })));
+        setPaperOffsets(
+          Array.from({ length: maxItems }, () => ({ x: 0, y: 0 }))
+        );
       }
     }
   };
@@ -117,7 +120,7 @@ const Folder: React.FC<FolderProps> = ({
   };
 
   const handlePaperMouseLeave = (
-    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    _e: React.MouseEvent<HTMLDivElement, MouseEvent>,
     index: number
   ) => {
     setPaperOffsets((prev) => {
@@ -145,17 +148,18 @@ const Folder: React.FC<FolderProps> = ({
   };
 
   // Truncate filename if too long
-  const displayFileName = fileName.length > 10 ? fileName.substring(0, 10) + '...' : fileName;
+  const displayFileName =
+    fileName.length > 10 ? `${fileName.substring(0, 10)}...` : fileName;
 
   return (
     <div style={scaleStyle} className={className}>
       <motion.div
         className={`group relative cursor-pointer ${
-          !deleting && !isOpen 
-            ? "transition-all duration-200 ease-in hover:-translate-y-2" 
+          !deleting && !isOpen
+            ? "transition-all duration-200 ease-in hover:-translate-y-2"
             : !deleting
-            ? "transition-all duration-200 ease-in"
-            : ""
+              ? "transition-all duration-200 ease-in"
+              : ""
         }`}
         style={{
           ...folderStyle,
@@ -181,37 +185,43 @@ const Folder: React.FC<FolderProps> = ({
             className="absolute z-0 bottom-[98%] left-0 w-[30px] h-[10px] rounded-tl-[5px] rounded-tr-[5px] rounded-bl-0 rounded-br-0"
             style={{ backgroundColor: folderBackColor }}
           ></span>
-          
+
           {/* Filename text on folder */}
           {fileName && (
-            <div 
+            <div
               className={`absolute z-40 inset-0 flex items-center justify-center text-white text-xs font-medium text-center px-2 transition-all duration-200 ease-in ${
-                !isOpen ? "group-hover:-translate-y-12" : ""}`}
+                !isOpen ? "group-hover:-translate-y-12" : ""
+              }`}
               style={{
                 textShadow: "0 1px 2px rgba(0,0,0,0.8)",
                 transform: isOpen ? "translateY(-8px)" : undefined,
                 lineHeight: "1.1",
-                wordBreak: "break-word"
+                wordBreak: "break-word",
               }}
             >
               {displayFileName}
             </div>
           )}
-          
+
           {papers.map((item, i) => {
             let sizeClasses = "";
-            if (i === 0) sizeClasses = isOpen ? "w-[70%] h-[80%]" : "w-[70%] h-[80%]";
-            if (i === 1) sizeClasses = isOpen ? "w-[80%] h-[80%]" : "w-[80%] h-[70%]" ;
-            if (i === 2) sizeClasses = isOpen ? "w-[90%] h-[80%]" : "w-[90%] h-[60%]";
+            if (i === 0)
+              sizeClasses = isOpen ? "w-[70%] h-[80%]" : "w-[70%] h-[80%]";
+            if (i === 1)
+              sizeClasses = isOpen ? "w-[80%] h-[80%]" : "w-[80%] h-[70%]";
+            if (i === 2)
+              sizeClasses = isOpen ? "w-[90%] h-[80%]" : "w-[90%] h-[60%]";
 
             // Special handling for expanding paper
             const isExpanding = expandingPaper === i;
             let transformStyle;
-            
+
             if (isExpanding) {
               // Move expanding paper to center of screen and scale up
-              const viewportCenterX = typeof window !== 'undefined' ? window.innerWidth / 2 : 400;
-              const viewportCenterY = typeof window !== 'undefined' ? window.innerHeight / 2 : 300;
+              const viewportCenterX =
+                typeof window !== "undefined" ? window.innerWidth / 2 : 400;
+              const viewportCenterY =
+                typeof window !== "undefined" ? window.innerHeight / 2 : 300;
               transformStyle = `translate(${viewportCenterX - 50}px, ${viewportCenterY - 40}px) scale(8) rotate(0deg)`;
             } else if (isOpen) {
               transformStyle = `${getOpenTransform(i)} translate(${paperOffsets[i]?.x ?? 0}px, ${paperOffsets[i]?.y ?? 0}px)`;
@@ -224,14 +234,16 @@ const Folder: React.FC<FolderProps> = ({
                 onMouseLeave={(e) => handlePaperMouseLeave(e, i)}
                 onClick={(e) => handlePaperClick(e, i)}
                 className={`absolute bottom-[10%] left-1/2 transition-all cursor-pointer ${
-                  isExpanding 
-                    ? "z-[200] duration-700 ease-out fixed" 
+                  isExpanding
+                    ? "z-[200] duration-700 ease-out fixed"
                     : !isOpen
-                    ? "z-20 duration-300 ease-in-out transform -translate-x-1/2 translate-y-[10%] group-hover:translate-y-0"
-                    : "z-20 duration-300 ease-in-out hover:scale-110"
+                      ? "z-20 duration-300 ease-in-out transform -translate-x-1/2 translate-y-[10%] group-hover:translate-y-0"
+                      : "z-20 duration-300 ease-in-out hover:scale-110"
                 } ${sizeClasses}`}
                 style={{
-                  ...(!isOpen && !isExpanding ? {} : { transform: transformStyle }),
+                  ...(!isOpen && !isExpanding
+                    ? {}
+                    : { transform: transformStyle }),
                   backgroundColor: i === 0 ? paper1 : i === 1 ? paper2 : paper3,
                   borderRadius: "10px",
                   opacity: isExpanding ? 0.9 : 1,
@@ -264,7 +276,7 @@ const Folder: React.FC<FolderProps> = ({
           ></div>
         </div>
       </motion.div>
-      
+
       {/* Flying paper animation */}
       <AnimatePresence>
         {showFlyingPaper && (
@@ -303,8 +315,16 @@ const Folder: React.FC<FolderProps> = ({
           >
             <div className="flex flex-col justify-center items-center p-2 h-full text-center">
               <div className="mb-1">
-                <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                <svg
+                  className="w-4 h-4 text-gray-300"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="w-full text-xs font-medium text-gray-200 truncate">

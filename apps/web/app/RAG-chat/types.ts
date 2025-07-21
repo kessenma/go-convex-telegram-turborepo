@@ -16,7 +16,7 @@ export interface Document {
 
 export interface ChatMessage {
   id: string;
-  type: 'user' | 'assistant';
+  type: "user" | "assistant";
   content: string;
   timestamp: number;
   sources?: {
@@ -53,7 +53,7 @@ export interface ChatHistoryMessage {
   _creationTime: number;
   conversationId: string;
   messageId: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: number;
   tokenCount?: number;

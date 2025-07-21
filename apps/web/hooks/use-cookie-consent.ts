@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 interface CookieConsentState {
   hasConsented: boolean | null; // null = not decided, true = accepted, false = declined
@@ -15,8 +15,8 @@ export function useCookieConsent() {
 
   // Check for existing consent on mount
   useEffect(() => {
-    const existingConsent = localStorage.getItem('cookie-consent');
-    
+    const existingConsent = localStorage.getItem("cookie-consent");
+
     if (existingConsent === null) {
       // No consent decision made yet, show modal
       setConsentState({
@@ -25,7 +25,7 @@ export function useCookieConsent() {
       });
     } else {
       // Consent decision exists
-      const hasConsented = existingConsent === 'true';
+      const hasConsented = existingConsent === "true";
       setConsentState({
         hasConsented,
         showModal: false,
@@ -34,7 +34,7 @@ export function useCookieConsent() {
   }, []);
 
   const acceptCookies = () => {
-    localStorage.setItem('cookie-consent', 'true');
+    localStorage.setItem("cookie-consent", "true");
     setConsentState({
       hasConsented: true,
       showModal: false,
@@ -42,21 +42,21 @@ export function useCookieConsent() {
   };
 
   const declineCookies = () => {
-    localStorage.setItem('cookie-consent', 'false');
+    localStorage.setItem("cookie-consent", "false");
     setConsentState({
       hasConsented: false,
       showModal: false,
     });
-    
+
     // Optional: Set a timeout to redirect after showing the message
     // Users can click "Change Cookie Settings" before this happens
     setTimeout(() => {
-      window.location.href = 'https://www.google.com';
+      window.location.href = "https://www.google.com";
     }, 10000); // 10 seconds delay
   };
 
   const resetConsent = () => {
-    localStorage.removeItem('cookie-consent');
+    localStorage.removeItem("cookie-consent");
     setConsentState({
       hasConsented: null,
       showModal: true,
@@ -64,7 +64,7 @@ export function useCookieConsent() {
   };
 
   const openModal = () => {
-    setConsentState(prev => ({
+    setConsentState((prev) => ({
       ...prev,
       showModal: true,
     }));

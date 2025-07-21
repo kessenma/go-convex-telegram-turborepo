@@ -35,10 +35,20 @@ interface StatCardProps {
   useCountUp?: boolean;
 }
 
-export const StatCard = ({ title, value, className, useCountUp = true }: StatCardProps) => {
-  const numericValue = typeof value === 'number' ? value : parseInt(value.toString().replace(/[^0-9]/g, ''), 10);
-  const isNumeric = !isNaN(numericValue) && typeof value !== 'string' || (typeof value === 'string' && /^\d+$/.test(value));
-  
+export const StatCard = ({
+  title,
+  value,
+  className,
+  useCountUp = true,
+}: StatCardProps) => {
+  const numericValue =
+    typeof value === "number"
+      ? value
+      : parseInt(value.toString().replace(/[^0-9]/g, ""), 10);
+  const isNumeric =
+    (!Number.isNaN(numericValue) && typeof value !== "string") ||
+    (typeof value === "string" && /^\d+$/.test(value));
+
   return (
     <Card className={className}>
       <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getCookie } from "../lib/utils";
 
 export function useAnimationSettings() {
@@ -10,8 +10,8 @@ export function useAnimationSettings() {
 
   // Check for cookie consent
   useEffect(() => {
-    const consent = localStorage.getItem('cookie-consent');
-    setHasConsented(consent === 'true');
+    const consent = localStorage.getItem("cookie-consent");
+    setHasConsented(consent === "true");
   }, []);
 
   // Stable function to check and update cookie value
@@ -21,9 +21,9 @@ export function useAnimationSettings() {
       setAnimationLightMode(false); // Default to full animations
       return false;
     }
-    
-    const savedSetting = getCookie('animationLightMode');
-    const currentValue = savedSetting === 'true';
+
+    const savedSetting = getCookie("animationLightMode");
+    const currentValue = savedSetting === "true";
     setAnimationLightMode(currentValue);
     return currentValue;
   }, [hasConsented]);
@@ -39,16 +39,19 @@ export function useAnimationSettings() {
   // Listen for storage events (when cookies change in other tabs/components)
   useEffect(() => {
     if (hasConsented !== true) return;
-    
+
     const handleStorageChange = () => {
       checkCookieValue();
     };
 
     // Listen for custom events when cookies are updated
-    window.addEventListener('animationSettingsChanged', handleStorageChange);
-    
+    window.addEventListener("animationSettingsChanged", handleStorageChange);
+
     return () => {
-      window.removeEventListener('animationSettingsChanged', handleStorageChange);
+      window.removeEventListener(
+        "animationSettingsChanged",
+        handleStorageChange
+      );
     };
   }, [checkCookieValue, hasConsented]);
 
@@ -57,6 +60,6 @@ export function useAnimationSettings() {
   return {
     animationLightMode,
     animationEnabled,
-    isLoaded
+    isLoaded,
   };
 }

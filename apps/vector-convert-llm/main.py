@@ -8,6 +8,7 @@ import time
 import threading
 import requests
 import uuid
+import re
 from typing import List, Dict, Any
 from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownTextSplitter
 import json
@@ -143,8 +144,15 @@ def load_model_async():
         logger.error(f"Background model loading failed: {e}")
 
 def chunk_document(content: str, content_type: str = "text", chunk_size: int = 1000, chunk_overlap: int = 200) -> List[str]:
-    """Chunk document content using LangChain text splitters"""
+    """Chunk document content using improved semantic splitting"""
     try:
+        # First, try semantic chunking for structured content
+        semantic_chunks = semantic_chunk_document(content, chunk_size)
+        if semantic_chunks and len(semantic_chunks) > 1:
+            logger.info(f"Document semantically chunked into {len(semantic_chunks)} pieces")
+            return semantic_chunks
+        
+        # Fallback to LangChain splitters
         if content_type.lower() == "markdown":
             # Use MarkdownTextSplitter for markdown content
             text_splitter = MarkdownTextSplitter(
@@ -153,12 +161,20 @@ def chunk_document(content: str, content_type: str = "text", chunk_size: int = 1
                 length_function=len,
             )
         else:
-            # Use RecursiveCharacterTextSplitter for other content types
+            # Use RecursiveCharacterTextSplitter with better separators for structured content
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
                 length_function=len,
-                separators=["\n\n", "\n", " ", ""]
+                separators=[
+                    "\n\n\n",  # Multiple line breaks
+                    "\n\n",    # Double line breaks
+                    "\n",      # Single line breaks
+                    ". ",      # Sentence endings
+                    ", ",      # Comma separations
+                    " ",       # Spaces
+                    ""
+                ]
             )
         
         chunks = text_splitter.split_text(content)
@@ -169,6 +185,160 @@ def chunk_document(content: str, content_type: str = "text", chunk_size: int = 1
         logger.error(f"Error chunking document: {e}")
         # Fallback to simple chunking if LangChain fails
         return simple_chunk_text(content, chunk_size)
+
+def semantic_chunk_document(content: str, max_chunk_size: int = 1000) -> List[str]:
+    """Semantic chunking that preserves numbered lists and structured content"""
+    try:
+        lines = content.split('\n')
+        chunks = []
+        current_chunk = []
+        current_size = 0
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # Check if this line starts a numbered list or structured section
+            if is_section_start(line):
+                # Save current chunk if it exists
+                if current_chunk and current_size > 100:  # Only save substantial chunks
+                    chunks.append('\n'.join(current_chunk).strip())
+                    current_chunk = []
+                    current_size = 0
+                
+                # Collect the entire section/numbered item with its sub-items
+                section_lines = collect_section(lines, i)
+                section_text = '\n'.join(section_lines).strip()
+                
+                # If section is too large, split it but keep related content together
+                if len(section_text) > max_chunk_size:
+                    # Try to split at sub-items while keeping main item intact
+                    sub_chunks = split_large_section(section_text, max_chunk_size)
+                    chunks.extend(sub_chunks)
+                else:
+                    # Add section as a single chunk
+                    if section_text:
+                        chunks.append(section_text)
+                
+                # Skip the lines we just processed
+                i += len(section_lines)
+                continue
+            
+            # Regular line processing
+            line_with_newline = lines[i]
+            if current_size + len(line_with_newline) > max_chunk_size and current_chunk:
+                # Save current chunk and start new one
+                chunks.append('\n'.join(current_chunk).strip())
+                current_chunk = [line_with_newline]
+                current_size = len(line_with_newline)
+            else:
+                current_chunk.append(line_with_newline)
+                current_size += len(line_with_newline) + 1  # +1 for newline
+            
+            i += 1
+        
+        # Add final chunk
+        if current_chunk:
+            final_chunk = '\n'.join(current_chunk).strip()
+            if final_chunk:
+                chunks.append(final_chunk)
+        
+        # Filter out very small chunks and merge them with adjacent ones
+        filtered_chunks = []
+        for chunk in chunks:
+            if len(chunk.strip()) < 50 and filtered_chunks:
+                # Merge small chunk with previous one
+                filtered_chunks[-1] += '\n\n' + chunk
+            elif len(chunk.strip()) >= 50:
+                filtered_chunks.append(chunk)
+        
+        return filtered_chunks if len(filtered_chunks) > 1 else []
+        
+    except Exception as e:
+        logger.error(f"Error in semantic chunking: {e}")
+        return []
+
+def is_section_start(line: str) -> bool:
+    """Check if line starts a new section (numbered item, header, etc.)"""
+    line = line.strip()
+    if not line:
+        return False
+    
+    # Numbered lists (1., 2., etc.)
+    if re.match(r'^\d+\.\s', line):
+        return True
+    
+    # Lettered lists (a., b., etc.)
+    if re.match(r'^[a-zA-Z]\.\s', line):
+        return True
+    
+    # Bullet points
+    if re.match(r'^[-*•]\s', line):
+        return True
+    
+    # Headers (markdown style)
+    if line.startswith('#'):
+        return True
+    
+    # Step indicators
+    if re.match(r'^(step|phase|stage)\s*\d+', line.lower()):
+        return True
+    
+    return False
+
+def collect_section(lines: List[str], start_idx: int) -> List[str]:
+    """Collect all lines belonging to a section starting at start_idx"""
+    section_lines = [lines[start_idx]]
+    i = start_idx + 1
+    
+    while i < len(lines):
+        line = lines[i].strip()
+        
+        # Empty line - include it but check next line
+        if not line:
+            section_lines.append(lines[i])
+            i += 1
+            continue
+        
+        # If we hit another section start, stop
+        if is_section_start(line):
+            break
+        
+        # Include lines that seem to be part of this section
+        # (indented content, continuation, sub-items)
+        if (lines[i].startswith('  ') or  # Indented
+            lines[i].startswith('\t') or  # Tabbed
+            re.match(r'^\s*[a-zA-Z]\.|^\s*[-*•]', line) or  # Sub-items
+            not re.match(r'^\d+\.', line)):  # Not a new numbered item
+            section_lines.append(lines[i])
+        else:
+            break
+        
+        i += 1
+    
+    return section_lines
+
+def split_large_section(section_text: str, max_size: int) -> List[str]:
+    """Split a large section while trying to preserve semantic meaning"""
+    # Try to split at natural boundaries within the section
+    lines = section_text.split('\n')
+    chunks = []
+    current_chunk = []
+    current_size = 0
+    
+    for line in lines:
+        if current_size + len(line) > max_size and current_chunk:
+            chunks.append('\n'.join(current_chunk))
+            current_chunk = [line]
+            current_size = len(line)
+        else:
+            current_chunk.append(line)
+            current_size += len(line) + 1
+    
+    if current_chunk:
+        chunks.append('\n'.join(current_chunk))
+    
+    return chunks
 
 def simple_chunk_text(text: str, max_chunk_size: int = 1000) -> List[str]:
     """Simple fallback chunking method"""
@@ -380,19 +550,14 @@ def encode_sentences():
 
 @app.route('/embed', methods=['POST'])
 def embed_text():
-    """Embed text using the sentence transformer model"""
+    """Embed text using the sentence transformer model with enhanced preprocessing"""
     start_time_local = time.time()
     
     try:
-        print("DEBUG: /embed endpoint called!")
         logger.info("=== EMBED ENDPOINT START ===")
         logger.info("Received POST request to /embed")
-        print(f"DEBUG: Request method: {request.method}")
-        print(f"DEBUG: Request path: {request.path}")
-        print(f"DEBUG: Request headers: {dict(request.headers)}")
         
-        # Check model status with detailed logging
-        logger.info(f"Model status check: model={model}, model_loaded={model_loaded}, model_loading={model_loading}")
+        # Check model status
         if model is None:
             logger.error("Model is None - not loaded")
             return jsonify({'error': 'Model not loaded'}), 500
@@ -401,45 +566,75 @@ def embed_text():
             logger.error(f"Model not ready - loaded: {model_loaded}, loading: {model_loading}")
             return jsonify({'error': 'Model not ready'}), 500
         
-        # Parse request data with detailed logging
-        logger.info("Parsing request JSON...")
+        # Parse request data
         try:
             data = request.get_json(force=True)
-            logger.info(f"Successfully parsed JSON: {data}")
+            logger.info(f"Successfully parsed JSON with keys: {list(data.keys()) if data else 'None'}")
         except Exception as json_error:
             logger.error(f"Failed to parse JSON: {json_error}")
-            logger.error(f"Raw request data: {request.get_data()}")
             return jsonify({'error': f'Invalid JSON: {str(json_error)}'}), 400
         
         if not data or 'text' not in data:
-            logger.error(f"Missing text field in request. Data keys: {list(data.keys()) if data else 'None'}")
+            logger.error(f"Missing text field in request")
             return jsonify({'error': 'Missing text field in request'}), 400
         
         text = data['text']
-        logger.info(f"Processing text (length: {len(str(text))}): {str(text)[:100]}...")
+        logger.info(f"Processing text (length: {len(str(text))})")
         
-        # Validate text input
+        # Validate and preprocess text input
         if isinstance(text, str):
-            texts = [text]
+            texts = [text.strip()]
             logger.info("Processing single string")
         elif isinstance(text, list):
-            texts = text
+            texts = [str(t).strip() for t in text if str(t).strip()]
             logger.info(f"Processing list of {len(texts)} strings")
         else:
             logger.error(f"Invalid text type: {type(text)}")
             return jsonify({'error': 'Text must be string or list of strings'}), 400
         
-        # Generate embeddings with detailed logging
-        logger.info("Starting embedding generation...")
+        # Filter out empty texts
+        texts = [t for t in texts if t]
+        if not texts:
+            logger.error("No valid text content to embed")
+            return jsonify({'error': 'No valid text content provided'}), 400
+        
+        # Enhanced text preprocessing for better embeddings
+        processed_texts = []
+        for text_item in texts:
+            # Clean and normalize text
+            cleaned_text = text_item.strip()
+            
+            # Remove excessive whitespace
+            cleaned_text = ' '.join(cleaned_text.split())
+            
+            # Ensure minimum length for meaningful embeddings
+            if len(cleaned_text) < 3:
+                cleaned_text = f"Short text: {cleaned_text}"
+            
+            processed_texts.append(cleaned_text)
+        
+        logger.info(f"Preprocessed {len(processed_texts)} texts for embedding")
+        
+        # Generate embeddings with error handling
         try:
-            embeddings = model.encode(texts)
+            logger.info("Starting embedding generation...")
+            
+            # Use batch processing for efficiency
+            embeddings = model.encode(
+                processed_texts,
+                batch_size=min(32, len(processed_texts)),  # Reasonable batch size
+                show_progress_bar=False,
+                convert_to_numpy=True,
+                normalize_embeddings=True  # Normalize for better similarity search
+            )
+            
             logger.info(f"Embeddings generated successfully. Shape: {embeddings.shape}")
+            
         except Exception as embed_error:
             logger.error(f"Error during embedding generation: {embed_error}", exc_info=True)
             return jsonify({'error': f'Embedding generation failed: {str(embed_error)}'}), 500
         
         # Convert to list for JSON serialization
-        logger.info("Converting embeddings to JSON-serializable format...")
         try:
             if isinstance(text, str):
                 # Single text input, return single embedding
@@ -460,19 +655,16 @@ def embed_text():
             'embeddings': result,
             'dimension': len(embeddings[0]),
             'model': 'all-MiniLM-L6-v2',
-            'processing_time_ms': processing_time
+            'processing_time_ms': processing_time,
+            'texts_processed': len(processed_texts)
         }
         
-        logger.info(f"Returning response with {len(str(response_data))} characters")
         logger.info("=== EMBED ENDPOINT SUCCESS ===")
-        
         return jsonify(response_data), 200
         
     except Exception as e:
         processing_time = int((time.time() - start_time_local) * 1000)
         logger.error(f"CRITICAL ERROR in embed_text: {e}", exc_info=True)
-        logger.error(f"Error type: {type(e).__name__}")
-        logger.error(f"Error args: {e.args}")
         logger.error("=== EMBED ENDPOINT FAILED ===")
         
         try:
@@ -484,7 +676,6 @@ def embed_text():
             return jsonify(error_response), 500
         except Exception as response_error:
             logger.error(f"Failed to create error response: {response_error}")
-            # Return a simple string response as last resort
             return f"Internal server error: {str(e)}", 500
 
 @app.route('/similarity', methods=['POST'])
@@ -664,7 +855,7 @@ def process_document_embedding():
         
         # Generate embedding with chunking
         if use_chunking and len(text) > chunk_size:
-            logger.info("‼️Using chunking for large documen🤖...")
+            logger.info("‼️Using chunking for large document🤖...")
             
             # Chunk the document
             chunks = chunk_document(text, content_type, chunk_size, chunk_overlap)
@@ -716,12 +907,97 @@ def process_document_embedding():
                     update_conversion_job(job_id, "failed", error_message=error_msg)
                 return jsonify({'error': error_msg}), 500
             
-            # Calculate average embedding from all chunks
-            avg_embedding = np.mean(chunk_embeddings, axis=0).tolist()
-            logger.info(f"Calculated average embedding from {len(chunk_embeddings)} chunks, dimension: {len(avg_embedding)}")
+            # Save individual chunk embeddings instead of averaging
+            logger.info(f"Saving {len(chunk_embeddings)} individual chunk embeddings to Convex...")
             
-            embedding = avg_embedding
-            embedding_method = "chunked_average"
+            # Save each chunk embedding separately
+            saved_chunks = 0
+            for i, (chunk_text, chunk_embedding) in enumerate(zip(chunks, chunk_embeddings)):
+                try:
+                    save_url = f"{convex_url}/api/embeddings"
+                    save_payload = {
+                        'documentId': document_id,
+                        'embedding': chunk_embedding,
+                        'embeddingModel': 'all-MiniLM-L6-v2',
+                        'embeddingDimensions': len(chunk_embedding),
+                        'chunkText': chunk_text,
+                        'chunkIndex': i,
+                        'processingTimeMs': int((time.time() - start_time) * 1000)
+                    }
+                    
+                    save_response = requests.post(save_url, json=save_payload)
+                    
+                    if save_response.status_code == 200:
+                        saved_chunks += 1
+                        logger.info(f"Saved chunk {i+1}/{len(chunks)} embedding to Convex")
+                    else:
+                        logger.error(f"Failed to save chunk {i+1} embedding: {save_response.status_code} - {save_response.text}")
+                        
+                except Exception as chunk_save_error:
+                    logger.error(f"Error saving chunk {i+1} embedding: {chunk_save_error}")
+                    continue
+            
+            if saved_chunks == 0:
+                error_msg = "Failed to save any chunk embeddings"
+                logger.error(error_msg)
+                if job_id:
+                    update_conversion_job(job_id, "failed", error_message=error_msg)
+                return jsonify({'error': error_msg}), 500
+            
+            embedding_method = "individual_chunks"
+            processing_time = int((time.time() - start_time) * 1000)
+            
+            # Create notification for successful embedding
+            try:
+                notification_url = f"{convex_url}/api/notifications"
+                notification_payload = {
+                    'type': 'document_embedded',
+                    'title': 'Document Embedded',
+                    'message': f'"{document_title}" chunked into {saved_chunks} searchable pieces',
+                    'documentId': document_id,
+                    'metadata': json.dumps({
+                        'document_title': document_title,
+                        'chunks_saved': saved_chunks,
+                        'total_chunks': len(chunks),
+                        'embedding_dimension': len(chunk_embeddings[0]) if chunk_embeddings else 0,
+                        'model': 'all-MiniLM-L6-v2',
+                        'processing_time_ms': processing_time,
+                        'embedding_method': embedding_method
+                    })
+                }
+                
+                notification_response = requests.post(notification_url, json=notification_payload)
+                if notification_response.status_code in (200, 201):
+                    logger.info("Notification created successfully")
+                else:
+                    logger.warning(f"Failed to create notification: {notification_response.status_code} - {notification_response.text}")
+            except Exception as notification_error:
+                logger.error(f"Error creating notification: {notification_error}")
+            
+            # Update job as completed
+            if job_id:
+                output_data = {
+                    "document_id": document_id,
+                    "chunks_saved": saved_chunks,
+                    "total_chunks": len(chunks),
+                    "embedding_dimension": len(chunk_embeddings[0]) if chunk_embeddings else 0,
+                    "model": "all-MiniLM-L6-v2",
+                    "content_length": len(text),
+                    "embedding_method": embedding_method
+                }
+                update_conversion_job(job_id, "completed", output_data=json.dumps(output_data), processing_time_ms=processing_time)
+            
+            return jsonify({
+                'success': True,
+                'document_id': document_id,
+                'chunks_saved': saved_chunks,
+                'total_chunks': len(chunks),
+                'embedding_dimension': len(chunk_embeddings[0]) if chunk_embeddings else 0,
+                'model': 'all-MiniLM-L6-v2',
+                'processing_time_ms': processing_time,
+                'content_length': len(text),
+                'embedding_method': embedding_method
+            }), 200
             
         else:
             # Generate single embedding for small documents

@@ -1,17 +1,22 @@
 "use client";
-import React from "react";
+import type React from "react";
+import { useAnimationSettings } from "../../hooks/use-animation-settings";
+import { useIntersectionObserver } from "../../hooks/use-intersection-observer";
 import { cn } from "../../lib/utils";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "./accordion";
+import BlurText from "./text-animations/blur-text";
 import DecryptedText from "./text-animations/decrypted-text";
 import GlitchText from "./text-animations/glitch-text";
 import { GradientText } from "./text-animations/gradient-text";
 import ShinyText from "./text-animations/shiny-text";
-import TrueFocus from "./text-animations/true-focus";
 import { TextRoll } from "./text-animations/text-roll";
-import { useAnimationSettings } from "../../hooks/use-animation-settings";
-import { useIntersectionObserver } from "../../hooks/use-intersection-observer";
-import BlurText from "./text-animations/blur-text";
 import { TextShimmer } from "./text-animations/text-shimmer";
+import TrueFocus from "./text-animations/true-focus";
 
 export enum TextAnimationType {
   None = "none",
@@ -22,7 +27,7 @@ export enum TextAnimationType {
   Shiny = "shiny",
   Shimmer = "shimmer",
   TrueFocus = "trueFocus",
-  TextRoll = "textRoll"
+  TextRoll = "textRoll",
 }
 
 interface HeroProps {
@@ -46,47 +51,49 @@ interface HeroProps {
   trueFocusGlowColor?: string;
 }
 
-export const Hero = ({ 
-  title, 
-  subtitle, 
-  subtitleAccordionContent, 
-  children, 
-  className, 
-  textAlign = "center", 
+export const Hero = ({
+  title,
+  subtitle,
+  subtitleAccordionContent,
+  children,
+  className,
+  textAlign = "center",
   headerColor,
   subheaderColor = "text-gray-600 dark:text-gray-300",
   accordionColor = "text-gray-300",
-  titleAnimation = TextAnimationType.None, 
+  titleAnimation = TextAnimationType.None,
   subtitleAnimation = TextAnimationType.None,
-  animationSpeed = 50, 
+  animationSpeed = 50,
   glitchSpeed = 0.5,
   gradientColors = ["#a2f4fd", "#a2f4fd", "#a2f4fd"],
   trueFocusBlurAmount = 5,
   trueFocusBorderColor = "green",
-  trueFocusGlowColor = "rgba(0, 255, 0, 0.6)"
+  trueFocusGlowColor = "rgba(0, 255, 0, 0.6)",
 }: HeroProps) => {
   const { animationLightMode } = useAnimationSettings();
-  
+
   // Call all intersection observer hooks at the top level
   const titleIntersection = useIntersectionObserver({
     triggerOnce: true,
-    threshold: 0.2
+    threshold: 0.2,
   });
-  
-  const subtitleIntersection = useIntersectionObserver({
+
+  const _subtitleIntersection = useIntersectionObserver({
     triggerOnce: true,
-    threshold: 0.2
+    threshold: 0.2,
   });
   return (
     <div className={cn("my-8", `text-${textAlign}`, className)}>
-      <h1 className={cn(
-        "mb-4 text-2xl font-bold md:text-5xl font-bitcount",
-        headerColor
-      )}>
+      <h1
+        className={cn(
+          "mb-4 text-2xl font-bold md:text-5xl font-bitcount",
+          headerColor
+        )}
+      >
         {(() => {
           const textStyle = headerColor;
           if (animationLightMode) return title;
-          
+
           switch (titleAnimation) {
             case TextAnimationType.Glitch:
               return (
@@ -191,7 +198,8 @@ export const Hero = ({
           }
         })()}
       </h1>
-      {subtitle && (() => {
+      {subtitle &&
+        (() => {
           const textStyle = headerColor;
           const subtitleContent = subtitleAccordionContent ? (
             <Accordion type="single" collapsible className="mb-6">
@@ -199,15 +207,15 @@ export const Hero = ({
                 <AccordionTrigger className={cn("text-xl", subheaderColor)}>
                   {subtitle}
                 </AccordionTrigger>
-                <AccordionContent className={cn("mx-auto max-w-3xl", accordionColor)}>
+                <AccordionContent
+                  className={cn("mx-auto max-w-3xl", accordionColor)}
+                >
                   {subtitleAccordionContent}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
           ) : (
-            <p className={cn("mb-6 text-xl", subheaderColor)}>
-              {subtitle}
-            </p>
+            <p className={cn("mb-6 text-xl", subheaderColor)}>{subtitle}</p>
           );
 
           if (animationLightMode) return subtitleContent;

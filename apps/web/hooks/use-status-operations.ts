@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback } from 'react';
-import { useStatusData } from './use-consolidated-health-check';
-import { useStatusStore } from '../stores/status-store';
+import { useCallback } from "react";
+import { useStatusStore } from "../stores/status-store";
+import { useStatusData } from "./use-consolidated-health-check";
 
 /**
  * Custom hook for status operations with optimized data fetching and state management
@@ -12,7 +12,7 @@ import { useStatusStore } from '../stores/status-store';
 export function useStatusOperations() {
   // Get status data from centralized source
   const statusData = useStatusData();
-  
+
   // Get store actions (but not the polling logic)
   const {
     setLLMStatus,
@@ -30,66 +30,81 @@ export function useStatusOperations() {
     optimisticLightweightLlmUpdate,
     optimisticConvexUpdate,
     optimisticDockerUpdate,
-    optimisticUserCountUpdate
+    optimisticUserCountUpdate,
   } = useStatusStore();
-  
+
   // Memoized status check functions
   const handleCheckLLMStatus = useCallback(async () => {
     return await checkLLMStatus();
   }, [checkLLMStatus]);
-  
+
   const handleCheckLightweightLlmStatus = useCallback(async () => {
     return await checkLightweightLlmStatus();
   }, [checkLightweightLlmStatus]);
-  
+
   const handleCheckConvexStatus = useCallback(async () => {
     return await checkConvexStatus();
   }, [checkConvexStatus]);
-  
+
   const handleCheckDockerStatus = useCallback(async () => {
     return await checkDockerStatus();
   }, [checkDockerStatus]);
-  
+
   const handleCheckUserCountStatus = useCallback(async () => {
     return await checkUserCountStatus();
   }, [checkUserCountStatus]);
-  
+
   const handleCheckAllStatus = useCallback(async () => {
     return await checkAllStatus();
   }, [checkAllStatus]);
-  
+
   // Optimistic update functions
-  const updateLLMStatusOptimistically = useCallback((partialStatus: Partial<typeof statusData.llmStatus>) => {
-    optimisticLLMUpdate(partialStatus);
-  }, [optimisticLLMUpdate]);
-  
-  const updateLightweightLlmStatusOptimistically = useCallback((partialStatus: Partial<typeof statusData.lightweightLlmStatus>) => {
-    optimisticLightweightLlmUpdate(partialStatus);
-  }, [optimisticLightweightLlmUpdate]);
-  
-  const updateConvexStatusOptimistically = useCallback((partialStatus: Partial<typeof statusData.convexStatus>) => {
-    optimisticConvexUpdate(partialStatus);
-  }, [optimisticConvexUpdate]);
-  
-  const updateDockerStatusOptimistically = useCallback((partialStatus: Partial<typeof statusData.dockerStatus>) => {
-    optimisticDockerUpdate(partialStatus);
-  }, [optimisticDockerUpdate]);
-  
-  const updateUserCountStatusOptimistically = useCallback((partialStatus: Partial<typeof statusData.userCountStatus>) => {
-    optimisticUserCountUpdate(partialStatus);
-  }, [optimisticUserCountUpdate]);
-  
+  const updateLLMStatusOptimistically = useCallback(
+    (partialStatus: Partial<typeof statusData.llmStatus>) => {
+      optimisticLLMUpdate(partialStatus);
+    },
+    [optimisticLLMUpdate]
+  );
+
+  const updateLightweightLlmStatusOptimistically = useCallback(
+    (partialStatus: Partial<typeof statusData.lightweightLlmStatus>) => {
+      optimisticLightweightLlmUpdate(partialStatus);
+    },
+    [optimisticLightweightLlmUpdate]
+  );
+
+  const updateConvexStatusOptimistically = useCallback(
+    (partialStatus: Partial<typeof statusData.convexStatus>) => {
+      optimisticConvexUpdate(partialStatus);
+    },
+    [optimisticConvexUpdate]
+  );
+
+  const updateDockerStatusOptimistically = useCallback(
+    (partialStatus: Partial<typeof statusData.dockerStatus>) => {
+      optimisticDockerUpdate(partialStatus);
+    },
+    [optimisticDockerUpdate]
+  );
+
+  const updateUserCountStatusOptimistically = useCallback(
+    (partialStatus: Partial<typeof statusData.userCountStatus>) => {
+      optimisticUserCountUpdate(partialStatus);
+    },
+    [optimisticUserCountUpdate]
+  );
+
   // Note: Polling is now handled by the centralized HealthCheckProvider
   // Individual components should use the specific status hooks instead
-  
+
   // Use centralized status data
   const { systemHealth, systemReady, statusSummary } = statusData;
-  
+
   return {
     // Status data from centralized source
     ...statusData,
     statusSummary,
-    
+
     // Operations (manual triggers only - polling is centralized)
     checkLLMStatus: handleCheckLLMStatus,
     checkLightweightLlmStatus: handleCheckLightweightLlmStatus,
@@ -97,20 +112,20 @@ export function useStatusOperations() {
     checkDockerStatus: handleCheckDockerStatus,
     checkUserCountStatus: handleCheckUserCountStatus,
     checkAllStatus: handleCheckAllStatus,
-    
+
     // Optimistic updates
     updateLLMStatusOptimistically,
     updateLightweightLlmStatusOptimistically,
     updateConvexStatusOptimistically,
     updateDockerStatusOptimistically,
     updateUserCountStatusOptimistically,
-    
+
     // Direct store actions (for advanced usage)
     setLLMStatus,
     setLightweightLlmStatus,
     setConvexStatus,
     setDockerStatus,
-    setUserCountStatus
+    setUserCountStatus,
   };
 }
 
@@ -119,9 +134,15 @@ export function useStatusOperations() {
  * Now uses centralized data source without individual polling
  */
 export function useLLMStatus() {
-  const { llmStatus, loading, lastUpdated, consecutiveErrors, pollingIntervals } = useStatusData();
+  const {
+    llmStatus,
+    loading,
+    lastUpdated,
+    consecutiveErrors,
+    pollingIntervals,
+  } = useStatusData();
   const { checkLLMStatus, optimisticLLMUpdate } = useStatusStore();
-  
+
   return {
     status: llmStatus,
     loading: loading.llm,
@@ -129,7 +150,7 @@ export function useLLMStatus() {
     consecutiveErrors: consecutiveErrors.llm,
     pollingInterval: pollingIntervals.llm,
     checkStatus: checkLLMStatus,
-    updateOptimistically: optimisticLLMUpdate
+    updateOptimistically: optimisticLLMUpdate,
   };
 }
 
@@ -138,9 +159,16 @@ export function useLLMStatus() {
  * Now uses centralized data source without individual polling
  */
 export function useLightweightLlmStatus() {
-  const { lightweightLlmStatus, loading, lastUpdated, consecutiveErrors, pollingIntervals } = useStatusData();
-  const { checkLightweightLlmStatus, optimisticLightweightLlmUpdate } = useStatusStore();
-  
+  const {
+    lightweightLlmStatus,
+    loading,
+    lastUpdated,
+    consecutiveErrors,
+    pollingIntervals,
+  } = useStatusData();
+  const { checkLightweightLlmStatus, optimisticLightweightLlmUpdate } =
+    useStatusStore();
+
   return {
     status: lightweightLlmStatus,
     loading: loading.lightweightLlm,
@@ -148,7 +176,7 @@ export function useLightweightLlmStatus() {
     consecutiveErrors: consecutiveErrors.lightweightLlm,
     pollingInterval: pollingIntervals.lightweightLlm,
     checkStatus: checkLightweightLlmStatus,
-    updateOptimistically: optimisticLightweightLlmUpdate
+    updateOptimistically: optimisticLightweightLlmUpdate,
   };
 }
 
@@ -157,9 +185,15 @@ export function useLightweightLlmStatus() {
  * Now uses centralized data source without individual polling
  */
 export function useConvexStatus() {
-  const { convexStatus, loading, lastUpdated, consecutiveErrors, pollingIntervals } = useStatusData();
+  const {
+    convexStatus,
+    loading,
+    lastUpdated,
+    consecutiveErrors,
+    pollingIntervals,
+  } = useStatusData();
   const { checkConvexStatus, optimisticConvexUpdate } = useStatusStore();
-  
+
   return {
     status: convexStatus,
     loading: loading.convex,
@@ -167,7 +201,7 @@ export function useConvexStatus() {
     consecutiveErrors: consecutiveErrors.convex,
     pollingInterval: pollingIntervals.convex,
     checkStatus: checkConvexStatus,
-    updateOptimistically: optimisticConvexUpdate
+    updateOptimistically: optimisticConvexUpdate,
   };
 }
 
@@ -176,9 +210,15 @@ export function useConvexStatus() {
  * Now uses centralized data source without individual polling
  */
 export function useUserCountStatus() {
-  const { userCountStatus, loading, lastUpdated, consecutiveErrors, pollingIntervals } = useStatusData();
+  const {
+    userCountStatus,
+    loading,
+    lastUpdated,
+    consecutiveErrors,
+    pollingIntervals,
+  } = useStatusData();
   const { checkUserCountStatus, optimisticUserCountUpdate } = useStatusStore();
-  
+
   return {
     status: userCountStatus,
     loading: loading.userCount,
@@ -186,6 +226,6 @@ export function useUserCountStatus() {
     consecutiveErrors: consecutiveErrors.userCount,
     pollingInterval: pollingIntervals.userCount,
     checkStatus: checkUserCountStatus,
-    updateOptimistically: optimisticUserCountUpdate
+    updateOptimistically: optimisticUserCountUpdate,
   };
 }

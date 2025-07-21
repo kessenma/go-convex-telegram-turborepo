@@ -1,5 +1,5 @@
-import { type FunctionReference, anyApi } from "convex/server";
-import { type GenericId as Id } from "convex/values";
+import { anyApi, type FunctionReference } from "convex/server";
+import type { GenericId as Id } from "convex/values";
 
 export const api: PublicApiType = anyApi as unknown as PublicApiType;
 export const internal: InternalApiType = anyApi as unknown as InternalApiType;
@@ -466,6 +466,44 @@ export type PublicApiType = {
       "query",
       "public",
       { limit?: number; searchTerm: string; userId?: string },
+      any
+    >;
+  };
+  ragSearch: {
+    generateEmbedding: FunctionReference<
+      "action",
+      "public",
+      { text: string },
+      any
+    >;
+    vectorSearch: FunctionReference<
+      "action",
+      "public",
+      {
+        query: string;
+        documentIds?: Array<Id<"rag_documents">>;
+        limit?: number;
+      },
+      any
+    >;
+    ragSearch: FunctionReference<
+      "action",
+      "public",
+      {
+        query: string;
+        documentIds: Array<Id<"rag_documents">>;
+        limit?: number;
+      },
+      any
+    >;
+    getRagContext: FunctionReference<
+      "action",
+      "public",
+      {
+        query: string;
+        documentIds: Array<Id<"rag_documents">>;
+        maxContextLength?: number;
+      },
       any
     >;
   };

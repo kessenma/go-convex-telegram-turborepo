@@ -46,7 +46,7 @@ export default defineSchema({
     .index("by_document_and_chunk", ["documentId", "chunkIndex"])
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
-      dimensions: 768, // sentence-transformers/all-distilroberta-v1 embedding dimensions
+      dimensions: 384, // all-MiniLM-L6-v2 embedding dimensions
       filterFields: ["isActive", "embeddingModel"]
     }),
 

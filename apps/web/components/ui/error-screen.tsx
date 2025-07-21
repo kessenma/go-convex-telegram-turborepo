@@ -1,11 +1,10 @@
 "use client";
 
-import React from "react";
-import { Card } from "./card";
-import { BackgroundGradient } from "./backgrounds/background-gradient";
 import { AlertTriangle, Home } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
+import { BackgroundGradient } from "./backgrounds/background-gradient";
 import RippleGrid from "./backgrounds/ripple-grid";
+import { Card } from "./card";
 
 interface ErrorScreenProps {
   title: string;
@@ -24,7 +23,7 @@ export function ErrorScreen({
   buttonText = "Return to Homepage",
   buttonHref = "/",
   gridColor = "#ff0000",
-  gradientColor = "red"
+  gradientColor = "red",
 }: ErrorScreenProps) {
   return (
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4 relative overflow-hidden">
@@ -45,7 +44,7 @@ export function ErrorScreen({
           mouseInteractionRadius={1.5}
         />
       </div>
-      
+
       {/* Error Card with Background Gradient */}
       <div className="relative z-10">
         <BackgroundGradient color={gradientColor} className="rounded-xl">
@@ -54,9 +53,7 @@ export function ErrorScreen({
               {renderIcon(AlertTriangle, { className: "w-6 h-6 text-red-400" })}
               <h2 className="text-xl font-semibold text-red-300">{title}</h2>
             </div>
-            <p className="text-red-200 mb-4">
-              {message}
-            </p>
+            <p className="text-red-200 mb-4">{message}</p>
             {bulletPoints.length > 0 && (
               <div className="text-sm text-red-300 mb-6">
                 <p>This could be due to:</p>
@@ -101,7 +98,7 @@ export function DatabaseErrorScreen() {
       bulletPoints={[
         "Database server is temporarily down",
         "Network connectivity issues",
-        "Configuration problems"
+        "Configuration problems",
       ]}
     />
   );
@@ -115,7 +112,7 @@ export function RAGUploadErrorScreen() {
       bulletPoints={[
         "Database server is temporarily down",
         "Network connectivity issues",
-        "Configuration problems"
+        "Configuration problems",
       ]}
     />
   );

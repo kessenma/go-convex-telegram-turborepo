@@ -1,50 +1,36 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
-        background: 'var(--background)',
-        foreground: 'var(--foreground)',
-        'curious-cyan': {
-          '50': '#f1f9fe',
-          '100': '#e3f1fb',
-          '200': '#c0e3f7',
-          '300': '#88cdf1',
-          '400': '#48b4e8',
-          '500': '#24a1de',
-          '600': '#137cb6',
-          '700': '#106394',
-          '800': '#12547a',
-          '900': '#144766',
-          '950': '#0d2d44',
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        "curious-cyan": {
+          50: "#f1f9fe",
+          100: "#e3f1fb",
+          200: "#c0e3f7",
+          300: "#88cdf1",
+          400: "#48b4e8",
+          500: "#24a1de",
+          600: "#137cb6",
+          700: "#106394",
+          800: "#12547a",
+          900: "#144766",
+          950: "#0d2d44",
         },
       },
       fontFamily: {
-        'bitcount': ['Audiowide', 'monospace'],
-      },
-      keyframes: {
-        shimmer: {
-          '0%': { backgroundPosition: '100% center' },
-          '100%': { backgroundPosition: '0% center' },
-        },
-        gradient: {
-          '0%': { backgroundPosition: '0% 50%' },
-          '50%': { backgroundPosition: '100% 50%' },
-          '100%': { backgroundPosition: '0% 50%' },
-        },
-      },
-      animation: {
-        gradient: 'gradient 8s linear infinite'
+        bitcount: ["Audiowide", "monospace"],
       },
       keyframes: {
         shine: {
-          '0%': { 'background-position': '100%' },
-          '100%': { 'background-position': '-100%' },
+          "0%": { "background-position": "100%" },
+          "100%": { "background-position": "-100%" },
         },
         glitch: {
           "0%": { "clip-path": "inset(20% 0 50% 0)" },
@@ -71,13 +57,15 @@ export default {
         },
       },
       animation: {
-        gradient: 'gradient 8s linear infinite',
-        shine: 'shine 5s linear infinite',
-        "glitch-after": "glitch var(--after-duration) infinite linear alternate-reverse",
-        "glitch-before": "glitch var(--before-duration) infinite linear alternate-reverse",
-        shimmer: 'shimmer var(--duration,2s) linear infinite',
+        gradient: "gradient 8s linear infinite",
+        shine: "shine 5s linear infinite",
+        "glitch-after":
+          "glitch var(--after-duration) infinite linear alternate-reverse",
+        "glitch-before":
+          "glitch var(--before-duration) infinite linear alternate-reverse",
+        shimmer: "shimmer var(--duration,2s) linear infinite",
       },
     },
   },
   plugins: [],
-}
+};

@@ -1,8 +1,10 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-export function LLMLogs() {
-  const [logs, setLogs] = useState<{ timestamp: number; message: string }[]>([]);
+export function LLMLogs(): React.ReactElement {
+  const [logs, setLogs] = useState<{ timestamp: number; message: string }[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export function LLMLogs() {
       }
     };
     fetchLogs();
-    const interval = setInterval(fetchLogs, 5000);
+    const interval = setInterval(fetchLogs, 30000); // Reduced from 5s to 30s
     return () => clearInterval(interval);
   }, []);
 

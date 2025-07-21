@@ -1,17 +1,18 @@
-"use client"
+"use client";
 
-import React, { useEffect, useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { renderIcon } from "../../lib/icon-utils"
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { renderIcon } from "../../lib/icon-utils";
 
 interface HoverExpandProps {
-  images: string[]
-  captions?: string[]
-  initialSelectedIndex?: number
-  thumbnailHeight?: number
-  maxThumbnails?: number
-  modalImageSize?: number
+  images: string[];
+  captions?: string[];
+  initialSelectedIndex?: number;
+  thumbnailHeight?: number;
+  maxThumbnails?: number;
+  modalImageSize?: number;
 }
 
 export function HoverExpand({
@@ -21,96 +22,106 @@ export function HoverExpand({
   thumbnailHeight = 200,
   maxThumbnails = 11,
 }: HoverExpandProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number>(initialSelectedIndex)
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
-  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }[]>([])
-  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
+  const [selectedIndex, setSelectedIndex] =
+    useState<number>(initialSelectedIndex);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [imageDimensions, setImageDimensions] = useState<
+    { width: number; height: number }[]
+  >([]);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     const updateSize = () => {
       setViewportSize({
         width: window.innerWidth,
-        height: window.innerHeight
-      })
-    }
-    
-    updateSize()
-    window.addEventListener('resize', updateSize)
-    return () => window.removeEventListener('resize', updateSize)
-  }, [])
+        height: window.innerHeight,
+      });
+    };
+
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
 
   const handlePrevious = () => {
-    setSelectedIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
-  }
+    setSelectedIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+  };
 
   const handleNext = () => {
-    setSelectedIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
-  }
+    setSelectedIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+  };
 
   useEffect(() => {
     images.forEach((url, index) => {
-      const img = new Image()
-      img.src = url
+      const img = new Image();
+      img.src = url;
       img.onload = () => {
-        setImageDimensions(prev => {
-          const newDimensions = [...prev]
-          newDimensions[index] = { width: img.naturalWidth, height: img.naturalHeight }
-          return newDimensions
-        })
-      }
-    })
-  }, [images])
+        setImageDimensions((prev) => {
+          const newDimensions = [...prev];
+          newDimensions[index] = {
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+          };
+          return newDimensions;
+        });
+      };
+    });
+  }, [images]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsModalOpen(false)
+        setIsModalOpen(false);
       } else if (isModalOpen) {
         if (event.key === "ArrowLeft") {
-          handlePrevious()
+          handlePrevious();
         } else if (event.key === "ArrowRight") {
-          handleNext()
+          handleNext();
         }
       }
-    }
+    };
 
     if (isModalOpen) {
-      document.body.classList.add("overflow-hidden")
-      document.addEventListener("keydown", handleKeyDown)
+      document.body.classList.add("overflow-hidden");
+      document.addEventListener("keydown", handleKeyDown);
     } else {
-      document.body.classList.remove("overflow-hidden")
+      document.body.classList.remove("overflow-hidden");
     }
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown)
-      document.body.classList.remove("overflow-hidden")
-    }
-  }, [isModalOpen])
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [isModalOpen, handleNext, handlePrevious]);
 
   const getModalDimensions = () => {
-    const dimensions = imageDimensions[selectedIndex]
-    if (!dimensions) return { width: viewportSize.width * 0.9, height: viewportSize.height * 0.9 }
+    const dimensions = imageDimensions[selectedIndex];
+    if (!dimensions)
+      return {
+        width: viewportSize.width * 0.9,
+        height: viewportSize.height * 0.9,
+      };
 
-    const maxWidth = viewportSize.width * 0.9
-    const maxHeight = viewportSize.height * 0.9
-    const aspectRatio = dimensions.width / dimensions.height
+    const maxWidth = viewportSize.width * 0.9;
+    const maxHeight = viewportSize.height * 0.9;
+    const aspectRatio = dimensions.width / dimensions.height;
 
     if (maxWidth / maxHeight > aspectRatio) {
       // Height limited
       return {
         width: maxHeight * aspectRatio,
-        height: maxHeight
-      }
+        height: maxHeight,
+      };
     } else {
       // Width limited
       return {
         width: maxWidth,
-        height: maxWidth / aspectRatio
-      }
+        height: maxWidth / aspectRatio,
+      };
     }
-  }
+  };
 
-  const modalSize = getModalDimensions()
+  const modalSize = getModalDimensions();
 
   return (
     <div className="relative">
@@ -124,8 +135,8 @@ export function HoverExpand({
             onMouseEnter={() => setSelectedIndex(i)}
             onMouseLeave={() => setSelectedIndex(i)}
             onClick={() => {
-              setSelectedIndex(i)
-              setIsModalOpen(true)
+              setSelectedIndex(i);
+              setIsModalOpen(true);
             }}
           >
             <motion.div
@@ -162,7 +173,7 @@ export function HoverExpand({
                     className="relative"
                     style={{
                       width: `${modalSize.width}px`,
-                      height: `${modalSize.height}px`
+                      height: `${modalSize.height}px`,
                     }}
                   >
                     <img
@@ -182,8 +193,8 @@ export function HoverExpand({
               {/* Navigation buttons */}
               <button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  handlePrevious()
+                  e.stopPropagation();
+                  handlePrevious();
                 }}
                 className="absolute left-4 p-2 rounded-full transition-colors bg-black/50 hover:bg-black/70"
               >
@@ -191,8 +202,8 @@ export function HoverExpand({
               </button>
               <button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  handleNext()
+                  e.stopPropagation();
+                  handleNext();
                 }}
                 className="absolute right-4 p-2 rounded-full transition-colors bg-black/50 hover:bg-black/70"
               >
@@ -203,5 +214,5 @@ export function HoverExpand({
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

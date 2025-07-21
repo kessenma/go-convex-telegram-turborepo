@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Navigation from "../components/Navigation";
-import { ConvexClientProvider } from "../providers/ConvexClientProvider";
-import { NotificationsProvider } from "../contexts/NotificationsContext";
-import { SessionProvider } from "../components/SessionProvider";
-import { HealthCheckProvider } from "../components/providers/health-check-provider";
-import { CookieConsentProvider } from "../components/ui/cookie-consent-modal";
 import { Toaster } from "sonner";
+import Navigation from "../components/Navigation";
+import { HealthCheckProvider } from "../components/providers/health-check-provider";
+import { SessionProvider } from "../components/SessionProvider";
+import { CookieConsentProvider } from "../components/ui/cookie-consent-modal";
+import { NotificationsProvider } from "../contexts/NotificationsContext";
+import { ConvexClientProvider } from "../providers/ConvexClientProvider";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -28,8 +28,15 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className={`${geistSans.variable} bg-slate-950 text-white`}>
         <ConvexClientProvider>
