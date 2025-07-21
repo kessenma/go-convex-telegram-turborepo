@@ -55,16 +55,25 @@ Key settings to verify:
 
 ### 4. Run Deployment Script
 
-From the project root, run:
+There are two deployment scripts available:
 
+**Option A: From project root (recommended)**
 ```bash
 ./deploy-convex-prod.sh
 ```
 
-The script will:
+**Option B: From docker-convex directory**
+```bash
+cd apps/docker-convex
+./deploy-convex-prod.sh
+```
+
+Both scripts will:
 - Find your Convex backend container automatically
-- Wait for it to be healthy
+- Detect the correct server IP and port mappings
+- Wait for the container to be healthy
 - Install Convex CLI if needed
+- Update .env.docker with correct server configuration
 - Deploy your functions using the self-hosted configuration
 
 ## Troubleshooting
@@ -77,9 +86,23 @@ If you get "Could not find convex-backend container":
 2. Verify container names: `docker ps --format "table {{.Names}}\t{{.Status}}"`
 3. Make sure your docker-compose.yaml uses `convex-backend` as the service name
 
-### HTTP Actions Not Enabled Error
+### HTTP Actions Not Enabled Error / 404 on /api/prepare_schema
 
-This error occurs when trying to use cloud deployment methods with self-hosted Convex. The fixed script uses the proper self-hosted deployment approach.
+If you see errors like:
+```
+Error fetching POST `http://157.180.80.201:3211/api/prepare_schema` 404 Not Found
+This Convex deployment does not have HTTP actions enabled.
+```
+
+This occurs when:
+1. The deployment script is trying to connect to the wrong URL/port
+2. Using cloud deployment methods with self-hosted Convex
+3. Environment variables are not properly configured
+
+**Solution:**
+- Use the updated deployment scripts that automatically detect server IP and ports
+- Ensure you're using port 3210 (backend) not 3211 (site proxy) for deployment
+- The scripts now dynamically update .env.docker with correct configuration
 
 ### Permission Denied
 

@@ -34,8 +34,6 @@ cd "$PROJECT_ROOT/apps/docker-convex"
 if [ ! -f ".env.docker" ]; then
   echo "📝 Creating .env.docker from example..."
   cp .env.docker.example .env.docker
-  echo "⚠️  Please edit .env.docker with your configuration before running again."
-  exit 1
 fi
 
 # Install Convex CLI if not present
@@ -44,9 +42,30 @@ if ! command -v convex &> /dev/null; then
   npm install convex@latest --no-save
 fi
 
+# Get the actual server IP and port for self-hosted deployment
+# Use the container's exposed port mapping to find the correct URL
+SERVER_IP=$(curl -s ifconfig.me || echo "localhost")
+CONVEX_PORT=$(docker port "$BACKEND_CONTAINER" 3210 | cut -d: -f2)
+CONVEX_SITE_PORT=$(docker port "$BACKEND_CONTAINER" 3211 | cut -d: -f2)
+
+if [ -z "$CONVEX_PORT" ]; then
+  echo "❌ Could not determine Convex backend port mapping"
+  exit 1
+fi
+
 # Set environment variables for self-hosted deployment
-export CONVEX_SELF_HOSTED_URL=http://localhost:3210
-export CONVEX_URL=http://localhost:3210
+export CONVEX_SELF_HOSTED_URL=http://$SERVER_IP:$CONVEX_PORT
+export CONVEX_URL=http://$SERVER_IP:$CONVEX_PORT
+
+echo "🔗 Using Convex URL: $CONVEX_URL"
+
+# Update .env.docker with the correct server configuration
+echo "📝 Updating .env.docker with server configuration..."
+sed -i.bak "s|CONVEX_URL=.*|CONVEX_URL=$CONVEX_URL|g" .env.docker
+sed -i.bak "s|CONVEX_SELF_HOSTED_URL=.*|CONVEX_SELF_HOSTED_URL=$CONVEX_URL|g" .env.docker
+sed -i.bak "s|CONVEX_CLOUD_ORIGIN=.*|CONVEX_CLOUD_ORIGIN=$CONVEX_URL|g" .env.docker
+sed -i.bak "s|NEXT_PUBLIC_DEPLOYMENT_URL=.*|NEXT_PUBLIC_DEPLOYMENT_URL=$CONVEX_URL|g" .env.docker
+rm -f .env.docker.bak
 
 # Deploy using the self-hosted configuration
 echo "🚀 Deploying Convex functions..."
