@@ -2,7 +2,7 @@
 set -e
 
 # Get root of project so the script works from anywhere
-PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "⏳ Waiting for Convex backend to be healthy…"
 
@@ -42,17 +42,20 @@ if ! command -v convex &> /dev/null; then
   npm install convex@latest --no-save --legacy-peer-deps
 fi
 
-# Get the actual server IP and port for self-hosted deployment
-# Force IPv4 to avoid IPv6 URL issues with Convex CLI
-SERVER_IP=$(curl -4 -s ifconfig.me 2>/dev/null || curl -s ipv4.icanhazip.com 2>/dev/null || echo "localhost")
-CONVEX_PORT=$(docker port "$BACKEND_CONTAINER" 3210 | cut -d: -f2)
-CONVEX_SITE_PORT=$(docker port "$BACKEND_CONTAINER" 3211 | cut -d: -f2)
-
-# Validate that we got an IPv4 address
-if [[ ! $SERVER_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-  echo "⚠️  Could not get valid IPv4 address, using localhost"
+# Determine if we're in production by checking hostname
+if [[ $(hostname) == *"rag-ubuntu"* ]]; then
+  # Production environment - use actual server IP
+  SERVER_IP="157.180.80.201"
+  echo "🌎 Using production server IP: $SERVER_IP"
+else
+  # Local environment - use localhost
   SERVER_IP="localhost"
+  echo "💻 Using localhost for local deployment"
 fi
+
+# Set standard ports
+CONVEX_PORT=3210
+CONVEX_SITE_PORT=3211
 
 if [ -z "$CONVEX_PORT" ]; then
   echo "❌ Could not determine Convex backend port mapping"

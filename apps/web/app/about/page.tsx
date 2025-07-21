@@ -292,7 +292,7 @@ export default function AboutPage(): React.ReactElement {
         <div className="mx-auto max-w-4xl text-center">
           <Hero
             title="Self-hosted RAG chatbot "
-            subtitle="Features and credits"
+            subtitle="ethos, features, credits"
             className="mb-8"
             titleAnimation={TextAnimationType.Decrypt}
             subtitleAnimation={TextAnimationType.Decrypt}
@@ -319,7 +319,7 @@ export default function AboutPage(): React.ReactElement {
           <div className="mx-auto max-w-2xl text-left">
             <DecryptedText
               text={
-                "Honeslty, I am getting a lot of cold-calls from recruiters for AI + ML engineer roles lately and I am sick of taking their monkey-brain leetcode assessments so I would rather show my compentencey here. I also want to contrubute some meaningful open-source code that others can build off."
+                "fuelled by rage against the avalanche of leetcode assessments for recruiters looking for developers to build AI + ML apps-- decided I would rather take a stab at making my own AI app instead."
               }
               animateOn="view"
               sequential={false}

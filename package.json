@@ -57,11 +57,11 @@
     "convex:dev": "docker compose up convex-backend convex-dashboard -d",
     "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages",
     "docker:web-reset": "docker compose stop web-dashboard && docker compose rm -f web-dashboard && docker compose up web-dashboard -d",
-    "docker:llm-transformer-logs": "docker logs telegram-bot-vector-convert-llm-1 --tail 100",
-    "docker:llm-logs": "docker logs telegram-bot-lightweight-llm-1 --tail 100",
-    "docker:llm-logs-follow": "docker logs telegram-bot-lightweight-llm-1 --follow",
-    "docker:web-app-logs": "docker logs telegram-bot-web-dashboard-1 --tail 100",
-    "docker:convex-backend-logs": "docker logs telegram-bot-convex-backend-1 --tail 100",
+    "docker:llm-transformer-logs": "docker logs vector-convert-llm-ws8cookc04c44cs8cswcskow-195127441179 --tail 100",
+    "docker:llm-logs": "docker logs lightweight-llm-ws8cookc04c44cs8cswcskow-195127443343 --tail 100",
+    "docker:llm-logs-follow": "docker logs lightweight-llm-ws8cookc04c44cs8cswcskow-195127443343 --follow",
+    "docker:web-app-logs": "docker logs web-dashboard-ws8cookc04c44cs8cswcskow-195127444758 --tail 100",
+    "docker:convex-backend-logs": "docker logs convex-backend-ws8cookc04c44cs8cswcskow-195127375237 --tail 100",
     "docker:logs-all": "pnpm docker:web-app-logs && pnpm docker:convex-backend-logs && pnpm docker:llm-transformer-logs && pnpm docker:llm-logs"
   },
   "devDependencies": {

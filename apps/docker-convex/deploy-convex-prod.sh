@@ -61,4 +61,8 @@ fi
 # Deploy using the self-hosted target (skips the cloud login prompt)
 npx convex deploy -y --env-file .env.docker
 
+# Generate and deploy the API
+cd "$PROJECT_ROOT"
+./helper-scripts/deploy-convex-api.sh
+
 echo "✅ Convex production deployment complete!"
