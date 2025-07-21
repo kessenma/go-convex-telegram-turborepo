@@ -225,6 +225,7 @@ services:
     labels:
       caddy: rag-bot.chat
       caddy.reverse_proxy: "{{upstreams 3000}}"
+      caddy.network: coolify 
       caddy.tls: "internal" 
     depends_on:
       convex-backend:
