@@ -139,6 +139,20 @@ export type PublicApiType = {
       { limit?: number; searchTerm: string },
       any
     >;
+    saveDocumentsBatch: FunctionReference<
+      "mutation",
+      "public",
+      {
+        documents: Array<{
+          content: string;
+          contentType: string;
+          summary?: string;
+          tags?: Array<string>;
+          title: string;
+        }>;
+      },
+      any
+    >;
     getDocumentStats: FunctionReference<
       "query",
       "public",

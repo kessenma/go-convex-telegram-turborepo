@@ -1,1 +1,1 @@
-./deploy-convex.sh && docker-compose restart convex-backend
+./helper-scripts/deploy-convex.sh && docker-compose restart convex-backend

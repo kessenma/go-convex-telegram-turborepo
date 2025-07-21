@@ -286,7 +286,7 @@ echo "✅ Web dashboard prepared"
 echo ""
 echo "📱 Mobile App Environment Setup"
 echo "==============================="
-./setup-mobile.sh
+./helper-scripts/setup-mobile.sh
 
 # Vector Convert LLM Service Setup
 echo ""

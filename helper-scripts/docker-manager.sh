@@ -164,4 +164,4 @@ case $choice in
 esac
 
 echo ""
-echo "🔄 Run './docker-manager.sh' again to perform another action."
+echo "🔄 Run './helper-scripts/docker-manager.sh' again to perform another action."

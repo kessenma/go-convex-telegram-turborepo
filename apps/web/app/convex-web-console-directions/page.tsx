@@ -79,16 +79,16 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
               is running):
             </p>
             <div className="mb-4 space-y-3">
-              <div className="p-4 bg-slate-800/80 rounded-lg border border-slate-700/50">
+              <div className="p-3 sm:p-4 bg-slate-800/80 rounded-lg border border-slate-700/50">
                 <div className="flex justify-between items-center">
-                  <code className="flex-1 text-sm text-slate-200">
+                  <code className="flex-1 text-xs sm:text-sm text-slate-200 break-all">
                     cd /path/to/go-convex-telegram-turborepo
                   </code>
                 </div>
               </div>
-              <div className="p-4 bg-slate-800/80 rounded-lg border border-slate-700/50">
-                <div className="flex justify-between items-center">
-                  <code className="flex-1 text-sm text-slate-200">
+              <div className="p-3 sm:p-4 bg-slate-800/80 rounded-lg border border-slate-700/50">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                  <code className="flex-1 text-xs sm:text-sm text-slate-200 break-all">
                     pnpm run get-admin-key
                   </code>
                   <button
@@ -97,7 +97,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
                     }}
-                    className="p-1 ml-2 text-slate-400 transition-colors hover:text-cyan-400"
+                    className="p-1 sm:ml-2 text-slate-400 transition-colors hover:text-cyan-400 self-end sm:self-auto"
                     title="Copy command"
                   >
                     {copied ? (
@@ -123,13 +123,13 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
         <div className="w-full text-left">
           <Card className="mb-2 bg-slate-900/95 border-slate-700/50 backdrop-blur-sm">
             <div className="flex justify-center items-center rounded-3xl -py-4">
-              <h3 className="text-xl font-semibold text-slate-100">
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-100">
                 Login to Dashboard
               </h3>
             </div>
           </Card>
 
-          <BackgroundGradient className="rounded-[22px] p-6 bg-slate-950/90 backdrop-blur-sm">
+          <BackgroundGradient className="rounded-[22px] p-4 sm:p-6 bg-slate-950/90 backdrop-blur-sm">
             {/* Convex Logo Card */}
             <Card className="mb-2 bg-slate-900/80 border-slate-700/50">
               <div className="flex justify-center items-center -py-4">
@@ -148,7 +148,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                   Deployment URL
                 </label>
                 <div className="px-3 py-2 bg-slate-800/80 rounded-lg border border-slate-600/50">
-                  <code className="text-sm text-slate-200">
+                  <code className="text-xs sm:text-sm text-slate-200 break-all">
                     {deploymentUrl}
                   </code>
                 </div>
@@ -163,7 +163,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                 </label>
                 <div className="relative">
                   <div className="px-3 py-2 pr-10 bg-slate-800/80 rounded-lg border border-slate-600/50">
-                    <code className="text-sm text-slate-200">
+                    <code className="text-xs sm:text-sm text-slate-200 break-all">
                       {showAdminKey
                         ? "your-generated-admin-key-here"
                         : "••••••••••••••••••••••••••••"}
@@ -207,13 +207,13 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
         <div className="w-full text-left">
           <Card className="mb-2 bg-slate-900/95 border-slate-700/50 backdrop-blur-sm">
             <div className="flex justify-center items-center rounded-2xl -py-4">
-              <h3 className="text-xl font-semibold text-slate-100">
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-100">
                 What You&apos;ll See After Login
               </h3>
             </div>
           </Card>
-          <div className="mx-auto max-w-2xl">
-            <BackgroundGradient className="rounded-[22px] p-6 bg-slate-950/90 backdrop-blur-sm">
+          <div className="mx-auto w-full max-w-2xl">
+            <BackgroundGradient className="rounded-[22px] p-4 sm:p-6 bg-slate-950/90 backdrop-blur-sm">
               {/* Dashboard Header */}
               <Card className="mb-4 bg-cyan-950/80 border-cyan-800/50">
                 <div className="flex justify-between items-center">
@@ -234,22 +234,22 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
               {/* Navigation Tabs */}
               <Card className="mb-4 bg-slate-900/80 border-slate-700/50">
                 <div className="flex flex-wrap gap-1 p-1 bg-slate-800/80 rounded-lg">
-                  <div className="px-3 py-1 text-sm font-medium text-white rounded bg-cyan-600">
+                  <div className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-white rounded bg-cyan-600">
                     Tables
                   </div>
-                  <div className="px-3 py-1 text-sm text-slate-400 rounded">
+                  <div className="px-2 sm:px-3 py-1 text-xs sm:text-sm text-slate-400 rounded">
                     Data
                   </div>
-                  <div className="px-3 py-1 text-sm text-slate-400 rounded">
+                  <div className="px-2 sm:px-3 py-1 text-xs sm:text-sm text-slate-400 rounded">
                     Functions
                   </div>
-                  <div className="px-3 py-1 text-sm text-slate-400 rounded">
+                  <div className="px-2 sm:px-3 py-1 text-xs sm:text-sm text-slate-400 rounded">
                     Files
                   </div>
-                  <div className="px-3 py-1 text-sm text-slate-400 rounded">
+                  <div className="px-2 sm:px-3 py-1 text-xs sm:text-sm text-slate-400 rounded">
                     Schedules
                   </div>
-                  <div className="px-3 py-1 text-sm text-slate-400 rounded">
+                  <div className="px-2 sm:px-3 py-1 text-xs sm:text-sm text-slate-400 rounded">
                     Logs
                   </div>
                 </div>
@@ -293,7 +293,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
               </Card>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Card className="bg-cyan-950/50 border-cyan-800/50">
                   <div className="text-center">
                     <Database className="mx-auto mb-2 w-6 h-6 text-cyan-400" />
@@ -369,9 +369,9 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
       />
 
       {/* Content Container */}
-      <div className="flex relative z-20 flex-col justify-center items-center px-4 pt-24 pb-20 min-h-screen">
+      <div className="flex relative z-20 flex-col justify-center items-center px-4 pt-24 pb-20 min-h-screen bg-slate-950">
         {/* Hero Section */}
-        <div className="mx-auto mb-8 max-w-4xl text-center">
+        <div className="mx-auto mb-8 w-full max-w-4xl text-center">
           <Hero
             title="Convex Web Console"
             subtitle="Access your Convex database dashboard and manage your data"
@@ -379,10 +379,10 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
           />
         </div>
 
-        <main className="mx-auto max-w-4xl text-center">
+        <main className="mx-auto w-full max-w-4xl text-center">
           {/* Prerequisites Accordion */}
-          <div className="mb-8">
-            <Accordion className="pr-8 pl-8 w-full rounded-xl border-2 hover:border-cyan-500 hover:border-2 border-slate-700/50 bg-slate-900/80 backdrop-blur-sm">
+          <div className="mb-8 w-full">
+            <Accordion className="px-4 sm:px-8 w-full rounded-xl border-2 hover:border-cyan-500 hover:border-2 border-slate-700/50 bg-slate-900/80 backdrop-blur-sm">
               <AccordionItem value="prerequisites">
                 <AccordionTrigger className="text-left hover:no-underline group">
                   <div className="flex justify-between items-center w-full">
@@ -416,8 +416,8 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                       <p className="mb-2 text-sm text-slate-200">
                         <strong>To start the required services:</strong>
                       </p>
-                      <div className="flex justify-between items-center">
-                        <code className="flex-1 text-sm text-slate-200 bg-slate-800/80 p-2 rounded">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                        <code className="flex-1 text-sm text-slate-200 bg-slate-800/80 p-2 rounded break-all">
                           pnpm setup-init
                         </code>
                         <button
@@ -428,7 +428,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                             setCopied(true);
                             setTimeout(() => setCopied(false), 2000);
                           }}
-                          className="p-1 ml-2 text-slate-400 transition-colors hover:text-cyan-400"
+                          className="p-1 sm:ml-2 text-slate-400 transition-colors hover:text-cyan-400 self-end sm:self-auto"
                           title="Copy command"
                         >
                           {copied ? (
@@ -450,7 +450,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
           </div>
 
           {/* Dashboard Access Cards */}
-          <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 w-full">
             <Card className="text-left bg-slate-900/90 border-slate-700/50 backdrop-blur-sm">
               <div className="flex items-center mb-4">
                 <Info className="mr-2 w-6 h-6 text-cyan-500" />
@@ -489,9 +489,8 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                     showLabel={false}
                   />
                   <span
-                    className={`text-sm font-bold ${
-                      isConnected ? "text-cyan-400" : "text-yellow-400"
-                    }`}
+                    className={`text-sm font-bold ${isConnected ? "text-cyan-400" : "text-yellow-400"
+                      }`}
                   >
                     {isConnected ? "Connected" : "Connecting..."}
                   </span>
@@ -504,7 +503,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                 </p>
               </div>
               <div className="text-sm text-slate-400">
-                <code className="px-2 py-1 bg-slate-800/80 rounded border border-slate-700/50">
+                <code className="px-2 py-1 bg-slate-800/80 rounded border border-slate-700/50 break-all text-xs sm:text-sm">
                   {deploymentUrl}
                 </code>
               </div>
@@ -512,9 +511,11 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
           </div>
 
           {/* Timeline Steps */}
-          <Timeline data={timelineData} />
+          <div className="w-full">
+            <Timeline data={timelineData} />
+          </div>
 
-          <Card className="mx-auto mt-6 mb-12 max-w-2xl text-left bg-slate-900/90 border-slate-700/50 backdrop-blur-sm">
+          <Card className="mx-auto mt-6 mb-12 w-full max-w-2xl text-left bg-slate-900/90 border-slate-700/50 backdrop-blur-sm">
             <h4 className="mb-3 text-lg font-semibold text-slate-200">
               Why Convex is Powerful
             </h4>
@@ -556,7 +557,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
             </div>
           </Card>
 
-          <div className="p-6 rounded-xl border bg-cyan-950/50 border-cyan-800/50 backdrop-blur-sm">
+          <div className="p-4 sm:p-6 rounded-xl border bg-cyan-950/50 border-cyan-800/50 backdrop-blur-sm w-full">
             <div className="flex justify-center items-center mb-2">
               <Info className="mr-2 w-5 h-5 text-cyan-400" />
               <h4 className="font-semibold text-cyan-100">Need Help?</h4>

@@ -1171,6 +1171,95 @@ export const getLightweightLLMStatusAPI = httpAction(async (ctx, request) => {
 // =============================================================================
 
 // Get active user count
+// Update or create user session
+export const updateUserSessionAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const {
+      sessionId,
+      userId,
+      userAgent,
+      source = "web",
+      metadata,
+      action,
+    } = body;
+
+    if (!sessionId) {
+      return new Response(
+        JSON.stringify({ 
+          status: "error", 
+          message: "Session ID is required" 
+        }),
+        { 
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    // Handle session end action
+    if (action === "end") {
+      await ctx.runMutation(api.userSessions.endSession, {
+        sessionId,
+      });
+
+      return new Response(
+        JSON.stringify({
+          status: "success",
+          message: "Session ended successfully",
+        }),
+        { 
+          status: 200,
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type"
+          }
+        }
+      );
+    }
+
+    // Create or update session (default behavior)
+    await ctx.runMutation(api.userSessions.upsertSession, {
+      sessionId,
+      userId,
+      userAgent,
+      source,
+      metadata: metadata ? JSON.stringify(metadata) : undefined,
+    });
+
+    return new Response(
+      JSON.stringify({
+        status: "success",
+        message: "Session updated successfully",
+      }),
+      { 
+        status: 200,
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error updating session:", error);
+    return new Response(
+      JSON.stringify({
+        status: "error",
+        message: "Failed to update session",
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+});
+
 export const getActiveUserCountAPI = httpAction(async (ctx, request) => {
   try {
     const userCount = await ctx.runQuery(api.userSessions.getActiveUserCount);
@@ -1276,6 +1365,12 @@ http.route({
   path: "/api/users/active-count",
   method: "GET",
   handler: getActiveUserCountAPI,
+});
+
+http.route({
+  path: "/api/users/active-count",
+  method: "POST",
+  handler: updateUserSessionAPI,
 });
 
 http.route({

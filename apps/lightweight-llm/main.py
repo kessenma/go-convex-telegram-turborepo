@@ -97,7 +97,7 @@ def load_model():
             f16_kv=True,    # Use 16-bit for key-value cache
         )
         
-        logger.info("Phi-3 model loaded successfully")
+        logger.info("Llama 3.2 model loaded successfully")
         logger.info(f"Memory usage after loading: {get_memory_usage()}")
         
     except Exception as e:
