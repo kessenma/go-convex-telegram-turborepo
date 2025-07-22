@@ -48,8 +48,8 @@ export function CookieConsentModal({
               {renderIcon(Cookie, {
                 className: "h-6 w-6 text-curious-cyan-400",
               })}
-              <ResponsiveModalTitle className="text-xl">
-                Cookie and Privacy Notice
+              <ResponsiveModalTitle className="text-xl text-cyan-50">
+                Cookie, Data Storage and Privacy Notice
               </ResponsiveModalTitle>
             </motion.div>
             <ResponsiveModalDescription className="space-y-4 text-left">
@@ -73,7 +73,7 @@ export function CookieConsentModal({
                       "h-5 w-5 text-curious-cyan-500 mt-0.5 flex-shrink-0",
                   })}
                   <div>
-                    <h4 className="font-medium text-foreground">
+                    <h4 className="font-medium text-cyan-50">
                       Anonymous Analytics
                     </h4>
                     <p className="ml-4 text-sm text-muted-foreground">
@@ -89,7 +89,7 @@ export function CookieConsentModal({
                       "h-5 w-5 text-curious-cyan-500 mt-0.5 flex-shrink-0",
                   })}
                   <div>
-                    <h4 className="font-medium text-foreground">
+                    <h4 className="font-medium text-cyan-50">
                       Animation Preferences
                     </h4>
                     <p className="ml-4 text-sm text-muted-foreground">
@@ -106,17 +106,18 @@ export function CookieConsentModal({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5, duration: 0.4 }}
               >
-                <h4 className="mb-2 font-medium text-foreground">
+                <h4 className="mb-2 font-medium text-cyan-50">
                   By agreeing to use this site you consent to cookies stored in
                   your browser.
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  We do not collect personal information, track individual
+                  This app does not collect personal information, track individual
                   users, or share data with third parties. All analytics are
                   aggregated and anonymous. If you send a message to the
                   Telegram Bot it will show up here for others to see + reply to
                   your message (you can leave the thread in Telegram to not
-                  recieve the messages if you'd like though)
+                  recieve the messages if you'd like though). At this time
+                  the app is in beta and all data may be cleared at any. 
                 </p>
               </motion.div>
             </ResponsiveModalDescription>

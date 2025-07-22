@@ -34,6 +34,14 @@ export function NotificationsProvider({
 export function useNotifications() {
   const context = useContext(NotificationsContext);
   if (context === undefined) {
+    // During prerendering, return a default context instead of throwing
+    if (typeof window === 'undefined') {
+      return {
+        isOpen: false,
+        openNotifications: () => {},
+        closeNotifications: () => {},
+      };
+    }
     throw new Error(
       "useNotifications must be used within a NotificationsProvider"
     );

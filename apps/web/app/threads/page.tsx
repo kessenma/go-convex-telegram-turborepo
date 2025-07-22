@@ -1,4 +1,7 @@
 "use client";
+
+export const dynamic = "force-dynamic";
+
 import { useQuery } from "convex/react";
 import type React from "react";
 import { useState } from "react";

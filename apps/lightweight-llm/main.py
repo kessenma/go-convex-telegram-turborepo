@@ -62,15 +62,43 @@ class HealthResponse(BaseModel):
 
 def get_memory_usage():
     """Get current memory usage statistics"""
-    process = psutil.Process()
-    memory_info = process.memory_info()
-    
-    return {
-        "rss_mb": round(memory_info.rss / 1024 / 1024, 2),
-        "vms_mb": round(memory_info.vms / 1024 / 1024, 2),
-        "percent": round(process.memory_percent(), 2),
-        "available_mb": round(psutil.virtual_memory().available / 1024 / 1024, 2)
-    }
+    try:
+        process = psutil.Process()
+        memory_info = process.memory_info()
+        memory_percent = process.memory_percent()
+        cpu_percent = process.cpu_percent(interval=0.1)  # Get CPU usage
+        
+        # Get system memory info
+        system_memory = psutil.virtual_memory()
+        
+        return {
+            "process_memory_mb": round(memory_info.rss / 1024 / 1024, 2),
+            "process_memory_percent": round(memory_percent, 2),
+            "process_cpu_percent": round(cpu_percent, 2),
+            "system_memory_total_gb": round(system_memory.total / 1024 / 1024 / 1024, 2),
+            "system_memory_available_gb": round(system_memory.available / 1024 / 1024 / 1024, 2),
+            "system_memory_used_percent": round(system_memory.percent, 2),
+            # Legacy fields for backward compatibility
+            "rss_mb": round(memory_info.rss / 1024 / 1024, 2),
+            "vms_mb": round(memory_info.vms / 1024 / 1024, 2),
+            "percent": round(memory_percent, 2),
+            "available_mb": round(psutil.virtual_memory().available / 1024 / 1024, 2)
+        }
+    except Exception as e:
+        logger.error(f"Error getting memory usage: {e}")
+        return {
+            "process_memory_mb": 0,
+            "process_memory_percent": 0,
+            "process_cpu_percent": 0,
+            "system_memory_total_gb": 0,
+            "system_memory_available_gb": 0,
+            "system_memory_used_percent": 0,
+            "rss_mb": 0,
+            "vms_mb": 0,
+            "percent": 0,
+            "available_mb": 0,
+            "error": str(e)
+        }
 
 def load_model():
     """Load the Phi-3 GGUF model using llama-cpp-python"""

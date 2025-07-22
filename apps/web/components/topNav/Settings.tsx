@@ -3,17 +3,17 @@
 import { motion } from "framer-motion";
 import { Settings as SettingsIcon, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import { ExpandableCard } from "../components/ui/expandable-card-reusable";
-import { ScrollArea } from "../components/ui/scroll-area";
-import { useOutsideClick } from "../hooks/use-outside-clicks";
-import { renderIcon } from "../lib/icon-utils";
-import { cn, getCookie, setCookie } from "../lib/utils";
-import { ConvexStatusIndicator } from "./convex/convex-status-indicator";
+import { ExpandableCard } from "../../components/ui/expandable-card-reusable";
+import { ScrollArea } from "../../components/ui/scroll-area";
+import { useOutsideClick } from "../../hooks/use-outside-clicks";
+import { renderIcon } from "../../lib/icon-utils";
+import { cn, getCookie, setCookie } from "../../lib/utils";
+import { ConvexStatusIndicator } from "./../convex/convex-status-indicator";
 import { DockerStatus } from "./docker-status";
-import { LightweightLLMStatusIndicator } from "./rag/lightweight-llm-status-indicator";
-import { LLMStatusIndicator } from "./rag/llm-status-indicator";
-import { UserCountIndicator } from "./user-count/user-count-indicator";
-import { ChangelogModal } from "./change-log/ChangelogModal";
+import { LightweightLLMStatusIndicator } from "./../rag/lightweight-llm-status-indicator";
+import { LLMStatusIndicator } from "./../rag/llm-status-indicator";
+import { UserCountIndicator } from "./../user-count/user-count-indicator";
+import { ChangelogModal } from "./../change-log/ChangelogModal";
 
 interface SettingsProps {
   className?: string;
@@ -184,7 +184,7 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
         <ScrollArea className="h-[calc(min(60vh,500px))] overflow-y-auto">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold text-right text-white">
                 Settings
               </h2>
               <button
@@ -200,7 +200,7 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
             <div className="space-y-6">
               {/* System Status Section */}
               <div>
-                <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                <h3 className="mb-3 text-sm font-medium text-right text-white">
                   System Status
                 </h3>
                 <motion.div
@@ -291,7 +291,7 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
 
               {/* Settings Section */}
               <div>
-                <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                <h3 className="mb-3 text-sm font-medium text-right text-white">
                   Preferences
                 </h3>
                 <motion.div
@@ -317,7 +317,7 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                     }}
                   >
                     <div>
-                      <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                      <h3 className="text-sm font-medium text-white">
                         Animation Light Mode
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -353,7 +353,7 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
               
               {/* Changelog Section */}
               <div>
-                <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                <h3 className="mb-3 text-sm font-medium text-white">
                   Project Updates
                 </h3>
                 <motion.div
@@ -383,7 +383,7 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                         Stay updated with the latest changes and improvements to the project.
                       </p>
                       
-                      <div className="flex justify-center">
+                      <div className="flex justify-center gap-4">
                         <ChangelogModal 
                           trigger={
                             <button className="flex gap-1 items-center text-sm text-cyan-500 transition-colors hover:text-cyan-600">
@@ -392,6 +392,12 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                           }
                           maxCommits={-1}
                         />
+                        <a 
+                          href="/system-status" 
+                          className="flex gap-1 items-center text-sm text-emerald-500 transition-colors hover:text-emerald-600"
+                        >
+                          System Status
+                        </a>
                       </div>
                     </div>
                   </motion.div>

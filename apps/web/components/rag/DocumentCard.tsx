@@ -59,8 +59,8 @@ const DocumentCard = memo(function DocumentCard({
     }
   };
 
-  const createDocumentPapers = (doc: UploadedDocument) => {
-    const papers = [];
+  const createDocumentPapers = (doc: UploadedDocument): React.ReactNode[] => {
+    const papers: React.ReactNode[] = [];
 
     // First paper: Document icon and title
     papers.push(

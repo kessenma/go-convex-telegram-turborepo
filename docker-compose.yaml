@@ -91,7 +91,7 @@ services:
             memory: 64M
       environment:
         - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-        - CONVEX_URL=http://convex-backend:3211
+        - CONVEX_URL=http://convex-backend:3210
         - CONVEX_INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
         - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:8081
       depends_on:
@@ -120,7 +120,7 @@ services:
       - "8081:8081"
     environment:
       - PORT=8081
-      - CONVEX_URL=http://convex-backend:3211
+      - CONVEX_URL=http://convex-backend:3210
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
       - TRANSFORMERS_CACHE=/app/cache/transformers
@@ -203,8 +203,8 @@ services:
       - NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL:-http://localhost:3210}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}
       - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
-      - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3211}
-      - CONVEX_HTTP_URL=${CONVEX_HTTP_URL:-http://convex-backend:3211}
+      - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3210}
+      - CONVEX_HTTP_URL=${CONVEX_HTTP_URL:-http://convex-backend:3210}
       - VECTOR_CONVERT_LLM_INTERNAL_URL=${VECTOR_CONVERT_LLM_INTERNAL_URL:-http://vector-convert-llm:8081}
       - VECTOR_CONVERT_LLM_URL=${VECTOR_CONVERT_LLM_URL:-http://vector-convert-llm:8081}
       - NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL=${NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL:-http://vector-convert-llm:8081}

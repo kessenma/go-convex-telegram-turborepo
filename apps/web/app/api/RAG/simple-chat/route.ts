@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 2: Try vector search first
-    let sources = [];
+    let sources: any[] = [];
     let context = "";
     
     try {

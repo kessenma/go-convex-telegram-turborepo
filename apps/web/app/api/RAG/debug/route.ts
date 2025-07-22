@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Test query embedding generation
-    let queryEmbedding = null;
+    let queryEmbedding: any = null;
     try {
       console.log("🧮 Testing query embedding generation...");
       queryEmbedding = await convex.action(api.embeddings.generateEmbedding, {
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       },
       queryEmbedding: {
         generated: !!queryEmbedding,
-        dimension: queryEmbedding?.length,
+        dimension: (queryEmbedding as any)?.length,
       },
     };
 
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
 }
 
 function generateRecommendations(analysis: any): string[] {
-  const recommendations = [];
+  const recommendations: string[] = [];
 
   // Check if documents have embeddings
   const docsWithoutEmbeddings = analysis.documents.filter((doc: any) => !doc.hasEmbedding);
@@ -162,7 +162,7 @@ function generateRecommendations(analysis: any): string[] {
   }
 
   // Check embedding counts
-  const embeddingCounts = analysis.embeddingInfo.map((info: any) => info.embeddingCount);
+  const embeddingCounts: number[] = analysis.embeddingInfo.map((info: any) => info.embeddingCount);
   const totalEmbeddings = embeddingCounts.reduce((sum: number, count: number) => sum + count, 0);
   
   if (totalEmbeddings === 0) {

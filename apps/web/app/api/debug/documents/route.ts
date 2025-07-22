@@ -53,7 +53,7 @@ export async function GET() {
     );
 
     // Test vector search if we have documents with embeddings
-    let vectorSearchTest = null;
+    let vectorSearchTest: any = null;
     const documentsWithEmbeddings_filtered = documentsWithEmbeddings.filter(
       (d) => d.embeddingCount > 0
     );

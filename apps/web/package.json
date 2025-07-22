@@ -37,12 +37,12 @@
     "lucide-react": "^0.525.0",
     "mammoth": "^1.9.1",
     "motion": "^12.19.2",
-    "next": "^15.3.0",
+    "next": "15.3.0",
     "node-telegram-bot-api": "^0.66.0",
     "ogl": "^1.0.11",
     "pdfjs-dist": "^5.3.93",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
     "react-dropzone": "^14.3.8",
     "react-three": "^0.9.7",
     "sonner": "^2.0.6",
@@ -55,8 +55,8 @@
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
     "@types/pdfjs-dist": "^2.10.378",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
+    "@types/react": "19.1.8",
+    "@types/react-dom": "19.1.6",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.29.0",
     "eslint-plugin-unused-imports": "^4.1.4",
@@ -64,5 +64,11 @@
     "prettier": "^3.6.0",
     "tailwindcss": "^3.4.17",
     "typescript": "5.8.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.1.8",
+      "@types/react-dom": "19.1.6"
+    }
   }
 }

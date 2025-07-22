@@ -191,7 +191,7 @@ function ThreeJSUploadIconImpl({
     // Create upload streams for each document position
     documentPositions.forEach((pos, _index) => {
       const streamGroup = new THREE.Group();
-      const points = [];
+      const points: THREE.Vector3[] = [];
 
       // Create upward stream from document position
       for (let j = 0; j <= 30; j++) {

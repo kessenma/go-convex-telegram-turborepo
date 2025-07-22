@@ -1,5 +1,6 @@
 "use client";
 
+export const dynamic = "force-dynamic";
 export const runtime = "edge"; // Optional: use edge runtime
 
 import React, { useRef, useState } from "react";
@@ -241,7 +242,12 @@ export default function RAGUploadPage(): React.ReactElement {
 
     try {
       // Prepare documents array
-      const documents = [];
+      const documents: Array<{
+        title: string;
+        content: string;
+        contentType: "text" | "markdown";
+        summary?: string;
+      }> = [];
 
       for (const file of files) {
         let content: string;
@@ -480,15 +486,13 @@ export default function RAGUploadPage(): React.ReactElement {
         <div className="mb-6">
           <ConvexStatusIndicator className="mx-auto max-w-md" showLogs={true} />
         </div>
-        <div className="mb-6">
+        <div className="mb-6 space-y-4">
           <LLMStatusIndicator
             size="sm"
             showLogs={true}
             className="bg-gray-50 dark:bg-gray-800/30"
           />
-          <div className="mt-4">
-            <LLMUsageBarChart />
-          </div>
+          <LLMUsageBarChart />
         </div>
 
         {/* Upload Form */}
@@ -549,5 +553,3 @@ export default function RAGUploadPage(): React.ReactElement {
     </div>
   );
 }
-
-export const dynamic = "force-dynamic";

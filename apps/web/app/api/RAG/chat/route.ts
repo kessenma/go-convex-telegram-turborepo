@@ -360,7 +360,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Build structured context for better LLM understanding
-      const contextParts = [];
+      const contextParts: string[] = [];
       
       // Add system instruction
       contextParts.push("You are answering questions based on specific document content. Use the information below to provide accurate, detailed answers.");

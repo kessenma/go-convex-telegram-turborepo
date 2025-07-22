@@ -270,7 +270,7 @@ function Cloud({
 
   return (
     <group ref={cloudRef} position={[0, 4, 0]}>
-      <primitive object={cloudObj?.clone()} scale={[1, 1, 1]} />
+      {cloudObj && <primitive object={cloudObj.clone()} scale={[1, 1, 1]} />}
     </group>
   );
 }

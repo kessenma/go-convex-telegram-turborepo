@@ -1,5 +1,8 @@
 // apps/web/app/messages/page.tsx
 "use client";
+
+export const dynamic = "force-dynamic";
+
 import { useQuery } from "convex/react";
 import type React from "react";
 import { Card } from "../../components/ui/card";

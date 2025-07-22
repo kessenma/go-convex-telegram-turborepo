@@ -8,7 +8,6 @@ import { renderIcon } from "../../../lib/icon-utils";
 import type { Document } from "../../../models/telegram";
 
 export default function DocumentReader(): React.ReactElement {
-  const { id } = useParams();
   const router = useRouter();
   // TODO: Replace with HTTP API call to fetch document by ID
   const [document] = useState<Document | null>(null);

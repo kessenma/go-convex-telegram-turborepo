@@ -369,6 +369,7 @@ def get_memory_usage():
         process = psutil.Process()
         memory_info = process.memory_info()
         memory_percent = process.memory_percent()
+        cpu_percent = process.cpu_percent(interval=0.1)  # Get CPU usage
         
         # Get system memory info
         system_memory = psutil.virtual_memory()
@@ -376,6 +377,7 @@ def get_memory_usage():
         return {
             'process_memory_mb': round(memory_info.rss / 1024 / 1024, 2),
             'process_memory_percent': round(memory_percent, 2),
+            'process_cpu_percent': round(cpu_percent, 2),
             'system_memory_total_gb': round(system_memory.total / 1024 / 1024 / 1024, 2),
             'system_memory_available_gb': round(system_memory.available / 1024 / 1024 / 1024, 2),
             'system_memory_used_percent': round(system_memory.percent, 2)
@@ -385,62 +387,14 @@ def get_memory_usage():
         return {
             'process_memory_mb': 0,
             'process_memory_percent': 0,
+            'process_cpu_percent': 0,
             'system_memory_total_gb': 0,
             'system_memory_available_gb': 0,
             'system_memory_used_percent': 0,
             'error': str(e)
         }
 
-def send_memory_usage_to_convex():
-    """Send memory usage data to Convex backend"""
-    try:
-        convex_url = os.environ.get('CONVEX_URL')
-        if not convex_url:
-            logger.debug("CONVEX_URL not set, skipping memory usage reporting")
-            return
-            
-        memory_usage = get_memory_usage()
-        
-        # Add model status information
-        global model_loaded, model_loading, model_error
-        if model_error:
-            model_status = 'error'
-        elif model_loading:
-            model_status = 'loading'
-        elif model_loaded:
-            model_status = 'healthy'
-        else:
-            model_status = 'starting'
-            
-        payload = {
-            **memory_usage,
-            'model_status': model_status,
-            'timestamp': int(time.time() * 1000)  # milliseconds
-        }
-        
-        response = requests.post(
-            f"{convex_url}/http/api/llm/memory-usage",
-            json=payload,
-            timeout=5
-        )
-        
-        if response.status_code == 200:
-            logger.debug(f"Memory usage sent to Convex: {memory_usage['process_memory_mb']}MB")
-        else:
-            logger.warning(f"Failed to send memory usage to Convex: {response.status_code}")
-            
-    except Exception as e:
-        logger.error(f"Error sending memory usage to Convex: {e}")
-
-def memory_monitoring_worker():
-    """Background worker to periodically send memory usage data"""
-    while True:
-        try:
-            send_memory_usage_to_convex()
-            time.sleep(30)  # Send memory data every 30 seconds
-        except Exception as e:
-            logger.error(f"Error in memory monitoring worker: {e}")
-            time.sleep(60)  # Wait longer on error
+# Memory monitoring removed - now handled by consolidated metrics endpoint
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -1335,10 +1289,7 @@ logger.info("Starting vector-convert-llm service...")
 model_thread = threading.Thread(target=load_model_async, daemon=True)
 model_thread.start()
 
-# Start memory monitoring worker thread
-logger.info("Starting memory monitoring worker...")
-memory_thread = threading.Thread(target=memory_monitoring_worker, daemon=True)
-memory_thread.start()
+# Memory monitoring now handled by consolidated metrics endpoint
 
 logger.info("Service initialized, model loading in background...")
 logger.info("Available endpoints: /health, /embed, /similarity, /search, /process-document, /process-markdown, /embed-and-save")

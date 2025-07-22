@@ -2,106 +2,82 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const llmUrl =
-      process.env.VECTOR_CONVERT_LLM_URL ||
-      process.env.VECTOR_CONVERT_LLM_INTERNAL_URL ||
-      "http://vector-convert-llm:8081";
-    const healthUrl = `${llmUrl}/health`;
-
-    const response = await fetch(healthUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      // Add timeout to prevent hanging
-      signal: AbortSignal.timeout(10000), // 10 second timeout
-    });
-
-    if (!response.ok) {
-      return NextResponse.json(
-        {
-          success: false,
-          status: "error",
-          ready: false,
-          message: `LLM service returned ${response.status}: ${response.statusText}`,
-          details: {
-            service_status: `HTTP ${response.status}`,
-            model_loaded: false,
-            error: `${response.status}: ${response.statusText}`,
-            uptime: null,
-          },
-        },
-        { status: 200 }
-      ); // Return 200 but with error status in body
+    // Redirect to consolidated metrics endpoint and extract vector service data
+    const metricsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/llm/metrics`);
+    
+    if (!metricsResponse.ok) {
+      throw new Error(`Metrics endpoint returned ${metricsResponse.status}`);
     }
 
-    const healthData = await response.json();
+    const metricsData = await metricsResponse.json();
+    const vectorService = metricsData.services?.vector;
 
-    // Map the Python service status to our frontend status
-    let actualStatus: string;
-    let ready = healthData.ready || false;
-
-    switch (healthData.status) {
-      case "healthy":
-        actualStatus = "healthy";
-        ready = true;
-        break;
-      case "loading":
-        actualStatus = "loading";
-        ready = false;
-        break;
-      case "starting":
-        actualStatus = "starting";
-        ready = false;
-        break;
-      case "error":
-        actualStatus = "error";
-        ready = false;
-        break;
-      default:
-        actualStatus = "connecting";
-        ready = false;
+    if (!vectorService) {
+      throw new Error('Vector service data not available');
     }
 
-    // Transform the health response to our expected format
+    // Transform to legacy format for backward compatibility
     return NextResponse.json({
-      success: true,
-      status: actualStatus,
-      ready: ready,
-      message: healthData.message || "LLM service status unknown",
-      model: healthData.model,
+      success: metricsData.success,
+      status: vectorService.status,
+      ready: vectorService.ready,
+      message: vectorService.message,
+      model: vectorService.model,
       details: {
-        service_status: healthData.status || "unknown",
-        model_loaded: healthData.model_loaded !== false,
-        model_loading: healthData.model_loading || false,
-        uptime: healthData.uptime?.toString(),
-        error: healthData.error || null,
+        service_status: vectorService.status,
+        model_loaded: vectorService.ready,
+        model_loading: vectorService.status === 'loading',
+        uptime: vectorService.uptime?.toString(),
+        error: vectorService.error || null,
         timestamp: new Date().toISOString(),
       },
-      memory_usage: healthData.memory_usage, // propagate memory usage if present
+      memory_usage: vectorService.memory_usage,
     });
+
   } catch (error) {
     console.error("Error checking LLM status:", error);
 
-    // Handle timeout or connection errors
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    // Fallback to direct service check
+    try {
+      const llmUrl =
+        process.env.VECTOR_CONVERT_LLM_URL ||
+        process.env.VECTOR_CONVERT_LLM_INTERNAL_URL ||
+        "http://vector-convert-llm:8081";
+      
+      const response = await fetch(`${llmUrl}/health`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(8000),
+      });
 
+      if (response.ok) {
+        const healthData = await response.json();
+        return NextResponse.json({
+          success: true,
+          status: healthData.status || "unknown",
+          ready: healthData.ready || healthData.model_loaded || false,
+          message: healthData.message || "Direct health check",
+          memory_usage: healthData.memory_usage,
+        });
+      }
+    } catch (fallbackError) {
+      console.error("Fallback health check also failed:", fallbackError);
+    }
+
+    // Final fallback
     return NextResponse.json(
       {
         success: false,
         status: "connecting",
         ready: false,
-        message: `Cannot connect to LLM service: ${errorMessage}`,
+        message: `Cannot connect to LLM service: ${error instanceof Error ? error.message : "Unknown error"}`,
         details: {
           service_status: "disconnected",
           model_loaded: false,
-          model_loading: false,
-          error: errorMessage,
-          uptime: null,
+          error: error instanceof Error ? error.message : "Unknown error",
         },
       },
       { status: 200 }
-    ); // Return 200 but with connecting status in body
+    );
   }
 }

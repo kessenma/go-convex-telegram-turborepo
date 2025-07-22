@@ -15,7 +15,7 @@ export async function POST() {
 
     console.log("Found documents:", documents.documents.length);
 
-    const results = [];
+    const results: any[] = [];
 
     for (const doc of documents.documents) {
       try {

@@ -56,7 +56,7 @@ try {
   convex = new ConvexReactClient("https://dummy-url.convex.cloud");
 }
 
-interface ConvexClientProviderProps {
+export interface ConvexClientProviderProps {
   children: ReactNode;
 }
 

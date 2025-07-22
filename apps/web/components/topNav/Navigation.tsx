@@ -21,13 +21,13 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useId, useRef, useState } from "react";
-import { api } from "../generated-convex";
-import { useConvexStatus, useLLMStatus } from "../hooks/use-status-operations";
-import { renderIcon } from "../lib/icon-utils";
+import { api } from "../../generated-convex";
+import { useConvexStatus, useLLMStatus } from "../../hooks/use-status-operations";
+import { renderIcon } from "../../lib/icon-utils";
 import MobileNavigation from "./mobile-navigation";
 import { Notifications } from "./Notifications";
 import { Settings } from "./Settings";
-import { StatusIndicator } from "./ui/status-indicator";
+import { StatusIndicator } from ".././ui/status-indicator";
 
 export default function Navigation(): React.ReactElement {
   const pathname = usePathname();

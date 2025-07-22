@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         convex_url:
           body.convex_url ||
           process.env.CONVEX_HTTP_URL ||
-          "http://localhost:3210",
+          "http://localhost:3211",
       }),
       // Add timeout to prevent hanging
       signal: AbortSignal.timeout(60000), // 60 second timeout for document processing

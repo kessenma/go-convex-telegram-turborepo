@@ -51,6 +51,15 @@ export function HealthCheckProvider({
 export function useHealthCheckContext() {
   const context = useContext(HealthCheckContext);
   if (!context) {
+    // During prerendering, return a default context instead of throwing
+    if (typeof window === 'undefined') {
+      return {
+        startPolling: () => {},
+        stopPolling: () => {},
+        isPolling: false,
+        performHealthChecks: async () => {},
+      };
+    }
     throw new Error(
       "useHealthCheckContext must be used within a HealthCheckProvider"
     );

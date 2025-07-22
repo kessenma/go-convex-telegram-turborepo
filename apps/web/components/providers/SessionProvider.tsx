@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUserSession } from "../hooks/use-user-session";
+import { useUserSession } from "../../hooks/use-user-session";
 
 /**
  * Client component that manages user sessions

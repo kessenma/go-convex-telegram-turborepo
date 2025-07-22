@@ -6,13 +6,12 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
-  outputFileTracingRoot: path.join(__dirname, "../../"),
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
+  output: 'standalone',
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.resolve.alias.canvas = false;
+    }
+    return config;
   },
 };
 

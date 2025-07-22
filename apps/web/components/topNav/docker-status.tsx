@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-import { useStatusOperations } from "../hooks/use-status-operations";
-import { renderIcon } from "../lib/icon-utils";
-import { cn } from "../lib/utils";
+import { useStatusOperations } from "../../hooks/use-status-operations";
+import { renderIcon } from "../../lib/icon-utils";
+import { cn } from "../../lib/utils";
 
 interface DockerStatusProps {
   size?: "sm" | "md" | "lg";
@@ -147,7 +147,7 @@ export function DockerStatusIndicator({
   return (
     <div
       className={cn(
-        "rounded-lg border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm transition-all duration-200",
+        "rounded-lg border backdrop-blur-sm transition-all duration-200 border-slate-700/50 bg-slate-900/80",
         className
       )}
     >
@@ -215,7 +215,7 @@ export function DockerStatusIndicator({
                           <span className="text-slate-300">{service.name}</span>
                           <div className="flex items-center space-x-2">
                             {service.port && (
-                              <span className="px-2 py-1 font-mono text-xs text-cyan-400 bg-cyan-900/30 rounded">
+                              <span className="px-2 py-1 font-mono text-xs text-cyan-400 rounded bg-cyan-900/30">
                                 {service.port}
                               </span>
                             )}
@@ -286,7 +286,7 @@ export function DockerStatusIndicator({
                   <h4 className="mb-2 text-sm font-medium text-red-400">
                     Error Details
                   </h4>
-                  <div className="p-2 text-sm text-red-400 bg-red-900/20 rounded">
+                  <div className="p-2 text-sm text-red-400 rounded bg-red-900/20">
                     {status.details.error}
                   </div>
                 </div>

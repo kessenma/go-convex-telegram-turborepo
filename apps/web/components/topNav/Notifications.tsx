@@ -14,13 +14,13 @@ import {
 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ExpandableCard } from "../components/ui/expandable-card-reusable";
-import { ScrollArea } from "../components/ui/scroll-area";
-import { useNotifications } from "../contexts/NotificationsContext";
-import { api } from "../generated-convex";
-import { useOutsideClick } from "../hooks/use-outside-clicks";
-import { renderIcon } from "../lib/icon-utils";
-import { cn } from "../lib/utils";
+import { ExpandableCard } from "../../components/ui/expandable-card-reusable";
+import { ScrollArea } from "../../components/ui/scroll-area";
+import { useNotifications } from "../../contexts/NotificationsContext";
+import { api } from "../../generated-convex";
+import { useOutsideClick } from "../../hooks/use-outside-clicks";
+import { renderIcon } from "../../lib/icon-utils";
+import { cn } from "../../lib/utils";
 
 interface NotificationsProps {
   className?: string;

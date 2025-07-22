@@ -19,10 +19,10 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useId, useRef, useState } from "react";
-import { ExpandableCard } from "../components/ui/expandable-card-reusable";
-import { useOutsideClick } from "../hooks/use-outside-clicks";
-import { renderIcon, fixComponentReturnType } from "../lib/icon-utils";
-import { cn } from "../lib/utils";
+import { ExpandableCard } from "../../components/ui/expandable-card-reusable";
+import { useOutsideClick } from "../../hooks/use-outside-clicks";
+import { renderIcon, fixComponentReturnType } from "../../lib/icon-utils";
+import { cn } from "../../lib/utils";
 import { Notifications } from "./Notifications";
 import { Settings } from "./Settings";
 
@@ -165,7 +165,7 @@ export default function MobileNavigation(): React.ReactElement {
   }, []);
 
   // Navigation items organized by category to match desktop navigation
-  const navItems: NavItem[] = [
+  const navItems: readonly NavItem[] = [
     // Home section
     { href: "/", label: "Dashboard", icon: HouseWifi },
     { href: "/about", label: "About", icon: Info },
@@ -289,8 +289,8 @@ export default function MobileNavigation(): React.ReactElement {
                   {/* Content-aware L-shaped line animation */}
                   {isMenuOpen && (
                     <ContentAwareLShape
-                      pathname={pathname}
-                      navItems={navItems}
+                      pathname={pathname || ''}
+                      navItems={[...navItems]}
                     />
                   )}
                   {/* Home Section */}

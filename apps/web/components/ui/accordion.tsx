@@ -30,6 +30,14 @@ const AccordionContext = createContext<AccordionContextType | undefined>(
 function useAccordion() {
   const context = useContext(AccordionContext);
   if (!context) {
+    // During prerendering, return a default context instead of throwing
+    if (typeof window === 'undefined') {
+      return {
+        expandedValue: null,
+        toggleItem: () => {},
+        variants: undefined,
+      };
+    }
     throw new Error("useAccordion must be used within an AccordionProvider");
   }
   return context;

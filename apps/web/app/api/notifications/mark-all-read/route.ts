@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-const CONVEX_API_BASE = process.env.CONVEX_URL || "http://localhost:3001";
+const CONVEX_API_BASE = process.env.CONVEX_URL || "http://localhost:3211";
 
 // PUT /api/notifications/mark-all-read - Mark all notifications as read
 export async function PUT(_request: NextRequest) {

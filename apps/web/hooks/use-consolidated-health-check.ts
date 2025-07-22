@@ -17,6 +17,7 @@ export function useConsolidatedHealthCheck() {
     checkConvexStatus,
     checkDockerStatus,
     checkUserCountStatus,
+    checkConsolidatedLLMMetrics,
     pollingIntervals,
     consecutiveErrors,
   } = useStatusStore();
@@ -35,6 +36,7 @@ export function useConsolidatedHealthCheck() {
     convex: 0,
     docker: 0,
     userCount: 0,
+    consolidatedLLM: 0,
   });
 
   const performHealthChecks = useCallback(async () => {
@@ -44,18 +46,27 @@ export function useConsolidatedHealthCheck() {
     const now = Date.now();
     const checks: Promise<any>[] = [];
 
-    // Only check services that are due for a check
-    if (now - lastCheckTimes.current.llm >= pollingIntervals.llm) {
+    // Prioritize consolidated LLM metrics over individual checks
+    if (now - lastCheckTimes.current.consolidatedLLM >= pollingIntervals.consolidatedLLM) {
+      lastCheckTimes.current.consolidatedLLM = now;
+      // Skip individual LLM checks when doing consolidated check
       lastCheckTimes.current.llm = now;
-      checks.push(checkLLMStatus().catch(() => false));
-    }
-
-    if (
-      now - lastCheckTimes.current.lightweightLlm >=
-      pollingIntervals.lightweightLlm
-    ) {
       lastCheckTimes.current.lightweightLlm = now;
-      checks.push(checkLightweightLlmStatus().catch(() => false));
+      checks.push(checkConsolidatedLLMMetrics().catch(() => false));
+    } else {
+      // Fallback to individual checks if consolidated is not due
+      if (now - lastCheckTimes.current.llm >= pollingIntervals.llm) {
+        lastCheckTimes.current.llm = now;
+        checks.push(checkLLMStatus().catch(() => false));
+      }
+
+      if (
+        now - lastCheckTimes.current.lightweightLlm >=
+        pollingIntervals.lightweightLlm
+      ) {
+        lastCheckTimes.current.lightweightLlm = now;
+        checks.push(checkLightweightLlmStatus().catch(() => false));
+      }
     }
 
     if (now - lastCheckTimes.current.convex >= pollingIntervals.convex) {
@@ -100,6 +111,7 @@ export function useConsolidatedHealthCheck() {
     checkConvexStatus,
     checkDockerStatus,
     checkUserCountStatus,
+    checkConsolidatedLLMMetrics,
     pollingIntervals,
   ]);
 
@@ -163,6 +175,7 @@ export function useStatusData() {
     convexStatus,
     dockerStatus,
     userCountStatus,
+    consolidatedLLMMetrics,
     loading,
     lastUpdated,
     consecutiveErrors,
@@ -177,6 +190,7 @@ export function useStatusData() {
     convexStatus,
     dockerStatus,
     userCountStatus,
+    consolidatedLLMMetrics,
     loading,
     lastUpdated,
     consecutiveErrors,
@@ -218,6 +232,13 @@ export function useStatusData() {
         consecutiveErrors: consecutiveErrors.userCount,
         pollingInterval: pollingIntervals.userCount,
         loading: loading.userCount,
+      },
+      consolidatedLLM: {
+        metrics: consolidatedLLMMetrics,
+        lastUpdated: lastUpdated.consolidatedLLM,
+        consecutiveErrors: consecutiveErrors.consolidatedLLM,
+        pollingInterval: pollingIntervals.consolidatedLLM,
+        loading: loading.consolidatedLLM,
       },
     },
   };

@@ -20,7 +20,8 @@
     "noImplicitThis": false,
     "noPropertyAccessFromIndexSignature": false,
     "exactOptionalPropertyTypes": false,
-    "noUncheckedIndexedAccess": false
+    "noUncheckedIndexedAccess": false,
+    "strictNullChecks": true
   },
   "include": [
     "**/*.ts",
@@ -32,7 +33,9 @@
     "types/**/*.d.ts",
     "global.d.ts"
   ],
-  "exclude": ["node_modules"],
+  "exclude": [
+    "node_modules"
+  ],
   "ts-node": {
     "compilerOptions": {
       "strict": false

@@ -1,23 +1,16 @@
 // apps/web/app/api/users/active-count/route.ts
 
-import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
-import { api } from "../../../../generated-convex";
 
-// Initialize Convex client only when environment variable is available
-let convex: ConvexHttpClient | null = null;
-if (process.env.CONVEX_HTTP_URL) {
-  convex = new ConvexHttpClient(process.env.CONVEX_HTTP_URL);
-}
-const CONVEX_API_BASE = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
+const CONVEX_HTTP_URL = process.env.CONVEX_HTTP_URL || process.env.CONVEX_URL || "http://localhost:3210";
 
 export async function GET(_request: NextRequest) {
   try {
-    // Use the Convex HTTP endpoint instead of direct query
-    const response = await fetch(`${CONVEX_API_BASE}/api/users/active-count`, {
-      method: "GET",
+    console.log("Fetching active user count...");
+    const response = await fetch(`${CONVEX_HTTP_URL}/api/users/active-count`, {
+      method: 'GET',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
@@ -25,117 +18,57 @@ export async function GET(_request: NextRequest) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
+    const result = await response.json();
+    console.log("Active user count:", result);
 
-    // Return the data in the expected format
-    return NextResponse.json(data);
+    return NextResponse.json({
+      success: true,
+      data: result.data,
+    });
   } catch (error) {
-    console.error("Error fetching active user count from Convex HTTP:", error);
-
-    // Fallback to direct Convex query if HTTP endpoint fails
-    if (convex) {
-      try {
-        console.log("Falling back to direct Convex query...");
-        const userCount = await convex.query(api.userSessions.getActiveUserCount);
-
-        return NextResponse.json({
-          status: "success",
-          data: {
-            activeUsers: userCount.total,
-            bySource: userCount.bySource,
-            timestamp: userCount.timestamp,
-            lastUpdated: new Date().toISOString(),
-          },
-          message: `${userCount.total} active users (fallback)`,
-        });
-      } catch (fallbackError) {
-        console.error("Fallback query also failed:", fallbackError);
-      }
-    } else {
-      console.log("Convex client not available during build time");
-
-      return NextResponse.json(
-        {
-          status: "error",
-          data: {
-            activeUsers: 0,
-            bySource: {},
-            timestamp: Date.now(),
-            lastUpdated: new Date().toISOString(),
-          },
-          message: "Failed to fetch active user count",
-          error: error instanceof Error ? error.message : "Unknown error",
-        },
-        { status: 500 }
-      );
-    }
+    console.error("Error fetching active user count:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch active user count",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      sessionId,
-      userId,
-      userAgent,
-      source = "web",
-      metadata,
-      action,
-    } = body;
+    console.log("Session action:", body);
 
-    if (!sessionId) {
-      return NextResponse.json(
-        { status: "error", message: "Session ID is required" },
-        { status: 400 }
-      );
-    }
-
-    // Check if Convex client is available
-    if (!convex) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: "Convex client not available during build time",
-        },
-        { status: 503 }
-      );
-    }
-
-    // Handle session end action
-    if (action === "end") {
-      // Mark session as inactive using the dedicated endSession mutation
-      await convex.mutation(api.userSessions.endSession, {
-        sessionId,
-      });
-
-      return NextResponse.json({
-        status: "success",
-        message: "Session ended successfully",
-      });
-    }
-
-    // Create or update session in Convex (default behavior)
-    await convex.mutation(api.userSessions.upsertSession, {
-      sessionId,
-      userId,
-      userAgent,
-      source,
-      metadata: metadata ? JSON.stringify(metadata) : undefined,
+    const response = await fetch(`${CONVEX_HTTP_URL}/api/users/active-count`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     });
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("Session update result:", result);
+
     return NextResponse.json({
-      status: "success",
-      message: "Session updated successfully",
+      success: true,
+      message: result.message || "Session update successful",
     });
   } catch (error) {
     console.error("Error updating session:", error);
-
     return NextResponse.json(
       {
-        status: "error",
-        message: "Failed to update session",
-        error: error instanceof Error ? error.message : "Unknown error",
+        success: false,
+        error: "Failed to update session",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

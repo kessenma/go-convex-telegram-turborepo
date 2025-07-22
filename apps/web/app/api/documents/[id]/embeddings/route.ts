@@ -5,7 +5,7 @@ import { api } from "../../../../../generated-convex";
 const convexUrl =
   process.env.CONVEX_HTTP_URL ||
   process.env.CONVEX_URL ||
-  "http://localhost:3210";
+  "http://localhost:3211";
 const convex = new ConvexHttpClient(convexUrl);
 
 export async function GET(

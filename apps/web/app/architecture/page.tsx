@@ -130,7 +130,7 @@ export default function ArchitecturePage(): React.ReactElement {
       {/* Header */}
       <Hero
         title="Architecture"
-        subtitle={`Did I know how to make an LLM app before this? No. My goal was to see how far I could push a linux server and a self-hosted convex database for a chatbot with 8gb of ram and 4 cpu cores and no GPU. The ${process.env.NEXT_PUBLIC_LLM_MODEL || 'DistillGPT2'} model is not that great for RAG tasks and I plan to  tinker with different libraries and models in the future.`}
+        subtitle={`Did I know how to make an LLM app before this? No. My goal was to see how far I could push a linux server and a self-hosted convex database for a chatbot with 8gb of ram and 4 cpu cores and no GPU. The ${process.env.NEXT_PUBLIC_LLM_MODEL || 'Llama 3.2'} model is not that great for RAG tasks and I plan to  tinker with different libraries and models in the future.`}
         textAlign="center"
         titleAnimation={TextAnimationType.Shimmer}
         animationSpeed={75}
@@ -897,7 +897,7 @@ export default function ArchitecturePage(): React.ReactElement {
               href={process.env.NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL || "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2"}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
+              className="text-blue-400 underline hover:text-blue-300"
             >
               {process.env.NEXT_PUBLIC_VECTOR_CONVERT_MODEL || 'all-MiniLM-L6-v2'}
             </a> sentence transformer, and natural language responses are
@@ -906,7 +906,7 @@ export default function ArchitecturePage(): React.ReactElement {
               href={process.env.NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL || "https://huggingface.co/meta-llama/Llama-2-7b-chat-hf"}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
+              className="text-blue-400 underline hover:text-blue-300"
             >
               {process.env.NEXT_PUBLIC_LLM_MODEL || 'Meta Llama 3.2'}
             </a> model.
@@ -949,7 +949,7 @@ export default function ArchitecturePage(): React.ReactElement {
                 href={process.env.NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL || "https://huggingface.co/meta-llama/Llama-2-7b-chat-hf"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
+                className="text-blue-400 underline hover:text-blue-300"
               >
                 {process.env.NEXT_PUBLIC_LLM_MODEL || 'Meta Llama 3.2'}
               </a> model for natural language
@@ -967,7 +967,7 @@ export default function ArchitecturePage(): React.ReactElement {
                       href={process.env.NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL || "https://huggingface.co/meta-llama/Llama-2-7b-chat-hf"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 underline"
+                      className="text-blue-400 underline hover:text-blue-300"
                     >
                       {process.env.NEXT_PUBLIC_LLM_MODEL || 'Meta Llama 3.2'}
                     </a> is a large language model
@@ -1106,7 +1106,7 @@ export default function ArchitecturePage(): React.ReactElement {
                     href={process.env.NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL || "https://huggingface.co/meta-llama/Llama-2-7b-chat-hf"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline"
+                    className="text-blue-400 underline hover:text-blue-300"
                   >
                     {process.env.NEXT_PUBLIC_LLM_MODEL || 'Meta Llama 3.2'}
                   </a> generates contextual answers

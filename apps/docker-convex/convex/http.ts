@@ -1517,7 +1517,7 @@ http.route({
   handler: getConversionJobStatsAPI,
 });
 
-// LLM MEMORY USAGE ENDPOINTS
+// LLM MEMORY USAGE ENDPOINTS (Legacy - now handled by consolidated metrics)
 http.route({
   path: "/api/llm/memory-usage",
   method: "POST",
