@@ -168,7 +168,7 @@ export function ChatHistory({
             {searchTerm ? (
               <>
                 {renderIcon(Search, { className: "w-8 h-8 mb-2" })}
-                <p>No conversations found matching "{searchTerm}"</p>
+                <p>No conversations found matching &ldquo;{searchTerm}&rdquo;</p>
               </>
             ) : (
               <>

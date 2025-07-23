@@ -1,35 +1,23 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../generated-convex";
 
-const CONVEX_URL =
-  process.env.CONVEX_HTTP_URL ||
-  process.env.CONVEX_URL ||
-  process.env.CONVEX_HTTP_URL ||
-  "http://localhost:3211";
+const convex = new ConvexHttpClient(
+  process.env.CONVEX_HTTP_URL || "http://localhost:3211"
+);
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = searchParams.get("limit") || "20";
-    const cursor = searchParams.get("cursor");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const cursor = searchParams.get("cursor") || undefined;
 
-    // Build query parameters for Convex API
-    const params = new URLSearchParams();
-    params.append("limit", limit);
-    if (cursor) params.append("cursor", cursor);
-
-    const response = await fetch(`${CONVEX_URL}/http/api/documents?${params}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const documents = await convex.query(api.documents.getAllDocuments, {
+      limit,
+      cursor,
     });
 
-    if (!response.ok) {
-      throw new Error(`Convex API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(documents);
   } catch (error) {
     console.error("Error fetching documents:", error);
     return NextResponse.json(
@@ -42,21 +30,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const { title, content, contentType, summary, tags } = body;
 
-    const response = await fetch(`${CONVEX_URL}/http/api/documents`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+    const document = await convex.mutation(api.documents.saveDocument, {
+      title,
+      content,
+      contentType,
+      summary,
+      tags,
     });
 
-    if (!response.ok) {
-      throw new Error(`Convex API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(document);
   } catch (error) {
     console.error("Error saving document:", error);
     return NextResponse.json(

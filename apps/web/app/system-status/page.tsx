@@ -16,7 +16,7 @@ import { UserCountIndicator } from "../../components/user-count/user-count-indic
 import { Card } from "../../components/ui/card";
 import { ErrorBoundary } from "../../components/ui/error-boundary";
 import { Hero, TextAnimationType } from "../../components/ui/hero";
-import { useAnimationSettings } from "../../hooks/use-animation-settings";
+
 import { useStatusData } from "../../hooks/use-consolidated-health-check";
 import { useManualHealthCheck } from "../../hooks/use-manual-health-check";
 import { useLLMMetrics } from "../../hooks/use-llm-metrics";

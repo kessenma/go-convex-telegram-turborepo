@@ -162,7 +162,7 @@ export default function AboutPage(): React.ReactElement {
       content: (
         <div className="space-y-4">
           <p className="text-slate-300">
-            Convex is a "backend as a service" built on Rust with TypeScript and
+            Convex is a &ldquo;backend as a service&rdquo; built on Rust with TypeScript and
             PostgreSQL. It is a bit tricky to setup, but in my opinion well
             worth the effort.
           </p>
@@ -400,7 +400,7 @@ export default function AboutPage(): React.ReactElement {
                   communication
                 </li>
                 <li>
-                  Docker compose, docker network, and dockerfile's connecting
+                  Docker compose, docker network, and dockerfile&rsquo;s connecting
                   everything together
                 </li>
                 <li>
@@ -416,7 +416,7 @@ export default function AboutPage(): React.ReactElement {
                   >
                     {process.env.NEXT_PUBLIC_VECTOR_CONVERT_MODEL || 'all-MiniLM-L6-v2'}
                   </a> for converting raw text to vector embeddings
-                  (so LLM's can read the data)
+                  (so LLM&rsquo;s can read the data)
                 </li>
                 <li>
                   Distilgpt2 LLM for question answering (but I do want to use a
@@ -426,7 +426,7 @@ export default function AboutPage(): React.ReactElement {
                   GoLang for a Telegram bot using the go-telegram api.
                   (github.com/go-telegram/bot){" "}
                 </li>
-                <li>Huggingface for sourcing different LLM's</li>
+                <li>Huggingface for sourcing different LLM&rsquo;s</li>
                 <li>Psutil for ram + cpu monitoring</li>
                 <li>
                   Flask, FastAPI, and PyTorch to run the sentence transformer +

@@ -1,21 +1,15 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../generated-convex";
 
-const CONVEX_URL = process.env.CONVEX_URL;
+const convex = new ConvexHttpClient(
+  process.env.CONVEX_HTTP_URL || "http://localhost:3211"
+);
 
-if (!CONVEX_URL) {
-  throw new Error("CONVEX_URL environment variable is required");
-}
-
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
-    const response = await fetch(`${CONVEX_URL}/api/conversion-jobs/stats`);
-
-    if (!response.ok) {
-      throw new Error(`Convex API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    const stats = await convex.query(api.conversionJobs.getJobStats);
+    return NextResponse.json(stats);
   } catch (error) {
     console.error("Error fetching conversion job stats:", error);
     return NextResponse.json(

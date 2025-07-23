@@ -26,27 +26,7 @@ import {
 // Dynamic imports for PDF and DOCX utilities to avoid Edge runtime issues
 // These will be loaded only when needed on the client side
 
-interface Document {
-  _id: string;
-  title: string;
-  content: string;
-  contentType: "markdown" | "text";
-  fileSize: number;
-  uploadDate: number;
-  wordCount: number;
-  tags?: string[];
-  summary?: string;
-}
 
-interface UploadedDocument {
-  _id: string;
-  title: string;
-  contentType: string;
-  fileSize: number;
-  wordCount: number;
-  uploadedAt: number;
-  summary?: string;
-}
 
 export default function RAGUploadPage(): React.ReactElement {
   const { animationEnabled } = useAnimationSettings();
@@ -160,7 +140,7 @@ export default function RAGUploadPage(): React.ReactElement {
             (pdfResult.metadata
               ? generatePDFSummary(pdfResult.metadata)
               : "PDF document");
-        } catch (error) {
+        } catch (_error) {
           setUploadStatus("error");
           setUploadMessage("PDF processing is not available.");
           return;
@@ -189,7 +169,7 @@ export default function RAGUploadPage(): React.ReactElement {
             (docxResult.metadata
               ? generateDOCXSummary(docxResult.metadata)
               : "DOCX document");
-        } catch (error) {
+        } catch (_error) {
           setUploadStatus("error");
           setUploadMessage("DOCX processing is not available.");
           return;
@@ -267,7 +247,7 @@ export default function RAGUploadPage(): React.ReactElement {
             }
             content = pdfResult.text;
             contentType = "text";
-          } catch (error) {
+          } catch (_error) {
             setUploadStatus("error");
             setUploadMessage(
               `PDF processing failed for "${file.name}": PDF utilities not available`
@@ -293,7 +273,7 @@ export default function RAGUploadPage(): React.ReactElement {
             }
             content = docxResult.text;
             contentType = "text";
-          } catch (error) {
+          } catch (_error) {
             setUploadStatus("error");
             setUploadMessage(
               `DOCX processing failed for "${file.name}": DOCX utilities not available`
@@ -371,7 +351,7 @@ export default function RAGUploadPage(): React.ReactElement {
       } else {
         setEmbeddingMessage(result.error || "Failed to generate embeddings");
       }
-    } catch (_error) {
+    } catch {
       setEmbeddingMessage("Network error. Please try again.");
     } finally {
       setIsGeneratingEmbeddings(false);

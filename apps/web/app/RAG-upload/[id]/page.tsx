@@ -2,7 +2,7 @@
 
 // TODO: Replace with HTTP API calls when backend is ready
 import { ArrowLeft, FileText } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { renderIcon } from "../../../lib/icon-utils";
 import type { Document } from "../../../models/telegram";

@@ -1,13 +1,7 @@
-import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
-import { api } from "../../../../generated-convex";
 
-const convex = new ConvexHttpClient(
-  process.env.CONVEX_HTTP_URL || "http://localhost:3211"
-);
 const LIGHTWEIGHT_LLM_URL =
   process.env.LIGHTWEIGHT_LLM_INTERNAL_URL || "http://localhost:8082";
-const CONVEX_HTTP_URL = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
 
 interface ChatRequest {
   message: string;

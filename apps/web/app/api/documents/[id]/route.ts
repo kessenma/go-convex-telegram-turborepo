@@ -1,10 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../generated-convex";
+import type { GenericId as Id } from "convex/values";
 
-const CONVEX_URL =
-  process.env.CONVEX_HTTP_URL ||
-  process.env.CONVEX_URL ||
-  process.env.CONVEX_HTTP_URL ||
-  "http://localhost:3211";
+const convex = new ConvexHttpClient(
+  process.env.CONVEX_HTTP_URL || "http://localhost:3211"
+);
 
 export async function DELETE(
   _request: NextRequest,
@@ -21,19 +22,11 @@ export async function DELETE(
       );
     }
 
-    const response = await fetch(`${CONVEX_URL}/api/documents/${documentId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const result = await convex.mutation(api.documents.deleteDocument, {
+      documentId: documentId as Id<"rag_documents">,
     });
 
-    if (!response.ok) {
-      throw new Error(`Convex API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error deleting document:", error);
     return NextResponse.json(
@@ -58,19 +51,18 @@ export async function GET(
       );
     }
 
-    const response = await fetch(`${CONVEX_URL}/api/documents/${documentId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const document = await convex.query(api.documents.getDocumentById, {
+      documentId: documentId as Id<"rag_documents">,
     });
 
-    if (!response.ok) {
-      throw new Error(`Convex API error: ${response.status}`);
+    if (!document) {
+      return NextResponse.json(
+        { error: "Document not found" },
+        { status: 404 }
+      );
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(document);
   } catch (error) {
     console.error("Error fetching document:", error);
     return NextResponse.json(

@@ -35,7 +35,7 @@ interface VectorSearchResult {
 function expandChunkContext(
   chunkText: string,
   fullContent: string,
-  chunkIndex: number
+  _chunkIndex: number
 ): string {
   try {
     // Find the chunk in the full content
