@@ -3,7 +3,6 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../generated-convex";
 
 const convex = new ConvexHttpClient(
-  process.env.CONVEX_URL ||
   process.env.CONVEX_HTTP_URL ||
   "http://localhost:3211"
 );
