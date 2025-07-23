@@ -14,8 +14,8 @@ services:
         reservations:
           memory: 1G
     ports:
-      - "${CONVEX_PORT:-3210}:3210"
-      - "${CONVEX_SITE_PROXY_PORT:-3211}:3211"
+      - "${NEXT_PUBLIC_CONVEX_PORT:-3210}:3210"
+      - "${NEXT_PUBLIC_CONVEX_SITE_PROXY_PORT:-3211}:3211"
     volumes:
       - convex_data:/convex/data
       - ./apps/docker-convex/admin-key:/convex/admin-key
@@ -211,7 +211,7 @@ services:
       - NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL=${NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL:-http://localhost:8082}
       - NODE_ENV=production
       - NEXT_PUBLIC_CONVEX_DASHBOARD_PORT=${CONVEX_DASHBOARD_PORT:-6791}
-      - NEXT_PUBLIC_CONVEX_PORT=${CONVEX_PORT:-3210}
+      - NEXT_PUBLIC_NEXT_PUBLIC_CONVEX_PORT=${NEXT_PUBLIC_CONVEX_PORT:-3210}
     depends_on:
       convex-backend:
         condition: service_healthy

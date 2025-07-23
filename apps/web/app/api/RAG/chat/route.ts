@@ -7,7 +7,7 @@ import {
 } from "../../../../lib/session-manager";
 
 const convex = new ConvexHttpClient(
-  process.env.CONVEX_URL || "http://localhost:3211"
+  process.env.CONVEX_HTTP_URL || process.env.CONVEX_URL || "http://localhost:3211"
 );
 const LIGHTWEIGHT_LLM_URL =
   process.env.LIGHTWEIGHT_LLM_INTERNAL_URL || "http://localhost:8082";

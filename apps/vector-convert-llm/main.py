@@ -114,8 +114,11 @@ def update_conversion_job(job_id, status, output_data=None, error_message=None, 
         return False
 
 def load_model():
-    """Load the sentence transformer model"""
+    """Load the sentence transformer model with retry logic and fallback"""
     global model, model_loaded, model_loading, model_error, load_start_time
+    import time
+    import os
+    
     try:
         model_loading = True
         model_error = None
@@ -125,16 +128,61 @@ def load_model():
         # Import here to avoid startup issues
         from sentence_transformers import SentenceTransformer
         
-        # Use a smaller, more stable model to avoid segmentation faults
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        model_loaded = True
-        model_loading = False
-        logger.info("Model loaded successfully")
+        # Try multiple approaches to load the model
+        model_names = [
+            'all-MiniLM-L6-v2',
+            'sentence-transformers/all-MiniLM-L6-v2',
+            'paraphrase-MiniLM-L6-v2'
+        ]
+        
+        for attempt, model_name in enumerate(model_names, 1):
+            try:
+                logger.info(f"Attempt {attempt}: Loading model '{model_name}'")
+                
+                # Set environment variables for better connectivity
+                os.environ['HF_HUB_DISABLE_PROGRESS_BARS'] = '1'
+                os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
+                
+                # Try loading with different configurations
+                if attempt == 1:
+                    # First attempt: normal loading
+                    model = SentenceTransformer(model_name, cache_folder='/app/cache/transformers')
+                elif attempt == 2:
+                    # Second attempt: with explicit cache and trust_remote_code
+                    model = SentenceTransformer(
+                        model_name, 
+                        cache_folder='/app/cache/transformers',
+                        trust_remote_code=True
+                    )
+                else:
+                    # Third attempt: fallback model
+                    model = SentenceTransformer(model_name)
+                
+                model_loaded = True
+                model_loading = False
+                logger.info(f"Model '{model_name}' loaded successfully on attempt {attempt}")
+                return
+                
+            except Exception as e:
+                logger.warning(f"Attempt {attempt} failed for model '{model_name}': {e}")
+                if attempt < len(model_names):
+                    logger.info(f"Retrying with next model...")
+                    time.sleep(2)  # Wait before retry
+                else:
+                    raise e
+                    
     except Exception as e:
         model_loading = False
         model_error = str(e)
-        logger.error(f"Failed to load model: {e}")
-        raise e
+        logger.error(f"All model loading attempts failed: {e}")
+        
+        # Set a flag to indicate we're running without a model
+        model = None
+        model_loaded = False
+        logger.warning("Service will run in degraded mode without embedding model")
+        
+        # Don't raise the exception - let the service continue without the model
+        # raise e
 
 def load_model_async():
     """Load model in background thread"""
@@ -409,9 +457,10 @@ def health_check():
     
     # Determine service status
     if model_error:
-        status = 'error'
-        ready = False
-        message = f"Model loading failed: {model_error}"
+        # Service is still healthy even if model failed to load (degraded mode)
+        status = 'degraded'
+        ready = True  # Service can still respond to requests
+        message = f"Service running in degraded mode - Model loading failed: {model_error[:100]}{'...' if len(str(model_error)) > 100 else ''}"
     elif model_loading:
         status = 'loading'
         ready = False
@@ -439,7 +488,8 @@ def health_check():
         'service': 'vector-convert-llm',
         'uptime': uptime,
         'error': model_error,
-        'memory_usage': memory_usage
+        'memory_usage': memory_usage,
+        'degraded_mode': model_error is not None
     }), 200
 
 @app.route('/test-post', methods=['POST'])
@@ -471,8 +521,12 @@ def encode_sentences():
     try:
         # Check if model is loaded
         if model is None or not model_loaded:
-            logger.error("Model not loaded")
-            return jsonify({"error": "Model not loaded"}), 500
+            logger.error("Model not loaded - service running in degraded mode")
+            return jsonify({
+                "error": "Model not available - service running in degraded mode",
+                "degraded_mode": True,
+                "model_error": model_error
+            }), 503
         
         # Parse JSON data
         data = request.get_json()
@@ -513,12 +567,20 @@ def embed_text():
         
         # Check model status
         if model is None:
-            logger.error("Model is None - not loaded")
-            return jsonify({'error': 'Model not loaded'}), 500
+            logger.error("Model is None - service running in degraded mode")
+            return jsonify({
+                'error': 'Model not available - service running in degraded mode',
+                'degraded_mode': True,
+                'model_error': model_error
+            }), 503
         
         if not model_loaded:
             logger.error(f"Model not ready - loaded: {model_loaded}, loading: {model_loading}")
-            return jsonify({'error': 'Model not ready'}), 500
+            return jsonify({
+                'error': 'Model not ready - still loading or failed to load',
+                'degraded_mode': model_error is not None,
+                'model_error': model_error
+            }), 503
         
         # Parse request data
         try:

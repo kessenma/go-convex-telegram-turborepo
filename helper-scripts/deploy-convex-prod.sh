@@ -54,17 +54,17 @@ else
 fi
 
 # Set standard ports
-CONVEX_PORT=3210
+NEXT_PUBLIC_CONVEX_PORT=3210
 CONVEX_SITE_PORT=3211
 
-if [ -z "$CONVEX_PORT" ]; then
+if [ -z "$NEXT_PUBLIC_CONVEX_PORT" ]; then
   echo "❌ Could not determine Convex backend port mapping"
   exit 1
 fi
 
 # Set environment variables for self-hosted deployment
-export CONVEX_SELF_HOSTED_URL=http://$SERVER_IP:$CONVEX_PORT
-export CONVEX_URL=http://$SERVER_IP:$CONVEX_PORT
+export CONVEX_SELF_HOSTED_URL=http://$SERVER_IP:$NEXT_PUBLIC_CONVEX_PORT
+export CONVEX_URL=http://$SERVER_IP:$NEXT_PUBLIC_CONVEX_PORT
 
 echo "🔗 Using Convex URL: $CONVEX_URL"
 

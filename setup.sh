@@ -134,6 +134,78 @@ fi
 
 echo "✅ WEB_DASHBOARD_PORT is configured (${WEB_DASHBOARD_PORT})"
 
+# =============================================================================
+# SYSTEM RESOURCES CONFIGURATION
+# =============================================================================
+echo ""
+echo "💾 System Resources Configuration"
+echo "================================="
+echo "Setting up RAM allocation variables for Docker services..."
+echo "Default configuration optimized for 8GB machine:"
+echo "  • Convex Backend: 1.5G"
+echo "  • Convex Dashboard: 256M"
+echo "  • Telegram Bot: 128M"
+echo "  • Vector Convert LLM: 2G (high memory for ML processing)"
+echo "  • Lightweight LLM: 4G (highest allocation for LLM inference)"
+echo "  • Web Dashboard: 512M"
+echo "  • Total RAM Available: 8G"
+echo ""
+echo "💡 You can modify these values in the .env file after setup."
+echo "   Once set, this script will not overwrite your custom values."
+echo ""
+
+# Function to set RAM variable if not already configured
+set_ram_variable() {
+    local var_name="$1"
+    local default_value="$2"
+    local description="$3"
+    
+    # Check if variable exists and is not empty
+    if ! grep -q "^${var_name}=" .env || [ "$(grep "^${var_name}=" .env | cut -d'=' -f2)" = "" ]; then
+        echo "📝 Setting ${description}: ${default_value}"
+        if grep -q "^${var_name}=" .env; then
+            # Update existing empty line
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                sed -i '' "s/^${var_name}=.*/${var_name}=${default_value}/" .env
+            else
+                sed -i "s/^${var_name}=.*/${var_name}=${default_value}/" .env
+            fi
+        else
+            # Add new line if it doesn't exist
+            echo "${var_name}=${default_value}" >> .env
+        fi
+    else
+        local current_value=$(grep "^${var_name}=" .env | cut -d'=' -f2)
+        echo "✅ ${description} already configured: ${current_value}"
+    fi
+}
+
+# Set RAM allocation variables with defaults
+set_ram_variable "NEXT_PUBLIC_RAM_AVAILABLE" "8G" "Total RAM Available"
+set_ram_variable "NEXT_PUBLIC_CONVEX_BACKEND_RAM" "1.5G" "Convex Backend RAM"
+set_ram_variable "NEXT_PUBLIC_CONVEX_DASHBOARD_RAM" "256M" "Convex Dashboard RAM"
+set_ram_variable "NEXT_PUBLIC_TELEGRAM_BOT_RAM" "128M" "Telegram Bot RAM"
+set_ram_variable "NEXT_PUBLIC_VECTOR_CONVERT_LLM_RAM" "2G" "Vector Convert LLM RAM"
+set_ram_variable "NEXT_PUBLIC_LIGHTWEIGHT_LLM_RAM" "4G" "Lightweight LLM RAM"
+set_ram_variable "NEXT_PUBLIC_WEB_DASHBOARD_RAM" "512M" "Web Dashboard RAM"
+
+# Set LLM service ports if not configured
+set_ram_variable "LIGHTWEIGHT_LLM_PORT" "8082" "Lightweight LLM Port"
+set_ram_variable "VECTOR_CONVERT_PORT" "8081" "Vector Convert Port"
+
+# Set model configuration variables if not configured
+set_ram_variable "NEXT_PUBLIC_VECTOR_CONVERT_MODEL" "\"all-MiniLM-L6-v2\"" "Vector Convert Model"
+set_ram_variable "NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL" "\"https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2\"" "Vector Convert Model URL"
+set_ram_variable "NEXT_PUBLIC_LLM_MODEL" "\"Meta Llama 3.2\"" "LLM Model"
+set_ram_variable "NEXT_PUBLIC_LLM_MODEL_HUGGINGFACE_URL" "\"https://huggingface.co/meta-llama/Llama-2-7b-chat-hf\"" "LLM Model URL"
+
+# Re-source the .env file to get updated variables
+source .env
+
+echo "✅ System resources configuration complete"
+echo "💡 Total allocated RAM will be calculated dynamically by calculate-ram.sh"
+echo ""
+
 # Start Convex backend first
 echo "🔧 Starting Convex backend..."
 docker compose up convex-backend -d

@@ -14,34 +14,28 @@ import {
   BasicOfflineScreen,
 } from "../components/ui/basic-error-screen";
 
-// Convert HTTP/HTTPS/WSS URLs to the appropriate format for ConvexReactClient
+// Get the appropriate Convex URL for WebSocket connections
 function getConvexUrl(): string {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!url) {
+  // Use dedicated WebSocket URL if available, otherwise fall back to the main URL
+  const wsUrl = process.env.NEXT_PUBLIC_CONVEX_WS_URL;
+  const mainUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  
+  if (wsUrl) {
+    // Convert WS to HTTP for ConvexReactClient
+    if (wsUrl.startsWith('ws://')) {
+      return wsUrl.replace('ws://', 'http://');
+    }
+    if (wsUrl.startsWith('wss://')) {
+      return wsUrl.replace('wss://', 'https://');
+    }
+    return wsUrl;
+  }
+  
+  if (!mainUrl) {
     throw new Error("NEXT_PUBLIC_CONVEX_URL is not defined");
   }
   
-  // Handle WSS URLs by converting to HTTPS
-  if (url.startsWith('wss://')) {
-    return url.replace('wss://', 'https://');
-  }
-  
-  // Handle WS URLs by converting to HTTP
-  if (url.startsWith('ws://')) {
-    return url.replace('ws://', 'http://');
-  }
-  
-  // If it's already a proper deployment URL, use it as-is
-  if (url.startsWith('https://') && !url.includes('localhost')) {
-    return url;
-  }
-  
-  // For local development, ensure it's HTTP
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    return url.replace('https://', 'http://');
-  }
-  
-  return url;
+  return mainUrl;
 }
 
 // Create Convex client with error handling

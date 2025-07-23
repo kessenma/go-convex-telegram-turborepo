@@ -28,7 +28,7 @@ cd "$PROJECT_ROOT/apps/docker-convex"
 # Get the actual server IP and port for self-hosted deployment
 # Force IPv4 to avoid IPv6 URL issues with Convex CLI
 SERVER_IP=$(curl -4 -s ifconfig.me 2>/dev/null || curl -s ipv4.icanhazip.com 2>/dev/null || echo "localhost")
-CONVEX_PORT=$(docker port "$BACKEND_CONTAINER" 3210 | cut -d: -f2)
+NEXT_PUBLIC_CONVEX_PORT=$(docker port "$BACKEND_CONTAINER" 3210 | cut -d: -f2)
 CONVEX_SITE_PORT=$(docker port "$BACKEND_CONTAINER" 3211 | cut -d: -f2)
 
 # Validate that we got an IPv4 address
@@ -37,14 +37,14 @@ if [[ ! $SERVER_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
   SERVER_IP="localhost"
 fi
 
-if [ -z "$CONVEX_PORT" ]; then
+if [ -z "$NEXT_PUBLIC_CONVEX_PORT" ]; then
   echo "❌ Could not determine Convex backend port mapping"
   exit 1
 fi
 
 # Explicitly tell Convex CLI to use the self-hosted backend, not Convex Cloud
-export CONVEX_SELF_HOSTED_URL=http://$SERVER_IP:$CONVEX_PORT
-export CONVEX_URL=http://$SERVER_IP:$CONVEX_PORT
+export CONVEX_SELF_HOSTED_URL=http://$SERVER_IP:$NEXT_PUBLIC_CONVEX_PORT
+export CONVEX_URL=http://$SERVER_IP:$NEXT_PUBLIC_CONVEX_PORT
 
 echo "🔗 Using Convex URL: $CONVEX_URL"
 

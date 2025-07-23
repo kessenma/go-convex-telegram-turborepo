@@ -787,7 +787,7 @@ export const saveLLMMemoryUsageAPI = httpAction(async (ctx, request) => {
 export const getDockerStatusAPI = httpAction(async (ctx, request) => {
   try {
     // Get environment variables for Docker configuration
-    const convexPort = process.env.CONVEX_PORT || '3001';
+    const convexPort = process.env.NEXT_PUBLIC_CONVEX_PORT || '3001';
     const convexUrl = process.env.CONVEX_URL || 'http://localhost:3001';
     const telegramToken = process.env.TELEGRAM_TOKEN ? 'configured' : 'missing';
     const awsS3Bucket = process.env.AWS_S3_BUCKET || 'not-configured';

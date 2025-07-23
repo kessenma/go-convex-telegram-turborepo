@@ -54,11 +54,11 @@
     "mobile:lint": "cd apps/mobile && pnpm lint",
     "mobile:test": "cd apps/mobile && pnpm test",
 
-    "docker:up": "docker compose up -d",
+    "docker:up": "source ./calculate-ram.sh && docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:restart-bot": "docker compose restart telegram-bot",
-    "docker:build": "docker compose up --build -d",
+    "docker:build": "source ./calculate-ram.sh && docker compose up --build -d",
     "convex:deploy": "cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     "convex:dev": "docker compose up convex-backend convex-dashboard -d",
     "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages",

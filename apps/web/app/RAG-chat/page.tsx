@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useQuery } from "convex/react";
+import { ConvexHttpClient } from "convex/browser";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LightweightLLMStatusIndicator } from "../../components/rag/lightweight-llm-status-indicator";
@@ -17,6 +17,11 @@ import { ChatInterface } from "./components/ChatInterface";
 import { DocumentSelector } from "./components/DocumentSelector";
 import type { ChatConversation, Document } from "./types";
 
+// Create Convex HTTP client for direct API calls
+const convex = new ConvexHttpClient(
+  process.env.NEXT_PUBLIC_CONVEX_URL || "http://localhost:3210"
+);
+
 export default function RAGChatPage(): React.ReactElement {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [showChat, setShowChat] = useState(false);
@@ -29,8 +34,24 @@ export default function RAGChatPage(): React.ReactElement {
   // Get animation settings
   const { animationEnabled } = useAnimationSettings();
 
-  // Fetch documents from Convex
-  const documents = useQuery(api.documents.getAllDocuments, { limit: 50 });
+  // Fetch documents from Convex using HTTP client
+  const [documents, setDocuments] = useState<any>(undefined);
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const result = await convex.query(api.documents.getAllDocuments, { limit: 50 });
+        setDocuments(result);
+        setDocumentsError(null);
+      } catch (error) {
+        console.error("Failed to fetch documents:", error);
+        setDocumentsError(error instanceof Error ? error.message : "Failed to fetch documents");
+      }
+    };
+
+    fetchDocuments();
+  }, []);
 
   // Update selected document objects when selection changes
   useEffect(() => {
@@ -93,10 +114,26 @@ export default function RAGChatPage(): React.ReactElement {
       <div className="container px-4 py-8 mx-auto">
         <Card className="p-8 text-center border-gray-700 bg-gray-800/50">
           <div className="flex flex-col gap-4 items-center">
-            {renderIcon(Loader2, {
-              className: "w-8 h-8 animate-spin text-curious-cyan-400",
-            })}
-            <p className="text-gray-300">Loading your documents...</p>
+            {documentsError ? (
+              <>
+                <div className="text-red-400 text-lg">⚠️</div>
+                <p className="text-red-300">Failed to load documents</p>
+                <p className="text-gray-400 text-sm">{documentsError}</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="px-4 py-2 bg-curious-cyan-600 text-white rounded hover:bg-curious-cyan-700"
+                >
+                  Retry
+                </button>
+              </>
+            ) : (
+              <>
+                {renderIcon(Loader2, {
+                  className: "w-8 h-8 animate-spin text-curious-cyan-400",
+                })}
+                <p className="text-gray-300">Loading your documents...</p>
+              </>
+            )}
           </div>
         </Card>
       </div>

@@ -14,8 +14,8 @@ services:
         reservations:
           memory: 1G
     ports:
-      - "${CONVEX_PORT:-3210}:3210"
-      - "${CONVEX_SITE_PROXY_PORT:-3211}:3211"
+      - "${NEXT_PUBLIC_CONVEX_PORT:-3210}:3210"
+      - "${NEXT_PUBLIC_CONVEX_SITE_PROXY_PORT:-3211}:3211"
     volumes:
       - convex_data:/convex/data
       - ./apps/docker-convex/admin-key:/convex/admin-key
@@ -117,7 +117,7 @@ services:
         reservations:
           memory: 1G
     ports:
-      - "8081:8081"
+      - "${VECTOR_CONVERT_PORT:-8081}:8081"
     environment:
       - PORT=8081
       - CONVEX_URL=http://convex-backend:3210
@@ -131,12 +131,18 @@ services:
       - OPENBLAS_NUM_THREADS=1
       - NUMEXPR_NUM_THREADS=1
       - VECLIB_MAXIMUM_THREADS=1
+      - HF_HUB_OFFLINE=0
+      - HF_HUB_DISABLE_TELEMETRY=1
     depends_on:
       convex-backend:
         condition: service_healthy
     restart: unless-stopped
     networks:
       - telegram-bot-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     healthcheck:
       test: curl -f http://localhost:8081/health || exit 1
       interval: 30s
@@ -156,7 +162,7 @@ services:
           reservations:
             memory: 3G
       ports:
-        - "8082:8082"
+      - "${LIGHTWEIGHT_LLM_PORT:-8082}:8082"
       environment:
         - PORT=8082
         - PYTHONUNBUFFERED=1
@@ -190,6 +196,8 @@ services:
       dockerfile: ./apps/web/Dockerfile
       args:
         - NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL:-http://localhost:3210}
+        - NEXT_PUBLIC_CONVEX_WS_URL=${NEXT_PUBLIC_CONVEX_WS_URL:-ws://localhost:3210}
+        - CONVEX_HTTP_URL=${CONVEX_HTTP_URL:-http://convex-backend:3211}
         - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
     deploy:
       resources:
@@ -200,20 +208,25 @@ services:
     ports:
       - "${WEB_DASHBOARD_PORT:-3000}:3000"
     environment:
+      - NEXT_PUBLIC_TOTAL_RAM_ALLOCATED=${NEXT_PUBLIC_TOTAL_RAM_ALLOCATED}
+      - NEXT_PUBLIC_RAM_AVAILABLE=${NEXT_PUBLIC_RAM_AVAILABLE:-8G}
+      - NEXT_PUBLIC_VECTOR_CONVERT_PORT=${VECTOR_CONVERT_PORT:-8081}
+      - NEXT_PUBLIC_LIGHTWEIGHT_LLM_PORT=${LIGHTWEIGHT_LLM_PORT:-8082}
+      - NEXT_PUBLIC_CONVEX_DASHBOARD_PORT=${CONVEX_DASHBOARD_PORT:-6791}
+      - NEXT_PUBLIC_NEXT_PUBLIC_CONVEX_PORT=${NEXT_PUBLIC_CONVEX_SITE_PROXY_PORT:-3211}
       - NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL:-http://localhost:3210}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}
       - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
-      - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3210}
-      - CONVEX_HTTP_URL=${CONVEX_HTTP_URL:-http://convex-backend:3210}
+      - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3211}
+      - CONVEX_HTTP_URL=${CONVEX_HTTP_URL:-http://convex-backend:3211}
+      - NEXT_PUBLIC_CONVEX_WS_URL=${NEXT_PUBLIC_CONVEX_WS_URL:-ws://localhost:3210}
       - VECTOR_CONVERT_LLM_INTERNAL_URL=${VECTOR_CONVERT_LLM_INTERNAL_URL:-http://vector-convert-llm:8081}
       - VECTOR_CONVERT_LLM_URL=${VECTOR_CONVERT_LLM_URL:-http://vector-convert-llm:8081}
-      - NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL=${NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL:-http://vector-convert-llm:8081}
+      - NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL=${NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL:-http://localhost:8081}
       - LIGHTWEIGHT_LLM_INTERNAL_URL=${LIGHTWEIGHT_LLM_INTERNAL_URL:-http://lightweight-llm:8082}
       - LIGHTWEIGHT_LLM_URL=${LIGHTWEIGHT_LLM_URL:-http://lightweight-llm:8082}
-      - NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL=${NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL:-http://lightweight-llm:8082}
+      - NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL=${NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL:-http://localhost:8082}
       - NODE_ENV=production
-      - NEXT_PUBLIC_CONVEX_DASHBOARD_PORT=${CONVEX_DASHBOARD_PORT:-6791}
-      - NEXT_PUBLIC_CONVEX_PORT=${CONVEX_PORT:-3210}
       - NEXT_PUBLIC_VECTOR_CONVERT_MODEL=${NEXT_PUBLIC_VECTOR_CONVERT_MODEL:-all-MiniLM-L6-v2}
       - NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=${NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL:-https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2}
       - NEXT_PUBLIC_LLM_MODEL=${NEXT_PUBLIC_LLM_MODEL:-Meta Llama 3.2}

@@ -207,38 +207,45 @@ export function DockerStatusIndicator({
                   </h4>
                   <div className="space-y-2">
                     {status.services.map(
-                      (service: DockerService, index: number) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-center text-sm"
-                        >
-                          <span className="text-slate-300">{service.name}</span>
-                          <div className="flex items-center space-x-2">
-                            {service.port && (
-                              <span className="px-2 py-1 font-mono text-xs text-cyan-400 rounded bg-cyan-900/30">
-                                {service.port}
-                              </span>
-                            )}
-                            <span
-                              className={cn(
-                                "px-2 py-1 rounded text-xs font-medium",
-                                service.status === "running"
-                                  ? "bg-cyan-900/30 text-cyan-400"
-                                  : service.status === "starting"
-                                    ? "bg-yellow-900/30 text-yellow-400"
-                                    : "bg-red-900/30 text-red-400"
-                              )}
-                            >
-                              {service.status}
-                            </span>
-                            {service.uptime && (
-                              <span className="text-xs text-slate-400">
-                                {formatUptime(service.uptime)}
-                              </span>
+                      (service: DockerService, index: number) => {
+                        const isConvexBackend = service.name.includes('convex-backend');
+                        return (
+                          <div key={index}>
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-slate-300">{service.name}</span>
+                              <div className="flex items-center space-x-2">
+                                {service.port && (
+                                  <span className="px-2 py-1 font-mono text-xs text-cyan-400 rounded bg-cyan-900/30">
+                                    {service.port}
+                                  </span>
+                                )}
+                                <span
+                                  className={cn(
+                                    "px-2 py-1 rounded text-xs font-medium",
+                                    service.status === "running"
+                                      ? "bg-cyan-900/30 text-cyan-400"
+                                      : service.status === "starting"
+                                        ? "bg-yellow-900/30 text-yellow-400"
+                                        : "bg-red-900/30 text-red-400"
+                                  )}
+                                >
+                                  {service.status}
+                                </span>
+                                {service.uptime && (
+                                  <span className="text-xs text-slate-400">
+                                    {formatUptime(service.uptime)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {isConvexBackend && (
+                              <div className="mt-1 ml-4 text-xs text-slate-400">
+                                Backend: {process.env.NEXT_PUBLIC_CONVEX_URL?.split(':')[2] || '3210'} • API: {process.env.NEXT_PUBLIC_CONVEX_HTTP_PORT || '3211'}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      )
+                        );
+                      }
                     )}
                   </div>
                 </div>
@@ -260,14 +267,44 @@ export function DockerStatusIndicator({
                         </span>
                       </div>
                     )}
-                    {status.resources.memory_usage !== undefined && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-300">Memory Usage</span>
-                        <span className="text-slate-400">
-                          {status.resources.memory_usage.toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-300">RAM Allocated</span>
+                      <span className="text-slate-400">
+                        {process.env.NEXT_PUBLIC_TOTAL_RAM_ALLOCATED || '11.375G'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-300">RAM Available</span>
+                      <span className="text-slate-400">
+                        {process.env.NEXT_PUBLIC_RAM_AVAILABLE || '8G'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-300">RAM Usage</span>
+                      <span className={cn(
+                        "text-sm font-medium",
+                        (() => {
+                          const allocated = parseFloat(process.env.NEXT_PUBLIC_TOTAL_RAM_ALLOCATED?.replace('G', '') || '11.375');
+                          const available = parseFloat(process.env.NEXT_PUBLIC_RAM_AVAILABLE?.replace('G', '') || '8');
+                          const percentage = (allocated / available) * 100;
+                          if (percentage > 100) return "text-red-400";
+                          if (percentage > 80) return "text-yellow-400";
+                          return "text-green-400";
+                        })()
+                      )}>
+                        {(() => {
+                          const allocated = parseFloat(process.env.NEXT_PUBLIC_TOTAL_RAM_ALLOCATED?.replace('G', '') || '11.375');
+                          const available = parseFloat(process.env.NEXT_PUBLIC_RAM_AVAILABLE?.replace('G', '') || '8');
+                          const percentage = (allocated / available) * 100;
+                          return `${percentage.toFixed(1)}%`;
+                        })()}
+                        {(() => {
+                          const allocated = parseFloat(process.env.NEXT_PUBLIC_TOTAL_RAM_ALLOCATED?.replace('G', '') || '11.375');
+                          const available = parseFloat(process.env.NEXT_PUBLIC_RAM_AVAILABLE?.replace('G', '') || '8');
+                          return allocated > available ? ' (Overcommit)' : '';
+                        })()}
+                      </span>
+                    </div>
                     {status.resources.disk_usage !== undefined && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-slate-300">Disk Usage</span>

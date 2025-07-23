@@ -6,13 +6,16 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
+  Copy,
   Info,
   Loader2,
+  Check,
 } from "lucide-react";
 import { useState } from "react";
 import { useLLMStatus } from "../../hooks/use-status-operations";
 import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tool-tip";
 import { LLMLogs } from "./LLMLogs";
 import { LLMUsageBarChart } from "./llm-usage-bar-chart";
 
@@ -43,6 +46,65 @@ const _statusLabels = {
   starting: "Service Starting",
   connecting: "Connecting",
   error: "LLM Error",
+};
+
+// Compact error display component
+const CompactErrorDisplay = ({ error }: { error: string }) => {
+  const [copied, setCopied] = useState(false);
+  
+  const truncateError = (text: string, maxLength: number = 50) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
+  };
+  
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(error);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy error message:', err);
+    }
+  };
+  
+  return (
+    <div className="flex items-center gap-2 max-w-full">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-2 cursor-pointer">
+            {renderIcon(AlertCircle, { className: "w-4 h-4 text-red-400 flex-shrink-0" })}
+            <span className="text-xs text-red-300 truncate max-w-[200px]">
+              {truncateError(error)}
+            </span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-sm p-3 bg-slate-800 border border-slate-600">
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-red-400">Error Details:</div>
+            <div className="text-xs text-slate-200 break-words whitespace-pre-wrap">
+              {error}
+            </div>
+            <button
+              onClick={copyToClipboard}
+              className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              {copied ? (
+                <>
+                  {renderIcon(Check, { className: "w-3 h-3" })}
+                  Copied!
+                </>
+              ) : (
+                <>
+                  {renderIcon(Copy, { className: "w-3 h-3" })}
+                  Copy Error
+                </>
+              )}
+            </button>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
 };
 
 export const LLMStatusIndicator = ({
@@ -124,7 +186,7 @@ export const LLMStatusIndicator = ({
   return (
     <div
       className={cn(
-        "rounded-lg border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm",
+        "rounded-lg border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm w-full max-w-full overflow-hidden",
         className
       )}
     >
@@ -143,11 +205,20 @@ export const LLMStatusIndicator = ({
         </div>
 
         {showLabel && (
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className={cn("text-sm font-medium", getStatusColor())}>
               {getStatusText()}
             </div>
-            <div className="text-xs text-slate-400">{getProgressMessage()}</div>
+            
+            {/* Show compact error display for error status */}
+            {status === "error" && details?.error ? (
+              <div className="mt-1">
+                <CompactErrorDisplay error={details.error} />
+              </div>
+            ) : (
+              <div className="text-xs text-slate-400">{getProgressMessage()}</div>
+            )}
+            
             {model && status === "healthy" && (
               <div className="mt-1 text-xs text-slate-400">Model: {model}</div>
             )}

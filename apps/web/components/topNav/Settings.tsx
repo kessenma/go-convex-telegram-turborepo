@@ -5,6 +5,7 @@ import { Settings as SettingsIcon, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { ExpandableCard } from "../../components/ui/expandable-card-reusable";
 import { ScrollArea } from "../../components/ui/scroll-area";
+import { Switch } from "../../components/ui/switch";
 import { useOutsideClick } from "../../hooks/use-outside-clicks";
 import { renderIcon } from "../../lib/icon-utils";
 import { cn, getCookie, setCookie } from "../../lib/utils";
@@ -146,14 +147,13 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
     };
   }, [isOpen]);
 
-  const handleToggleAnimationMode = () => {
-    const newValue = !animationLightMode;
-    setAnimationLightMode(newValue);
+  const handleToggleAnimationMode = (checked: boolean) => {
+    setAnimationLightMode(checked);
 
     // Only set cookie if user has consented
     const hasConsented = localStorage.getItem("cookie-consent") === "true";
     if (hasConsented) {
-      setCookie("animationLightMode", newValue.toString());
+      setCookie("animationLightMode", checked.toString());
 
       // Dispatch custom event to notify other components
       window.dispatchEvent(new CustomEvent("animationSettingsChanged"));
@@ -324,33 +324,16 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                         Enable lighter animations for better performance
                       </p>
                     </div>
-                    <motion.button
-                      onClick={handleToggleAnimationMode}
-                      className={cn(
-                        "inline-flex relative items-center w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2",
-                        animationLightMode
-                          ? "bg-cyan-600"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      )}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <motion.span
-                        layout
-                        transition={{
-                          type: "spring",
-                          stiffness: 500,
-                          damping: 30,
-                        }}
-                        className={cn(
-                          "inline-block w-4 h-4 bg-white rounded-full transition-transform transform",
-                          animationLightMode ? "translate-x-6" : "translate-x-1"
-                        )}
+                    <motion.div whileTap={{ scale: 0.95 }}>
+                      <Switch
+                        checked={animationLightMode}
+                        onCheckedChange={handleToggleAnimationMode}
                       />
-                    </motion.button>
+                    </motion.div>
                   </motion.div>
                 </motion.div>
               </div>
-              
+
               {/* Changelog Section */}
               <div>
                 <h3 className="mb-3 text-sm font-medium text-white">
@@ -382,9 +365,9 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Stay updated with the latest changes and improvements to the project.
                       </p>
-                      
+
                       <div className="flex justify-center gap-4">
-                        <ChangelogModal 
+                        <ChangelogModal
                           trigger={
                             <button className="flex gap-1 items-center text-sm text-cyan-500 transition-colors hover:text-cyan-600">
                               View Changelog
@@ -392,8 +375,8 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                           }
                           maxCommits={-1}
                         />
-                        <a 
-                          href="/system-status" 
+                        <a
+                          href="/system-status"
                           className="flex gap-1 items-center text-sm text-emerald-500 transition-colors hover:text-emerald-600"
                         >
                           System Status

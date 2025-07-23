@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-const CONVEX_API_BASE = process.env.CONVEX_URL || "http://localhost:3211";
+const CONVEX_API_BASE = process.env.CONVEX_HTTP_URL || process.env.CONVEX_URL || "http://localhost:3211";
 
 // GET /api/notifications - Get all notifications
 export async function GET(request: NextRequest) {

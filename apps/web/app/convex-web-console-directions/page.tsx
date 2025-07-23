@@ -36,7 +36,7 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
   const [showAurora, setShowAurora] = useState(true);
   const [scrollY, setScrollY] = useState(0);
   const dashboardPort = process.env.NEXT_PUBLIC_CONVEX_DASHBOARD_PORT || "6791";
-  const convexPort = process.env.NEXT_PUBLIC_CONVEX_PORT || "3210";
+  const convexPort = process.env.NEXT_PUBLIC_NEXT_PUBLIC_CONVEX_PORT || "3210";
   const dashboardUrl = `http://localhost:${dashboardPort}`;
   const deploymentUrl = `http://localhost:${convexPort}`;
 
@@ -341,6 +341,9 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
         </AuroraBackground>
       )}
 
+      {/* Dark Background Overlay */}
+      <div className="absolute inset-0 z-[5] bg-slate-950 opacity-90"></div>
+      
       {/* Grid Background with Gradient Transition */}
       <div
         className={cn(
@@ -362,14 +365,12 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
           maskImage: showAurora
             ? `linear-gradient(to bottom, transparent 0%, rgba(0,0,0,${0.1 + (scrollY / (typeof window !== "undefined" ? window.innerHeight : 800)) * 0.3}) 20%, rgba(0,0,0,${0.6 + (scrollY / (typeof window !== "undefined" ? window.innerHeight : 800)) * 0.4}) 60%, black 100%)`
             : "none",
-          backgroundColor: showAurora
-            ? "transparent"
-            : "rgba(255,255,255,0.05)",
+          backgroundColor: "transparent",
         }}
       />
 
       {/* Content Container */}
-      <div className="flex relative z-20 flex-col justify-center items-center px-4 pt-24 pb-20 min-h-screen bg-slate-950">
+      <div className="flex relative z-20 flex-col justify-center items-center px-4 pt-24 pb-20 min-h-screen">
         {/* Hero Section */}
         <div className="mx-auto mb-8 w-full max-w-4xl text-center">
           <Hero
@@ -496,9 +497,13 @@ export default function ConvexWebConsoleDirectionsPage(): React.ReactElement {
                   </span>
                 </div>
                 <p className="text-slate-300">
-                  Your Convex deployment is running on port{" "}
+                  Convex backend runs on port{" "}
                   <span className="px-2 py-1 font-mono rounded bg-cyan-900/50 text-cyan-200">
                     {convexPort}
+                  </span>
+                  {" "}and accepts API requests on port{" "}
+                  <span className="px-2 py-1 font-mono rounded bg-cyan-900/50 text-cyan-200">
+                    {process.env.NEXT_PUBLIC_CONVEX_HTTP_PORT || '3211'}
                   </span>
                 </p>
               </div>

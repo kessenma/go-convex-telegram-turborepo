@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { api } from "../../../../generated-convex";
 
 const convex = new ConvexHttpClient(
-  process.env.CONVEX_URL || "http://localhost:3211"
+  process.env.CONVEX_HTTP_URL || process.env.CONVEX_URL || "http://localhost:3211"
 );
 
 export async function GET() {
