@@ -2,7 +2,6 @@
 
 export const dynamic = "force-dynamic";
 
-import { ConvexHttpClient } from "convex/browser";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LightweightLLMStatusIndicator } from "../../components/rag/lightweight-llm-status-indicator";
@@ -11,16 +10,12 @@ import { Card } from "../../components/ui/card";
 import { Hero, TextAnimationType } from "../../components/ui/hero";
 import { api } from "../../generated-convex";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
+import { useSafeQuery } from "../../hooks/use-safe-convex";
 import { renderIcon } from "../../lib/icon-utils";
 import { ChatHistory } from "./components/ChatHistory";
 import { ChatInterface } from "./components/ChatInterface";
 import { DocumentSelector } from "./components/DocumentSelector";
 import type { ChatConversation, Document } from "./types";
-
-// Create Convex HTTP client for direct API calls
-const convex = new ConvexHttpClient(
-  process.env.NEXT_PUBLIC_CONVEX_URL || "http://localhost:3210"
-);
 
 export default function RAGChatPage(): React.ReactElement {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
@@ -34,24 +29,13 @@ export default function RAGChatPage(): React.ReactElement {
   // Get animation settings
   const { animationEnabled } = useAnimationSettings();
 
-  // Fetch documents from Convex using HTTP client
-  const [documents, setDocuments] = useState<any>(undefined);
-  const [documentsError, setDocumentsError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        const result = await convex.query(api.documents.getAllDocuments, { limit: 50 });
-        setDocuments(result);
-        setDocumentsError(null);
-      } catch (error) {
-        console.error("Failed to fetch documents:", error);
-        setDocumentsError(error instanceof Error ? error.message : "Failed to fetch documents");
-      }
-    };
-
-    fetchDocuments();
-  }, []);
+  // Fetch documents from Convex using React hooks
+  const {
+    data: documents,
+    error: documentsError,
+    isLoading: documentsLoading,
+    retry: retryDocuments,
+  } = useSafeQuery(api.documents.getAllDocuments, { limit: 50 });
 
   // Update selected document objects when selection changes
   useEffect(() => {
@@ -109,7 +93,7 @@ export default function RAGChatPage(): React.ReactElement {
     setCurrentSessionId("");
   };
 
-  if (documents === undefined) {
+  if (documentsLoading || documents === undefined) {
     return (
       <div className="container px-4 py-8 mx-auto">
         <Card className="p-8 text-center border-gray-700 bg-gray-800/50">
@@ -118,9 +102,9 @@ export default function RAGChatPage(): React.ReactElement {
               <>
                 <div className="text-red-400 text-lg">⚠️</div>
                 <p className="text-red-300">Failed to load documents</p>
-                <p className="text-gray-400 text-sm">{documentsError}</p>
+                <p className="text-gray-400 text-sm">{documentsError.message}</p>
                 <button 
-                  onClick={() => window.location.reload()} 
+                  onClick={retryDocuments} 
                   className="px-4 py-2 bg-curious-cyan-600 text-white rounded hover:bg-curious-cyan-700"
                 >
                   Retry
