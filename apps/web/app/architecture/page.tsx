@@ -130,7 +130,7 @@ export default function ArchitecturePage(): React.ReactElement {
       {/* Header */}
       <Hero
         title="Architecture"
-        subtitle={`Did I know how to make an LLM app before this? No. My goal was to see how far I could push a linux server and a self-hosted convex database for a chatbot with 8gb of ram and 4 cpu cores and no GPU. The ${process.env.NEXT_PUBLIC_LLM_MODEL || 'Llama 3.2'} model is not that great for RAG tasks and I plan to  tinker with different libraries and models in the future.`}
+        subtitle={`Did I know how to make an LLM app before this? No. My goal was to see how far I could push a linux server and a self-hosted convex database for a chatbot with 8gb of ram and 4 cpu cores and no GPU. The ${process.env.NEXT_PUBLIC_LLM_MODEL || 'Llama 3.2'} model is ok for RAG tasks but I plan to tinker with different libraries and models in the future!`}
         textAlign="center"
         titleAnimation={TextAnimationType.Shimmer}
         animationSpeed={75}
