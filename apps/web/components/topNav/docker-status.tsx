@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useStatusOperations } from "../../hooks/use-status-operations";
 import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
+import { Card } from "../ui/card";
 
 interface DockerStatusProps {
   size?: "sm" | "md" | "lg";
@@ -145,9 +146,9 @@ export function DockerStatusIndicator({
   };
 
   return (
-    <div
+    <Card
       className={cn(
-        "rounded-lg border backdrop-blur-sm transition-all duration-200 border-slate-700/50 bg-slate-900/80",
+        "p-0 transition-all duration-200",
         className
       )}
     >
@@ -165,10 +166,10 @@ export function DockerStatusIndicator({
             })}
           </div>
           <div className="flex-1 min-w-0">
-            <div className={cn("text-slate-200", sizeClasses.title)}>
+            <div className={cn("text-slate-100", sizeClasses.title)}>
               Docker System
             </div>
-            <div className={cn("text-slate-400", sizeClasses.subtitle)}>
+            <div className={cn("text-slate-300", sizeClasses.subtitle)}>
               {status.message}
             </div>
           </div>
@@ -348,7 +349,7 @@ export function DockerStatusIndicator({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </Card>
   );
 }
 

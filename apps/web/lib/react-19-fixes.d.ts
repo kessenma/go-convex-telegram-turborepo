@@ -12,7 +12,7 @@ declare global {
   namespace React {
     type ReactNode = any;
     type ReactElement = any;
-    type JSXElementConstructor<P> = any;
+    type JSXElementConstructor<_P> = any;
   }
 }
 

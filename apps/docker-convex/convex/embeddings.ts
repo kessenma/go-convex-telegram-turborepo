@@ -189,7 +189,7 @@ export const processDocumentEmbedding = internalAction({
   args: {
     documentId: v.id("rag_documents"),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; documentId: Id<"rag_documents">; embeddingDimensions: number }> => {
+  handler: async (ctx, args): Promise<{ success: boolean; documentId: Id<"rag_documents">; embeddingDimensions?: number }> => {
     try {
       // Get the document
       const document: any = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
@@ -200,27 +200,60 @@ export const processDocumentEmbedding = internalAction({
         throw new Error(`Document not found: ${args.documentId}`);
       }
 
-      // Generate embedding
-      const embedding: number[] = await ctx.runAction(api.embeddings.generateEmbedding, {
-        text: document.content,
+      // Get the vector-convert-llm service URL from environment
+      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:8081";
+      const convexUrl = process.env.CONVEX_URL || "http://convex-backend:3211";
+      
+      // Call the document processing endpoint with chunking
+      const response = await fetch(`${vectorServiceUrl}/process-document`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: args.documentId,
+          convex_url: convexUrl,
+          use_chunking: true,
+          chunk_size: 1000,
+        }),
       });
 
-      // Save embedding
-      await ctx.runMutation(api.embeddings.createDocumentEmbedding, {
-        documentId: args.documentId,
-        embedding,
-        embeddingModel: "all-MiniLM-L6-v2",
-        embeddingDimensions: embedding.length,
-      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Vector service error: ${response.status} ${errorText}`);
+      }
 
+      const result = await response.json();
+      
       return {
         success: true,
         documentId: args.documentId,
-        embeddingDimensions: embedding.length,
+        embeddingDimensions: result.embedding_dimension,
       };
     } catch (error) {
       console.error("Error processing document embedding:", error);
-      throw error;
+      
+      // Create error notification
+      try {
+        await ctx.runMutation(api.notifications.createNotification, {
+          type: "document_embedding_error",
+          title: "Embedding Failed",
+          message: `Failed to generate embeddings for document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          documentId: args.documentId,
+          metadata: JSON.stringify({
+            error: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: Date.now()
+          }),
+          source: "system"
+        });
+      } catch (notificationError) {
+        console.error("Failed to create error notification:", notificationError);
+      }
+      
+      return {
+        success: false,
+        documentId: args.documentId,
+      };
     }
   },
 });

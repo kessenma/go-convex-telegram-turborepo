@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useLightweightLlmStatus } from "../../hooks/use-status-operations";
 import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
+import { Card } from "../ui/card";
 
 interface LightweightLLMStatusIndicatorProps {
   size?: "sm" | "md" | "lg";
@@ -113,9 +114,9 @@ export const LightweightLLMStatusIndicator = ({
   };
 
   return (
-    <div
+    <Card
       className={cn(
-        "rounded-lg border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm",
+        "p-0 overflow-hidden",
         className
       )}
     >
@@ -138,12 +139,12 @@ export const LightweightLLMStatusIndicator = ({
             <div className={cn("text-sm font-medium", getStatusColor())}>
               {getStatusText()}
             </div>
-            <div className="text-xs text-slate-400">{getProgressMessage()}</div>
+            <div className="text-xs text-slate-300">{getProgressMessage()}</div>
             {model && status === "healthy" && (
-              <div className="mt-1 text-xs text-slate-400">Model: {model}</div>
+              <div className="mt-1 text-xs text-slate-300">Model: {model}</div>
             )}
             {details?.timestamp && (
-              <div className="mt-1 text-xs text-slate-400">
+              <div className="mt-1 text-xs text-slate-300">
                 Last checked: {new Date(details.timestamp).toLocaleTimeString()}
               </div>
             )}
@@ -297,6 +298,6 @@ export const LightweightLLMStatusIndicator = ({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };

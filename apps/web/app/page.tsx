@@ -88,28 +88,28 @@ export default function Home(): React.ReactNode {
         </div>
 
         <div className="grid grid-cols-2 mb-4 w-full max-w-3xl ga md:grid-cols-4">
-          <div className="flex items-center rounded-lg backdrop-blur-sm bg-black/20">
+          <div className="flex items-center text-white rounded-lg backdrop-blur-sm">
             <StatCard
               title="Messages"
               value={messageCount.toString()}
               className="w-full text-center -mb-2-mt-2"
             />
           </div>
-          <div className="flex items-center rounded-lg backdrop-blur-sm bg-black/20">
+          <div className="flex items-center text-white rounded-lg backdrop-blur-s">
             <StatCard
               title="Threads"
               value={(threadStats?.totalThreads || 0).toString()}
               className="w-full text-center -mb-2-mt-2"
             />
           </div>
-          <div className="flex items-center rounded-lg backdrop-blur-sm bg-black/20">
+          <div className="flex items-center text-white rounded-lg backdrop-blur-sm">
             <StatCard
               title="Documents"
               value={(documentStats?.totalDocuments || 0).toString()}
               className="w-full text-center -mb-2-mt-2"
             />
           </div>
-          <div className="flex items-center rounded-lg backdrop-blur-sm bg-black/20">
+          <div className="flex items-center text-white rounded-lg backdrop-blur-sm">
             <StatCard
               title="RAG Size"
               value={formatFileSize(documentStats?.totalSize || 0)}

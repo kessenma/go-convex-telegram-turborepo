@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useLLMStatus } from "../../hooks/use-status-operations";
 import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
+import { Card } from "../ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tool-tip";
 import { LLMLogs } from "./LLMLogs";
 import { LLMUsageBarChart } from "./llm-usage-bar-chart";
@@ -184,9 +185,9 @@ export const LLMStatusIndicator = ({
   };
 
   return (
-    <div
+    <Card
       className={cn(
-        "rounded-lg border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm w-full max-w-full overflow-hidden",
+        "w-full max-w-full overflow-hidden p-0",
         className
       )}
     >
@@ -216,19 +217,19 @@ export const LLMStatusIndicator = ({
                 <CompactErrorDisplay error={details.error} />
               </div>
             ) : (
-              <div className="text-xs text-slate-400">{getProgressMessage()}</div>
+              <div className="text-xs text-slate-300">{getProgressMessage()}</div>
             )}
             
             {model && status === "healthy" && (
-              <div className="mt-1 text-xs text-slate-400">Model: {model}</div>
+              <div className="mt-1 text-xs text-slate-300">Model: {model}</div>
             )}
             {details?.uptime && (
-              <div className="mt-1 text-xs text-slate-400">
+              <div className="mt-1 text-xs text-slate-300">
                 Uptime: {formatUptime(details.uptime)}
               </div>
             )}
             {details?.timestamp && (
-              <div className="mt-1 text-xs text-slate-400">
+              <div className="mt-1 text-xs text-slate-300">
                 Last checked: {new Date(details.timestamp).toLocaleTimeString()}
               </div>
             )}
@@ -411,6 +412,6 @@ export const LLMStatusIndicator = ({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };

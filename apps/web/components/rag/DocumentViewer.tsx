@@ -88,11 +88,6 @@ export default function DocumentViewer({
   const [loadingEmbeddings, setLoadingEmbeddings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [generatingEmbedding, setGeneratingEmbedding] = useState(false);
-  const [_embeddingStatus, setEmbeddingStatus] = useState<
-    "idle" | "success" | "error"
-  >("idle");
-  const [_embeddingMessage, setEmbeddingMessage] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const _id = useId();
 
@@ -163,70 +158,7 @@ export default function DocumentViewer({
 
   useOutsideClick(ref, () => onClose());
 
-  const generateEmbedding = useCallback(async () => {
-    if (!documentData) return;
-
-    setGeneratingEmbedding(true);
-    setEmbeddingStatus("idle");
-    setEmbeddingMessage("");
-
-    try {
-      // Call the API route which handles session management
-      const response = await fetch("/api/vector-convert-llm/process-document", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          document_id: documentData._id,
-          convex_url:
-            process.env.NEXT_PUBLIC_CONVEX_URL || "http://localhost:3210",
-        }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        // Refresh document data to show updated embedding status
-        const docResponse = await fetch(`/api/documents/${documentId}`);
-        if (docResponse.ok) {
-          const updatedData = await docResponse.json();
-          setDocumentData(updatedData);
-          // Fetch the new embeddings
-          if (updatedData.hasEmbedding) {
-            await fetchEmbeddings(documentId);
-          }
-          setEmbeddingStatus("success");
-          setEmbeddingMessage(
-            `Embedding generated successfully for "${documentData.title}"`
-          );
-        }
-      } else {
-        // Handle service unavailable (503) or other errors
-        if (response.status === 503 && result.serviceUnavailable) {
-          setEmbeddingStatus("error");
-          setEmbeddingMessage(
-            result.error || "Service is currently unavailable"
-          );
-          toast.error(result.error || "Service is currently unavailable");
-        } else {
-          const errorMessage = result.error || "Failed to generate embedding";
-          setError(errorMessage);
-          setEmbeddingStatus("error");
-          setEmbeddingMessage(errorMessage);
-          toast.error(errorMessage);
-        }
-      }
-    } catch (error) {
-      const errorMessage = `Network error: ${error instanceof Error ? error.message : "Unknown error"}`;
-      setError(errorMessage);
-      setEmbeddingStatus("error");
-      setEmbeddingMessage(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setGeneratingEmbedding(false);
-    }
-  }, [documentData, documentId, fetchEmbeddings]);
+  // Remove the manual embedding generation function since embeddings are now generated automatically
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -362,17 +294,6 @@ export default function DocumentViewer({
                   </div>
                 </div>
                 <div className="flex gap-2 items-center">
-                  {documentData && !documentData.hasEmbedding && (
-                    <button
-                      onClick={generateEmbedding}
-                      disabled={generatingEmbedding}
-                      className={`${small ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm'} text-white rounded-lg bg-curious-cyan-600 hover:bg-curious-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {generatingEmbedding
-                        ? "Generating..."
-                        : "Generate Embedding"}
-                    </button>
-                  )}
                   <div className="flex gap-2">
                     <button
                       onClick={deleteDocument}

@@ -1,13 +1,118 @@
 #!/bin/bash
 
-# Telegram Bot + Convex Backend Setup Script
-# This script automates the setup process described in SETUP.md
+# Self-Hosted Llama ML RAG Chatbot Setup Script
+# This script automates the setup of a complete RAG (Retrieval-Augmented Generation) system
 # For detailed manual setup instructions, see: https://github.com/your-repo/SETUP.md
 
 set -e  # Exit on any error
 
-echo "🚀 Starting Telegram Bot + Convex Backend Setup"
-echo "================================================"
+# =============================================================================
+# DOCKER INSTALLATION CHECK
+# =============================================================================
+echo "🐳 Checking Docker Installation"
+echo "=============================="
+
+# Check if Docker is installed and running
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker is not installed on your system."
+    echo ""
+    echo "📋 Docker is required to run this self-hosted RAG chatbot."
+    echo "   This application uses Docker containers to isolate and manage:"
+    echo "   • Llama language models"
+    echo "   • Vector databases"
+    echo "   • Convex backend services"
+    echo "   • Web dashboard and Telegram bot"
+    echo ""
+    echo "🔗 Please install Docker for your operating system:"
+    echo ""
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "   macOS: https://docs.docker.com/desktop/install/mac-install/"
+        echo "   💡 Tip: Docker Desktop for Mac includes Docker Compose"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "   Linux: https://docs.docker.com/engine/install/"
+        echo "   💡 Don't forget to install Docker Compose: https://docs.docker.com/compose/install/"
+    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+        echo "   Windows: https://docs.docker.com/desktop/install/windows-install/"
+        echo "   💡 Tip: Docker Desktop for Windows includes Docker Compose"
+    else
+        echo "   General: https://docs.docker.com/get-docker/"
+    fi
+    echo ""
+    echo "⚡ After installing Docker:"
+    echo "   1. Start Docker Desktop (or Docker service on Linux)"
+    echo "   2. Verify installation with: docker --version"
+    echo "   3. Re-run this setup script"
+    echo ""
+    exit 1
+fi
+
+# Check if Docker is running
+if ! docker info &> /dev/null; then
+    echo "❌ Docker is installed but not running."
+    echo ""
+    echo "🚀 Please start Docker and try again:"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "   • Open Docker Desktop from Applications"
+        echo "   • Wait for Docker to start (whale icon in menu bar)"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "   • Start Docker service: sudo systemctl start docker"
+        echo "   • Enable auto-start: sudo systemctl enable docker"
+    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+        echo "   • Open Docker Desktop from Start Menu"
+        echo "   • Wait for Docker to start"
+    fi
+    echo ""
+    exit 1
+fi
+
+# Check if Docker Compose is available
+if ! docker compose version &> /dev/null && ! docker-compose --version &> /dev/null; then
+    echo "❌ Docker Compose is not available."
+    echo ""
+    echo "📋 Docker Compose is required to orchestrate multiple containers."
+    echo "🔗 Install Docker Compose: https://docs.docker.com/compose/install/"
+    echo ""
+    echo "💡 Note: Docker Desktop includes Docker Compose automatically."
+    echo ""
+    exit 1
+fi
+
+echo "✅ Docker is installed and running"
+echo "✅ Docker Compose is available"
+echo ""
+
+echo "🤖 Self-Hosted Llama ML RAG Chatbot Setup"
+echo "==========================================="
+echo "Welcome to the open-source self-hosted RAG chatbot setup!"
+echo ""
+echo "🎯 What You're Building:"
+echo "This setup creates a complete AI chatbot system that runs entirely on your machine:"
+echo "  • 🧠 Llama language model for intelligent responses"
+echo "  • 🔍 Vector search for retrieving relevant information"
+echo "  • 💬 Telegram bot interface for easy chatting"
+echo "  • 🌐 Web dashboard for monitoring and management"
+echo "  • 🗄️ Real-time database for conversation storage"
+echo ""
+echo "🔒 Privacy & Control:"
+echo "  • Everything runs locally on your hardware"
+echo "  • No data sent to external AI services"
+echo "  • Full control over your conversations and data"
+echo "  • Open source and customizable"
+echo ""
+echo "⚡ What This Script Does:"
+echo "  • Configures optimal RAM allocation for all services"
+echo "  • Sets up Docker containers for each component"
+echo "  • Connects your Telegram bot to the AI system"
+echo "  • Deploys the web dashboard for easy management"
+echo ""
+echo "📋 Prerequisites:"
+echo "  • Docker and Docker Compose installed"
+echo "  • At least 4GB RAM (8GB+ recommended)"
+echo "     • optional"
+echo "     • Telegram bot token from @BotFather"
+echo ""
+echo "Let's get started! 🤖"
+echo ""
 
 # Check if .env file exists
 if [ ! -f ".env" ]; then
@@ -22,10 +127,21 @@ fi
 source .env
 if [ -z "$TELEGRAM_TOKEN" ] || [ "$TELEGRAM_TOKEN" = "your_telegram_bot_token_here" ]; then
     echo ""
-    echo "🤖 Telegram Bot Token Setup"
-    echo "============================"
-    echo "You need a Telegram bot token to continue."
-    echo "Get one from @BotFather on Telegram: https://t.me/botfather"
+    echo "📤 Telegram Bot Token Setup (Optional)"
+    echo "======================================"
+    echo "💡 You can run this RAG system in two modes:"
+    echo "   1. With Telegram integration (requires bot token)"
+    echo "   2. Web-only mode (skip Telegram, use web dashboard only)"
+    echo ""
+    echo "🔑 To get a Telegram bot token:"
+    echo "   • Message @BotFather on Telegram: https://t.me/botfather"
+    echo "   • Follow the prompts to create a new bot"
+    echo "   • Copy the token it provides"
+    echo ""
+    echo "⚠️ Note: Without a token, Telegram features won't work, but you can still:"
+    echo "   • Use the web dashboard at http://localhost:3000"
+    echo "   • Test the LLM and vector search APIs"
+    echo "   • Add the token later by editing the .env file"
     echo ""
     read -p "Do you want to enter your Telegram bot token now? (y/n): " -n 1 -r
     echo ""
@@ -35,8 +151,8 @@ if [ -z "$TELEGRAM_TOKEN" ] || [ "$TELEGRAM_TOKEN" = "your_telegram_bot_token_he
         read -p "Enter your Telegram bot token: " TELEGRAM_TOKEN_INPUT
         
         if [ -z "$TELEGRAM_TOKEN_INPUT" ]; then
-            echo "❌ No token provided. Exiting..."
-            exit 1
+            echo "❌ No token provided. Setting to empty for web-only mode..."
+            TELEGRAM_TOKEN_INPUT=""
         fi
         
         # Update the .env file with the provided token
@@ -48,68 +164,103 @@ if [ -z "$TELEGRAM_TOKEN" ] || [ "$TELEGRAM_TOKEN" = "your_telegram_bot_token_he
             sed -i "s/TELEGRAM_TOKEN=.*/TELEGRAM_TOKEN=$TELEGRAM_TOKEN_INPUT/" .env
         fi
         
-        echo "✅ Telegram token saved to .env file"
+        if [ -n "$TELEGRAM_TOKEN_INPUT" ]; then
+            echo "✅ Telegram token saved to .env file"
+        else
+            echo "✅ Telegram token set to empty (web-only mode)"
+        fi
         
         # Re-source the .env file to get the updated token
         source .env
     else
-        echo "❌ Telegram token is required to continue."
-        echo "   Please edit .env file and add your TELEGRAM_TOKEN, then run the script again."
-        exit 1
+        echo "⏭️ Skipping Telegram token setup. Setting to empty for web-only mode..."
+        echo "   You can add your token later by editing the .env file"
+        
+        # Set empty token for web-only mode
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            sed -i '' "s/TELEGRAM_TOKEN=.*/TELEGRAM_TOKEN=/" .env
+        else
+            # Linux
+            sed -i "s/TELEGRAM_TOKEN=.*/TELEGRAM_TOKEN=/" .env
+        fi
+        
+        # Re-source the .env file
+        source .env
+        TELEGRAM_TOKEN=""
     fi
 fi
 
-echo "✅ TELEGRAM_TOKEN is configured"
+if [ -n "$TELEGRAM_TOKEN" ]; then
+    echo "✅ TELEGRAM_TOKEN is configured"
+else
+    echo "✅ TELEGRAM_TOKEN is empty (web-only mode)"
+fi
 
 # Check if TELEGRAM_BOT_USERNAME is set
 source .env
 if [ -z "$TELEGRAM_BOT_USERNAME" ] || [ "$TELEGRAM_BOT_USERNAME" = "your_bot_username_here" ]; then
     echo ""
-    echo "🤖 Telegram Bot Username Setup"
-    echo "=============================="
-    echo "You need your bot's username to generate the bot URL."
-    echo "This is the username you chose when creating the bot with @BotFather."
-    echo "Note: Bot usernames always end with '_bot' (e.g., rust_telegram_bot_example_bot)"
-    echo ""
-    read -p "Do you want to enter your Telegram bot username now? (y/n): " -n 1 -r
-    echo ""
+    echo "🤖 Telegram Bot Username Setup (Optional)"
+    echo "==========================================="
     
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Only prompt for username if we have a token
+    if [ -n "$TELEGRAM_TOKEN" ]; then
+        echo "You need your bot's username to generate the bot URL."
+        echo "This is the username you chose when creating the bot with @BotFather."
+        echo "Note: Bot usernames always end with '_bot' (e.g., rust_telegram_bot_example_bot)"
         echo ""
-        read -p "Enter your Telegram bot username (including _bot suffix): " TELEGRAM_BOT_USERNAME_INPUT
+        read -p "Do you want to enter your Telegram bot username now? (y/n): " -n 1 -r
+        echo ""
         
-        if [ -z "$TELEGRAM_BOT_USERNAME_INPUT" ]; then
-            echo "❌ No username provided. Exiting..."
-            exit 1
-        fi
-        
-        # Update the .env file with the provided username
-        if grep -q "^TELEGRAM_BOT_USERNAME=" .env; then
-            # Update existing line
-            if [[ "$OSTYPE" == "darwin"* ]]; then
-                # macOS
-                sed -i '' "s/TELEGRAM_BOT_USERNAME=.*/TELEGRAM_BOT_USERNAME=$TELEGRAM_BOT_USERNAME_INPUT/" .env
-            else
-                # Linux
-                sed -i "s/TELEGRAM_BOT_USERNAME=.*/TELEGRAM_BOT_USERNAME=$TELEGRAM_BOT_USERNAME_INPUT/" .env
-            fi
-        else
-            # Add new line if it doesn't exist
-            echo "TELEGRAM_BOT_USERNAME=$TELEGRAM_BOT_USERNAME_INPUT" >> .env
-        fi
-        
-        echo "✅ Telegram bot username saved to .env file"
-        
-        # Re-source the .env file to get the updated username
-        source .env
-    else
-        echo "❌ Bot username is optional but recommended for easy bot access."
-        echo "   You can add it later by editing the .env file."
-        TELEGRAM_BOT_USERNAME=""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo ""
+            read -p "Enter your Telegram bot username (including _bot suffix): " TELEGRAM_BOT_USERNAME_INPUT
+            
+            if [ -z "$TELEGRAM_BOT_USERNAME_INPUT" ]; then
+                 echo "❌ No username provided. Setting default placeholder..."
+                 TELEGRAM_BOT_USERNAME_INPUT="not-available-enter-in-env-file"
+             fi
+         else
+             echo "⏭️ Skipping bot username setup. Setting default placeholder..."
+             TELEGRAM_BOT_USERNAME_INPUT="not-available-enter-in-env-file"
+         fi
+     else
+         echo "⏭️ Skipping bot username setup (no Telegram token provided)"
+         echo "   Setting default placeholder value..."
+         TELEGRAM_BOT_USERNAME_INPUT="not-available-enter-in-env-file"
     fi
+    
+    # Update the .env file with the provided username or placeholder
+    if grep -q "^TELEGRAM_BOT_USERNAME=" .env; then
+        # Update existing line
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            sed -i '' "s/TELEGRAM_BOT_USERNAME=.*/TELEGRAM_BOT_USERNAME=$TELEGRAM_BOT_USERNAME_INPUT/" .env
+        else
+            # Linux
+            sed -i "s/TELEGRAM_BOT_USERNAME=.*/TELEGRAM_BOT_USERNAME=$TELEGRAM_BOT_USERNAME_INPUT/" .env
+        fi
+    else
+        # Add new line if it doesn't exist
+        echo "TELEGRAM_BOT_USERNAME=$TELEGRAM_BOT_USERNAME_INPUT" >> .env
+    fi
+    
+    if [ "$TELEGRAM_BOT_USERNAME_INPUT" = "not-available-enter-in-env-file" ]; then
+         echo "✅ Telegram bot username set to placeholder (can be updated in .env file later)"
+     else
+         echo "✅ Telegram bot username saved to .env file"
+     fi
+    
+    # Re-source the .env file to get the updated username
+    source .env
 fi
 
-echo "✅ TELEGRAM_BOT_USERNAME is configured"
+if [ "$TELEGRAM_BOT_USERNAME" = "not-available-enter-in-env-file" ]; then
+     echo "✅ TELEGRAM_BOT_USERNAME is set to placeholder (update in .env file when ready)"
+ else
+     echo "✅ TELEGRAM_BOT_USERNAME is configured"
+ fi
 
 # Check if WEB_DASHBOARD_PORT is set
 source .env
@@ -140,15 +291,110 @@ echo "✅ WEB_DASHBOARD_PORT is configured (${WEB_DASHBOARD_PORT})"
 echo ""
 echo "💾 System Resources Configuration"
 echo "================================="
-echo "Setting up RAM allocation variables for Docker services..."
-echo "Default configuration optimized for 8GB machine:"
-echo "  • Convex Backend: 1.5G"
-echo "  • Convex Dashboard: 256M"
-echo "  • Telegram Bot: 128M"
-echo "  • Vector Convert LLM: 2G (high memory for ML processing)"
-echo "  • Lightweight LLM: 4G (highest allocation for LLM inference)"
-echo "  • Web Dashboard: 512M"
-echo "  • Total RAM Available: 8G"
+echo "🎓 Understanding RAM Allocation for Self-Hosted RAG Systems"
+echo "=========================================================="
+echo "This self-hosted Llama ML RAG (Retrieval-Augmented Generation) application"
+echo "consists of multiple Docker services that work together to provide AI chat capabilities:"
+echo ""
+echo "🧠 Core AI Services:"
+echo "  • Lightweight LLM (50% of RAM) - Main language model for chat responses"
+echo "  • Vector Convert LLM (15% of RAM) - Converts text to embeddings for search"
+echo ""
+echo "🗄️ Backend Services:"
+echo "  • Convex Backend (25% of RAM) - Real-time database and API server"
+echo "  • Convex Dashboard (4% of RAM) - Database management interface"
+echo ""
+echo "🌐 Interface Services:"
+echo "  • Web Dashboard (8% of RAM) - Web UI for monitoring and chat"
+echo "  • Telegram Bot (3% of RAM) - Telegram integration service"
+echo ""
+echo "📊 RAM Variables Explained:"
+echo "  • NEXT_PUBLIC_RAM_AVAILABLE: Total physical RAM on your machine"
+echo "  • NEXT_PUBLIC_TOTAL_RAM_ALLOCATED: How much you want to dedicate to this app"
+echo "  • Individual service RAM: Automatically calculated from total allocation"
+echo ""
+echo "💡 Recommended Minimum Requirements:"
+echo "  • 4GB RAM: Basic setup (may be slow)"
+echo "  • 8GB RAM: Recommended for good performance"
+echo "  • 16GB+ RAM: Optimal for production use"
+echo ""
+echo "⚠️ Important Notes:"
+echo "  • The system will warn you if you allocate more RAM than available"
+echo "  • You can always adjust these values later in the .env file"
+echo "  • LLM services need the most RAM for AI model inference"
+echo ""
+
+# Check if NEXT_PUBLIC_TOTAL_RAM_ALLOCATED is already set
+source .env
+if [ -z "$NEXT_PUBLIC_TOTAL_RAM_ALLOCATED" ] || [ "$NEXT_PUBLIC_TOTAL_RAM_ALLOCATED" = "" ]; then
+    echo "🧠 RAG Chatbot RAM Allocation Setup"
+    echo "==================================="
+    echo "Now let's configure how much RAM to allocate for your self-hosted RAG system."
+    echo ""
+    echo "💭 How This Works:"
+    echo "You specify a total amount, and the system automatically distributes it optimally:"
+    echo "  • 50% → LLM services (the 'brain' that generates responses)"
+    echo "  • 25% → Convex backend (database that stores your conversations)"
+    echo "  • 15% → Vector processing (converts text to searchable embeddings)"
+    echo "  • 10% → Interface services (web dashboard, Telegram bot, admin tools)"
+    echo ""
+    echo "📏 Sizing Guidelines:"
+    echo "  • 4: Minimal setup, slower responses, good for testing"
+    echo "  • 8: Balanced performance, recommended for personal use"
+    echo "  • 16: Fast responses, good for small teams"
+    echo "  • 32+: Production-ready, handles multiple concurrent users"
+    echo ""
+    echo "💡 Pro Tip: You can always change this later by editing the .env file!"
+    echo ""
+    while true; do
+        read -p "Enter total RAM to allocate in GB (e.g., 8 or 4.5): " TOTAL_RAM_INPUT
+        
+        if [ -z "$TOTAL_RAM_INPUT" ]; then
+            echo "❌ No RAM amount provided. Using default 8GB allocation..."
+            TOTAL_RAM_INPUT="8"
+            break
+        elif [[ "$TOTAL_RAM_INPUT" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+            # Valid format: number or decimal number
+            break
+        else
+            echo "❌ Invalid RAM format. Please enter a number (e.g., 8, 4.5, 16)."
+            echo "   Examples: 4, 8, 16, 32, 4.5, 12.8"
+            continue
+        fi
+    done
+    
+    # Convert the number to GB format for internal use
+    TOTAL_RAM_INPUT="${TOTAL_RAM_INPUT}G"
+    
+    echo "✅ Total RAM allocation set to: $TOTAL_RAM_INPUT"
+    
+    # Update the .env file with the total RAM allocation
+    if grep -q "^NEXT_PUBLIC_TOTAL_RAM_ALLOCATED=" .env; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s/^NEXT_PUBLIC_TOTAL_RAM_ALLOCATED=.*/NEXT_PUBLIC_TOTAL_RAM_ALLOCATED=$TOTAL_RAM_INPUT/" .env
+        else
+            sed -i "s/^NEXT_PUBLIC_TOTAL_RAM_ALLOCATED=.*/NEXT_PUBLIC_TOTAL_RAM_ALLOCATED=$TOTAL_RAM_INPUT/" .env
+        fi
+    else
+        echo "NEXT_PUBLIC_TOTAL_RAM_ALLOCATED=$TOTAL_RAM_INPUT" >> .env
+    fi
+    
+    # Re-source to get the updated value
+    source .env
+    
+    echo "🔄 Calculating individual service RAM allocations..."
+    # Call the calculate-ram.sh script to distribute RAM
+    if [ -f "./calculate-ram.sh" ]; then
+        chmod +x ./calculate-ram.sh
+        source ./calculate-ram.sh --distribute "$TOTAL_RAM_INPUT"
+    else
+        echo "⚠️  Warning: calculate-ram.sh not found. Using default allocations."
+    fi
+else
+    echo "✅ Total RAM allocation already configured: $NEXT_PUBLIC_TOTAL_RAM_ALLOCATED"
+    echo "💡 Individual service allocations will be calculated from this total."
+fi
+
 echo ""
 echo "💡 You can modify these values in the .env file after setup."
 echo "   Once set, this script will not overwrite your custom values."
@@ -220,10 +466,21 @@ done
 echo -e "\r✨ Done waiting!                  "
 
 # Check if backend is healthy
-if ! curl -f http://localhost:3210/version > /dev/null 2>&1; then
-    echo "❌ Convex backend is not responding. Check logs with: docker compose logs convex-backend"
-    exit 1
-fi
+echo "🔍 Testing Convex backend health..."
+for attempt in {1..10}; do
+    if curl -f http://localhost:3210/version > /dev/null 2>&1; then
+        echo "✅ Convex backend is healthy (attempt $attempt)"
+        break
+    else
+        echo "⏳ Attempt $attempt failed, retrying in 2 seconds..."
+        if [ $attempt -eq 10 ]; then
+            echo "❌ Convex backend is not responding after 10 attempts. Check logs with: docker compose logs convex-backend"
+            echo "💡 You can continue manually by running the rest of the setup commands"
+            exit 1
+        fi
+        sleep 2
+    fi
+done
 
 echo "✅ Convex backend is healthy"
 
@@ -379,7 +636,13 @@ docker compose build web-dashboard
 
 # Start all services
 echo "🚀 Starting all services..."
-docker compose up -d
+if [ ! -z "$TELEGRAM_TOKEN" ] && [ "$TELEGRAM_TOKEN" != "your_telegram_bot_token_here" ]; then
+    echo "📱 Starting all services including Telegram bot..."
+    docker compose --profile telegram up -d
+else
+    echo "📱 Starting services without Telegram bot (no token provided)..."
+    docker compose up -d
+fi
 
 # Wait a moment for services to start
 sleep 5
@@ -402,19 +665,29 @@ echo ""
 echo "🎉 Setup Complete!"
 echo "=================="
 echo ""
-echo "📱 Your Telegram bot is now connected to Convex!"
+if [ ! -z "$TELEGRAM_TOKEN" ] && [ "$TELEGRAM_TOKEN" != "your_telegram_bot_token_here" ]; then
+    echo "📱 Your Telegram bot is now connected to Convex!"
+else
+    echo "📱 Telegram bot is in standby mode (no token provided)"
+    echo "   To enable the bot, add your TELEGRAM_TOKEN to .env and restart with:"
+    echo "   docker compose --profile telegram up -d telegram-bot"
+fi
 echo "🌐 Convex Dashboard: http://localhost:6791"
 echo "🖥️  Web Dashboard: http://localhost:${WEB_DASHBOARD_PORT}"
 echo "🔍 API Health Check: http://localhost:3211/api/health"
 echo "📨 Messages API: http://localhost:3211/api/telegram/messages"
 echo ""
 
-# Display bot URL if username is configured
-if [ ! -z "$TELEGRAM_BOT_USERNAME" ] && [ "$TELEGRAM_BOT_USERNAME" != "your_bot_username_here" ]; then
-    echo "🤖 Your Telegram Bot URL: https://t.me/${TELEGRAM_BOT_USERNAME}"
-    echo "💬 Click the link above or search for @${TELEGRAM_BOT_USERNAME} in Telegram to start chatting!"
+# Display bot URL if username is configured and token is provided
+if [ ! -z "$TELEGRAM_TOKEN" ] && [ "$TELEGRAM_TOKEN" != "your_telegram_bot_token_here" ]; then
+    if [ ! -z "$TELEGRAM_BOT_USERNAME" ] && [ "$TELEGRAM_BOT_USERNAME" != "your_bot_username_here" ]; then
+        echo "🤖 Your Telegram Bot URL: https://t.me/${TELEGRAM_BOT_USERNAME}"
+        echo "💬 Click the link above or search for @${TELEGRAM_BOT_USERNAME} in Telegram to start chatting!"
+    else
+        echo "💬 Send a message to your Telegram bot to test the integration!"
+    fi
 else
-    echo "💬 Send a message to your Telegram bot to test the integration!"
+    echo "💬 Telegram bot is not running. Add TELEGRAM_TOKEN to .env to enable it."
 fi
 echo ""
 
@@ -447,7 +720,11 @@ echo ""
 echo "📋 Useful commands:"
 echo "   View logs: docker compose logs -f"
 echo "   Stop services: docker compose down"
-echo "   Restart bot: docker compose restart telegram-bot"
+if [ ! -z "$TELEGRAM_TOKEN" ] && [ "$TELEGRAM_TOKEN" != "your_telegram_bot_token_here" ]; then
+    echo "   Restart bot: docker compose restart telegram-bot"
+else
+    echo "   Start bot (if token added): docker compose --profile telegram up -d telegram-bot"
+fi
 echo "   Restart LLM service: docker compose restart vector-convert-llm"
 echo "   Restart dashboard: docker compose restart web-dashboard"
 echo "   View dashboard logs: docker compose logs -f web-dashboard"

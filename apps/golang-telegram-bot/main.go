@@ -226,7 +226,20 @@ func main() {
 	// Get bot token from environment variable
 	botToken := os.Getenv("TELEGRAM_TOKEN")
 	if botToken == "" {
-		log.Fatal("❌ TELEGRAM_TOKEN environment variable is required")
+		log.Println("⏸️  TELEGRAM_TOKEN not provided - entering standby mode")
+		log.Println("💡 The Telegram bot is in standby mode and can be safely ignored.")
+		log.Println("🔧 To activate the bot, set TELEGRAM_TOKEN in your .env file and restart.")
+		log.Println("🌐 Other services (web dashboard, LLM, Convex) will continue to work normally.")
+		log.Println("⏳ Bot will remain in standby mode indefinitely...")
+		
+		// Create a context that can be cancelled on interrupt
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer cancel()
+		
+		// Wait indefinitely in standby mode
+		<-ctx.Done()
+		log.Println("🛑 Telegram bot shutting down from standby mode")
+		return
 	}
 
 	// Get Convex URL from environment variable

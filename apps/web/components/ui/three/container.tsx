@@ -5,6 +5,7 @@ import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useIntersectionObserver } from "../../../hooks/use-intersection-observer";
 import { useArchitectureStore } from "../../../stores/architecture-store";
+import { useThreeJSPerformance } from "../../../hooks/use-threejs-performance";
 
 interface ContainerCube {
   name: string;
@@ -30,8 +31,12 @@ function AnimatedContainerCube({
 }: AnimatedContainerCubeProps) {
   const groupRef = useRef<THREE.Group>(null!);
 
-  useFrame((_state) => {
+  useFrame((state) => {
     if (!groupRef.current || !isVisible) return;
+
+    // Skip frames for performance - run at 20fps instead of 60fps
+    const frameCount = Math.floor(state.clock.elapsedTime * 20);
+    if (frameCount % 3 !== 0) return;
 
     // Smooth easing function
     const easeInOutCubic = (t: number): number => {
@@ -48,7 +53,7 @@ function AnimatedContainerCube({
 
     if (animationEnabled) {
       // Gentle rotation during animation
-      const rotationSpeed = 0.002 * (1 - easedProgress); // Slow down as they reach destination
+      const rotationSpeed = 0.001 * (1 - easedProgress); // Slow down as they reach destination
       groupRef.current.rotation.x += rotationSpeed;
       groupRef.current.rotation.y += rotationSpeed;
     }
@@ -218,11 +223,20 @@ export function Container({
   const [scrollProgress, setScrollProgress] = React.useState(0);
   const { containerVisible, setContainerVisible } = useArchitectureStore();
 
+  // Use performance manager for Three.js scenes
+  const { shouldRender, updateVisibility } = useThreeJSPerformance("container", 1); // Highest priority
+
   // Use intersection observer for performance
   const { ref: containerRef, isIntersecting } = useIntersectionObserver({
     threshold: 0.1,
     rootMargin: "100px",
+    throttleMs: 32, // Reduce update frequency
   });
+
+  // Update performance manager when visibility changes
+  useEffect(() => {
+    updateVisibility(isIntersecting);
+  }, [isIntersecting, updateVisibility]);
 
   // Responsive width/height
   const [actualWidth, setActualWidth] = React.useState<number>(0);
@@ -274,7 +288,7 @@ export function Container({
   }, [setContainerVisible, isIntersecting, containerRef.current]);
 
   const isMobile = actualWidth < 500;
-  const shouldRenderCanvas = containerVisible && isIntersecting;
+  const shouldRenderCanvas = shouldRender && containerVisible && isIntersecting;
 
   return (
     <div

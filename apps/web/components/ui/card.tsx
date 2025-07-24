@@ -15,8 +15,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "bg-white/25 border border-gray-200/25 rounded-xl p-6 shadow-sm backdrop-blur-sm",
-          "dark:bg-gray-900/25 dark:border-gray-700/25",
+          "bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-md border border-white/10 rounded-lg shadow-lg",
           className
         )}
       >
@@ -50,16 +49,16 @@ export const StatCard = ({
     (typeof value === "string" && /^\d+$/.test(value));
 
   return (
-    <Card className={className}>
-      <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
+    <Card className={cn("p-6", className)}>
+      <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">
         {title}
       </h3>
-      <p className="text-3xl font-bold text-gray-900 dark:text-white font-mono">
+      <p className="text-3xl font-bold text-slate-100 font-mono">
         {useCountUp && isNumeric ? (
           <CountUp
             to={numericValue}
             duration={2}
-            className="text-3xl font-bold text-gray-900 dark:text-white font-mono"
+            className="text-3xl font-bold text-slate-100 font-mono"
           />
         ) : (
           value

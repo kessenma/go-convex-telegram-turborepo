@@ -91,34 +91,46 @@ export default function ArchitecturePage(): React.ReactElement {
   );
 
   useEffect(() => {
+    let ticking = false;
+
     function handleScroll() {
-      if (!secondTimelineRef.current) return;
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          if (!secondTimelineRef.current) {
+            ticking = false;
+            return;
+          }
 
-      const rect = secondTimelineRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
+          const rect = secondTimelineRef.current.getBoundingClientRect();
+          const windowHeight = window.innerHeight;
 
-      // Calculate when second timeline should be active
-      const startTrigger = windowHeight * 0.8;
-      const endTrigger = -rect.height * 0.2;
+          // Calculate when second timeline should be active
+          const startTrigger = windowHeight * 0.8;
+          const endTrigger = -rect.height * 0.2;
 
-      let progress = 0;
-      let secondActive = false;
+          let progress = 0;
+          let secondActive = false;
 
-      if (rect.top <= startTrigger && rect.bottom >= endTrigger) {
-        secondActive = true;
-        const totalDistance = startTrigger - endTrigger;
-        const currentDistance = startTrigger - rect.top;
-        progress = Math.max(0, Math.min(1, currentDistance / totalDistance));
+          if (rect.top <= startTrigger && rect.bottom >= endTrigger) {
+            secondActive = true;
+            const totalDistance = startTrigger - endTrigger;
+            const currentDistance = startTrigger - rect.top;
+            progress = Math.max(0, Math.min(1, currentDistance / totalDistance));
+          }
+
+          // Manage timeline states
+          setFirstTimelineActive(!secondActive);
+          setSecondTimelineActive(secondActive);
+          setScrollProgress(progress);
+          
+          ticking = false;
+        });
+        ticking = true;
       }
-
-      // Manage timeline states
-      setFirstTimelineActive(!secondActive);
-      setSecondTimelineActive(secondActive);
-      setScrollProgress(progress);
     }
 
     handleScroll();
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [setFirstTimelineActive, setSecondTimelineActive, setScrollProgress]);
 

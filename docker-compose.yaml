@@ -79,6 +79,7 @@ services:
       - telegram-bot-network
 
   # Telegram bot written in Go
+  # Only starts if TELEGRAM_TOKEN is provided
   telegram-bot:
       build:
         context: ./apps/golang-telegram-bot
@@ -102,6 +103,8 @@ services:
       restart: unless-stopped
       networks:
         - telegram-bot-network
+      profiles:
+        - telegram
 
 
 

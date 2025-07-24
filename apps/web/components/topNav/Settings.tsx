@@ -227,7 +227,6 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                     <LightweightLLMStatusIndicator
                       size="sm"
                       showLogs={false}
-                      className="bg-gray-50 dark:bg-gray-800/30"
                     />
                   </motion.div>
 
@@ -241,7 +240,6 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                     <LLMStatusIndicator
                       size="sm"
                       showLogs={false}
-                      className="bg-gray-50 dark:bg-gray-800/30"
                     />
                   </motion.div>
 
@@ -255,7 +253,6 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                     <ConvexStatusIndicator
                       size="sm"
                       showLogs={false}
-                      className="bg-gray-50 dark:bg-gray-800/30"
                     />
                   </motion.div>
 
@@ -269,7 +266,6 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                     <DockerStatus
                       size="sm"
                       showLogs={false}
-                      className="bg-gray-50 dark:bg-gray-800/30"
                     />
                   </motion.div>
 
@@ -283,7 +279,6 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                     <UserCountIndicator
                       size="sm"
                       showLogs={false}
-                      className="bg-gray-50 dark:bg-gray-800/30"
                     />
                   </motion.div>
                 </motion.div>
@@ -359,17 +354,17 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                       hidden: { opacity: 0, y: 5 },
                       visible: { opacity: 1, y: 0 },
                     }}
-                    className="p-3 bg-gray-50 rounded-lg dark:bg-gray-800/30"
+                    className="p-3 bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-md border border-white/10 rounded-lg"
                   >
                     <div className="space-y-4">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-slate-300">
                         Stay updated with the latest changes and improvements to the project.
                       </p>
 
                       <div className="flex justify-center gap-4">
                         <ChangelogModal
                           trigger={
-                            <button className="flex gap-1 items-center text-sm text-cyan-500 transition-colors hover:text-cyan-600">
+                            <button className="flex gap-1 items-center text-sm text-cyan-400 transition-colors hover:text-cyan-300">
                               View Changelog
                             </button>
                           }
@@ -377,7 +372,7 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                         />
                         <a
                           href="/system-status"
-                          className="flex gap-1 items-center text-sm text-emerald-500 transition-colors hover:text-emerald-600"
+                          className="flex gap-1 items-center text-sm text-emerald-400 transition-colors hover:text-emerald-300"
                         >
                           System Status
                         </a>

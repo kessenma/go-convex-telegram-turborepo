@@ -7,6 +7,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { useIntersectionObserver } from "../../../hooks/use-intersection-observer";
+import { useThreeJSPerformance } from "../../../hooks/use-threejs-performance";
 
 // Register GSAP ScrollTrigger
 if (typeof window !== "undefined") {
@@ -32,6 +33,10 @@ function FallbackWhale({
 
   useFrame((state) => {
     if (!whaleRef.current || !rigRef.current || !animationEnabled) return;
+
+    // Skip frames for performance
+    const frameCount = Math.floor(state.clock.elapsedTime * 30); // 30fps instead of 60fps
+    if (frameCount % 2 !== 0) return;
 
     // Continuous time that doesn't reset when component unmounts/remounts
     const currentTime = state.clock.elapsedTime;
@@ -371,11 +376,20 @@ export function BackgroundWhale({
   const [scrollProgress, setScrollProgress] = useState(0);
   const [_whaleVisible, setWhaleVisible] = useState(false);
 
+  // Use performance manager for Three.js scenes
+  const { shouldRender, updateVisibility } = useThreeJSPerformance("background-whale", 3); // Lowest priority
+
   // Use intersection observer for performance
   const { ref: containerRef, isIntersecting } = useIntersectionObserver({
     threshold: 0.1,
     rootMargin: "100px",
+    throttleMs: 32, // Reduce update frequency
   });
+
+  // Update performance manager when visibility changes
+  useEffect(() => {
+    updateVisibility(isIntersecting);
+  }, [isIntersecting, updateVisibility]);
 
   // Responsive dimensions
   const [actualHeight, setActualHeight] = useState<number>(height);
@@ -535,7 +549,7 @@ export function BackgroundWhale({
     };
   }, [containerRef.current]);
 
-  const shouldRenderCanvas = isIntersecting;
+  const shouldRenderCanvas = shouldRender && isIntersecting;
 
   return (
     <div

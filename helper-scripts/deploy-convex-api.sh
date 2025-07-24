@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # deploy-convex-api.sh
-# Automated Convex API generation and deployment script
-# This script generates TypeScript API definitions from a running Convex backend
-# and deploys them to the web application
+# Automated Convex admin key generation and API deployment script
+# This script generates an admin key, then generates TypeScript API definitions
+# from a running Convex backend and deploys them to the web application
 
 set -e
 
@@ -21,6 +21,16 @@ if [ ! -f "package.json" ] || [ ! -d "$WEB_APP_DIR" ] || [ ! -d "$DOCKER_CONVEX_
     echo "   Expected to find: package.json, $WEB_APP_DIR/, $DOCKER_CONVEX_DIR/"
     exit 1
 fi
+
+# Generate admin key first
+echo "🔑 Generating Convex admin key..."
+if ! docker compose exec convex-backend ./generate_admin_key.sh > /dev/null 2>&1; then
+    echo "❌ Error: Failed to generate admin key"
+    echo "   Make sure the convex-backend container is running"
+    echo "   You can start it with: docker compose up convex-backend -d"
+    exit 1
+fi
+echo "✅ Admin key generated successfully"
 
 # Check if convex-helpers is installed
 if ! command -v npx &> /dev/null; then
@@ -82,11 +92,12 @@ echo "   📄 File: $WEB_APP_DIR/$GENERATED_API_FILE"
 echo "   📏 Size: $API_FILE_SIZE bytes"
 echo "   📝 Lines: $API_LINE_COUNT"
 echo ""
-echo "🎉 Convex API deployment complete!"
+echo "🎉 Convex admin key generation and API deployment complete!"
 echo ""
 echo "📝 Next steps:"
-echo "   1. Update your imports to use: import { api } from '../$GENERATED_API_FILE'"
-echo "   2. Replace references to 'convexApi1752607591403' with '$GENERATED_API_FILE'"
-echo "   3. Test your application to ensure all API calls work correctly"
+echo "   1. Admin key has been generated and saved to the convex-backend container"
+echo "   2. Update your imports to use: import { api } from '../$GENERATED_API_FILE'"
+echo "   3. Replace references to 'convexApi1752607591403' with '$GENERATED_API_FILE'"
+echo "   4. Test your application to ensure all API calls work correctly"
 echo ""
 echo "💡 Tip: You can now delete the old convexApi1752607591403.ts file once you've updated all imports"

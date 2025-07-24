@@ -4,6 +4,7 @@ import { Users } from "lucide-react";
 import { useUserCountStatus } from "../../hooks/use-status-operations";
 import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
+import { Card } from "../ui/card";
 import CountUp from "../ui/text-animations/count-up";
 
 interface UserCountIndicatorProps {
@@ -62,16 +63,14 @@ export function UserCountIndicator({
   };
 
   return (
-    <div
+    <Card
       className={cn(
-        "rounded-lg border transition-all duration-200",
+        "transition-all duration-200",
         sizeClasses[size],
-        getStatusBgColor(),
-        "border-slate-700/50",
         className
       )}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div className="flex items-center space-x-3">
           <div
             className={cn(
@@ -86,7 +85,7 @@ export function UserCountIndicator({
 
           <div className="flex-1">
             <div className="flex items-center space-x-2">
-              <h3 className="font-medium text-slate-200">Active Users</h3>
+              <h3 className="font-medium text-slate-100">Active Users</h3>
               <div
                 className={cn(
                   "w-2 h-2 rounded-full",
@@ -101,7 +100,7 @@ export function UserCountIndicator({
               />
             </div>
 
-            <div className="flex items-center space-x-2 mt-1">
+            <div className="flex items-center mt-1 space-x-2">
               <span className="text-2xl font-bold text-slate-100">
                 {loading ? (
                   <span className="animate-pulse">--</span>
@@ -113,11 +112,11 @@ export function UserCountIndicator({
                   />
                 )}
               </span>
-              <span className="text-sm text-slate-400">online</span>
+              <span className="text-sm text-slate-300">online</span>
             </div>
 
             {status.bySource && (
-              <div className="flex items-center space-x-4 mt-2 text-xs text-slate-400">
+              <div className="flex items-center mt-2 space-x-4 text-xs text-slate-300">
                 {status.bySource.web && <span>Web: {status.bySource.web}</span>}
                 {status.bySource.mobile && (
                   <span>Mobile: {status.bySource.mobile}</span>
@@ -132,18 +131,18 @@ export function UserCountIndicator({
       </div>
 
       {showLogs && status.details?.lastUpdated && (
-        <div className="mt-3 pt-3 border-t border-slate-700/50">
-          <p className="text-xs text-slate-400">
+        <div className="pt-3 mt-3 border-t border-slate-700/50">
+          <p className="text-xs text-slate-300">
             Last updated:{" "}
             {new Date(status.details.lastUpdated).toLocaleTimeString()}
           </p>
           {status.details.error && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="mt-1 text-xs text-red-400">
               Error: {status.details.error}
             </p>
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

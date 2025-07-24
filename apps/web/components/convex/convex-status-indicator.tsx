@@ -16,6 +16,7 @@ import { useState } from "react";
 import { useConvexStatus } from "../../hooks/use-status-operations";
 import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
+import { Card } from "../ui/card";
 
 interface ConvexStatusIndicatorProps {
   size?: "sm" | "md" | "lg";
@@ -114,9 +115,9 @@ export const ConvexStatusIndicator = ({
   };
 
   return (
-    <div
+    <Card
       className={cn(
-        "rounded-lg border border-slate-700/50 bg-slate-900/80 backdrop-blur-sm",
+        "p-0 overflow-hidden",
         className
       )}
     >
@@ -139,19 +140,19 @@ export const ConvexStatusIndicator = ({
             <div className={cn("text-sm font-medium", getStatusColor())}>
               {getStatusText()}
             </div>
-            <div className="text-xs text-slate-400">{getProgressMessage()}</div>
+            <div className="text-xs text-slate-300">{getProgressMessage()}</div>
             {details?.service && status === "connected" && (
-              <div className="mt-1 text-xs text-slate-400">
+              <div className="mt-1 text-xs text-slate-300">
                 Service: {details.service}
               </div>
             )}
             {uptime && (
-              <div className="mt-1 text-xs text-slate-400">
+              <div className="mt-1 text-xs text-slate-300">
                 Uptime: {formatUptime(uptime)}
               </div>
             )}
             {statistics?.requestsPerHour !== undefined && (
-              <div className="mt-1 text-xs text-slate-400">
+              <div className="mt-1 text-xs text-slate-300">
                 Requests/hour: {statistics.requestsPerHour}
               </div>
             )}
@@ -363,6 +364,6 @@ export const ConvexStatusIndicator = ({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };

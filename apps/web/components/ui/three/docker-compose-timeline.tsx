@@ -5,6 +5,7 @@ import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useIntersectionObserver } from "../../../hooks/use-intersection-observer";
 import { useArchitectureStore } from "../../../stores/architecture-store";
+import { useThreeJSPerformance } from "../../../hooks/use-threejs-performance";
 
 interface DockerService {
   name: string;
@@ -34,6 +35,10 @@ function AnimatedCube({
   useFrame((state) => {
     if (!groupRef.current || !isVisible || !animationEnabled) return;
 
+    // Skip frames for performance - run at 20fps instead of 60fps
+    const frameCount = Math.floor(state.clock.elapsedTime * 20);
+    if (frameCount % 3 !== 0) return;
+
     // Smooth easing function
     const easeInOutCubic = (t: number): number => {
       return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
@@ -49,25 +54,21 @@ function AnimatedCube({
 
     if (animationEnabled) {
       // Slower cube rotation for better performance
-      groupRef.current.rotation.x += 0.005;
-      groupRef.current.rotation.y += 0.005;
+      groupRef.current.rotation.x += 0.003;
+      groupRef.current.rotation.y += 0.003;
     }
 
     // Optimize material updates - only update when opacity changes significantly
     const opacity = Math.min(1, easedProgress * 2);
-    const frameCount = Math.floor(state.clock.elapsedTime * 10); // Update every ~100ms
-    if (frameCount % 3 === 0) {
-      // Reduce update frequency
-      groupRef.current.children.forEach((child, childIndex) => {
-        if ("material" in child && child.material) {
-          const material = child.material as any;
-          if (material.opacity !== undefined) {
-            const baseOpacity = childIndex === 0 ? 0.9 : 0.18;
-            material.opacity = baseOpacity * opacity;
-          }
+    groupRef.current.children.forEach((child, childIndex) => {
+      if ("material" in child && child.material) {
+        const material = child.material as any;
+        if (material.opacity !== undefined) {
+          const baseOpacity = childIndex === 0 ? 0.9 : 0.18;
+          material.opacity = baseOpacity * opacity;
         }
-      });
-    }
+      }
+    });
   });
 
   const cubeSize = isMobile ? 0.6 : 0.8;
@@ -163,11 +164,20 @@ export function DockerComposeTimeline({
     addLog,
   } = useArchitectureStore();
 
+  // Use performance manager for Three.js scenes
+  const { shouldRender, updateVisibility } = useThreeJSPerformance("docker-compose-timeline", 2); // Medium priority
+
   // Use intersection observer for performance
   const { ref: containerRef, isIntersecting } = useIntersectionObserver({
     threshold: 0.1,
     rootMargin: "100px",
+    throttleMs: 32, // Reduce update frequency
   });
+
+  // Update performance manager when visibility changes
+  useEffect(() => {
+    updateVisibility(isIntersecting && secondTimelineActive);
+  }, [isIntersecting, secondTimelineActive, updateVisibility]);
 
   // Responsive width/height
   const [actualWidth, setActualWidth] = React.useState<number>(
@@ -201,7 +211,7 @@ export function DockerComposeTimeline({
   ]);
 
   const isMobile = actualWidth < 500;
-  const shouldRenderCanvas = dockerComposeTimelineVisible && isIntersecting;
+  const shouldRenderCanvas = shouldRender && dockerComposeTimelineVisible && isIntersecting;
 
   return (
     <div

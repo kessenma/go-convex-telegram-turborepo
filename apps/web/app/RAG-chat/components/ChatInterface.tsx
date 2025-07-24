@@ -267,7 +267,7 @@ export function ChatInterface({
                   className: "w-4 h-4 text-curious-cyan-400",
                 })}
                 {renderIcon(Loader2, { className: "w-4 h-4 animate-spin" })}
-                <span className="text-gray-300">Thinking...</span>
+                <span className="text-gray-300">Thinking&hellip;</span>
               </div>
             </div>
           </div>

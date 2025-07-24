@@ -1,7 +1,7 @@
 "use client";
 
 import { Folder } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { renderIcon } from "../../lib/icon-utils";
 import DocumentViewer from "./DocumentViewer";
 
@@ -10,12 +10,45 @@ interface DocumentFolderIconProps {
   className?: string;
 }
 
+interface DocumentData {
+  _id: string;
+  title: string;
+  content: string;
+  contentType: string;
+  fileSize: number;
+  wordCount: number;
+  uploadedAt: number;
+  summary?: string;
+  hasEmbedding: boolean;
+}
+
 export default function DocumentFolderIcon({
   documentId,
   className = "",
 }: DocumentFolderIconProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ x: number; y: number } | undefined>(undefined);
+  const [documentData, setDocumentData] = useState<DocumentData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDocument = async () => {
+      try {
+        const response = await fetch(`/api/documents/${documentId}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch document");
+        }
+        const data = await response.json();
+        setDocumentData(data);
+      } catch (error) {
+        console.error("Error fetching document:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocument();
+  }, [documentId]);
 
   const handleFolderClick = (e: React.MouseEvent) => {
     // Capture the click position for animation origin
@@ -26,6 +59,11 @@ export default function DocumentFolderIcon({
   const handleCloseViewer = () => {
     setIsViewerOpen(false);
   };
+
+  // Don't render anything if loading or document doesn't have embeddings
+  if (loading || !documentData?.hasEmbedding) {
+    return null;
+  }
 
   return (
     <>
