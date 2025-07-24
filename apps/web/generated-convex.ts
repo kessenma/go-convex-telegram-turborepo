@@ -159,6 +159,12 @@ export type PublicApiType = {
       Record<string, never>,
       any
     >;
+    getEnhancedDocumentStats: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      any
+    >;
     getDocumentUploadStats: FunctionReference<
       "query",
       "public",
@@ -203,6 +209,12 @@ export type PublicApiType = {
       "query",
       "public",
       Record<string, never>,
+      any
+    >;
+    deleteDocumentEmbeddings: FunctionReference<
+      "mutation",
+      "public",
+      { documentId: Id<"rag_documents"> },
       any
     >;
     processDocumentWithChunking: FunctionReference<

@@ -1,11 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../../generated-convex";
-import type { GenericId as Id } from "convex/values";
 
-const convex = new ConvexHttpClient(
-  process.env.CONVEX_HTTP_URL || "http://localhost:3211"
-);
+const CONVEX_HTTP_URL = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
 
 export async function DELETE(
   _request: NextRequest,
@@ -22,11 +17,15 @@ export async function DELETE(
       );
     }
 
-    const result = await convex.mutation(api.documents.deleteDocument, {
-      documentId: documentId as Id<"rag_documents">,
+    const response = await fetch(`${CONVEX_HTTP_URL}/api/documents/${documentId}`, {
+      method: "DELETE",
     });
-
-    return NextResponse.json(result);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting document:", error);
     return NextResponse.json(
@@ -51,17 +50,20 @@ export async function GET(
       );
     }
 
-    const document = await convex.query(api.documents.getDocumentById, {
-      documentId: documentId as Id<"rag_documents">,
-    });
-
-    if (!document) {
+    const response = await fetch(`${CONVEX_HTTP_URL}/api/documents/${documentId}`);
+    
+    if (response.status === 404) {
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 }
       );
     }
-
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const document = await response.json();
     return NextResponse.json(document);
   } catch (error) {
     console.error("Error fetching document:", error);

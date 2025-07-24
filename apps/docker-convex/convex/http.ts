@@ -92,6 +92,26 @@ export const getDocumentStatsAPI = httpAction(async (ctx, request) => {
   }
 });
 
+  // Get enhanced document statistics with embeddings and file types
+export const getEnhancedDocumentStatsAPI = httpAction(async (ctx, request) => {
+  try {
+    const stats = await ctx.runQuery(api.documents.getEnhancedDocumentStats, {});
+    return new Response(JSON.stringify(stats), {
+      status: 200,
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    console.error("Enhanced document stats error:", e);
+    return errorResponse("Failed to fetch enhanced document statistics", 500, message);
+  }
+});
+
 // Save message to thread API
 export const saveMessageToThreadAPI = httpAction(async (ctx, request) => {
   const body = await request.json();
@@ -635,6 +655,32 @@ export const getAllDocumentEmbeddingsAPI = httpAction(async (ctx, request) => {
     // Get all active document embeddings for vector search
     const embeddings = await ctx.runQuery(api.embeddings.getAllDocumentEmbeddings, {});
     return new Response(JSON.stringify(embeddings));
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return errorResponse("Internal server error", 500, message);
+  }
+});
+
+export const createDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { documentId, embedding, embeddingModel, embeddingDimensions, chunkText, chunkIndex, processingTimeMs } = body;
+    
+    if (!documentId || !embedding) {
+      return errorResponse("Missing required fields: documentId, embedding", 400);
+    }
+    
+    const result = await ctx.runMutation(api.embeddings.createDocumentEmbedding, {
+      documentId: documentId as Id<"rag_documents">,
+      embedding,
+      embeddingModel: embeddingModel || "all-MiniLM-L6-v2",
+      embeddingDimensions: embeddingDimensions || embedding.length,
+      chunkText,
+      chunkIndex,
+      processingTimeMs
+    });
+    
+    return new Response(JSON.stringify({ success: true, embeddingId: result }));
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return errorResponse("Internal server error", 500, message);
@@ -1449,6 +1495,12 @@ http.route({
   handler: getDocumentStatsAPI,
 });
 
+http.route({
+  path: "/api/documents/enhanced-stats",
+  method: "GET",
+  handler: getEnhancedDocumentStatsAPI,
+});
+
 // EMBEDDING API ENDPOINTS
 http.route({
   path: "/api/embeddings",
@@ -1490,6 +1542,12 @@ http.route({
   path: "/api/embeddings/all",
   method: "GET",
   handler: getAllDocumentEmbeddingsAPI,
+});
+
+http.route({
+  path: "/api/embeddings/createDocumentEmbedding",
+  method: "POST",
+  handler: createDocumentEmbeddingAPI,
 });
 
 // CONVERSION JOBS API ENDPOINTS

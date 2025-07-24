@@ -137,6 +137,33 @@ export const getAllDocumentEmbeddings = query({
   },
 });
 
+// Delete all embeddings for a document
+export const deleteDocumentEmbeddings = mutation({
+  args: {
+    documentId: v.id("rag_documents"),
+  },
+  handler: async (ctx, args) => {
+    // Get all embeddings for this document
+    const embeddings = await ctx.db
+      .query("document_embeddings")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    // Soft delete all embeddings by setting isActive to false
+    const deletePromises = embeddings.map(embedding => 
+      ctx.db.patch(embedding._id, {
+        isActive: false,
+      })
+    );
+
+    await Promise.all(deletePromises);
+
+    console.log(`Deleted ${embeddings.length} embeddings for document ${args.documentId}`);
+    return { deletedCount: embeddings.length };
+  },
+});
+
 // Process document with chunking
 export const processDocumentWithChunking = action({
   args: {

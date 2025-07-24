@@ -6,6 +6,7 @@ import {
   ChevronDown,
   FileText,
   Hash,
+  RefreshCw,
   Trash2,
   X,
   Zap,
@@ -24,6 +25,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "../ui/accordion";
+import { Card } from "../ui/card";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -68,26 +70,33 @@ export default function DocumentViewer({
   const { openNotifications } = useNotifications();
   const deleteDocument = useCallback(async () => {
     try {
+      setDeleting(true);
       const response = await fetch(`/api/documents/${documentId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
         throw new Error("Failed to delete document");
       }
-      setDeleting(true);
       toast.success("Document deleted successfully");
+      
+      // Close the viewer after deletion animation completes
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     } catch (err) {
+      setDeleting(false);
       toast.error(
         err instanceof Error ? err.message : "Failed to delete document"
       );
     }
-  }, [documentId]);
+  }, [documentId, onClose]);
   const [documentData, setDocumentData] = useState<DocumentData | null>(null);
   const [embeddingData, setEmbeddingData] = useState<EmbeddingData[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingEmbeddings, setLoadingEmbeddings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [retryingEmbedding, setRetryingEmbedding] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const _id = useId();
 
@@ -105,6 +114,38 @@ export default function DocumentViewer({
       setLoadingEmbeddings(false);
     }
   }, []);
+
+  const retryEmbedding = useCallback(async () => {
+    if (!documentId) return;
+    
+    setRetryingEmbedding(true);
+    try {
+      const response = await fetch('/api/RAG/embeddings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ documentId }),
+      });
+      
+      if (response.ok) {
+        toast.success('Embedding generation started successfully');
+        // Refresh document data after a short delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to start embedding generation');
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to retry embedding'
+      );
+    } finally {
+      setRetryingEmbedding(false);
+    }
+  }, [documentId]);
 
   useEffect(() => {
     if (!isOpen || !documentId) {
@@ -155,6 +196,13 @@ export default function DocumentViewer({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen, onClose]);
+  
+  // Reset deleting state when component is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setDeleting(false);
+    }
+  }, [isOpen]);
 
   useOutsideClick(ref, () => onClose());
 
@@ -370,15 +418,38 @@ export default function DocumentViewer({
                           : renderIcon(ZapOff, {
                               className: small ? "w-4 h-4 text-gray-500" : "w-5 h-5 text-gray-500",
                             })}
-                        <div>
+                        <div className="flex-1">
                           <p className={`${small ? 'text-xs' : 'text-sm'} text-gray-400`}>Vector Status</p>
-                          <p
-                            className={`font-medium ${small ? 'text-sm' : ''} ${documentData.hasEmbedding ? "text-green-400" : "text-gray-500"}`}
-                          >
-                            {documentData.hasEmbedding
-                              ? "Embedded"
-                              : "Not Embedded"}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`font-medium ${small ? 'text-sm' : ''} ${documentData.hasEmbedding ? "text-green-400" : "text-gray-500"}`}
+                            >
+                              {documentData.hasEmbedding
+                                ? "Embedded"
+                                : "Not Embedded"}
+                            </p>
+                            {!documentData.hasEmbedding && (
+                              <Card className="p-0 bg-transparent border-white/20">
+                                <button
+                                  onClick={retryEmbedding}
+                                  disabled={retryingEmbedding}
+                                  className={`${small ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-sm'} w-full bg-transparent hover:bg-white/5 disabled:bg-transparent disabled:cursor-not-allowed disabled:opacity-50 text-white border border-white/30 hover:border-white/50 rounded transition-all duration-200 flex items-center justify-center gap-2`}
+                                >
+                                  {retryingEmbedding ? (
+                                    <>
+                                      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                      <span>Retrying...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {renderIcon(RefreshCw, { className: "w-3 h-3" })}
+                                      <span>Try Again</span>
+                                    </>
+                                  )}
+                                </button>
+                              </Card>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

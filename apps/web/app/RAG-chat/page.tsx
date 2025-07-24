@@ -145,7 +145,7 @@ export default function RAGChatPage(): React.ReactElement {
         ></Hero>
 
         {/* LLM Status Indicator */}
-        <div className="mx-auto mr-80 mb-4 ml-80 max-w-6xl">
+        <div className="mx-auto mb-4 max-w-6xl px-4">
           <LightweightLLMStatusIndicator
             size="md"
             showLabel={true}
@@ -154,7 +154,7 @@ export default function RAGChatPage(): React.ReactElement {
           />
         </div>
 
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl px-4">
           {showHistory ? (
             <Card className="border-gray-700 backdrop-blur-sm bg-gray-800/50">
               <ChatHistory
@@ -174,8 +174,8 @@ export default function RAGChatPage(): React.ReactElement {
               />
             </Card>
           ) : (
-            <div className="border-gray-700">
-              <div className="p-6 mr-64 ml-64">
+            <Card className="border-gray-700 backdrop-blur-sm bg-gray-800/50">
+              <div className="p-4 sm:p-6">
                 <DocumentSelector
                   documents={documentsArray as Document[]}
                   selectedDocuments={selectedDocuments}
@@ -184,7 +184,7 @@ export default function RAGChatPage(): React.ReactElement {
                   onShowHistory={handleShowHistory}
                 />
               </div>
-            </div>
+            </Card>
           )}
         </div>
       </div>

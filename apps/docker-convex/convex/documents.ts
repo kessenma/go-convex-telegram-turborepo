@@ -120,10 +120,17 @@ export const updateDocument = mutation({
 export const deleteDocument = mutation({
   args: { documentId: v.id("rag_documents") },
   handler: async (ctx, args) => {
+    // First, delete all associated embeddings
+    await ctx.runMutation(api.embeddings.deleteDocumentEmbeddings, {
+      documentId: args.documentId,
+    });
+    
+    // Then soft delete the document
     await ctx.db.patch(args.documentId, {
       isActive: false,
       lastModified: Date.now(),
     });
+    
     return args.documentId;
   },
 });
@@ -227,6 +234,116 @@ export const getDocumentStats = query({
       contentTypes,
       averageWordsPerDocument: totalDocuments > 0 ? Math.round(totalWords / totalDocuments) : 0,
       averageSizePerDocument: totalDocuments > 0 ? Math.round(totalSize / totalDocuments) : 0,
+    };
+  },
+});
+
+// Get enhanced document statistics with embeddings and file types
+export const getEnhancedDocumentStats = query({
+  args: {},
+  handler: async (ctx) => {
+    // Get all active documents
+    const allDocs = await ctx.db
+      .query("rag_documents")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .collect();
+
+    // Get all active embeddings
+    const allEmbeddings = await ctx.db
+      .query("document_embeddings")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    // Basic document stats
+    const totalDocuments = allDocs.length;
+    const totalWords = allDocs.reduce((sum, doc) => sum + doc.wordCount, 0);
+    const totalSize = allDocs.reduce((sum, doc) => sum + doc.fileSize, 0);
+    
+    // Content type breakdown
+    const contentTypes = allDocs.reduce((acc, doc) => {
+      acc[doc.contentType] = (acc[doc.contentType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // File type breakdown (inferred from content type and title)
+    const fileTypes = allDocs.reduce((acc, doc) => {
+      let fileType = 'other';
+      const titleLower = doc.title.toLowerCase();
+      
+      // Check file extension first for more accurate detection
+      if (titleLower.endsWith('.pdf')) {
+        fileType = 'pdf';
+      } else if (titleLower.endsWith('.docx') || titleLower.endsWith('.doc')) {
+        fileType = 'word';
+      } else if (titleLower.endsWith('.md') || doc.contentType === 'markdown') {
+        fileType = 'markdown';
+      } else if (titleLower.endsWith('.txt')) {
+        fileType = 'text';
+      } else if (doc.contentType === 'text') {
+        // For text contentType without specific extension, try to infer from title
+        if (titleLower.includes('pdf') || titleLower.includes('.pdf')) {
+          fileType = 'pdf';
+        } else if (titleLower.includes('docx') || titleLower.includes('doc') || titleLower.includes('word')) {
+          fileType = 'word';
+        } else {
+          fileType = 'text';
+        }
+      }
+      
+      acc[fileType] = (acc[fileType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Embedding statistics
+    const documentsWithEmbeddings = allDocs.filter(doc => doc.hasEmbedding).length;
+    const documentsWithoutEmbeddings = totalDocuments - documentsWithEmbeddings;
+    const totalEmbeddings = allEmbeddings.length;
+    const totalChunks = allEmbeddings.filter(emb => emb.chunkIndex !== undefined).length;
+    
+    // Embedding model breakdown
+    const embeddingModels = allEmbeddings.reduce((acc, emb) => {
+      acc[emb.embeddingModel] = (acc[emb.embeddingModel] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Calculate estimated lines of text (rough estimate: ~10-15 words per line)
+    const estimatedLines = Math.round(totalWords / 12);
+
+    // Recent activity (last 24 hours)
+    const now = Date.now();
+    const oneDayAgo = now - (24 * 60 * 60 * 1000);
+    const recentUploads = allDocs.filter(doc => doc.uploadedAt >= oneDayAgo).length;
+    const recentEmbeddings = allEmbeddings.filter(emb => emb.createdAt >= oneDayAgo).length;
+
+    return {
+      // Basic stats
+      totalDocuments,
+      totalWords,
+      totalSize,
+      estimatedLines,
+      
+      // File type breakdown
+      fileTypes,
+      contentTypes,
+      
+      // Embedding stats
+      totalEmbeddings,
+      totalChunks,
+      documentsWithEmbeddings,
+      documentsWithoutEmbeddings,
+      embeddingModels,
+      embeddingCoverage: totalDocuments > 0 ? Math.round((documentsWithEmbeddings / totalDocuments) * 100) : 0,
+      
+      // Averages
+      averageWordsPerDocument: totalDocuments > 0 ? Math.round(totalWords / totalDocuments) : 0,
+      averageSizePerDocument: totalDocuments > 0 ? Math.round(totalSize / totalDocuments) : 0,
+      averageEmbeddingsPerDocument: documentsWithEmbeddings > 0 ? Math.round(totalEmbeddings / documentsWithEmbeddings) : 0,
+      
+      // Recent activity
+      recentActivity: {
+        uploadsLast24h: recentUploads,
+        embeddingsLast24h: recentEmbeddings,
+      },
     };
   },
 });

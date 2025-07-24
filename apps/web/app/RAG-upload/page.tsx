@@ -48,7 +48,7 @@ export default function RAGUploadPage(): React.ReactElement {
   const documentsQuery = useSafeQuery(api.documents.getAllDocuments, {
     limit: 5,
   });
-  const statsQuery = useSafeQuery(api.documents.getDocumentStats);
+  const statsQuery = useSafeQuery(api.documents.getEnhancedDocumentStats);
   const { mutate: saveDocument } = useSafeMutation(api.documents.saveDocument);
 
   const documents = documentsQuery.data?.page || [];

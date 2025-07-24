@@ -77,7 +77,7 @@ def create_conversion_job(job_type, document_id=None, input_text=None, request_s
             'requestSource': request_source,
         }
         
-        response = requests.post(f"{convex_url}/http/api/conversion-jobs", json=job_data)
+        response = requests.post(f"{convex_url}/api/conversion-jobs", json=job_data)
         if response.status_code == 200:
             return job_id
         else:
@@ -107,7 +107,7 @@ def update_conversion_job(job_id, status, output_data=None, error_message=None, 
         if processing_time_ms is not None:
             update_data['processingTimeMs'] = processing_time_ms
             
-        response = requests.put(f"{convex_url}/http/api/conversion-jobs", json=update_data)
+        response = requests.put(f"{convex_url}/api/conversion-jobs", json=update_data)
         return response.status_code == 200
     except Exception as e:
         logger.error(f"Error updating conversion job: {e}")
@@ -930,7 +930,7 @@ def process_document_embedding():
             saved_chunks = 0
             for i, (chunk_text, chunk_embedding) in enumerate(zip(chunks, chunk_embeddings)):
                 try:
-                    save_url = f"{convex_url}/api/embeddings"
+                    save_url = f"{convex_url}/api/embeddings/createDocumentEmbedding"
                     save_payload = {
                         'documentId': document_id,
                         'embedding': chunk_embedding,
@@ -1201,7 +1201,7 @@ def process_markdown_document():
         logger.info(f"Calculated average embedding from {len(chunk_embeddings)} chunks, dimension: {len(avg_embedding)}")
         
         # Save to Convex
-        save_url = f"{convex_url}/http/api/embeddings"
+        save_url = f"{convex_url}/api/embeddings"
         save_payload = {
             'text': content,
             'embedding': avg_embedding,

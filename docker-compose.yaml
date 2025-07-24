@@ -92,7 +92,7 @@ services:
             memory: 64M
       environment:
         - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-        - CONVEX_URL=http://convex-backend:3210
+        - CONVEX_URL=http://convex-backend:3211
         - CONVEX_INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
         - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:8081
       depends_on:
@@ -123,7 +123,7 @@ services:
       - "${VECTOR_CONVERT_PORT:-8081}:8081"
     environment:
       - PORT=8081
-      - CONVEX_URL=http://convex-backend:3210
+      - CONVEX_URL=http://convex-backend:3211
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
       - TRANSFORMERS_CACHE=/app/cache/transformers
