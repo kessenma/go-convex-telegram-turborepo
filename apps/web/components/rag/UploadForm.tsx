@@ -132,9 +132,6 @@ export function UploadForm({
   handleFileUpload,
   handleBatchFileUpload,
   handleTextUpload,
-  isGeneratingEmbeddings,
-  handleGenerateEmbeddings,
-  embeddingMessage,
 }: UploadFormProps): React.ReactElement | null {
   // Track previous upload status to prevent duplicate toasts
   const prevUploadStatusRef = React.useRef<"idle" | "success" | "error">(

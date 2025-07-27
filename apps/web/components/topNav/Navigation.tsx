@@ -26,7 +26,7 @@ import { useConvexStatus, useLLMStatus } from "../../hooks/use-status-operations
 import { renderIcon } from "../../lib/icon-utils";
 import MobileNavigation from "./mobile-navigation";
 import { Notifications } from "./Notifications";
-import { Settings } from "./Settings";
+import { Settings } from "../settings/0Settings";
 import { StatusIndicator } from ".././ui/status-indicator";
 
 export default function Navigation(): React.ReactElement {

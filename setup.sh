@@ -437,7 +437,7 @@ set_ram_variable "NEXT_PUBLIC_WEB_DASHBOARD_RAM" "512M" "Web Dashboard RAM"
 
 # Set LLM service ports if not configured
 set_ram_variable "LIGHTWEIGHT_LLM_PORT" "8082" "Lightweight LLM Port"
-set_ram_variable "VECTOR_CONVERT_PORT" "8081" "Vector Convert Port"
+set_ram_variable "VECTOR_CONVERT_PORT" "7999" "Vector Convert Port"
 
 # Set model configuration variables if not configured
 set_ram_variable "NEXT_PUBLIC_VECTOR_CONVERT_MODEL" "\"all-MiniLM-L6-v2\"" "Vector Convert Model"
@@ -580,7 +580,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' "s#CONVEX_HTTP_URL=.*#CONVEX_HTTP_URL=http://localhost:3211#" .env.local
     sed -i '' "s#CONVEX_URL=.*#CONVEX_URL=http://localhost:3210#" .env.local
     sed -i '' "s#TELEGRAM_BOT_TOKEN=.*#TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}#" .env.local
-    sed -i '' "s#VECTOR_CONVERT_LLM_URL=.*#VECTOR_CONVERT_LLM_URL=http://localhost:8081#" .env.local
+    sed -i '' "s#VECTOR_CONVERT_LLM_URL=.*#VECTOR_CONVERT_LLM_URL=http://localhost:7999#" .env.local
     sed -i '' "s#NEXT_PUBLIC_VECTOR_CONVERT_MODEL=.*#NEXT_PUBLIC_VECTOR_CONVERT_MODEL=all-MiniLM-L6-v2#" .env.local
     sed -i '' "s#NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=.*#NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2#" .env.local
     sed -i '' "s#NEXT_PUBLIC_LLM_MODEL=.*#NEXT_PUBLIC_LLM_MODEL=Meta Llama 3.2#" .env.local
@@ -594,7 +594,7 @@ else
     sed -i "s#CONVEX_HTTP_URL=.*#CONVEX_HTTP_URL=http://localhost:3211#" .env.local
     sed -i "s#CONVEX_URL=.*#CONVEX_URL=http://localhost:3210#" .env.local
     sed -i "s#TELEGRAM_BOT_TOKEN=.*#TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}#" .env.local
-    sed -i "s#VECTOR_CONVERT_LLM_URL=.*#VECTOR_CONVERT_LLM_URL=http://localhost:8081#" .env.local
+    sed -i "s#VECTOR_CONVERT_LLM_URL=.*#VECTOR_CONVERT_LLM_URL=http://localhost:7999#" .env.local
     sed -i "s#NEXT_PUBLIC_VECTOR_CONVERT_MODEL=.*#NEXT_PUBLIC_VECTOR_CONVERT_MODEL=all-MiniLM-L6-v2#" .env.local
     sed -i "s#NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=.*#NEXT_PUBLIC_VECTOR_CONVERT_MODEL_HUGGINGFACE_URL=https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2#" .env.local
     sed -i "s#NEXT_PUBLIC_LLM_MODEL=.*#NEXT_PUBLIC_LLM_MODEL=Meta Llama 3.2#" .env.local
@@ -733,8 +733,8 @@ echo ""
 echo "🔍 Test the APIs:"
 echo "   Convex API: curl http://localhost:3211/api/health"
 echo "   Messages API: curl http://localhost:3211/api/telegram/messages"
-echo "   Vector LLM API: curl http://localhost:8081/health"
-echo "   Text Embedding: curl -X POST http://localhost:8081/embed -H 'Content-Type: application/json' -d '{\"text\":\"Hello world\"}'"
+echo "   Vector LLM API: curl http://localhost:7999/health"
+echo "   Text Embedding: curl -X POST http://localhost:7999/embed -H 'Content-Type: application/json' -d '{\"text\":\"Hello world\"}'"
 echo ""
 echo "📱 Mobile App Commands:"
 echo "======================"

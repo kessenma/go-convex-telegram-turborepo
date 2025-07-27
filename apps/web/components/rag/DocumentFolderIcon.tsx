@@ -8,6 +8,7 @@ import DocumentViewer from "./DocumentViewer";
 interface DocumentFolderIconProps {
   documentId: string;
   className?: string;
+  interactive?: boolean;
 }
 
 interface DocumentData {
@@ -25,6 +26,7 @@ interface DocumentData {
 export default function DocumentFolderIcon({
   documentId,
   className = "",
+  interactive = true,
 }: DocumentFolderIconProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ x: number; y: number } | undefined>(undefined);
@@ -63,6 +65,18 @@ export default function DocumentFolderIcon({
   // Don't render anything if loading or document doesn't have embeddings
   if (loading || !documentData?.hasEmbedding) {
     return null;
+  }
+
+  // If not interactive, just render the icon
+  if (!interactive) {
+    return (
+      <div
+        className={`inline-flex items-center justify-center p-1 rounded-sm border-2 border-gray-600 bg-gray-800 ${className}`}
+        style={{ aspectRatio: '1/1' }}
+      >
+        {renderIcon(Folder, { className: "w-4 h-4 text-curious-cyan-500" })}
+      </div>
+    );
   }
 
   return (

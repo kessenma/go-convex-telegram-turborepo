@@ -4,7 +4,7 @@ A lightweight self-hosted LLM service for document chat.
 
 ## Features
 
-- **Lightweight Model**: Uses Microsoft the Llama 3.2 model
+- **Lightweight Model**: Uses Meta's Llama 3.2 model
 - **Memory Efficient**: 4-bit quantization for reduced memory usage
 - **Fast API**: FastAPI-based REST API
 - **Document Context**: Optimized for RAG (Retrieval-Augmented Generation)

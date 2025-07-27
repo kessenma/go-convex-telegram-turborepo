@@ -73,8 +73,6 @@ services:
     depends_on:
       convex-backend:
         condition: service_healthy
-      vector-convert-llm:
-        condition: service_healthy
     networks:
       - telegram-bot-network
 
@@ -92,9 +90,9 @@ services:
             memory: 64M
       environment:
         - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-        - CONVEX_URL=http://convex-backend:3211
+        - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3211}
         - CONVEX_INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
-        - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:8081
+        - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:7999
       depends_on:
         convex-backend:
           condition: service_healthy
@@ -120,9 +118,9 @@ services:
         reservations:
           memory: 1G
     ports:
-      - "${VECTOR_CONVERT_PORT:-8081}:8081"
+      - "${VECTOR_CONVERT_PORT:-7999}:7999"
     environment:
-      - PORT=8081
+      - PORT=7999
       - CONVEX_URL=http://convex-backend:3211
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
@@ -147,7 +145,7 @@ services:
       - 8.8.4.4
       - 1.1.1.1
     healthcheck:
-      test: curl -f http://localhost:8081/health || exit 1
+      test: curl -f http://localhost:7999/health || exit 1
       interval: 30s
       timeout: 10s
       start_period: 60s
@@ -168,6 +166,7 @@ services:
       - "${LIGHTWEIGHT_LLM_PORT:-8082}:8082"
       environment:
         - PORT=8082
+        - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3211}
         - PYTHONUNBUFFERED=1
         - PYTHONDONTWRITEBYTECODE=1
         - MODEL_PATH=./Phi-3-mini-4k-instruct-q4.gguf
@@ -213,7 +212,7 @@ services:
     environment:
       - NEXT_PUBLIC_TOTAL_RAM_ALLOCATED=${NEXT_PUBLIC_TOTAL_RAM_ALLOCATED}
       - NEXT_PUBLIC_RAM_AVAILABLE=${NEXT_PUBLIC_RAM_AVAILABLE:-8G}
-      - NEXT_PUBLIC_VECTOR_CONVERT_PORT=${VECTOR_CONVERT_PORT:-8081}
+      - NEXT_PUBLIC_VECTOR_CONVERT_PORT=${VECTOR_CONVERT_PORT:-7999}
       - NEXT_PUBLIC_LIGHTWEIGHT_LLM_PORT=${LIGHTWEIGHT_LLM_PORT:-8082}
       - NEXT_PUBLIC_CONVEX_DASHBOARD_PORT=${CONVEX_DASHBOARD_PORT:-6791}
       - NEXT_PUBLIC_NEXT_PUBLIC_CONVEX_PORT=${NEXT_PUBLIC_CONVEX_SITE_PROXY_PORT:-3211}
@@ -223,9 +222,9 @@ services:
       - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3211}
       - CONVEX_HTTP_URL=${CONVEX_HTTP_URL:-http://convex-backend:3211}
       - NEXT_PUBLIC_CONVEX_WS_URL=${NEXT_PUBLIC_CONVEX_WS_URL:-ws://localhost:3210}
-      - VECTOR_CONVERT_LLM_INTERNAL_URL=${VECTOR_CONVERT_LLM_INTERNAL_URL:-http://vector-convert-llm:8081}
-      - VECTOR_CONVERT_LLM_URL=${VECTOR_CONVERT_LLM_URL:-http://vector-convert-llm:8081}
-      - NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL=${NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL:-http://localhost:8081}
+      - VECTOR_CONVERT_LLM_INTERNAL_URL=${VECTOR_CONVERT_LLM_INTERNAL_URL:-http://vector-convert-llm:7999}
+      - VECTOR_CONVERT_LLM_URL=${VECTOR_CONVERT_LLM_URL:-http://vector-convert-llm:7999}
+      - NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL=${NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL:-http://localhost:7999}
       - LIGHTWEIGHT_LLM_INTERNAL_URL=${LIGHTWEIGHT_LLM_INTERNAL_URL:-http://lightweight-llm:8082}
       - LIGHTWEIGHT_LLM_URL=${LIGHTWEIGHT_LLM_URL:-http://lightweight-llm:8082}
       - NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL=${NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL:-http://localhost:8082}

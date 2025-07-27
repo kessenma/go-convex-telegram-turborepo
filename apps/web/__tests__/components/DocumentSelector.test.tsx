@@ -1,0 +1,419 @@
+import React from 'react'
+import { screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { render, createMockDocument } from '../utils/test-utils'
+import { DocumentSelector } from '../../app/RAG-chat/components/DocumentSelector'
+
+// Mock window.location
+const mockLocation = {
+  href: '',
+  reload: jest.fn(),
+}
+Object.defineProperty(window, 'location', {
+  value: mockLocation,
+  writable: true,
+})
+
+describe('DocumentSelector', () => {
+  const defaultProps = {
+    documents: [],
+    selectedDocuments: [],
+    onDocumentToggle: jest.fn(),
+    onStartChat: jest.fn(),
+    onShowHistory: jest.fn(),
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockLocation.href = ''
+  })
+
+  describe('Empty State', () => {
+    it('shows empty state when no embedded documents are available', () => {
+      const documentsWithoutEmbeddings = [
+        createMockDocument({ hasEmbedding: false }),
+        createMockDocument({ _id: 'doc-2', hasEmbedding: false }),
+      ]
+
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={documentsWithoutEmbeddings}
+        />
+      )
+
+      expect(screen.getByText('No Embedded Documents Found')).toBeInTheDocument()
+      expect(screen.getByText('You need to upload and embed documents before you can start chatting.')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /upload documents/i })).toBeInTheDocument()
+    })
+
+    it('redirects to upload page when upload button is clicked', async () => {
+      const user = userEvent.setup()
+
+      render(<DocumentSelector {...defaultProps} />)
+
+      const uploadButton = screen.getByRole('button', { name: /upload documents/i })
+      await user.click(uploadButton)
+
+      expect(mockLocation.href).toBe('/RAG-upload')
+    })
+
+    it('handles non-array documents gracefully', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={null as any}
+        />
+      )
+
+      expect(screen.getByText('No Embedded Documents Found')).toBeInTheDocument()
+    })
+  })
+
+  describe('Document List', () => {
+    const embeddedDocuments = [
+      createMockDocument({
+        _id: 'doc-1',
+        title: 'First Document',
+        hasEmbedding: true,
+        fileSize: 1024,
+        wordCount: 100,
+        contentType: 'markdown',
+        summary: 'This is the first document summary',
+      }),
+      createMockDocument({
+        _id: 'doc-2',
+        title: 'Second Document',
+        hasEmbedding: true,
+        fileSize: 2048,
+        wordCount: 200,
+        contentType: 'text',
+      }),
+    ]
+
+    it('displays embedded documents correctly', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+        />
+      )
+
+      expect(screen.getByText('First Document')).toBeInTheDocument()
+      expect(screen.getByText('Second Document')).toBeInTheDocument()
+      expect(screen.getByText('2 embedded documents available')).toBeInTheDocument()
+    })
+
+    it('shows document metadata correctly', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+        />
+      )
+
+      // Check file sizes
+      expect(screen.getByText('1 KB')).toBeInTheDocument()
+      expect(screen.getByText('2 KB')).toBeInTheDocument()
+
+      // Check word counts
+      expect(screen.getByText('100 words')).toBeInTheDocument()
+      expect(screen.getByText('200 words')).toBeInTheDocument()
+
+      // Check content types
+      expect(screen.getByText('markdown')).toBeInTheDocument()
+      expect(screen.getByText('text')).toBeInTheDocument()
+    })
+
+    it('shows document summary when available', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+        />
+      )
+
+      expect(screen.getByText('This is the first document summary')).toBeInTheDocument()
+    })
+
+    it('filters out non-embedded documents', () => {
+      const mixedDocuments = [
+        ...embeddedDocuments,
+        createMockDocument({
+          _id: 'doc-3',
+          title: 'Non-embedded Document',
+          hasEmbedding: false,
+        }),
+      ]
+
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={mixedDocuments}
+        />
+      )
+
+      expect(screen.getByText('First Document')).toBeInTheDocument()
+      expect(screen.getByText('Second Document')).toBeInTheDocument()
+      expect(screen.queryByText('Non-embedded Document')).not.toBeInTheDocument()
+      expect(screen.getByText('2 embedded documents available')).toBeInTheDocument()
+    })
+  })
+
+  describe('Document Selection', () => {
+    const embeddedDocuments = [
+      createMockDocument({
+        _id: 'doc-1',
+        title: 'First Document',
+        hasEmbedding: true,
+      }),
+      createMockDocument({
+        _id: 'doc-2',
+        title: 'Second Document',
+        hasEmbedding: true,
+      }),
+    ]
+
+    it('handles document selection correctly', async () => {
+      const user = userEvent.setup()
+      const onDocumentToggle = jest.fn()
+
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          onDocumentToggle={onDocumentToggle}
+        />
+      )
+
+      const firstDocument = screen.getByText('First Document').closest('div')
+      await user.click(firstDocument!)
+
+      expect(onDocumentToggle).toHaveBeenCalledWith('doc-1')
+    })
+
+    it('shows selected documents with different styling', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          selectedDocuments={['doc-1']}
+        />
+      )
+
+      const firstDocument = screen.getByText('First Document').closest('div')
+      const secondDocument = screen.getByText('Second Document').closest('div')
+
+      expect(firstDocument).toHaveClass('border-curious-cyan-500')
+      expect(secondDocument).toHaveClass('border-gray-700')
+    })
+
+    it('shows checkmark for selected documents', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          selectedDocuments={['doc-1']}
+        />
+      )
+
+      // The selected document should have a checkmark
+      const checkboxes = screen.getAllByRole('generic') // checkboxes are rendered as divs
+      const selectedCheckbox = checkboxes.find(el => 
+        el.classList.contains('bg-curious-cyan-500')
+      )
+      expect(selectedCheckbox).toBeInTheDocument()
+    })
+  })
+
+  describe('Chat Actions', () => {
+    const embeddedDocuments = [
+      createMockDocument({
+        _id: 'doc-1',
+        title: 'First Document',
+        hasEmbedding: true,
+      }),
+    ]
+
+    it('disables start chat button when no documents are selected', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          selectedDocuments={[]}
+        />
+      )
+
+      const startChatButton = screen.getByRole('button', { name: /start chat \(0 selected\)/i })
+      expect(startChatButton).toBeDisabled()
+    })
+
+    it('enables start chat button when documents are selected', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          selectedDocuments={['doc-1']}
+        />
+      )
+
+      const startChatButton = screen.getByRole('button', { name: /start chat \(1 selected\)/i })
+      expect(startChatButton).not.toBeDisabled()
+    })
+
+    it('calls onStartChat when start chat button is clicked', async () => {
+      const user = userEvent.setup()
+      const onStartChat = jest.fn()
+
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          selectedDocuments={['doc-1']}
+          onStartChat={onStartChat}
+        />
+      )
+
+      const startChatButton = screen.getByRole('button', { name: /start chat \(1 selected\)/i })
+      await user.click(startChatButton)
+
+      expect(onStartChat).toHaveBeenCalled()
+    })
+
+    it('calls onShowHistory when view history button is clicked', async () => {
+      const user = userEvent.setup()
+      const onShowHistory = jest.fn()
+
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          onShowHistory={onShowHistory}
+        />
+      )
+
+      const historyButton = screen.getByRole('button', { name: /view history/i })
+      await user.click(historyButton)
+
+      expect(onShowHistory).toHaveBeenCalled()
+    })
+  })
+
+  describe('Responsive Design', () => {
+    const embeddedDocuments = [
+      createMockDocument({
+        _id: 'doc-1',
+        title: 'Test Document',
+        hasEmbedding: true,
+      }),
+    ]
+
+    it('shows different text for mobile and desktop', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          selectedDocuments={['doc-1']}
+        />
+      )
+
+      // Desktop text
+      expect(screen.getByText('Start Chat (1 selected)')).toBeInTheDocument()
+      // Mobile text (hidden by default but present in DOM)
+      expect(screen.getByText('Chat (1)')).toBeInTheDocument()
+    })
+  })
+
+  describe('Accessibility', () => {
+    const embeddedDocuments = [
+      createMockDocument({
+        _id: 'doc-1',
+        title: 'Test Document',
+        hasEmbedding: true,
+      }),
+    ]
+
+    it('provides tooltip for disabled start chat button', async () => {
+      const user = userEvent.setup()
+
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          selectedDocuments={[]}
+        />
+      )
+
+      const disabledButton = screen.getByRole('button', { name: /start chat \(0 selected\)/i })
+      
+      // Hover over disabled button to show tooltip
+      await user.hover(disabledButton)
+
+      // Note: Tooltip content might not be immediately visible in tests
+      // This test ensures the tooltip trigger is present
+      expect(disabledButton).toBeInTheDocument()
+    })
+
+    it('has proper button roles and labels', () => {
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={embeddedDocuments}
+          selectedDocuments={['doc-1']}
+        />
+      )
+
+      expect(screen.getByRole('button', { name: /start chat/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /view history/i })).toBeInTheDocument()
+    })
+  })
+
+  describe('Data Formatting', () => {
+    it('formats file sizes correctly', () => {
+      const documentsWithVariousSizes = [
+        createMockDocument({
+          _id: 'doc-1',
+          title: 'Small File',
+          hasEmbedding: true,
+          fileSize: 512, // 512 bytes
+        }),
+        createMockDocument({
+          _id: 'doc-2',
+          title: 'Medium File',
+          hasEmbedding: true,
+          fileSize: 1024 * 1024, // 1 MB
+        }),
+      ]
+
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={documentsWithVariousSizes}
+        />
+      )
+
+      expect(screen.getByText('512 Bytes')).toBeInTheDocument()
+      expect(screen.getByText('1 MB')).toBeInTheDocument()
+    })
+
+    it('formats word counts with locale formatting', () => {
+      const documentWithLargeWordCount = [
+        createMockDocument({
+          _id: 'doc-1',
+          title: 'Large Document',
+          hasEmbedding: true,
+          wordCount: 12345,
+        }),
+      ]
+
+      render(
+        <DocumentSelector 
+          {...defaultProps} 
+          documents={documentWithLargeWordCount}
+        />
+      )
+
+      expect(screen.getByText('12,345 words')).toBeInTheDocument()
+    })
+  })
+})

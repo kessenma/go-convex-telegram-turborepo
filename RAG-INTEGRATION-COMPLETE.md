@@ -118,7 +118,7 @@ docker-compose logs vector-convert-llm
 
 ### If embeddings fail to generate:
 - Check that documents are uploaded properly
-- Verify the vector service is healthy: `curl http://localhost:8081/health`
+- Verify the vector service is healthy: `curl http://localhost:7999/health`
 - Check memory usage in the dashboard
 
 ### If chat responses are empty:

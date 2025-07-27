@@ -11,4 +11,11 @@ crons.interval(
   api.userSessions.cleanupExpiredSessions
 );
 
+// Clean up old service statuses every 5 minutes (keep only latest 100 entries)
+crons.interval(
+  "cleanup old service statuses",
+  { minutes: 5 },
+  api.serviceStatus.cleanupOldStatuses
+);
+
 export default crons;

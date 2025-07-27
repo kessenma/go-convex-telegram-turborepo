@@ -1,7 +1,6 @@
 // apps/docker-convex/convex/ragChat.ts
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
 
 // Create a new RAG conversation
 export const createConversation = mutation({
@@ -126,17 +125,17 @@ export const getRecentConversations = query({
   handler: async (ctx, args) => {
     const limit = args.limit || 20;
     
-    let query = ctx.db
+    let conversationQuery = ctx.db
       .query("rag_conversations")
       .withIndex("by_active_and_last_message", (q) => q.eq("isActive", true));
     
     if (args.userId) {
-      query = ctx.db
+      conversationQuery = ctx.db
         .query("rag_conversations")
         .withIndex("by_user", (q) => q.eq("userId", args.userId));
     }
     
-    const conversations = await query
+    const conversations = await conversationQuery
       .order("desc")
       .take(limit);
     

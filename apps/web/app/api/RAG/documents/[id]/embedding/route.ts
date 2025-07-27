@@ -79,7 +79,7 @@ export async function POST(
     }
 
     // 2. Call vector-convert-llm service
-    const vectorServiceUrl = "http://vector-convert-llm:8081/encode";
+    const vectorServiceUrl = "http://vector-convert-llm:7999/encode";
     const vectorResponse = await fetch(vectorServiceUrl, {
       method: "POST",
       headers: {

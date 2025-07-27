@@ -87,7 +87,7 @@ The `setup.sh` script now includes the Vector Convert LLM service that provides 
 To ensure the Vector Convert LLM service is built and ready:
 - The service uses the `sentence-transformers/all-distilroberta-v1` model for generating 768-dimensional embeddings
 - Verify the service is running using `docker compose ps` and look for `vector-convert-llm`
-- Test the service: `curl http://localhost:8081/health`
+- Test the service: `curl http://localhost:7999/health`
 
 ## 🗄️ Database Management
 
@@ -112,7 +112,7 @@ Your Convex database provides a powerful web interface for:
 - `GET /api/telegram/messages?chatId=123` - Get messages for specific chat
 - `GET /api/health` - Health check
 
-### Vector Convert LLM Service (Port 8081)
+### Vector Convert LLM Service (Port 7999)
 - `GET /health` - Health check
 - `POST /embed` - Generate text embeddings
 - `POST /similarity` - Calculate text similarity
@@ -176,8 +176,8 @@ docker system prune -af
 
 ### Vector Convert LLM Service Issues
 1. Check Vector Convert LLM service logs: `docker compose logs vector-convert-llm`
-2. Verify Vector Convert LLM service health: `curl http://localhost:8081/health`
-3. Test text embedding: `curl -X POST http://localhost:8081/embed -H "Content-Type: application/json" -d '{"text":"Hello world"}'`
+2. Verify Vector Convert LLM service health: `curl http://localhost:7999/health`
+3. Test text embedding: `curl -X POST http://localhost:7999/embed -H "Content-Type: application/json" -d '{"text":"Hello world"}'`
 4. Check if the model is loading properly (may take time on first startup)
 
 ## 🔒 Security Notes

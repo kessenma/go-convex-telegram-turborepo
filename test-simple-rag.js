@@ -36,7 +36,7 @@ async function testSimpleRAG() {
   // Step 2: Test vector service directly
   console.log('\n2. Testing vector service...');
   try {
-    const embedResponse = await fetch('http://localhost:8081/embed', {
+    const embedResponse = await fetch('http://localhost:7999/embed', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: query })

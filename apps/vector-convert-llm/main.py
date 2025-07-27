@@ -4,6 +4,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import logging
 import os
+import sys
 import time
 import threading
 import requests
@@ -16,6 +17,7 @@ import psutil
 import gc
 import threading
 import requests
+from status_reporter import StatusReporter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -60,6 +62,19 @@ model_loading = False
 model_error = None
 start_time = time.time()
 load_start_time = None
+
+# Status reporter configuration
+CONVEX_URL = os.environ.get('CONVEX_URL', 'http://localhost:3000')
+SERVICE_NAME = 'vector-convert-llm'
+status_reporter = None
+
+# Log environment configuration for debugging
+logger.info(f"🔧 Environment Configuration:")
+logger.info(f"   CONVEX_URL: {CONVEX_URL}")
+logger.info(f"   SERVICE_NAME: {SERVICE_NAME}")
+logger.info(f"   PORT: {os.environ.get('PORT', '7999')}")
+logger.info(f"   Python version: {sys.version}")
+logger.info(f"   Working directory: {os.getcwd()}")
 
 def create_conversion_job(job_type, document_id=None, input_text=None, request_source="api"):
     """Create a new conversion job in Convex"""
@@ -115,7 +130,7 @@ def update_conversion_job(job_id, status, output_data=None, error_message=None, 
 
 def load_model():
     """Load the sentence transformer model with retry logic and fallback"""
-    global model, model_loaded, model_loading, model_error, load_start_time
+    global model, model_loaded, model_loading, model_error, load_start_time, status_reporter
     import time
     import os
     
@@ -125,13 +140,16 @@ def load_model():
         load_start_time = time.time()
         logger.info("Loading minimal sentence-transformers model: all-MiniLM-L6-v2")
         
+        # Send loading status
+        if status_reporter:
+            status_reporter.send_loading_status("Loading sentence transformer model: all-MiniLM-L6-v2")
+        
         # Import here to avoid startup issues
         from sentence_transformers import SentenceTransformer
         
         # Try multiple approaches to load the model
         model_names = [
             'all-MiniLM-L6-v2',
-            'sentence-transformers/all-MiniLM-L6-v2',
             'paraphrase-MiniLM-L6-v2'
         ]
         
@@ -161,6 +179,11 @@ def load_model():
                 model_loaded = True
                 model_loading = False
                 logger.info(f"Model '{model_name}' loaded successfully on attempt {attempt}")
+                
+                # Send healthy status
+                if status_reporter:
+                    status_reporter.send_healthy_status(model_name)
+                
                 return
                 
             except Exception as e:
@@ -175,6 +198,10 @@ def load_model():
         model_loading = False
         model_error = str(e)
         logger.error(f"All model loading attempts failed: {e}")
+        
+        # Send error status
+        if status_reporter:
+            status_reporter.send_error_status(f"Model loading failed: {str(e)}")
         
         # Set a flag to indicate we're running without a model
         model = None
@@ -447,7 +474,7 @@ def get_memory_usage():
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint with detailed status and memory usage"""
-    global model_loaded, model_loading, model_error, start_time, load_start_time
+    global model_loaded, model_loading, model_error, start_time, load_start_time, status_reporter
     
     current_time = time.time()
     uptime = current_time - start_time
@@ -466,17 +493,31 @@ def health_check():
         ready = False
         if load_start_time:
             load_duration = current_time - load_start_time
-            message = f"Model downloading/loading... ({load_duration:.1f}s elapsed)"
+            message = f"Vector converter app model downloading/loading... ({load_duration:.1f}s elapsed)"
         else:
-            message = "Model downloading/loading..."
+            message = "Vector converter model downloading/loading..."
     elif model_loaded:
         status = 'healthy'
         ready = True
-        message = "Model ready for inference"
+        message = "Vector converter app ready for inference"
     else:
         status = 'starting'
         ready = False
-        message = "Service starting, model not yet loaded"
+        message = "Vector converter app starting, model not yet loaded"
+    
+    # Send periodic status updates to Convex
+    if status_reporter:
+        try:
+            if model_error:
+                status_reporter.send_degraded_status(f"Service running in degraded mode: {model_error[:100]}")
+            elif model_loaded:
+                status_reporter.send_healthy_status('all-MiniLM-L6-v2')
+            elif model_loading:
+                status_reporter.send_loading_status("Loading sentence transformer model")
+            else:
+                status_reporter.send_startup_status()
+        except Exception as e:
+            logger.error(f"Error sending status update: {e}")
     
     return jsonify({
         'status': status,
@@ -484,7 +525,7 @@ def health_check():
         'message': message,
         'model_loaded': model_loaded,
         'model_loading': model_loading,
-        'model': 'sentence-transformers/all-MiniLM-L6-v2' if model_loaded else None,
+        'model': 'all-MiniLM-L6-v2' if model_loaded else None,
         'service': 'vector-convert-llm',
         'uptime': uptime,
         'error': model_error,
@@ -1346,8 +1387,76 @@ def embed_and_save():
         logger.error(f"Error in embed_and_save_to_convex: {e}")
         return jsonify({'error': str(e)}), 500
 
-# Start model loading in background thread when module is imported
+def get_current_status():
+    """Get current service status for periodic reporting"""
+    global model, model_loaded, model_loading, model_error
+    
+    if model_error:
+        return {
+            'status': 'error',
+            'ready': False,
+            'message': f'Model error: {model_error}',
+            'model': 'all-MiniLM-L6-v2',
+            'model_loaded': False,
+            'model_loading': False
+        }
+    elif model_loading:
+        return {
+            'status': 'loading',
+            'ready': False,
+            'message': 'Loading sentence transformer model',
+            'model': 'all-MiniLM-L6-v2',
+            'model_loaded': False,
+            'model_loading': True
+        }
+    elif model_loaded and model is not None:
+        return {
+            'status': 'healthy',
+            'ready': True,
+            'message': 'Service is running normally',
+            'model': 'all-MiniLM-L6-v2',
+            'model_loaded': True,
+            'model_loading': False
+        }
+    else:
+        return {
+            'status': 'degraded',
+            'ready': True,
+            'message': 'Service running without model',
+            'model': 'all-MiniLM-L6-v2',
+            'model_loaded': False,
+            'model_loading': False,
+            'degraded_mode': True
+        }
+
+# Initialize status reporter and start model loading in background thread when module is imported
 logger.info("Starting vector-convert-llm service...")
+
+# Add a small delay to ensure convex-backend is fully ready
+logger.info("Waiting 3 seconds for convex-backend to be fully ready...")
+time.sleep(3)
+
+# Initialize status reporter
+try:
+    logger.info(f"Initializing status reporter with CONVEX_URL: {CONVEX_URL}")
+    status_reporter = StatusReporter(SERVICE_NAME, CONVEX_URL)
+    
+    # Try to send startup status
+    startup_success = status_reporter.send_startup_status()
+    if startup_success:
+        logger.info(f"✅ Status reporter initialized successfully for service: {SERVICE_NAME}")
+        
+        # Start periodic status reporting every 30 seconds
+        status_reporter.start_periodic_reporting(interval_seconds=30, get_status_callback=get_current_status)
+        logger.info("Periodic status reporting started")
+    else:
+        logger.warning("⚠️ Status reporter initialized but startup status failed - continuing anyway")
+        
+except Exception as e:
+    logger.error(f"❌ Failed to initialize status reporter: {e}")
+    logger.warning("Service will continue without status reporting")
+    status_reporter = None
+
 model_thread = threading.Thread(target=load_model_async, daemon=True)
 model_thread.start()
 
@@ -1358,4 +1467,4 @@ logger.info("Available endpoints: /health, /embed, /similarity, /search, /proces
 
 if __name__ == '__main__':
     logger.info("Starting minimal vector-convert-llm service...")
-    app.run(host='0.0.0.0', port=8081, debug=False, threaded=True)
+    app.run(host='0.0.0.0', port=7999, debug=False, threaded=True)

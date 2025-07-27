@@ -1092,7 +1092,7 @@ if __name__ == "__main__":
     startup()
     logger.info("Starting memory monitoring worker...")
     threading.Thread(target=memory_monitoring_worker, daemon=True).start()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8081)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 7999)))
 
 # For Gunicorn, use post-fork hook:
 def post_fork(server, worker):

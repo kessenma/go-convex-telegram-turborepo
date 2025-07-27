@@ -1,6 +1,6 @@
 // apps/docker-convex/convex/userSessions.ts
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 // Session timeout in milliseconds (2 minutes for more responsive user count)
 const SESSION_TIMEOUT = 2 * 60 * 1000;

@@ -174,7 +174,7 @@ export function ContainerManagementDemo({
     },
     {
       type: "output",
-      content: "  • Vector API: http://localhost:8081",
+      content: "  • Vector API: http://localhost:7999",
       delay: 3300,
       outputType: "info" as const,
     },

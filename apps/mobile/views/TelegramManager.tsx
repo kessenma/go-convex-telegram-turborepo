@@ -5,7 +5,9 @@ import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useQuery } from 'convex/react';
-import { api } from '../convex/_generated/api';
+import { api } from '../generated-convex';
+import { StatusIndicator } from '../components';
+import { useMessageNotifications } from '../providers/MessageNotificationProvider';
 
 // Define the navigation param list types
 type RootStackParamList = {
@@ -29,13 +31,24 @@ type TelegramManagerNavigationProp = CompositeNavigationProp<
 interface StatCardProps {
     title: string;
     value: string | number;
+    isStatus?: boolean;
+    statusType?: "connected" | "connecting" | "disconnected" | "active";
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value }) => {
+const StatCard: React.FC<StatCardProps> = ({ title, value, isStatus, statusType }) => {
     return (
         <View style={styles.statCard}>
             <Text style={styles.statTitle}>{title}</Text>
-            <Text style={styles.statValue}>{value}</Text>
+            {isStatus && statusType ? (
+                <StatusIndicator 
+                    status={statusType} 
+                    showLabel={true} 
+                    size="md"
+                    style={styles.statusIndicator}
+                />
+            ) : (
+                <Text style={styles.statValue}>{value}</Text>
+            )}
         </View>
     );
 };
@@ -58,11 +71,12 @@ const ActionButton: React.FC<ActionButtonProps> = ({ title, icon, onPress }) => 
 
 const TelegramManager = () => {
     const navigation = useNavigation<TelegramManagerNavigationProp>();
+    const { showTestNotification } = useMessageNotifications();
 
     // Fetch real data from Convex
     const messages = useQuery(api.messages.getAllMessages, { limit: 5 });
     const messageCount = messages?.length || 0;
-    const databaseStatus = messages === undefined ? "Connecting..." : "Connected";
+    const databaseStatus = messages === undefined ? "connecting" : "connected";
     const botUsername = "your_bot_username"; // This could also come from env or Convex
 
     const handleViewMessages = () => {
@@ -117,7 +131,12 @@ const TelegramManager = () => {
                     title="Total Messages" 
                     value={messages === undefined ? "Loading..." : messageCount} 
                 />
-                <StatCard title="Database Status" value={databaseStatus} />
+                <StatCard 
+                    title="Database Status" 
+                    value={databaseStatus} 
+                    isStatus={true}
+                    statusType={databaseStatus as "connected" | "connecting"}
+                />
             </View>
 
             {/* Action Buttons */}
@@ -141,6 +160,11 @@ const TelegramManager = () => {
                     title="Convex Console"
                     icon="⚡"
                     onPress={handleConvexConsole}
+                />
+                <ActionButton
+                    title="Test Notification"
+                    icon="🔔"
+                    onPress={showTestNotification}
                 />
             </View>
         </ScrollView>
@@ -259,6 +283,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#1a1a1a',
+    },
+    statusIndicator: {
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 

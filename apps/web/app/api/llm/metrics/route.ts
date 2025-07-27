@@ -94,11 +94,11 @@ export async function GET() {
     // Service URLs
     const vectorUrl = process.env.VECTOR_CONVERT_LLM_URL || 
                      process.env.VECTOR_CONVERT_LLM_INTERNAL_URL || 
-                     "http://vector-convert-llm:8081";
+                     "http://localhost:7999";
     
     const chatUrl = process.env.LIGHTWEIGHT_LLM_URL || 
                    process.env.LIGHTWEIGHT_LLM_INTERNAL_URL || 
-                   "http://lightweight-llm:8082";
+                   "http://localhost:8082";
 
     // Fetch health from both services concurrently
     const [vectorHealth, chatHealth] = await Promise.all([

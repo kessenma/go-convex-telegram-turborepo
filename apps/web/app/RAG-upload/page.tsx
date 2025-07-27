@@ -4,11 +4,11 @@ export const dynamic = "force-dynamic";
 export const runtime = "edge"; // Optional: use edge runtime
 
 import React, { useRef, useState } from "react";
-import { ConvexStatusIndicator } from "../../components/convex/convex-status-indicator";
+import { ConvexStatusIndicator } from "../../components/settings/convex-status-indicator";
 import { DocumentHistory } from "../../components/rag/DocumentHistory";
 import { DocumentStats } from "../../components/rag/DocumentStats";
-import { LLMStatusIndicator } from "../../components/rag/llm-status-indicator";
-import { LLMUsageBarChart } from "../../components/rag/llm-usage-bar-chart";
+import { VectorConverterStatus } from "../../components/settings/vector-status-indicator";
+import { LLMUsageBarChart } from "../../components/settings/llm-usage-bar-chart";
 import { ThreeJSUploadIcon } from "../../components/rag/ThreeJSUploadIcon";
 import { UploadForm } from "../../components/rag/UploadForm";
 import { BackgroundGradient } from "../../components/ui/backgrounds/background-gradient";
@@ -467,7 +467,7 @@ export default function RAGUploadPage(): React.ReactElement {
           <ConvexStatusIndicator className="mx-auto max-w-md" showLogs={true} />
         </div>
         <div className="mb-6 space-y-4">
-          <LLMStatusIndicator
+          <VectorConverterStatus
             size="sm"
             showLogs={true}
             className="bg-gray-50 dark:bg-gray-800/30"

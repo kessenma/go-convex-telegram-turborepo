@@ -37,7 +37,9 @@ export async function GET() {
 
     // Fallback to direct service check
     try {
-      const llmUrl = process.env.LIGHTWEIGHT_LLM_URL || "http://localhost:8082";
+      const llmUrl = process.env.LIGHTWEIGHT_LLM_URL || 
+                    process.env.LIGHTWEIGHT_LLM_INTERNAL_URL || 
+                    "http://localhost:8082";
       
       const response = await fetch(`${llmUrl}/health`, {
         method: "GET",

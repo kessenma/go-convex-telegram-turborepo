@@ -441,4 +441,4 @@ def ensure_model_loaded():
 
 if __name__ == "__main__":
     logger.info("Starting vector-convert-llm service with lazy model loading...")
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8081)), debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 7999)), debug=False)

@@ -18,6 +18,7 @@ from llama_cpp import Llama
 import psutil
 import gc
 import time
+from status_reporter import StatusReporter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,12 +26,17 @@ logger = logging.getLogger(__name__)
 
 # Global variables for model
 llm = None
+status_reporter = None
 
 # Model configuration - Using Phi-3 GGUF for fast RAG performance
 MODEL_PATH = os.getenv("MODEL_PATH", "./Phi-3-mini-4k-instruct-q4.gguf")
 N_CTX = int(os.getenv("N_CTX", "4096"))  # Context window
 N_THREADS = int(os.getenv("N_THREADS", "8"))  # CPU threads
 N_GPU_LAYERS = int(os.getenv("N_GPU_LAYERS", "0"))  # GPU layers (0 for CPU only)
+
+# Status reporting configuration
+CONVEX_URL = os.getenv("CONVEX_URL", "http://localhost:3001")
+SERVICE_NAME = "lightweight-llm"
 
 MAX_TOKENS = 512
 TEMPERATURE = 0.7
@@ -102,15 +108,22 @@ def get_memory_usage():
 
 def load_model():
     """Load the Phi-3 GGUF model using llama-cpp-python"""
-    global llm
+    global llm, status_reporter
     
     try:
+        # Send loading status
+        if status_reporter:
+            status_reporter.send_loading_status("Loading Phi-3 model")
+        
         logger.info(f"Loading Phi-3 model from: {MODEL_PATH}")
         logger.info(f"Context window: {N_CTX}, Threads: {N_THREADS}, GPU layers: {N_GPU_LAYERS}")
         
         # Check if model file exists
         if not os.path.exists(MODEL_PATH):
-            raise FileNotFoundError(f"Model file not found: {MODEL_PATH}")
+            error_msg = f"Model file not found: {MODEL_PATH}"
+            if status_reporter:
+                status_reporter.send_error_status(error_msg)
+            raise FileNotFoundError(error_msg)
         
         # Initialize the Llama model with conservative settings
         llm = Llama(
@@ -128,8 +141,14 @@ def load_model():
         logger.info("Llama 3.2 model loaded successfully")
         logger.info(f"Memory usage after loading: {get_memory_usage()}")
         
+        # Send healthy status
+        if status_reporter:
+            status_reporter.send_healthy_status("Phi-3-mini-4k-instruct")
+        
     except Exception as e:
         logger.error(f"Failed to load model: {str(e)}")
+        if status_reporter:
+            status_reporter.send_error_status(str(e))
         raise e
 
 def cleanup_model():
@@ -145,13 +164,58 @@ def cleanup_model():
     
     logger.info("Model cleanup completed")
 
+def get_current_status():
+    """Get current service status for periodic reporting"""
+    global llm
+    
+    model_loaded = llm is not None
+    
+    if model_loaded:
+        return {
+            'status': 'healthy',
+            'ready': True,
+            'message': 'Service is running normally',
+            'model': 'Phi-3-mini-4k-instruct',
+            'model_loaded': True,
+            'model_loading': False
+        }
+    else:
+        return {
+            'status': 'error',
+            'ready': False,
+            'message': 'Model not loaded',
+            'model': 'Phi-3-mini-4k-instruct',
+            'model_loaded': False,
+            'model_loading': False
+        }
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan"""
+    global status_reporter
+    
     # Startup
     logger.info("Starting lightweight LLM service...")
-    load_model()
+    
+    # Initialize status reporter
+    status_reporter = StatusReporter(SERVICE_NAME, CONVEX_URL)
+    status_reporter.send_startup_status()
+    
+    try:
+        load_model()
+        
+        # Start periodic status reporting every 30 seconds
+        status_reporter.start_periodic_reporting(interval_seconds=30, get_status_callback=get_current_status)
+        logger.info("Periodic status reporting started")
+        
+    except Exception as e:
+        logger.error(f"Failed to start service: {e}")
+        if status_reporter:
+            status_reporter.send_error_status(str(e))
+        raise
+    
     yield
+    
     # Shutdown
     logger.info("Shutting down lightweight LLM service...")
     cleanup_model()
@@ -219,10 +283,22 @@ def format_chat_prompt(message: str, context: str = "", conversation_history: Li
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
+    global status_reporter
+    
+    model_loaded = llm is not None
+    memory_usage = get_memory_usage()
+    
+    # Send status update to Convex
+    if status_reporter:
+        if model_loaded:
+            status_reporter.send_healthy_status("Phi-3-mini-4k-instruct")
+        else:
+            status_reporter.send_error_status("Model not loaded")
+    
     return HealthResponse(
-        status="healthy",
-        model_loaded=llm is not None,
-        memory_usage=get_memory_usage(),
+        status="healthy" if model_loaded else "error",
+        model_loaded=model_loaded,
+        memory_usage=memory_usage,
         model_path=MODEL_PATH
     )
 

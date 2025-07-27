@@ -2,7 +2,7 @@
 import { cn } from "../../lib/utils";
 
 interface StatusIndicatorProps {
-  status: "connected" | "connecting" | "disconnected";
+  status: "connected" | "connecting" | "disconnected" | "active";
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
   className?: string;
@@ -12,10 +12,11 @@ const statusColors = {
   connected: "bg-green-500",
   connecting: "bg-yellow-500",
   disconnected: "bg-red-500",
+  active: "bg-cyan-400",
 };
 
 const statusSizes = {
-  sm: "w-z h-2",
+  sm: "w-2 h-2",
   md: "w-3 h-3",
   lg: "w-4 h-4",
 };
@@ -24,6 +25,7 @@ const statusLabels = {
   connected: "Connected",
   connecting: "Connecting",
   disconnected: "Disconnected",
+  active: "Active",
 };
 
 export const StatusIndicator = ({
@@ -40,7 +42,7 @@ export const StatusIndicator = ({
           statusColors[status],
           statusSizes[size],
           "shadow-lg",
-          `shadow-${status === "connected" ? "green" : status === "connecting" ? "yellow" : "red"}-500/50`
+          `shadow-${status === "connected" ? "green" : status === "connecting" ? "yellow" : status === "active" ? "cyan" : "red"}-500/50`
         )}
       />
       {showLabel && (

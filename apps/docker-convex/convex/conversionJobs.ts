@@ -1,6 +1,5 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
 
 // Create a new conversion job
 export const createJob = mutation({
@@ -93,6 +92,12 @@ export const getConversionJobs = query({
       jobs = await ctx.db
         .query("conversion_jobs")
         .withIndex("by_user", (q) => q.eq("userId", userId))
+        .order("desc")
+        .collect();
+    } else if (documentId) {
+      jobs = await ctx.db
+        .query("conversion_jobs")
+        .withIndex("by_document", (q) => q.eq("documentId", documentId))
         .order("desc")
         .collect();
     } else {

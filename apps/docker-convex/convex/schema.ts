@@ -228,4 +228,37 @@ export default defineSchema({
     .index("by_source", ["source"])
     .index("by_active_and_heartbeat", ["isActive", "lastHeartbeat"])
     .index("by_created_at", ["createdAt"]),
+
+  // Service statuses table - stores status updates from Python applications
+  service_statuses: defineTable({
+    serviceName: v.string(), // Name of the service ("lightweight-llm", "vector-convert-llm")
+    status: v.string(), // Service status ("healthy", "degraded", "loading", "starting", "error")
+    ready: v.boolean(), // Whether service is ready to handle requests
+    message: v.string(), // Status message
+    modelLoaded: v.optional(v.boolean()), // Whether model is loaded
+    modelLoading: v.optional(v.boolean()), // Whether model is currently loading
+    model: v.optional(v.string()), // Model name/path
+    uptime: v.optional(v.number()), // Service uptime in seconds
+    error: v.optional(v.string()), // Error message if any
+    degradedMode: v.optional(v.boolean()), // Whether service is in degraded mode
+    memoryUsage: v.optional(v.object({
+      processCpuPercent: v.optional(v.number()),
+      processMemoryMb: v.optional(v.number()),
+      processMemoryPercent: v.optional(v.number()),
+      systemMemoryAvailableGb: v.optional(v.number()),
+      systemMemoryTotalGb: v.optional(v.number()),
+      systemMemoryUsedPercent: v.optional(v.number()),
+      rssMb: v.optional(v.number()),
+      vmsMb: v.optional(v.number()),
+      percent: v.optional(v.number()),
+      availableMb: v.optional(v.number()),
+    })), // Memory usage statistics
+    timestamp: v.number(), // When status was reported
+    lastUpdated: v.number(), // When this record was last updated
+  })
+    .index("by_service_name", ["serviceName"])
+    .index("by_status", ["status"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_last_updated", ["lastUpdated"])
+    .index("by_service_and_timestamp", ["serviceName", "timestamp"]),
 });

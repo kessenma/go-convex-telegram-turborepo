@@ -53,6 +53,7 @@ COPY --from=builder /app/Phi-3-mini-4k-instruct-q4.gguf .
 
 # Copy the application code
 COPY main.py .
+COPY status_reporter.py .
 
 # Expose the port the app runs on
 EXPOSE 8082

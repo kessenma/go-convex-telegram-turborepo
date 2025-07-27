@@ -1,5 +1,5 @@
 // apps/docker-convex/convex/ragSearch.ts
-import { action, query } from "./_generated/server";
+import { action } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 
@@ -158,6 +158,14 @@ export const ragSearch = action({
         let relevanceScore = 0;
         let bestSnippet = '';
         
+        // Calculate overall relevance score using content
+        for (const term of queryTerms) {
+          if (content.includes(term)) {
+            relevanceScore += 1;
+          }
+        }
+        relevanceScore = relevanceScore / queryTerms.length;
+        
         // Find the best matching snippet
         const sentences = doc.content.split(/[.!?]+/).filter((s: string) => s.trim().length > 20);
         let bestSentenceScore = 0;
@@ -175,7 +183,6 @@ export const ragSearch = action({
           if (sentenceScore > bestSentenceScore) {
             bestSentenceScore = sentenceScore;
             bestSnippet = sentence.trim();
-            relevanceScore = sentenceScore / queryTerms.length;
           }
         }
         

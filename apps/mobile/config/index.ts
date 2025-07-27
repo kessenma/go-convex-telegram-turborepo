@@ -19,12 +19,7 @@ export const getApiUrl = (): string => {
 
     // Production environment
     if (environment === "production") {
-        return "https://medflow.cloud"
-    }
-
-    // Staging environment
-    if (environment === "staging") {
-        return "https://stage.medflow.cloud"
+        return "https://rag-bot.chat"
     }
 
     // Default fallback
@@ -34,7 +29,7 @@ export const getApiUrl = (): string => {
 // Export other configuration values
 export const APP_CONFIG = {
     API_URL: getApiUrl(),
-    APP_NAME: "MedFlow",
+    APP_NAME: "RagChat",
     VERSION: "1.0.0",
 }
 

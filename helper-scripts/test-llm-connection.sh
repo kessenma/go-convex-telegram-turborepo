@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 
 # Test health endpoint
 echo -e "${YELLOW}1. Testing health endpoint...${NC}"
-HEALTH_RESPONSE=$(curl -s -w "%{http_code}" http://localhost:8081/health)
+HEALTH_RESPONSE=$(curl -s -w "%{http_code}" http://localhost:7999/health)
 HTTP_CODE="${HEALTH_RESPONSE: -3}"
 RESPONSE_BODY="${HEALTH_RESPONSE%???}"
 
@@ -31,7 +31,7 @@ echo -e "${YELLOW}2. Testing embed endpoint...${NC}"
 EMBED_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -d '{"text": "Hello world, this is a test"}' \
-  http://localhost:8081/embed)
+  http://localhost:7999/embed)
 
 HTTP_CODE="${EMBED_RESPONSE: -3}"
 RESPONSE_BODY="${EMBED_RESPONSE%???}"

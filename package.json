@@ -15,8 +15,8 @@
     "convex:deploy-prod": "./helper-scripts/deploy-convex-prod.sh",
     "check-web-convex-endpoints": "./helper-scripts/api-web-convex-check.sh",
     "get-admin-key": "docker compose exec convex-backend ./generate_admin_key.sh",
-
     "docker:manage": "./helper-scripts/docker-manager.sh",
+
     "convex:dev:bot": "docker compose up convex-backend convex-dashboard telegram-bot -d && cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     "docker:restart-web-convex": "docker compose stop web-dashboard convex-backend convex-dashboard && docker compose up web-dashboard convex-backend convex-dashboard -d",
     "docker:vectorConvert-only": "docker compose up vector-convert-llm -d",
@@ -41,27 +41,33 @@
     "build:convex": "cd apps/docker-convex && pnpm deploy-functions",
     "build:bot": "cd apps/golang-telegram-bot && make build",
     "build:mobile": "cd apps/mobile && echo 'Mobile build not applicable for development'",
+
     "install:all": "pnpm install && cd apps/golang-telegram-bot && make install",
     "clean:all": "turbo run clean && cd apps/golang-telegram-bot && make clean",
 
     "mobile:setup-env": "cd apps/mobile && pnpm setup-env",
     "mobile:setup-ios": "cd apps/mobile && pnpm setup-ios",
     "mobile:setup-ios-system": "cd apps/mobile && pnpm setup-ios-system",
+    "mobile:metro": "cd apps/mobile && pnpm start",
+    "mobile:dev": "cd apps/mobile && pnpm dev",
     "mobile:ios": "cd apps/mobile && (pnpm start & sleep 5 && pnpm ios)",
+    "mobile:ios-direct": "cd apps/mobile && pnpm ios",
     "mobile:uninstall-pods": "cd apps/mobile && pnpm uninstall-pods",
     "mobile:android": "cd apps/mobile && pnpm android",
     "mobile:ios-boot": "cd apps/mobile && pnpm ios-boot",
+    "mobile:clean": "cd apps/mobile && pnpm clean",
+    "mobile:check-types": "cd apps/mobile && pnpm check-types",
     "mobile:lint": "cd apps/mobile && pnpm lint",
     "mobile:test": "cd apps/mobile && pnpm test",
 
-    "docker:up": "source ./calculate-ram.sh && docker compose up -d",
+    "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:restart-bot": "docker compose restart telegram-bot",
-    "docker:build": "source ./calculate-ram.sh && docker compose up --build -d",
+    "docker:build": "docker compose up --build -d",
+    
     "convex:deploy": "cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     "convex:dev": "docker compose up convex-backend convex-dashboard -d",
-    "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages",
     "docker:web-reset": "docker compose stop web-dashboard && docker compose rm -f web-dashboard && docker compose up web-dashboard -d",
 
     "docker:web-app-logs": "docker logs telegram-bot-web-dashboard-1 --tail 100",
@@ -69,8 +75,15 @@
     "docker:llm-logs": "docker logs telegram-bot-lightweight-llm-1 --tail 100",
     "docker:llm-logs-follow": "docker logs telegram-bot-lightweight-llm-1 --follow",
     "docker:convex-backend-logs": "docker logs telegram-bot-convex-backend-1 --tail 100",
-    "docker:go-bot-logs": "docker logs telegram-bot-telegram-bot-1  --tail 100",
-    "docker:logs-all": "pnpm docker:web-app-logs && pnpm docker:convex-backend-logs && pnpm docker:llm-transformer-logs && pnpm docker:llm-logs"
+    "docker:go-bot": "docker logs telegram-bot-telegram-bot-1  --tail 100",
+    "docker:logs-all": "pnpm docker:web-app-logs && pnpm docker:convex-backend-logs && pnpm docker:llm-transformer-logs && pnpm docker:llm-logs",
+
+    "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages",
+    "test": "pnpm test:web && pnpm test:convex",
+    "test:web": "cd apps/web && pnpm test",
+    "test:convex": "cd apps/docker-convex && pnpm test",
+    "test:watch": "pnpm test:web --watch",
+    "test:coverage": "pnpm test:web --coverage"
   },
   "devDependencies": {
     "prettier": "^3.6.0",

@@ -308,7 +308,7 @@ if __name__ == "__main__":
     # Run Flask directly (no Gunicorn) for maximum stability
     app.run(
         host="0.0.0.0", 
-        port=int(os.environ.get("PORT", 8081)), 
+        port=int(os.environ.get("PORT", 7999)),
         debug=False,
         threaded=False  # Single-threaded for stability
     )

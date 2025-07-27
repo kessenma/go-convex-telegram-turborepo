@@ -71,7 +71,7 @@ export const saveMessageWithThreadHandling = mutation({
     replyToMessageId: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let threadDocId = undefined;
+    let threadDocId;
 
     // If we have a messageThreadId, try to find the existing thread
     if (args.messageThreadId) {

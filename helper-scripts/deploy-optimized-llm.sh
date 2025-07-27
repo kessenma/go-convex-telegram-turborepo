@@ -57,7 +57,7 @@ echo "🧪 Testing service endpoints..."
 
 # Test health endpoint
 echo "Testing /health endpoint..."
-if curl -f http://localhost:8081/health > /dev/null 2>&1; then
+if curl -f http://localhost:7999/health > /dev/null 2>&1; then
     echo "✅ Health endpoint working"
 else
     echo "❌ Health endpoint failed"

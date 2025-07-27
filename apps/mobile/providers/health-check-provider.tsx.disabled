@@ -1,0 +1,176 @@
+import React, { useEffect, useState, createContext, useContext } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useQuery } from 'convex/react';
+import { api } from '../generated-convex';
+
+interface HealthCheckContextType {
+  isHealthy: boolean;
+  convexConnected: boolean;
+  lastHealthCheck: Date | null;
+  retryConnection: () => void;
+}
+
+const HealthCheckContext = createContext<HealthCheckContextType | undefined>(undefined);
+
+export function useHealthCheck() {
+  const context = useContext(HealthCheckContext);
+  if (context === undefined) {
+    throw new Error('useHealthCheck must be used within a HealthCheckProvider');
+  }
+  return context;
+}
+
+interface HealthCheckProviderProps {
+  children: React.ReactNode;
+  enableHealthChecks?: boolean;
+  healthCheckInterval?: number; // in milliseconds
+}
+
+/**
+ * Provider that monitors the health of various app services
+ * Specifically monitors Convex connection status and provides retry functionality
+ */
+export function HealthCheckProvider({
+  children,
+  enableHealthChecks = true,
+  healthCheckInterval = 30000, // 30 seconds
+}: HealthCheckProviderProps): React.ReactElement {
+  // Use a simple query to test Convex connection
+  const healthCheckQuery = useQuery(api.messages.getAllMessages, { limit: 1 });
+  const [isHealthy, setIsHealthy] = useState(true);
+  const [convexConnected, setConvexConnected] = useState(false);
+  const [lastHealthCheck, setLastHealthCheck] = useState<Date | null>(null);
+  const [showHealthError, setShowHealthError] = useState(false);
+  
+  const isLoading = healthCheckQuery === undefined;
+  const hasError = healthCheckQuery === null;
+
+  // Monitor Convex connection status
+  useEffect(() => {
+    if (!isLoading && !hasError) {
+      setConvexConnected(true);
+      setIsHealthy(true);
+      setLastHealthCheck(new Date());
+      setShowHealthError(false);
+    } else if (hasError) {
+      setConvexConnected(false);
+      setIsHealthy(false);
+      setShowHealthError(true);
+    }
+  }, [isLoading, hasError]);
+
+  // Periodic health checks
+  useEffect(() => {
+    if (!enableHealthChecks) return;
+
+    const interval = setInterval(() => {
+      performHealthCheck();
+    }, healthCheckInterval);
+
+    return () => clearInterval(interval);
+  }, [enableHealthChecks, healthCheckInterval]);
+
+  const performHealthCheck = () => {
+    try {
+      // Basic health check - verify Convex connection
+      const healthy = !isLoading && !hasError;
+      setIsHealthy(healthy);
+      setConvexConnected(healthy);
+      setLastHealthCheck(new Date());
+      
+      if (!healthy) {
+        setShowHealthError(true);
+      }
+    } catch (error) {
+      console.error('Health check failed:', error);
+      setIsHealthy(false);
+      setShowHealthError(true);
+    }
+  };
+
+  const retryConnection = () => {
+    setShowHealthError(false);
+    setIsHealthy(true);
+    performHealthCheck();
+  };
+
+  const contextValue: HealthCheckContextType = {
+    isHealthy,
+    convexConnected,
+    lastHealthCheck,
+    retryConnection,
+  };
+
+  // Show health error overlay if there are issues
+  if (showHealthError && !isHealthy) {
+    return (
+      <View style={styles.errorContainer}>
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Connection Issue</Text>
+          <Text style={styles.errorMessage}>
+            Unable to connect to the database. Please check your internet connection.
+          </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={retryConnection}>
+            <Text style={styles.retryButtonText}>Retry Connection</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <HealthCheckContext.Provider value={contextValue}>
+      {children}
+    </HealthCheckContext.Provider>
+  );
+}
+
+const styles = StyleSheet.create({
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
+  },
+  errorCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    maxWidth: 300,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#dc2626',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#374151',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  retryButton: {
+    backgroundColor: '#0066cc',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

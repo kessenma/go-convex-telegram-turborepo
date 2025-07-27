@@ -44,10 +44,10 @@ CONVEX_HTTP_URL=http://convex-backend:3211
 
 # LLM Service Ports
 LIGHTWEIGHT_LLM_PORT=8082
-VECTOR_CONVERT_PORT=8081
+VECTOR_CONVERT_PORT=7999
 
 # LLM Service URLs for browser access
-NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL=http://localhost:8081
+NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL=http://localhost:7999
 NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL=http://localhost:8082
 
 # Model Configuration (Next.js Public Environment Variables)

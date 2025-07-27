@@ -24,7 +24,7 @@ import { useOutsideClick } from "../../hooks/use-outside-clicks";
 import { renderIcon, fixComponentReturnType } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
 import { Notifications } from "./Notifications";
-import { Settings } from "./Settings";
+import { Settings } from "../settings/0Settings";
 
 interface NavItem {
   href: string;

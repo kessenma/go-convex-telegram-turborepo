@@ -161,7 +161,7 @@ export function LogsDemo({
     },
     {
       type: "output",
-      content: "[2024-12-19 14:31:13] Flask server running on port 8081",
+      content: "[2024-12-19 14:31:13] Flask server running on port 7999",
       delay: 2500,
       outputType: "success" as const,
     },

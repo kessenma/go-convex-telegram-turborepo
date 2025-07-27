@@ -3,8 +3,9 @@
 export const dynamic = "force-dynamic";
 
 import { Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { LightweightLLMStatusIndicator } from "../../components/rag/lightweight-llm-status-indicator";
+import { LightweightVectorConverterStatus } from "../../components/settings/lightweight-llm-status-indicator";
 import { ParticlesBackground } from "../../components/ui/backgrounds/particles-background";
 import { Card } from "../../components/ui/card";
 import { Hero, TextAnimationType } from "../../components/ui/hero";
@@ -12,19 +13,22 @@ import { api } from "../../generated-convex";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
 import { useSafeQuery } from "../../hooks/use-safe-convex";
 import { renderIcon } from "../../lib/icon-utils";
-import { ChatHistory } from "./components/ChatHistory";
-import { ChatInterface } from "./components/ChatInterface";
-import { DocumentSelector } from "./components/DocumentSelector";
+import { ChatHistory } from "../../components/rag/chat/ChatHistory";
+import { ChatInterface } from "../../components/rag/chat/ChatInterface";
+import { DocumentSelector } from "../../components/rag/chat/DocumentSelector";
 import type { ChatConversation, Document } from "./types";
+
+type ViewState = 'selection' | 'chat' | 'history';
 
 export default function RAGChatPage(): React.ReactElement {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
-  const [showChat, setShowChat] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewState>('selection');
+  const [previousView, setPreviousView] = useState<ViewState>('selection');
   const [selectedDocumentObjects, setSelectedDocumentObjects] = useState<
     Document[]
   >([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>("");
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
   // Get animation settings
   const { animationEnabled } = useAnimationSettings();
@@ -61,34 +65,45 @@ export default function RAGChatPage(): React.ReactElement {
     if (selectedDocuments.length > 0) {
       // Generate a new session ID for the new chat
       setCurrentSessionId(
-        `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
       );
-      setShowChat(true);
-      setShowHistory(false);
+      setPreviousView(currentView);
+      setSlideDirection('left');
+      setCurrentView('chat');
     }
   };
 
   const handleBackToSelection = () => {
-    setShowChat(false);
-    setShowHistory(false);
+    setPreviousView(currentView);
+    setSlideDirection('right');
+    setCurrentView('selection');
+  };
+
+  const handleBackToPrevious = () => {
+    setPreviousView(currentView);
+    setSlideDirection('right');
+    setCurrentView(previousView);
   };
 
   const handleShowHistory = () => {
-    setShowHistory(true);
-    setShowChat(false);
+    setPreviousView(currentView);
+    setSlideDirection('left');
+    setCurrentView('history');
   };
 
   const handleSelectConversation = (conversation: ChatConversation) => {
     // Load the conversation's documents
     setSelectedDocuments(conversation.documentIds);
     setCurrentSessionId(conversation.sessionId);
-    setShowHistory(false);
-    setShowChat(true);
+    setPreviousView(currentView);
+    setSlideDirection('right');
+    setCurrentView('chat');
   };
 
   const handleNewChat = () => {
-    setShowHistory(false);
-    setShowChat(false);
+    setPreviousView(currentView);
+    setSlideDirection('right');
+    setCurrentView('selection');
     setSelectedDocuments([]);
     setCurrentSessionId("");
   };
@@ -146,7 +161,7 @@ export default function RAGChatPage(): React.ReactElement {
 
         {/* LLM Status Indicator */}
         <div className="mx-auto mb-4 max-w-6xl px-4">
-          <LightweightLLMStatusIndicator
+          <LightweightVectorConverterStatus
             size="md"
             showLabel={true}
             showLogs={true}
@@ -155,37 +170,89 @@ export default function RAGChatPage(): React.ReactElement {
         </div>
 
         <div className="mx-auto max-w-6xl px-4">
-          {showHistory ? (
-            <Card className="border-gray-700 backdrop-blur-sm bg-gray-800/50">
-              <ChatHistory
-                onSelectConversation={handleSelectConversation}
-                onNewChat={handleNewChat}
-                onBackToSelection={handleBackToSelection}
-                currentSessionId={currentSessionId}
-              />
-            </Card>
-          ) : showChat ? (
-            <Card className="border-gray-700 backdrop-blur-sm bg-gray-800/50">
-              <ChatInterface
-                selectedDocuments={selectedDocumentObjects}
-                onBackToSelection={handleBackToSelection}
-                sessionId={currentSessionId}
-                onShowHistory={handleShowHistory}
-              />
-            </Card>
-          ) : (
-            <Card className="border-gray-700 backdrop-blur-sm bg-gray-800/50">
-              <div className="p-4 sm:p-6">
-                <DocumentSelector
-                  documents={documentsArray as Document[]}
-                  selectedDocuments={selectedDocuments}
-                  onDocumentToggle={handleDocumentToggle}
-                  onStartChat={handleStartChat}
-                  onShowHistory={handleShowHistory}
-                />
-              </div>
-            </Card>
-          )}
+          <Card className="border-gray-700 backdrop-blur-sm bg-gray-800/50 overflow-hidden relative">
+            <AnimatePresence initial={false}>
+              {currentView === 'selection' && (
+                <motion.div
+                  key="selection"
+                  initial={{ x: slideDirection === 'left' ? '100%' : '-100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: slideDirection === 'left' ? '-100%' : '100%' }}
+                  transition={{ 
+                    type: "tween",
+                    duration: 0.25,
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }}
+                  className="absolute inset-0 p-4 sm:p-6"
+                  style={{ width: '100%' }}
+                >
+                  <DocumentSelector
+                    documents={documentsArray as Document[]}
+                    selectedDocuments={selectedDocuments}
+                    onDocumentToggle={handleDocumentToggle}
+                    onStartChat={handleStartChat}
+                    onShowHistory={handleShowHistory}
+                  />
+                </motion.div>
+              )}
+              
+              {currentView === 'chat' && (
+                <motion.div
+                  key="chat"
+                  initial={{ x: slideDirection === 'left' ? '100%' : '-100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: slideDirection === 'left' ? '-100%' : '100%' }}
+                  transition={{ 
+                    type: "tween",
+                    duration: 0.25,
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }}
+                  className="absolute inset-0"
+                  style={{ width: '100%' }}
+                >
+                  <ChatInterface
+                    selectedDocuments={selectedDocumentObjects}
+                    onBackToSelection={handleBackToSelection}
+                    sessionId={currentSessionId}
+                    onShowHistory={handleShowHistory}
+                  />
+                </motion.div>
+              )}
+              
+              {currentView === 'history' && (
+                <motion.div
+                  key="history"
+                  initial={{ x: slideDirection === 'left' ? '100%' : '-100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: slideDirection === 'left' ? '-100%' : '100%' }}
+                  transition={{ 
+                    type: "tween",
+                    duration: 0.25,
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }}
+                  className="absolute inset-0"
+                  style={{ width: '100%' }}
+                >
+                  <ChatHistory
+                    onSelectConversation={handleSelectConversation}
+                    onNewChat={handleNewChat}
+                    onBackToSelection={handleBackToSelection}
+                    onBackToPrevious={handleBackToPrevious}
+                    currentSessionId={currentSessionId}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* Dynamic height spacer based on current view */}
+            <div className="invisible p-4 sm:p-6">
+              <div className={`transition-all duration-300 ${
+                currentView === 'chat' ? 'h-[600px]' : 
+                currentView === 'history' ? 'h-[600px]' : 
+                'h-[500px]'
+              }`} />
+            </div>
+          </Card>
         </div>
       </div>
     </div>

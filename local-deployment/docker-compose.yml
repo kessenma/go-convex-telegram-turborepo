@@ -90,7 +90,7 @@ services:
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - CONVEX_URL=http://convex-backend:3211
       - CONVEX_INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
-      - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:8081
+      - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:7999
     depends_on:
       convex-backend:
         condition: service_healthy
@@ -112,9 +112,9 @@ services:
         reservations:
           memory: 1G
     ports:
-      - "8081:8081"
+      - "7999:7999"
     environment:
-      - PORT=8081
+      - PORT=7999
       - CONVEX_URL=http://convex-backend:3211
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
@@ -133,7 +133,7 @@ services:
     networks:
       - telegram-bot-network
     healthcheck:
-      test: curl -f http://localhost:8081/health || exit 1
+      test: curl -f http://localhost:7999/health || exit 1
       interval: 30s
       timeout: 10s
       start_period: 60s
@@ -203,9 +203,9 @@ services:
       - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
       - CONVEX_URL=http://convex-backend:3211
       - CONVEX_HTTP_URL=http://convex-backend:3211
-      - VECTOR_CONVERT_LLM_INTERNAL_URL=http://vector-convert-llm:8081
-      - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:8081
-      - NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL=${NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL:-http://localhost:8081}
+      - VECTOR_CONVERT_LLM_INTERNAL_URL=http://vector-convert-llm:7999
+      - VECTOR_CONVERT_LLM_URL=http://vector-convert-llm:7999
+      - NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL=${NEXT_PUBLIC_VECTOR_CONVERT_LLM_URL:-http://localhost:7999}
       - LIGHTWEIGHT_LLM_INTERNAL_URL=http://lightweight-llm:8082
       - LIGHTWEIGHT_LLM_URL=http://lightweight-llm:8082
       - NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL=${NEXT_PUBLIC_LIGHTWEIGHT_LLM_URL:-http://localhost:8082}

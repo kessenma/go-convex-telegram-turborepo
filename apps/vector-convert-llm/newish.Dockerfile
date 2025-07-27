@@ -32,11 +32,11 @@ RUN python -c 'from sentence_transformers import SentenceTransformer; SentenceTr
 COPY . .
 
 # Expose port
-EXPOSE 8081
+EXPOSE 7999
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+    CMD curl -f http://localhost:7999/health || exit 1
 
 # Run the application with Gunicorn preloading to ensure background threads start before forking workers
-CMD ["gunicorn", "-w", "1", "--threads", "1", "-b", "0.0.0.0:8081", "main:app"]
+CMD ["gunicorn", "-w", "1", "--threads", "1", "-b", "0.0.0.0:7999", "main:app"]

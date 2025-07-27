@@ -1530,7 +1530,7 @@ export default function ArchitecturePage(): React.ReactElement {
                       className="flex items-center"
                     >
                       <div className="mr-3 w-2 h-2 bg-cyan-50 rounded-full"></div>
-                      Vector Conversion Service (Port 8081)
+                      Vector Conversion Service (Port 7999)
                     </motion.li>
                   );
                 })()}

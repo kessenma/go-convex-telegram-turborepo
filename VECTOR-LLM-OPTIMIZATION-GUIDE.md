@@ -97,10 +97,10 @@ docker-compose logs -f vector-convert-llm
 ### Step 3: Test Functionality
 ```bash
 # Test health endpoint
-curl http://localhost:8081/health
+curl http://localhost:7999/health
 
 # Test embedding generation
-curl -X POST http://localhost:8081/embed \
+curl -X POST http://localhost:7999/embed \
   -H "Content-Type: application/json" \
   -d '{"text": "test sentence"}'
 ```
@@ -182,7 +182,7 @@ curl -X POST http://localhost:8081/embed \
 watch -n 5 'docker stats --no-stream vector-convert-llm'
 
 # Service health check
-watch -n 10 'curl -s http://localhost:8081/health | jq'
+watch -n 10 'curl -s http://localhost:7999/health | jq'
 
 # Log monitoring
 docker-compose logs -f --tail=50 vector-convert-llm

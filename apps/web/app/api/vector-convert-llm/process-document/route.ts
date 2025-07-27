@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     sessionId = acquisition.sessionId;
 
     const vectorServiceUrl =
-      process.env.VECTOR_CONVERT_LLM_URL || "http://localhost:8081";
+      process.env.VECTOR_CONVERT_LLM_URL || "http://localhost:7999";
     const processUrl = `${vectorServiceUrl}/process-document`;
 
     // Forward the request to the vector conversion service

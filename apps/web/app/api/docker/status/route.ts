@@ -38,7 +38,7 @@ export async function GET() {
           name: "vector-convert-llm",
           status: "running",
           health: "healthy",
-          port: process.env.NEXT_PUBLIC_VECTOR_CONVERT_PORT || "8081",
+          port: process.env.NEXT_PUBLIC_VECTOR_CONVERT_PORT || "7999",
           uptime: "2h 15m",
           restarts: 0,
         },
@@ -72,7 +72,7 @@ export async function GET() {
         DOCKER_HOST: dockerHost,
         WEB_DASHBOARD_PORT: process.env.WEB_DASHBOARD_PORT || "3000",
         CONVEX_DASHBOARD_PORT: process.env.CONVEX_DASHBOARD_PORT || "3210",
-        VECTOR_CONVERT_LLM_PORT: process.env.VECTOR_CONVERT_LLM_PORT || "8081",
+        VECTOR_CONVERT_LLM_PORT: process.env.VECTOR_CONVERT_LLM_PORT || "7999",
       },
       timestamp: Date.now(),
     };

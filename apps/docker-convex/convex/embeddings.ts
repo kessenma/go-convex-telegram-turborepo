@@ -34,7 +34,7 @@ export const generateEmbedding = action({
   handler: async (ctx, args) => {
     try {
       // Get the vector-convert-llm service URL from environment
-      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:8081";
+      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
       
       // Call the embedding service
       const response = await fetch(`${vectorServiceUrl}/embed`, {
@@ -182,7 +182,7 @@ export const processDocumentWithChunking = action({
       }
 
       // Get the vector-convert-llm service URL from environment
-      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:8081";
+      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
       
       // Call the document processing endpoint
       const response = await fetch(`${vectorServiceUrl}/process-document`, {
@@ -228,7 +228,7 @@ export const processDocumentEmbedding = internalAction({
       }
 
       // Get the vector-convert-llm service URL from environment
-      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:8081";
+      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
       const convexUrl = process.env.CONVEX_URL || "http://convex-backend:3211";
       
       // Call the document processing endpoint with chunking
@@ -291,7 +291,7 @@ export const checkLLMServiceStatus = action({
   handler: async (_ctx) => {
     try {
       // Get the vector-convert-llm service URL from environment
-      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:8081";
+      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
       
       // Call the health check endpoint
       const response = await fetch(`${vectorServiceUrl}/health`);

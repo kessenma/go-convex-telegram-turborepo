@@ -37,7 +37,7 @@ fi
 
 # Test the service
 echo "🧪 Testing vector-convert-llm service..."
-curl -f http://localhost:8081/health || {
+curl -f http://localhost:7999/health || {
     echo "❌ Health check failed"
     echo "📋 Service logs:"
     docker-compose logs --tail=20 vector-convert-llm
@@ -45,8 +45,8 @@ curl -f http://localhost:8081/health || {
 }
 
 echo "✅ Vector Convert LLM service deployed successfully!"
-echo "🌐 Service available at: http://localhost:8081"
-echo "📊 Health check: http://localhost:8081/health"
+echo "🌐 Service available at: http://localhost:7999"
+echo "📊 Health check: http://localhost:7999/health"
 
 # Restart dependent services
 echo "🔄 Restarting dependent services..."

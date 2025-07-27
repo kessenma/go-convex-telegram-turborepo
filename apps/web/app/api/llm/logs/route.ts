@@ -4,7 +4,7 @@ export async function GET() {
   const llmUrl =
     process.env.VECTOR_CONVERT_LLM_URL ||
     process.env.VECTOR_CONVERT_LLM_INTERNAL_URL ||
-    "http://vector-convert-llm:8081";
+    "http://vector-convert-llm:7999";
   const logsUrl = `${llmUrl}/logs`;
   try {
     const res = await fetch(logsUrl, { method: "GET" });

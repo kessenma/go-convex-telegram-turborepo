@@ -3,7 +3,7 @@
 # deploy-convex-api.sh
 # Automated Convex admin key generation and API deployment script
 # This script generates an admin key, then generates TypeScript API definitions
-# from a running Convex backend and deploys them to the web application
+# from a running Convex backend and deploys them to both web and mobile applications
 
 set -e
 
@@ -11,14 +11,54 @@ echo "🚀 Starting Convex API generation and deployment..."
 
 # Configuration
 WEB_APP_DIR="apps/web"
+MOBILE_APP_DIR="apps/mobile"
 DOCKER_CONVEX_DIR="apps/docker-convex"
 GENERATED_API_FILE="generated-convex.ts"
 TEMP_API_FILE="temp-convex-api"
 
+# Parse command line arguments
+DEPLOY_WEB=true
+DEPLOY_MOBILE=true
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --web-only)
+      DEPLOY_MOBILE=false
+      shift
+      ;;
+    --mobile-only)
+      DEPLOY_WEB=false
+      shift
+      ;;
+    --help)
+      echo "Usage: $0 [--web-only] [--mobile-only] [--help]"
+      echo "  --web-only    Deploy API only to web app"
+      echo "  --mobile-only Deploy API only to mobile app"
+      echo "  --help        Show this help message"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+  esac
+done
+
 # Check if we're in the project root
-if [ ! -f "package.json" ] || [ ! -d "$WEB_APP_DIR" ] || [ ! -d "$DOCKER_CONVEX_DIR" ]; then
+if [ ! -f "package.json" ] || [ ! -d "$DOCKER_CONVEX_DIR" ]; then
     echo "❌ Error: This script must be run from the project root directory"
-    echo "   Expected to find: package.json, $WEB_APP_DIR/, $DOCKER_CONVEX_DIR/"
+    echo "   Expected to find: package.json, $DOCKER_CONVEX_DIR/"
+    exit 1
+fi
+
+# Check if target directories exist
+if [ "$DEPLOY_WEB" = true ] && [ ! -d "$WEB_APP_DIR" ]; then
+    echo "❌ Error: Web app directory not found: $WEB_APP_DIR"
+    exit 1
+fi
+
+if [ "$DEPLOY_MOBILE" = true ] && [ ! -d "$MOBILE_APP_DIR" ]; then
+    echo "❌ Error: Mobile app directory not found: $MOBILE_APP_DIR"
     exit 1
 fi
 
@@ -67,37 +107,68 @@ echo "✅ API specification generated successfully"
 # Navigate back to project root
 cd ../..
 
-# Copy the generated file to the web app
-echo "📋 Copying generated API to web application..."
-cp "$DOCKER_CONVEX_DIR/$TEMP_API_FILE.ts" "$WEB_APP_DIR/$GENERATED_API_FILE"
+# Deploy to web app if requested
+if [ "$DEPLOY_WEB" = true ]; then
+    echo "📋 Copying generated API to web application..."
+    cp "$DOCKER_CONVEX_DIR/$TEMP_API_FILE.ts" "$WEB_APP_DIR/$GENERATED_API_FILE"
+    
+    # Verify the file was copied successfully
+    if [ ! -f "$WEB_APP_DIR/$GENERATED_API_FILE" ]; then
+        echo "❌ Error: Failed to copy API file to web application"
+        exit 1
+    fi
+    
+    echo "✅ API file successfully deployed to $WEB_APP_DIR/$GENERATED_API_FILE"
+fi
+
+# Deploy to mobile app if requested
+if [ "$DEPLOY_MOBILE" = true ]; then
+    echo "📋 Copying generated API to mobile application..."
+    cp "$DOCKER_CONVEX_DIR/$TEMP_API_FILE.ts" "$MOBILE_APP_DIR/$GENERATED_API_FILE"
+    
+    # Verify the file was copied successfully
+    if [ ! -f "$MOBILE_APP_DIR/$GENERATED_API_FILE" ]; then
+        echo "❌ Error: Failed to copy API file to mobile application"
+        exit 1
+    fi
+    
+    echo "✅ API file successfully deployed to $MOBILE_APP_DIR/$GENERATED_API_FILE"
+fi
 
 # Clean up temporary file
 rm "$DOCKER_CONVEX_DIR/$TEMP_API_FILE.ts"
 
-# Verify the file was copied successfully
-if [ ! -f "$WEB_APP_DIR/$GENERATED_API_FILE" ]; then
-    echo "❌ Error: Failed to copy API file to web application"
-    exit 1
-fi
-
-echo "✅ API file successfully deployed to $WEB_APP_DIR/$GENERATED_API_FILE"
-
 # Display file information
-API_FILE_SIZE=$(wc -c < "$WEB_APP_DIR/$GENERATED_API_FILE")
-API_LINE_COUNT=$(wc -l < "$WEB_APP_DIR/$GENERATED_API_FILE")
-
 echo ""
 echo "📊 Generated API file statistics:"
-echo "   📄 File: $WEB_APP_DIR/$GENERATED_API_FILE"
-echo "   📏 Size: $API_FILE_SIZE bytes"
-echo "   📝 Lines: $API_LINE_COUNT"
+
+if [ "$DEPLOY_WEB" = true ]; then
+    API_FILE_SIZE=$(wc -c < "$WEB_APP_DIR/$GENERATED_API_FILE")
+    API_LINE_COUNT=$(wc -l < "$WEB_APP_DIR/$GENERATED_API_FILE")
+    echo "   📄 Web: $WEB_APP_DIR/$GENERATED_API_FILE"
+    echo "   📏 Size: $API_FILE_SIZE bytes"
+    echo "   📝 Lines: $API_LINE_COUNT"
+fi
+
+if [ "$DEPLOY_MOBILE" = true ]; then
+    API_FILE_SIZE=$(wc -c < "$MOBILE_APP_DIR/$GENERATED_API_FILE")
+    API_LINE_COUNT=$(wc -l < "$MOBILE_APP_DIR/$GENERATED_API_FILE")
+    echo "   📄 Mobile: $MOBILE_APP_DIR/$GENERATED_API_FILE"
+    echo "   📏 Size: $API_FILE_SIZE bytes"
+    echo "   📝 Lines: $API_LINE_COUNT"
+fi
+
 echo ""
 echo "🎉 Convex admin key generation and API deployment complete!"
 echo ""
 echo "📝 Next steps:"
 echo "   1. Admin key has been generated and saved to the convex-backend container"
-echo "   2. Update your imports to use: import { api } from '../$GENERATED_API_FILE'"
-echo "   3. Replace references to 'convexApi1752607591403' with '$GENERATED_API_FILE'"
-echo "   4. Test your application to ensure all API calls work correctly"
+if [ "$DEPLOY_WEB" = true ]; then
+    echo "   2. Web: Update imports to use: import { api } from './$GENERATED_API_FILE'"
+fi
+if [ "$DEPLOY_MOBILE" = true ]; then
+    echo "   3. Mobile: Update imports to use: import { api } from './$GENERATED_API_FILE'"
+fi
+echo "   4. Test your applications to ensure all API calls work correctly"
 echo ""
-echo "💡 Tip: You can now delete the old convexApi1752607591403.ts file once you've updated all imports"
+echo "💡 Tip: You can now delete old API files once you've updated all imports"

@@ -6,13 +6,12 @@ export const dynamic = "force-dynamic";
 import { motion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { ConvexStatusIndicator } from "../../components/convex/convex-status-indicator";
-import { LightweightLLMStatusIndicator } from "../../components/rag/lightweight-llm-status-indicator";
-import { LLMStatusIndicator } from "../../components/rag/llm-status-indicator";
-import { LLMStatusSummary } from "../../components/rag/llm-status-summary";
-import { LLMUsageBarChart } from "../../components/rag/llm-usage-bar-chart";
-import { DockerStatus } from "../../components/topNav/docker-status";
-import { UserCountIndicator } from "../../components/user-count/user-count-indicator";
+import { ConvexStatusIndicator } from "../../components/settings/convex-status-indicator";
+import { LightweightLLMStatus } from "../../components/settings/lightweight-llm-status-indicator";
+import { ConsolidatedLLMMonitor } from "../../components/settings/consolidated-llm-monitor";
+import { LLMUsageBarChart } from "../../components/settings/llm-usage-bar-chart";
+import { DockerStatus } from "../../components/settings/docker-status";
+import { UserCountIndicator } from "../../components/settings/user-count-indicator";
 import { Card } from "../../components/ui/card";
 import { ErrorBoundary } from "../../components/ui/error-boundary";
 import { Hero, TextAnimationType } from "../../components/ui/hero";
@@ -75,9 +74,9 @@ function SystemStatusPageContent() {
             subtitle="Monitor the health and performance of all system components"
             textAlign="center"
           />
-          <div className="flex items-center justify-center py-12">
+          <div className="flex justify-center items-center py-12">
             <div className="text-center">
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-cyan-500" />
+              <RefreshCw className="mx-auto mb-4 w-8 h-8 text-cyan-500 animate-spin" />
               <p className="text-slate-400">Loading system status...</p>
             </div>
           </div>
@@ -101,24 +100,24 @@ function SystemStatusPageContent() {
         <div className="mb-8">
           <Card className="border-gray-700 bg-gray-800/50">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex gap-3 items-center">
                   <h2 className="text-xl font-semibold text-white">System Overview</h2>
-                  <span className={`px-3 py-1 rounded-full text-sm border ${getSystemHealthBadge()}`}>
+                  <span className={`px-3 py-1 text-sm rounded-full border ${getSystemHealthBadge()}`}>
                     {systemHealth.charAt(0).toUpperCase() + systemHealth.slice(1)}
                   </span>
                 </div>
                 <button
                   onClick={handleRefreshAll}
                   disabled={isRefreshing}
-                  className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-800 text-white rounded-lg transition-colors"
+                  className="flex gap-2 items-center px-4 py-2 ml-4 text-cyan-300 rounded-md border-2 border-cyan-300 transition-colors hover:text-slate-950 hover:bg-cyan-300 disabled:bg-cyan-800 disabled:border-cyan-800"
                 >
                   <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  {isRefreshing ? 'Refreshing...' : 'Refresh All'}
+                  {isRefreshing ? 'Refreshing...' : ''}
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div className="text-center">
                   <div className={`text-2xl font-bold ${getSystemHealthColor()}`}>
                     {systemReady ? 'Ready' : 'Not Ready'}
@@ -166,43 +165,41 @@ function SystemStatusPageContent() {
 
         {/* LLM Services Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-white mb-4">LLM Services</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <Card className="border-gray-700 bg-gray-800/50">
-              <div className="p-4">
-                <LLMStatusSummary />
-              </div>
-            </Card>
-
-            <Card className="border-gray-700 bg-gray-800/50">
-              <div className="p-4">
-                <LLMUsageBarChart />
-              </div>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <h2 className="mb-4 text-2xl font-semibold text-white">LLM Services</h2>
+          <div className="space-y-6">
+            {/* Historical Metrics Chart - Full Width */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
+              className="w-full"
             >
-              <LightweightLLMStatusIndicator
-                size="md"
-                showLogs={true}
-                className="bg-gray-800/50 border-gray-700"
-              />
+              <Card className="border-gray-700 bg-gray-800/50 w-full">
+                <div className="p-4 w-full">
+                  <LLMUsageBarChart
+                    showExpandedByDefault={true}
+                    maxSamples={30} />
+                </div>
+              </Card>
             </motion.div>
 
+            {/* Current Status Indicators */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
+              className="grid grid-cols-1 gap-4 lg:grid-cols-2"
             >
-              <LLMStatusIndicator
+              <LightweightLLMStatus
                 size="md"
-                showLogs={true}
-                className="bg-gray-800/50 border-gray-700"
+                showLabel={true}
+                className="border-gray-700 bg-blue-900/20"
+                showDetails={true}
+              />
+              <ConsolidatedLLMMonitor
+                size="md"
+                showLabel={true}
+                className="border-gray-700 bg-green-900/20"
               />
             </motion.div>
           </div>
@@ -210,8 +207,8 @@ function SystemStatusPageContent() {
 
         {/* Infrastructure Services */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-white mb-4">Infrastructure Services</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <h2 className="mb-4 text-2xl font-semibold text-white">Infrastructure Services</h2>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -220,7 +217,7 @@ function SystemStatusPageContent() {
               <ConvexStatusIndicator
                 size="md"
                 showLogs={true}
-                className="bg-gray-800/50 border-gray-700"
+                className="border-gray-700 bg-gray-800/50"
               />
             </motion.div>
 
@@ -232,7 +229,7 @@ function SystemStatusPageContent() {
               <DockerStatus
                 size="md"
                 showLogs={true}
-                className="bg-gray-800/50 border-gray-700"
+                className="border-gray-700 bg-gray-800/50"
               />
             </motion.div>
           </div>
@@ -240,7 +237,7 @@ function SystemStatusPageContent() {
 
         {/* User Activity */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-white mb-4">User Activity</h2>
+          <h2 className="mb-4 text-2xl font-semibold text-white">User Activity</h2>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -249,7 +246,7 @@ function SystemStatusPageContent() {
             <UserCountIndicator
               size="md"
               showLogs={true}
-              className="bg-gray-800/50 border-gray-700"
+              className="border-gray-700 bg-gray-800/50"
             />
           </motion.div>
         </div>
@@ -257,16 +254,16 @@ function SystemStatusPageContent() {
         {/* Debug Information */}
         {safeConsolidatedMetrics && (
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-white mb-4">Debug Information</h2>
+            <h2 className="mb-4 text-2xl font-semibold text-white">Debug Information</h2>
             <Card className="border-gray-700 bg-gray-800/50">
               <div className="p-4">
-                <div className="text-sm text-slate-400 mb-2">
+                <div className="mb-2 text-sm text-slate-400">
                   Last Updated: {safeConsolidatedMetrics.timestamp ? new Date(safeConsolidatedMetrics.timestamp).toLocaleString() : 'Never'}
                 </div>
-                <div className="text-sm text-slate-400 mb-2">Loading: {isLoading ? 'Yes' : 'No'}</div>
+                <div className="mb-2 text-sm text-slate-400">Loading: {isLoading ? 'Yes' : 'No'}</div>
                 <details className="text-sm">
                   <summary className="cursor-pointer text-slate-300 hover:text-white">Raw Metrics Data</summary>
-                  <pre className="mt-2 p-3 bg-slate-900 rounded text-xs overflow-auto">
+                  <pre className="overflow-auto p-3 mt-2 text-xs rounded bg-slate-900">
                     {JSON.stringify(safeConsolidatedMetrics, null, 2)}
                   </pre>
                 </details>

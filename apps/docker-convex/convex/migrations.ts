@@ -1,5 +1,4 @@
 import { internalMutation } from "./_generated/server";
-import { v } from "convex/values";
 
 // Migration to add hasEmbedding field to existing documents
 export const addHasEmbeddingField = internalMutation({

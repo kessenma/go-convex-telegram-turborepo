@@ -25,6 +25,8 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     build-essential \
     python3-dev \
+    netcat-openbsd \
+    dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -36,13 +38,20 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application code
 COPY main.py .
+COPY status_reporter.py .
+COPY test_connection.py .
+COPY debug_connectivity.sh .
+COPY startup.sh .
+
+# Make scripts executable
+RUN chmod +x debug_connectivity.sh startup.sh
 
 # Expose port
-EXPOSE 8081
+EXPOSE 7999
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+    CMD curl -f http://localhost:7999/health || exit 1
 
-# Use direct Flask instead of Gunicorn for maximum stability
-CMD ["python", "main.py"]
+# Use startup script for better debugging and connectivity checking
+CMD ["./startup.sh"]

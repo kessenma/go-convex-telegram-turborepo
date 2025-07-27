@@ -59,6 +59,12 @@ export interface LightweightLLMStatus {
     error?: string;
   };
   memory_usage?: {
+    process_memory_mb?: number;
+    process_memory_percent?: number;
+    process_cpu_percent?: number;
+    system_memory_total_gb?: number;
+    system_memory_available_gb?: number;
+    system_memory_used_percent?: number;
     rss_mb?: number;
     vms_mb?: number;
     percent?: number;

@@ -9,7 +9,7 @@ const fetch = require('node-fetch');
 
 // Configuration
 const CONVEX_URL = process.env.CONVEX_URL || 'http://localhost:3211';
-const VECTOR_SERVICE_URL = process.env.VECTOR_CONVERT_LLM_URL || 'http://localhost:8081';
+const VECTOR_SERVICE_URL = process.env.VECTOR_CONVERT_LLM_URL || 'http://localhost:7999';
 const WEB_API_URL = process.env.WEB_API_URL || 'http://localhost:3000';
 
 // Test queries

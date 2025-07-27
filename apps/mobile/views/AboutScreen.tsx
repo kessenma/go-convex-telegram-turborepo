@@ -1,25 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 
 
-// Define the navigation param list type
-type TabParamList = {
-    Home: undefined;
-    Dashboard: undefined;
-    TelegramManager: undefined;
-    About: undefined;
-};
 
-type AboutScreenNavigationProp = StackNavigationProp<TabParamList, 'About'>;
 
 const AboutScreen = () => {
-    const navigation = useNavigation<AboutScreenNavigationProp>();
-
-    const handleGoBack = () => {
-        navigation.goBack();
-    };
 
     return (
         <ScrollView 

@@ -56,7 +56,7 @@ echo "🧪 Testing service endpoints..."
 
 # Test health endpoint
 echo "Testing /health endpoint..."
-if curl -f http://localhost:8081/health > /dev/null 2>&1; then
+if curl -f http://localhost:7999/health > /dev/null 2>&1; then
     echo "✅ Health endpoint working"
 else
     echo "❌ Health endpoint failed"
@@ -65,7 +65,7 @@ fi
 
 # Test embed endpoint with model loading
 echo "Testing /embed endpoint (this will trigger model loading)..."
-response=$(curl -s -X POST http://localhost:8081/embed \
+response=$(curl -s -X POST http://localhost:7999/embed \
     -H "Content-Type: application/json" \
     -d '{"text": "test sentence"}' || echo "failed")
 
@@ -74,7 +74,7 @@ if [[ "$response" == *"embeddings"* ]]; then
 else
     echo "⚠️  Embed endpoint may still be loading model, checking again in 30s..."
     sleep 30
-    response=$(curl -s -X POST http://localhost:8081/embed \
+    response=$(curl -s -X POST http://localhost:7999/embed \
         -H "Content-Type: application/json" \
         -d '{"text": "test sentence"}' || echo "failed")
     
@@ -100,9 +100,9 @@ docker-compose logs --tail=15 vector-convert-llm
 
 echo ""
 echo "🔗 Service URLs:"
-echo "  Health Check: http://localhost:8081/health"
-echo "  Embed API: http://localhost:8081/embed"
-echo "  Process Document: http://localhost:8081/process-document"
+echo "  Health Check: http://localhost:7999/health"
+echo "  Embed API: http://localhost:7999/embed"
+echo "  Process Document: http://localhost:7999/process-document"
 
 echo ""
 echo "📝 Key Changes in Minimal Version:"

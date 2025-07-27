@@ -60,7 +60,7 @@ fi
 
 # Test 5: Vector Service Integration
 echo "5️⃣ Testing vector service integration..."
-if curl -f http://localhost:8081/health > /dev/null 2>&1; then
+if curl -f http://localhost:7999/health > /dev/null 2>&1; then
     echo "✅ Vector service is running"
 else
     echo "⚠️  Vector service not accessible - needed for full RAG functionality"

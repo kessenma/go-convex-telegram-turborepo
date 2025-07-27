@@ -16,7 +16,7 @@ async function testRAG() {
 
     // Test 2: Check if vector service is healthy
     console.log('2. Checking Vector Convert LLM health...');
-    const vectorHealth = await fetch('http://localhost:8081/health');
+    const vectorHealth = await fetch('http://localhost:7999/health');
     const vectorHealthData = await vectorHealth.json();
     console.log('   Status:', vectorHealthData.status);
     console.log('   Model loaded:', vectorHealthData.model_loaded);

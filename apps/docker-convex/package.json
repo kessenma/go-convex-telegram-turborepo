@@ -20,16 +20,22 @@
     "deploy-functions": "convex dev --once",
     "deploy:prod": "CONVEX_URL=http://convex-backend:3211 convex deploy --prod",
     "post-create": "./.devcontainer/post-create.sh",
-    "post-start": "./.devcontainer/post-start.sh"
+    "post-start": "./.devcontainer/post-start.sh",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:api": "jest --testPathPattern=__tests__/api"
   },
   "dependencies": {
     "@convex-dev/rag": "^0.3.2",
     "convex": "1.24.8",
-    "convex-helpers": "^0.1.99",
+    "convex-helpers": "^0.1.100",
     "prettier": "3.5.2"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "@types/node": "^18.17.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.5.0"
   },
   "overrides": {

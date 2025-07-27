@@ -11,20 +11,23 @@
     "setup-ios-system": "./scripts/setup-ios-system.sh",
     "setup-env": "./scripts/setup-env.sh",
     "build": "echo 'Mobile build not applicable for development'",
-    "dev": "react-native start --reset-cache",
+    "dev": "react-native start --reset-cache --port ${RCT_METRO_PORT:-8081}",
     "lint": "eslint .",
-    "start": "react-native start --reset-cache",
+    "start": "react-native start --reset-cache --port ${RCT_METRO_PORT:-8081}",
     "test": "jest",
     "check-types": "tsc --noEmit",
     "clean": "rm -rf node_modules && rm -rf ios/build && rm -rf android/build"
   },
   "dependencies": {
     "@babel/preset-react": "^7.27.1",
+    "@babylonjs/react-native": "^1.0.0",
+    "@babylonjs/react-native-iosandroid": "^1.0.0",
     "@react-native/metro-babel-transformer": "^0.80.1",
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/native": "^7.1.14",
     "@react-navigation/stack": "^7.4.2",
     "axios": "^1.10.0",
+    "babylonjs": "^7.0.0",
     "convex": "^1.25.2",
     "invariant": "^2.2.4",
     "react": "^19.1.0",
@@ -36,7 +39,8 @@
     "react-native-screens": "^4.11.1",
     "react-native-svg": "^15.12.0",
     "react-native-vector-icons": "^10.2.0",
-    "repomix": "^1.0.0"
+    "repomix": "^1.0.0",
+    "zustand": "^4.5.7"
   },
   "devDependencies": {
     "@babel/cli": "^7.27.2",

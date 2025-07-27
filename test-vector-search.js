@@ -3,7 +3,7 @@
 const fetch = require('node-fetch');
 
 const CONVEX_URL = 'http://localhost:3211';
-const VECTOR_SERVICE_URL = 'http://localhost:8081';
+const VECTOR_SERVICE_URL = 'http://localhost:7999';
 
 async function testVectorSearch() {
   console.log('🔍 Testing Vector Search Pipeline...\n');

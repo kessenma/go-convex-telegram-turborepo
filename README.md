@@ -364,7 +364,7 @@ Common issues:
 
 4. **Vector embedding service issues**:
    - Check service logs: `docker compose logs vector-convert-llm`
-   - Verify model loading: `curl http://localhost:8081/health`
+   - Verify model loading: `curl http://localhost:7999/health`
 
 5. **LLM service not responding**:
    - Check service logs: `docker compose logs lightweight-llm`

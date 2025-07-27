@@ -38,11 +38,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY minimal-main.py main.py
 
 # Expose port
-EXPOSE 8081
+EXPOSE 7999
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+    CMD curl -f http://localhost:7999/health || exit 1
 
 # Use direct Flask instead of Gunicorn for maximum stability
 CMD ["python", "main.py"]

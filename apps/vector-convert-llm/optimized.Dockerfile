@@ -40,12 +40,12 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 COPY optimized-main.py main.py
 
 # Expose port
-EXPOSE 8081
+EXPOSE 7999
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+    CMD curl -f http://localhost:7999/health || exit 1
 
 # Use single worker, single thread to avoid memory conflicts
 # Increased timeout for model loading, disable preload to avoid startup issues
-CMD ["gunicorn", "--worker-class", "sync", "--workers", "1", "--threads", "1", "--bind", "0.0.0.0:8081", "--timeout", "600", "--graceful-timeout", "600", "main:app"]
+CMD ["gunicorn", "--worker-class", "sync", "--workers", "1", "--threads", "1", "--bind", "0.0.0.0:7999", "--timeout", "600", "--graceful-timeout", "600", "main:app"]

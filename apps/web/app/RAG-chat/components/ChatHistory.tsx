@@ -13,16 +13,19 @@ import {
   MessageCircle,
   Search,
   Trash2,
+  Layers3,
 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../../generated-convex";
 import { renderIcon } from "../../../lib/icon-utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../../components/ui/tool-tip";
 import type { ChatConversation } from "../types";
 
 interface ChatHistoryProps {
   onSelectConversation: (conversation: ChatConversation) => void;
   onNewChat: () => void;
   onBackToSelection: () => void;
+  onBackToPrevious: () => void;
   currentSessionId?: string;
 }
 
@@ -30,6 +33,7 @@ export function ChatHistory({
   onSelectConversation,
   onNewChat,
   onBackToSelection,
+  onBackToPrevious,
   currentSessionId,
 }: ChatHistoryProps): React.ReactElement {
   const [searchTerm, setSearchTerm] = useState("");
@@ -119,40 +123,77 @@ export function ChatHistory({
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-gray-800 rounded-lg border border-gray-700">
+    <div className="flex flex-col h-[600px] bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-slate-800 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 shadow-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center p-4 border-b border-gray-700">
-        <div className="flex gap-2 items-center">
+      <div className="relative border-b border-gray-200/30 dark:border-gray-700/30 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        {/* Geometric accent line */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500"></div>
+        
+        <div className="flex justify-between items-center p-4 sm:p-6">
+          <div className="flex gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onBackToPrevious}
+                  className="group relative p-3 text-gray-600 dark:text-gray-300 rounded-2xl border border-gray-200 dark:border-gray-600 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 hover:shadow-lg"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  {renderIcon(ArrowLeft, { className: "w-5 h-5 relative z-10" })}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Back
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onBackToSelection}
+                  className="group relative p-3 text-gray-600 dark:text-gray-300 rounded-2xl border border-gray-200 dark:border-gray-600 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 hover:shadow-lg"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-orange-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  {renderIcon(Layers3, { className: "w-5 h-5 relative z-10" })}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                All Documents
+              </TooltipContent>
+            </Tooltip>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+              {renderIcon(History, { className: "w-4 h-4 text-white" })}
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+              History
+            </h2>
+          </div>
+
           <button
-            onClick={onBackToSelection}
-            className="flex gap-2 items-center px-2 py-1 mr-2 text-gray-300 rounded-lg border border-gray-600 transition-colors hover:bg-gray-700"
+            onClick={onNewChat}
+            className="group relative px-4 py-2 text-sm font-medium text-white rounded-2xl bg-gradient-to-r from-purple-500 to-pink-600 transition-all duration-200 hover:from-purple-600 hover:to-pink-700 hover:scale-105 shadow-lg hover:shadow-xl"
           >
-            {renderIcon(ArrowLeft, { className: "w-4 h-4" })}
-            Back
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-200"></div>
+            <span className="hidden sm:inline relative z-10">New Chat</span>
+            <span className="sm:hidden relative z-10">New</span>
           </button>
-          {renderIcon(History, { className: "w-5 h-5 text-curious-cyan-400" })}
-          <h2 className="text-lg font-semibold text-white">Chat History</h2>
         </div>
-        <button
-          onClick={onNewChat}
-          className="px-3 py-1.5 text-sm text-white rounded-lg border border-curious-cyan-600 transition-colors bg-curious-cyan-600 hover:bg-curious-cyan-700"
-        >
-          New Chat
-        </button>
       </div>
 
       {/* Search */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="p-4 sm:p-6 border-b border-gray-200/30 dark:border-gray-700/30">
         <div className="relative">
-          <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
-            {renderIcon(Search, { className: "w-4 h-4 text-gray-400" })}
+          <div className="flex absolute inset-y-0 left-0 items-center pl-4 pointer-events-none">
+            {renderIcon(Search, { className: "w-5 h-5 text-gray-400" })}
           </div>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search conversations..."
-            className="block p-2 pl-10 w-full text-sm placeholder-gray-400 text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-curious-cyan-500 focus:border-curious-cyan-500"
+            className="block p-3 pl-12 w-full text-sm placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-2xl border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 shadow-sm"
           />
         </div>
       </div>
@@ -161,32 +202,37 @@ export function ChatHistory({
       <div className="overflow-y-auto flex-1">
         {!conversations ? (
           <div className="flex justify-center items-center h-32">
-            <div className="text-gray-400">Loading conversations...</div>
+            <div className="text-gray-500 dark:text-gray-400">Loading conversations...</div>
           </div>
         ) : filteredConversations.length === 0 ? (
-          <div className="flex flex-col justify-center items-center h-32 text-gray-400">
+          <div className="flex flex-col justify-center items-center h-32 text-center p-8">
             {searchTerm ? (
               <>
-                {renderIcon(Search, { className: "w-8 h-8 mb-2" })}
-                <p>No conversations found matching &ldquo;{searchTerm}&rdquo;</p>
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-3xl flex items-center justify-center mb-4">
+                  {renderIcon(Search, { className: "w-6 h-6 text-gray-500 dark:text-gray-400" })}
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No matches found</h3>
+                <p className="text-gray-600 dark:text-gray-400">No conversations found matching "{searchTerm}"</p>
               </>
             ) : (
               <>
-                {renderIcon(MessageCircle, { className: "w-8 h-8 mb-2" })}
-                <p>No conversations yet</p>
-                <p className="text-sm">Start a new chat to see it here</p>
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-800 dark:to-pink-800 rounded-3xl flex items-center justify-center mb-4">
+                  {renderIcon(MessageCircle, { className: "w-6 h-6 text-purple-600 dark:text-purple-400" })}
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No conversations yet</h3>
+                <p className="text-gray-600 dark:text-gray-400">Start a new chat to see it here</p>
               </>
             )}
           </div>
         ) : (
-          <div className="p-2 space-y-1">
+          <div className="p-3 space-y-2">
             {filteredConversations.map((conversation: ChatConversation) => (
               <div
                 key={conversation._id}
-                className={`group relative p-3 rounded-lg border transition-colors cursor-pointer ${
+                className={`group relative p-4 rounded-2xl border transition-all duration-200 cursor-pointer ${
                   conversation.sessionId === currentSessionId
-                    ? "bg-curious-cyan-900/30 border-curious-cyan-600"
-                    : "bg-gray-700/50 border-gray-600 hover:bg-gray-700"
+                    ? "bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-600 shadow-md"
+                    : "bg-white dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-md hover:scale-[1.02]"
                 }`}
                 onClick={() => onSelectConversation(conversation)}
               >
@@ -200,7 +246,7 @@ export function ChatHistory({
                         onBlur={() =>
                           handleEditTitle(conversation._id, newTitle)
                         }
-                        onKeyPress={(e) => {
+                        onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             handleEditTitle(conversation._id, newTitle);
                           } else if (e.key === "Escape") {
@@ -209,21 +255,21 @@ export function ChatHistory({
                           }
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="px-2 py-1 w-full text-sm text-white bg-gray-600 rounded border border-gray-500 focus:outline-none focus:ring-1 focus:ring-curious-cyan-500"
+                        className="px-3 py-2 w-full text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-600 rounded-xl border border-gray-300 dark:border-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                     ) : (
-                      <h3 className="text-sm font-medium text-white truncate">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate mb-1">
                         {getConversationTitle(conversation)}
                       </h3>
                     )}
 
                     {conversation.documents &&
                       conversation.documents.length > 0 && (
-                        <div className="flex gap-1 items-center mt-1">
+                        <div className="flex gap-2 items-center mb-2">
                           {renderIcon(FileText, {
-                            className: "w-3 h-3 text-gray-400",
+                            className: "w-3 h-3 text-gray-500 dark:text-gray-400",
                           })}
-                          <span className="text-xs text-gray-400 truncate">
+                          <span className="text-xs text-gray-600 dark:text-gray-400 truncate">
                             {conversation.documents
                               .map((d) => d.title)
                               .join(", ")}
@@ -231,7 +277,7 @@ export function ChatHistory({
                         </div>
                       )}
 
-                    <div className="flex gap-4 items-center mt-2 text-xs text-gray-400">
+                    <div className="flex gap-4 items-center text-xs text-gray-500 dark:text-gray-400">
                       <div className="flex gap-1 items-center">
                         {renderIcon(Clock, { className: "w-3 h-3" })}
                         <span>{formatDate(conversation.lastMessageAt)}</span>
@@ -243,7 +289,7 @@ export function ChatHistory({
                     </div>
                   </div>
 
-                  <div className="flex gap-1 items-center ml-2">
+                  <div className="flex gap-1 items-center ml-3">
                     {/* Action buttons - only show on hover */}
                     <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                       <button
@@ -251,7 +297,7 @@ export function ChatHistory({
                           e.stopPropagation();
                           startEditingTitle(conversation);
                         }}
-                        className="p-1 text-gray-400 rounded transition-colors hover:text-white hover:bg-gray-600"
+                        className="p-2 text-gray-400 rounded-xl transition-colors hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
                         title="Edit title"
                       >
                         {renderIcon(Edit3, { className: "w-3 h-3" })}
@@ -261,14 +307,14 @@ export function ChatHistory({
                           e.stopPropagation();
                           handleDeleteConversation(conversation._id);
                         }}
-                        className="p-1 text-gray-400 rounded transition-colors hover:text-red-400 hover:bg-gray-600"
+                        className="p-2 text-gray-400 rounded-xl transition-colors hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
                         title="Delete conversation"
                       >
                         {renderIcon(Trash2, { className: "w-3 h-3" })}
                       </button>
                     </div>
                     {renderIcon(ChevronRight, {
-                      className: "w-4 h-4 text-gray-400",
+                      className: "w-4 h-4 text-gray-400 transition-transform group-hover:translate-x-1",
                     })}
                   </div>
                 </div>
@@ -280,19 +326,25 @@ export function ChatHistory({
 
       {/* Footer with stats */}
       {conversations && conversations.length > 0 && (
-        <div className="p-3 text-xs text-gray-400 border-t border-gray-700">
-          <div className="flex justify-between">
-            <span>{filteredConversations.length} conversations</span>
-            <span>
-              {conversations
-                .reduce(
-                  (sum: number, conv: ChatConversation) =>
-                    sum + conv.totalTokensUsed,
-                  0
-                )
-                .toLocaleString()}{" "}
-              total tokens
-            </span>
+        <div className="p-4 sm:p-6 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-800/50">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span className="font-medium">{filteredConversations.length} conversations</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">
+                {conversations
+                  .reduce(
+                    (sum: number, conv: ChatConversation) =>
+                      sum + conv.totalTokensUsed,
+                    0
+                  )
+                  .toLocaleString()}{" "}
+                tokens used
+              </span>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            </div>
           </div>
         </div>
       )}

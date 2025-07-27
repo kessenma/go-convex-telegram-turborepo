@@ -79,6 +79,147 @@ export const healthAPI = httpAction(async (ctx, request) => {
 });
 
 // =============================================================================
+// SERVICE STATUS API ENDPOINTS
+// =============================================================================
+
+// Receive status updates from Python services
+export const updateServiceStatusAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    
+    // Validate required fields
+    if (!body.serviceName || !body.status) {
+      return errorResponse("Missing required fields: serviceName, status", 400);
+    }
+
+    const statusData: any = {
+      serviceName: body.serviceName,
+      status: body.status,
+      ready: body.ready || false,
+      message: body.message || "",
+      timestamp: Date.now()
+    };
+
+    // Add optional fields only if they have valid values
+    if (body.memoryUsage && Object.keys(body.memoryUsage).length > 0) {
+      statusData.memoryUsage = body.memoryUsage;
+    }
+    if (body.model) {
+      statusData.model = body.model;
+    }
+    if (body.uptime !== undefined && body.uptime !== null) {
+      statusData.uptime = body.uptime;
+    }
+    if (body.error) {
+      statusData.error = body.error;
+    }
+    if (body.modelLoaded !== undefined && body.modelLoaded !== null) {
+      statusData.modelLoaded = body.modelLoaded;
+    }
+    if (body.modelLoading !== undefined && body.modelLoading !== null) {
+      statusData.modelLoading = body.modelLoading;
+    }
+    if (body.degradedMode !== undefined && body.degradedMode !== null) {
+      statusData.degradedMode = body.degradedMode;
+    }
+
+    // Store the status update
+    await ctx.runMutation(api.serviceStatus.updateServiceStatus, statusData);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: "Status updated successfully",
+        serviceName: body.serviceName,
+        timestamp: statusData.timestamp
+      }),
+      { 
+        status: 200,
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error updating service status:", error);
+    return errorResponse("Failed to update service status", 500, error instanceof Error ? error.message : "Unknown error");
+  }
+});
+
+// Get consolidated status from all services
+export const getConsolidatedStatusAPI = httpAction(async (ctx, request) => {
+  try {
+    const statuses = await ctx.runQuery(api.serviceStatus.getAllServiceStatuses, {});
+    
+    // Transform to the expected format
+    const services: Record<string, any> = {};
+    let totalMemoryMB = 0;
+    let totalCPU = 0;
+    let healthyServices = 0;
+    let totalServices = 0;
+    
+    for (const status of statuses) {
+      const serviceKey = status.serviceName === 'lightweight-llm' ? 'chat' : 
+                        status.serviceName === 'vector-convert-llm' ? 'vector' : 
+                        status.serviceName;
+      
+      services[serviceKey] = {
+        status: status.status,
+        ready: status.ready,
+        message: status.message,
+        memory_usage: status.memoryUsage,
+        model: status.model,
+        uptime: status.uptime,
+        error: status.error
+      };
+      
+      // Calculate summary metrics
+      if (status.memoryUsage?.processMemoryMb) {
+        totalMemoryMB += status.memoryUsage.processMemoryMb;
+      }
+      if (status.memoryUsage?.processCpuPercent) {
+        totalCPU += status.memoryUsage.processCpuPercent;
+      }
+      if (status.status === 'healthy' && status.ready) {
+        healthyServices++;
+      }
+      totalServices++;
+    }
+    
+    const averageCPU = totalServices > 0 ? totalCPU / totalServices : 0;
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        services,
+        summary: {
+          totalMemoryMB,
+          averageCPU,
+          healthyServices,
+          totalServices
+        },
+        timestamp: Date.now()
+      }),
+      { 
+        status: 200,
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error getting consolidated status:", error);
+    return errorResponse("Failed to get consolidated status", 500, error instanceof Error ? error.message : "Unknown error");
+  }
+});
+
+// =============================================================================
 // API ENDPOINT IMPLEMENTATIONS
 // =============================================================================
 
@@ -885,7 +1026,7 @@ export const getDockerStatusAPI = httpAction(async (ctx, request) => {
     // Get port information from environment variables
     const webDashboardPort = process.env.WEB_DASHBOARD_PORT || '3000';
     const convexDashboardPort = process.env.CONVEX_DASHBOARD_PORT || '6791';
-    const vectorLlmPort = '8081';
+    const vectorLlmPort = '7999';
     
     // Mock network information with actual exposed ports
     const networks = [
@@ -898,7 +1039,7 @@ export const getDockerStatusAPI = httpAction(async (ctx, request) => {
           `${webDashboardPort}:3000`,
           `${convexDashboardPort}:6791`,
           `${convexPort}:3210`,
-          `${vectorLlmPort}:8081`
+          `${vectorLlmPort}:7999`
         ]
       }
     ];
@@ -1404,6 +1545,12 @@ http.route({
   path: "/api/lightweight-llm/status",
   method: "GET",
   handler: getLightweightLLMStatusAPI,
+});
+
+http.route({
+  path: "/updateServiceStatus",
+  method: "POST",
+  handler: updateServiceStatusAPI,
 });
 
 // USER SESSIONS API ENDPOINTS

@@ -251,7 +251,7 @@ func main() {
 	// Get LLM service URL from environment variable
 	llmURL := os.Getenv("VECTOR_CONVERT_LLM_URL")
 	if llmURL == "" {
-		llmURL = "http://vector-convert-llm:8081" // Default for Docker
+		llmURL = "http://vector-convert-llm:7999" // Default for Docker
 	}
 
 	// Initialize HTTP client with timeout
