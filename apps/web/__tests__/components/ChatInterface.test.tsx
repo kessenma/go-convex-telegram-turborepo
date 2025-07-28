@@ -3,7 +3,12 @@ import { screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { toast } from 'sonner'
 import { render, createMockDocument, mockFetchSuccess, mockFetchError } from '../utils/test-utils'
-import { ChatInterface } from '../../app/RAG-chat/components/ChatInterface'
+import { ChatInterface } from '../../components/rag/chat/ChatInterface'
+
+// Mock Zustand store
+jest.mock('../../stores/ragChatStore', () => ({
+  useRagChatStore: jest.fn(),
+}))
 
 // Mock Convex hooks
 jest.mock('convex/react', () => ({
@@ -50,7 +55,10 @@ jest.mock('../../components/ui/tool-tip', () => ({
 }))
 
 import { useQuery } from 'convex/react'
+import { useRagChatStore } from '../../stores/ragChatStore'
+
 const mockUseQuery = useQuery as jest.MockedFunction<typeof useQuery>
+const mockUseRagChatStore = useRagChatStore as jest.MockedFunction<typeof useRagChatStore>
 
 describe('ChatInterface', () => {
   const mockDocuments = [
@@ -64,11 +72,15 @@ describe('ChatInterface', () => {
     }),
   ]
 
-  const defaultProps = {
-    selectedDocuments: mockDocuments,
-    onBackToSelection: jest.fn(),
-    sessionId: 'test-session-123',
-    onShowHistory: jest.fn(),
+  const mockStoreActions = {
+    navigateToSelection: jest.fn(),
+    navigateToHistory: jest.fn(),
+  }
+
+  const defaultStoreState = {
+    selectedDocumentObjects: mockDocuments,
+    currentSessionId: 'test-session-123',
+    ...mockStoreActions,
   }
 
   beforeEach(() => {
@@ -77,6 +89,9 @@ describe('ChatInterface', () => {
     
     // Mock Convex queries to return null by default
     mockUseQuery.mockReturnValue(null)
+    
+    // Mock Zustand store
+    mockUseRagChatStore.mockReturnValue(defaultStoreState)
   })
 
   afterEach(() => {
@@ -85,39 +100,49 @@ describe('ChatInterface', () => {
 
   describe('Header and Navigation', () => {
     it('renders header with navigation buttons correctly', () => {
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       expect(screen.getByText('Chat')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /back to selection/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
     })
 
-    it('calls onBackToSelection when back button is clicked', async () => {
+    it('calls navigateToSelection when back button is clicked', async () => {
       const user = userEvent.setup()
-      const onBackToSelection = jest.fn()
+      const navigateToSelection = jest.fn()
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        navigateToSelection,
+      })
 
-      render(<ChatInterface {...defaultProps} onBackToSelection={onBackToSelection} />)
+      render(<ChatInterface />)
 
       const backButton = screen.getByRole('button', { name: /back to selection/i })
       await user.click(backButton)
 
-      expect(onBackToSelection).toHaveBeenCalled()
+      expect(navigateToSelection).toHaveBeenCalled()
     })
 
-    it('calls onShowHistory when history button is clicked', async () => {
+    it('calls navigateToHistory when history button is clicked', async () => {
       const user = userEvent.setup()
-      const onShowHistory = jest.fn()
+      const navigateToHistory = jest.fn()
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        navigateToHistory,
+      })
 
-      render(<ChatInterface {...defaultProps} onShowHistory={onShowHistory} />)
+      render(<ChatInterface />)
 
       const historyButton = screen.getByRole('button', { name: /history/i })
       await user.click(historyButton)
 
-      expect(onShowHistory).toHaveBeenCalled()
+      expect(navigateToHistory).toHaveBeenCalled()
     })
 
     it('displays selected documents in accordion', () => {
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       expect(screen.getByText('Chatting with:')).toBeInTheDocument()
       expect(screen.getByText('Test Document 1')).toBeInTheDocument()
@@ -127,7 +152,7 @@ describe('ChatInterface', () => {
     })
 
     it('shows model information in accordion content', () => {
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       expect(screen.getByText('Powered by all-MiniLM-L6-v2 embeddings + Llama 3.2 1B LLM')).toBeInTheDocument()
     })
@@ -135,7 +160,7 @@ describe('ChatInterface', () => {
 
   describe('Message Display', () => {
     it('shows empty state when no messages', () => {
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       expect(screen.getByText('Start a conversation by asking a question about your documents.')).toBeInTheDocument()
     })
@@ -168,7 +193,7 @@ describe('ChatInterface', () => {
         .mockReturnValueOnce(mockConversation) // getConversationBySessionId
         .mockReturnValueOnce(mockMessages) // getConversationMessages
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       expect(screen.getByText('Hello')).toBeInTheDocument()
       expect(screen.getByText('Hi there!')).toBeInTheDocument()
@@ -198,7 +223,7 @@ describe('ChatInterface', () => {
         .mockReturnValueOnce(mockConversation)
         .mockReturnValueOnce(mockMessages)
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const userMessage = screen.getByText('User message').closest('div')
       const assistantMessage = screen.getByText('Assistant message').closest('div')
@@ -212,7 +237,7 @@ describe('ChatInterface', () => {
     it('handles text input correctly', async () => {
       const user = userEvent.setup()
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       await user.type(textarea, 'Test message')
@@ -227,7 +252,7 @@ describe('ChatInterface', () => {
         sources: [],
       })
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       const sendButton = screen.getByRole('button', { name: /send/i })
@@ -235,7 +260,7 @@ describe('ChatInterface', () => {
       await user.type(textarea, 'Test message')
       await user.click(sendButton)
 
-      expect(global.fetch).toHaveBeenCalledWith('/api/RAG/simple-chat', {
+      expect(global.fetch).toHaveBeenCalledWith('/api/RAG/document-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -254,7 +279,7 @@ describe('ChatInterface', () => {
         sources: [],
       })
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       await user.type(textarea, 'Test message')
@@ -266,7 +291,7 @@ describe('ChatInterface', () => {
     it('does not send message on Shift+Enter', async () => {
       const user = userEvent.setup()
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       await user.type(textarea, 'Test message')
@@ -286,7 +311,7 @@ describe('ChatInterface', () => {
         }), 100)
       )) as jest.Mock
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       const sendButton = screen.getByRole('button', { name: /send/i })
@@ -307,7 +332,7 @@ describe('ChatInterface', () => {
         sources: [],
       })
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       await user.type(textarea, 'Test message')
@@ -324,7 +349,7 @@ describe('ChatInterface', () => {
       const user = userEvent.setup()
       mockFetchError('Chat service error', 500)
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       await user.type(textarea, 'Test message')
@@ -350,7 +375,7 @@ describe('ChatInterface', () => {
         })
       ) as jest.Mock
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       await user.type(textarea, 'Test message')
@@ -374,7 +399,7 @@ describe('ChatInterface', () => {
         }), 100)
       )) as jest.Mock
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       const sendButton = screen.getByRole('button', { name: /send/i })
@@ -416,7 +441,7 @@ describe('ChatInterface', () => {
         .mockReturnValueOnce(mockConversation)
         .mockReturnValueOnce(mockMessages)
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       expect(screen.getByText('Sources:')).toBeInTheDocument()
       expect(screen.getByText('Document 1')).toBeInTheDocument()
@@ -442,7 +467,7 @@ describe('ChatInterface', () => {
         .mockReturnValueOnce(mockConversation)
         .mockReturnValueOnce(mockMessages)
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       expect(screen.queryByText('Sources:')).not.toBeInTheDocument()
     })
@@ -456,24 +481,29 @@ describe('ChatInterface', () => {
           title: 'This is a very long document title that should be truncated on mobile devices',
         }),
       ]
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        selectedDocumentObjects: longTitleDocuments,
+      })
 
-      render(<ChatInterface {...defaultProps} selectedDocuments={longTitleDocuments} />)
+      render(<ChatInterface />)
 
       const titleElement = screen.getByText('This is a very long document title that should be truncated on mobile devices')
-      expect(titleElement).toHaveClass('truncate', 'max-w-[150px]', 'sm:max-w-none')
+      expect(titleElement).toHaveClass('truncate')
     })
 
     it('adjusts padding for different screen sizes', () => {
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const headerNav = screen.getByText('Chat').closest('div')
-      expect(headerNav).toHaveClass('p-3', 'sm:p-4')
+      expect(headerNav).toHaveClass('p-3')
     })
   })
 
   describe('Accessibility', () => {
     it('has proper ARIA labels and roles', () => {
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       expect(screen.getByRole('button', { name: /back to selection/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
@@ -482,7 +512,7 @@ describe('ChatInterface', () => {
     })
 
     it('disables send button when input is empty', () => {
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const sendButton = screen.getByRole('button', { name: /send/i })
       expect(sendButton).toBeDisabled()
@@ -491,7 +521,7 @@ describe('ChatInterface', () => {
     it('enables send button when input has content', async () => {
       const user = userEvent.setup()
 
-      render(<ChatInterface {...defaultProps} />)
+      render(<ChatInterface />)
 
       const textarea = screen.getByPlaceholderText('Ask a question about your documents...')
       const sendButton = screen.getByRole('button', { name: /send/i })

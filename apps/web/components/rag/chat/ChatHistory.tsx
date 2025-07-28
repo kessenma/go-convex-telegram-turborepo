@@ -18,23 +18,19 @@ import { useState } from "react";
 import { api } from "../../../generated-convex";
 import { renderIcon } from "../../../lib/icon-utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tool-tip";
+import { BackgroundGradient } from "../../ui/backgrounds/background-gradient";
+import { useRagChatStore } from "../../../stores/ragChatStore";
 import type { ChatConversation } from "../../../app/RAG-chat/types";
 
-interface ChatHistoryProps {
-  onSelectConversation: (conversation: ChatConversation) => void;
-  onNewChat: () => void;
-  onBackToSelection: () => void;
-  onBackToPrevious: () => void;
-  currentSessionId?: string;
-}
-
-export function ChatHistory({
-  onSelectConversation,
-  onNewChat,
-  onBackToSelection,
-  onBackToPrevious,
-  currentSessionId,
-}: ChatHistoryProps): React.ReactElement {
+export function ChatHistory(): React.ReactElement {
+  // Get state and actions from Zustand store
+  const {
+    currentSessionId,
+    selectConversation,
+    startNewChat,
+    navigateToSelection,
+    navigateBack
+  } = useRagChatStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
@@ -122,119 +118,146 @@ export function ChatHistory({
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-gray-900/95 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
-      {/* Header */}
-      <div className="relative border-b border-gray-600/50 bg-gray-800/90 backdrop-blur-sm">
-        {/* Geometric accent line */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500"></div>
-        
-        <div className="flex justify-between items-center p-4 sm:p-6">
-          <div className="flex gap-3">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onBackToPrevious}
-                  className="group relative p-3 text-gray-300 rounded-2xl border border-gray-600 transition-all duration-200 hover:bg-gray-700 hover:scale-105 hover:shadow-lg hover:text-white"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  {renderIcon(ArrowLeft, { className: "w-5 h-5 relative z-10" })}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Back
-              </TooltipContent>
-            </Tooltip>
+    <BackgroundGradient color="purple" containerClassName="w-full" tronMode={true} intensity="normal">
+      <div className="flex flex-col h-[700px] bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-purple-500/20 shadow-2xl shadow-purple-500/10 overflow-hidden">
+        {/* Tron-inspired header */}
+        <div className="relative border-b border-purple-500/30 bg-slate-800/60 backdrop-blur-md">
+          {/* Animated accent line */}
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-purple-400 to-transparent animate-pulse"></div>
+          
+          {/* Top navigation bar */}
+          <div className="flex justify-between items-center p-4 sm:p-6">
+            <div className="flex gap-3">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <BackgroundGradient color="purple" containerClassName="p-0" tronMode={true} intensity="subtle">
+                    <button
+                      onClick={navigateBack}
+                      className="group relative p-3 text-purple-300 rounded-2xl transition-all duration-300 hover:text-purple-100 bg-slate-800/60 backdrop-blur-md border border-purple-500/20 hover:border-purple-400/40"
+                    >
+                      {renderIcon(ArrowLeft, { className: "w-5 h-5" })}
+                    </button>
+                  </BackgroundGradient>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-900/90 backdrop-blur-md border border-purple-500/30">
+                  Back
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onBackToSelection}
-                  className="group relative p-3 text-gray-300 rounded-2xl border border-gray-600 transition-all duration-200 hover:bg-gray-700 hover:scale-105 hover:shadow-lg hover:text-white"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-orange-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  {renderIcon(Layers3, { className: "w-5 h-5 relative z-10" })}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                All Documents
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-              {renderIcon(History, { className: "w-4 h-4 text-white" })}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <BackgroundGradient color="cyan" containerClassName="p-0" tronMode={true} intensity="subtle">
+                    <button
+                      onClick={navigateToSelection}
+                      className="group relative p-3 text-cyan-300 rounded-2xl transition-all duration-300 hover:text-cyan-100 bg-slate-800/60 backdrop-blur-md border border-cyan-500/20 hover:border-cyan-400/40"
+                    >
+                      {renderIcon(Layers3, { className: "w-5 h-5" })}
+                    </button>
+                  </BackgroundGradient>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-900/90 backdrop-blur-md border border-cyan-500/30">
+                  All Documents
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white">
-              History
-            </h2>
+
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center border border-purple-400/30">
+                {renderIcon(History, { className: "w-4 h-4 text-white" })}
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-purple-100">
+                Chat History
+              </h2>
+            </div>
+
+            <BackgroundGradient color="purple" containerClassName="p-0" tronMode={true} intensity="subtle">
+              <button
+                onClick={startNewChat}
+                className="group relative px-4 py-2 text-sm font-medium text-white rounded-2xl bg-slate-800/60 backdrop-blur-md border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-purple-500/20"
+              >
+                <span className="hidden sm:inline">New Chat</span>
+                <span className="sm:hidden">New</span>
+              </button>
+            </BackgroundGradient>
           </div>
 
-          <button
-            onClick={onNewChat}
-            className="group relative px-4 py-2 text-sm font-medium text-white rounded-2xl bg-gradient-to-r from-purple-500 to-pink-600 transition-all duration-200 hover:from-purple-600 hover:to-pink-700 hover:scale-105 shadow-lg hover:shadow-xl"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-200"></div>
-            <span className="hidden sm:inline relative z-10">New Chat</span>
-            <span className="sm:hidden relative z-10">New</span>
-          </button>
+          {/* Status indicator */}
+          <div className="px-6 pb-4">
+            <div className="flex items-center justify-center gap-2 text-xs text-purple-400 bg-slate-800/30 backdrop-blur-md rounded-full px-4 py-2 border border-purple-500/20">
+              <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+              <span className="font-medium">
+                Conversation History & Management
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Search */}
-      <div className="p-4 sm:p-6 border-b border-gray-600/50">
-        <div className="relative">
-          <div className="flex absolute inset-y-0 left-0 items-center pl-4 pointer-events-none">
-            {renderIcon(Search, { className: "w-5 h-5 text-gray-400" })}
-          </div>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search conversations..."
-            className="block p-3 pl-12 w-full text-sm placeholder-gray-500 text-white bg-gray-700 rounded-2xl border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 shadow-sm"
-          />
+        {/* Search */}
+        <div className="p-4 sm:p-6 border-b border-purple-500/30">
+          <BackgroundGradient color="purple" containerClassName="w-full" tronMode={true} intensity="subtle">
+            <div className="relative">
+              <div className="flex absolute inset-y-0 left-0 items-center pl-4 pointer-events-none">
+                {renderIcon(Search, { className: "w-5 h-5 text-purple-400" })}
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search conversations..."
+                className="block p-3 pl-12 w-full text-sm placeholder-purple-400/60 text-purple-100 bg-slate-800/60 backdrop-blur-md rounded-2xl border border-purple-500/20 focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 shadow-sm"
+              />
+            </div>
+          </BackgroundGradient>
         </div>
-      </div>
 
-      {/* Conversations List */}
-      <div className="overflow-y-auto flex-1 bg-gray-900/50">
-        {!conversations ? (
-          <div className="flex justify-center items-center h-32">
-            <div className="text-gray-400">Loading conversations...</div>
-          </div>
-        ) : filteredConversations.length === 0 ? (
-          <div className="flex flex-col justify-center items-center h-32 text-center p-8">
-            {searchTerm ? (
-              <>
-                <div className="w-16 h-16 bg-gray-800 rounded-3xl flex items-center justify-center mb-4">
-                  {renderIcon(Search, { className: "w-6 h-6 text-gray-500" })}
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">No matches found</h3>
-                <p className="text-gray-400">No conversations found matching "{searchTerm}"</p>
-              </>
-            ) : (
-              <>
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-800 to-pink-800 rounded-3xl flex items-center justify-center mb-4">
-                  {renderIcon(MessageCircle, { className: "w-6 h-6 text-purple-400" })}
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">No conversations yet</h3>
-                <p className="text-gray-400">Start a new chat to see it here</p>
-              </>
-            )}
-          </div>
+        {/* Conversations List */}
+        <div className="overflow-y-auto flex-1 bg-slate-900/30 backdrop-blur-sm">
+          {!conversations ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="text-purple-400">Loading conversations...</div>
+            </div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="flex flex-col justify-center items-center h-32 text-center p-8">
+              {searchTerm ? (
+                <>
+                  <BackgroundGradient color="purple" containerClassName="p-0" tronMode={true} intensity="subtle">
+                    <div className="w-16 h-16 bg-slate-800/60 backdrop-blur-md rounded-3xl flex items-center justify-center mb-4 border border-purple-500/20">
+                      {renderIcon(Search, { className: "w-6 h-6 text-purple-400" })}
+                    </div>
+                  </BackgroundGradient>
+                  <h3 className="text-lg font-semibold text-purple-100 mb-2">No matches found</h3>
+                  <p className="text-purple-200/70">No conversations found matching "{searchTerm}"</p>
+                </>
+              ) : (
+                <>
+                  <BackgroundGradient color="purple" containerClassName="p-0" tronMode={true} intensity="subtle">
+                    <div className="w-16 h-16 bg-slate-800/60 backdrop-blur-md rounded-3xl flex items-center justify-center mb-4 border border-purple-500/20">
+                      {renderIcon(MessageCircle, { className: "w-6 h-6 text-purple-400" })}
+                    </div>
+                  </BackgroundGradient>
+                  <h3 className="text-lg font-semibold text-purple-100 mb-2">No conversations yet</h3>
+                  <p className="text-purple-200/70">Start a new chat to see it here</p>
+                </>
+              )}
+            </div>
         ) : (
           <div className="p-3 space-y-2">
             {filteredConversations.map((conversation: ChatConversation) => (
-              <div
+              <BackgroundGradient 
                 key={conversation._id}
-                className={`group relative p-4 rounded-2xl border transition-all duration-200 cursor-pointer ${
-                  conversation.sessionId === currentSessionId
-                    ? "bg-purple-900/30 border-purple-600 shadow-md"
-                    : "bg-gray-800/50 border-gray-700 hover:bg-gray-700/50 hover:shadow-md hover:scale-[1.02]"
-                }`}
-                onClick={() => onSelectConversation(conversation)}
+                color={conversation.sessionId === currentSessionId ? "purple" : "cyan"} 
+                containerClassName="w-full" 
+                tronMode={true} 
+                intensity="subtle"
               >
+                <div
+                  className={`group relative p-4 rounded-2xl border transition-all duration-300 cursor-pointer backdrop-blur-md ${
+                    conversation.sessionId === currentSessionId
+                      ? "bg-slate-800/60 border-purple-500/30 shadow-lg shadow-purple-500/20"
+                      : "bg-slate-800/40 border-slate-600/30 hover:bg-slate-700/50 hover:border-slate-500/50 hover:shadow-md hover:scale-[1.02]"
+                  }`}
+                  onClick={() => selectConversation(conversation)}
+                >
                 <div className="flex justify-between items-start">
                   <div className="flex-1 min-w-0">
                     {editingTitle === conversation._id ? (
@@ -317,36 +340,38 @@ export function ChatHistory({
                     })}
                   </div>
                 </div>
-              </div>
+                </div>
+              </BackgroundGradient>
             ))}
           </div>
         )}
-      </div>
+        </div>
 
-      {/* Footer with stats */}
-      {conversations && conversations.length > 0 && (
-        <div className="p-4 sm:p-6 text-xs text-gray-400 border-t border-gray-600/50 bg-gray-800/50">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className="font-medium">{filteredConversations.length} conversations</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">
-                {conversations
-                  .reduce(
-                    (sum: number, conv: ChatConversation) =>
-                      sum + conv.totalTokensUsed,
-                    0
-                  )
-                  .toLocaleString()}{" "}
-                tokens used
-              </span>
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+        {/* Footer with stats */}
+        {conversations && conversations.length > 0 && (
+          <div className="p-4 sm:p-6 text-xs text-purple-300 border-t border-purple-500/30 bg-slate-800/50 backdrop-blur-md">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                <span className="font-medium">{filteredConversations.length} conversations</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">
+                  {conversations
+                    .reduce(
+                      (sum: number, conv: ChatConversation) =>
+                        sum + conv.totalTokensUsed,
+                      0
+                    )
+                    .toLocaleString()}{" "}
+                  tokens used
+                </span>
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </BackgroundGradient>
   );
 }

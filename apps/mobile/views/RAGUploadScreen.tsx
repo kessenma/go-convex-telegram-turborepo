@@ -6,9 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
+import CloudUpload from '../components/CloudUpload';
 // Note: In a real implementation, you would use react-native-document-picker
 // For now, we'll simulate file selection
 
@@ -88,7 +90,9 @@ const RAGUploadScreen = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.uploadContainer}>
           <View style={styles.uploadArea}>
-            <Icon name="upload-cloud" size={48} color="#007AFF" />
+            <View style={styles.babylonContainer}>
+            <CloudUpload />
+            </View>
             <Text style={styles.uploadTitle}>Upload Documents</Text>
             <Text style={styles.uploadSubtitle}>
               Select PDF, TXT, or DOC files to add to your RAG knowledge base
@@ -215,6 +219,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#e9ecef',
     borderStyle: 'dashed',
+    minHeight: 400,
+  },
+  babylonContainer: {
+    width: '100%',
+    height: 200,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#000',
   },
   uploadTitle: {
     fontSize: 20,

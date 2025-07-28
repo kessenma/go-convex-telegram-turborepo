@@ -1,10 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
+import { useAppStore } from '../stores/useAppStore';
 
 
 
 
 const AboutScreen = () => {
+    const { settings, updateSettings } = useAppStore();
+
+    const handleNotificationToggle = (value: boolean) => {
+        updateSettings({ notificationsEnabled: value });
+    };
 
     return (
         <ScrollView 
@@ -19,6 +25,24 @@ const AboutScreen = () => {
                 <Text style={styles.description}>
                     We're building the future of seamless communication through innovative mobile technology.
                 </Text>
+            </View>
+            
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Settings</Text>
+                <View style={styles.settingRow}>
+                    <View style={styles.settingInfo}>
+                        <Text style={styles.settingLabel}>Push Notifications</Text>
+                        <Text style={styles.settingDescription}>
+                            Get notified when new Telegram messages arrive
+                        </Text>
+                    </View>
+                    <Switch
+                        value={settings.notificationsEnabled}
+                        onValueChange={handleNotificationToggle}
+                        trackColor={{ false: '#e9ecef', true: '#007AFF' }}
+                        thumbColor={settings.notificationsEnabled ? '#ffffff' : '#f4f3f4'}
+                    />
+                </View>
             </View>
             
             <View style={styles.section}>
@@ -129,6 +153,26 @@ const styles = StyleSheet.create({
     copyright: {
         fontSize: 12,
         color: '#999',
+    },
+    settingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    settingInfo: {
+        flex: 1,
+        marginRight: 15,
+    },
+    settingLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1a1a1a',
+        marginBottom: 4,
+    },
+    settingDescription: {
+        fontSize: 14,
+        color: '#666',
+        lineHeight: 20,
     },
 });
 

@@ -10,42 +10,36 @@ import {
   Send,
   User,
   Sparkles,
-  FileText,
-  ChevronDown,
+  Database,
 } from "lucide-react";
-import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../generated-convex";
 import { renderIcon } from "../../../lib/icon-utils";
-import Folder from "../folder";
-import { BauhausLoader } from "../../ui/loading/BauhausLoader";
 import { ProgressLoader } from "../../ui/loading/ProgressLoader";
+import { BackgroundGradient } from "../../ui/backgrounds/background-gradient";
 import { useLLMProgress } from "../../../hooks/useLLMProgress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tool-tip";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../../ui/accordion";
 import DocumentViewer from "../DocumentViewer";
-import type { ChatMessage, Document } from "../../../app/RAG-chat/types";
+import { useRagChatStore } from "../../../stores/ragChatStore";
+import type { ChatMessage } from "../../../app/RAG-chat/types";
 
-interface ChatInterfaceProps {
-  selectedDocuments: Document[];
-  onBackToSelection: () => void;
-  sessionId: string;
-  onShowHistory: () => void;
-}
-
-export function ChatInterface({
-  selectedDocuments,
-  onBackToSelection,
-  sessionId,
-  onShowHistory,
-}: ChatInterfaceProps) {
+export function ChatInterface() {
+  // Get state and actions from Zustand store
+  const {
+    selectedDocumentObjects: selectedDocuments,
+    currentSessionId: sessionId,
+    navigateToSelection,
+    navigateToHistory
+  } = useRagChatStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [_conversationId, _setConversationId] = useState<string | null>(null);
   const [documentViewerOpen, setDocumentViewerOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [accordionOpen, setAccordionOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Enhanced progress tracking
@@ -168,287 +162,269 @@ export function ChatInterface({
     }
   };
 
-  const handleFolderClick = () => {
-    if (selectedDocuments.length === 1) {
-      setSelectedDocumentId(selectedDocuments[0]._id);
-      setDocumentViewerOpen(true);
-    }
-  };
+
 
   return (
     <>
-      <div className="flex flex-col h-[600px] bg-gray-900/95 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
-        {/* Header with better contrast */}
-        <div className="relative border-b border-gray-600/50 bg-gray-800/90 backdrop-blur-sm">
-          {/* Geometric accent line */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500"></div>
-          
-          {/* Top navigation bar */}
-          <div className="flex justify-between items-center p-4 sm:p-6">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onBackToSelection}
-                  className="group relative p-3 text-gray-300 rounded-2xl border border-gray-600 transition-all duration-200 hover:bg-gray-700 hover:scale-105 hover:shadow-lg hover:text-white"
+      <BackgroundGradient color="cyan" containerClassName="w-full" tronMode={true} intensity="normal">
+        <div className="flex flex-col h-[700px] bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-cyan-500/20 shadow-2xl shadow-cyan-500/10 overflow-hidden">
+          {/* Tron-inspired header */}
+          <div className="relative border-b border-cyan-500/30 bg-slate-800/60 backdrop-blur-md">
+            {/* Animated accent line */}
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
+            
+            {/* Top navigation bar */}
+            <div className="flex justify-between items-center p-4 sm:p-6">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <BackgroundGradient color="cyan" containerClassName="p-0" tronMode={true} intensity="subtle">
+                    <button
+                      onClick={navigateToSelection}
+                      className="group relative p-3 text-cyan-300 rounded-2xl transition-all duration-300 hover:text-cyan-100 bg-slate-800/60 backdrop-blur-md border border-cyan-500/20 hover:border-cyan-400/40"
+                    >
+                      {renderIcon(ArrowLeft, { className: "w-5 h-5" })}
+                    </button>
+                  </BackgroundGradient>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-900/90 backdrop-blur-md border border-cyan-500/30">
+                  Back to Selection
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Header with context accordion */}
+              <div className="flex-1 mx-6">
+                <Accordion 
+                  type="single" 
+                  collapsible 
+                  value={accordionOpen ? "context" : ""}
+                  onValueChange={(value) => setAccordionOpen(value === "context")}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  {renderIcon(ArrowLeft, { className: "w-5 h-5 relative z-10" })}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Back to Selection
-              </TooltipContent>
-            </Tooltip>
-
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                {renderIcon(Sparkles, { className: "w-4 h-4 text-white" })}
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white">
-                Chat
-              </h2>
-            </div>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onShowHistory}
-                  className="group relative p-3 text-gray-300 rounded-2xl border border-gray-600 transition-all duration-200 hover:bg-gray-700 hover:scale-105 hover:shadow-lg hover:text-white"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  {renderIcon(History, { className: "w-5 h-5 relative z-10" })}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                History
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* Document context with accordion and folder */}
-          <div className="px-4 sm:px-6 pb-4">
-            <Accordion className="w-full">
-              <AccordionItem value="document-info" className="border-gray-600">
-                <AccordionTrigger className="text-left hover:no-underline py-3">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 text-sm text-gray-300">
-                        {renderIcon(FileText, { className: "w-4 h-4" })}
-                        <span className="font-medium">Context:</span>
+                  <AccordionItem value="context" className="border-none">
+                    <AccordionTrigger className="hover:no-underline py-2 px-4 rounded-2xl bg-slate-800/40 backdrop-blur-md border border-cyan-500/20 hover:border-cyan-400/40 transition-all duration-300">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center">
+                          {renderIcon(Database, { className: "w-4 h-4 text-white" })}
+                        </div>
+                        <div className="text-left">
+                          <h2 className="text-lg font-bold text-cyan-100">
+                            AI Chat
+                          </h2>
+                          <p className="text-xs text-cyan-300/70">
+                            {selectedDocuments.length} document{selectedDocuments.length !== 1 ? 's' : ''} loaded
+                          </p>
+                        </div>
                       </div>
-                      
-                      <div className="flex flex-wrap gap-2 items-center">
-                        {selectedDocuments.slice(0, 2).map((doc) => (
-                          <div key={doc._id} className="flex items-center gap-2 px-3 py-1.5 bg-blue-900/30 rounded-xl border border-blue-700/50">
-                            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                            <span className="text-sm font-medium text-blue-300 truncate max-w-[120px]">
-                              {doc.title}
-                            </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 pb-2">
+                      <div className="space-y-2">
+                        {selectedDocuments.map((doc) => (
+                          <div key={doc._id} className="flex items-center gap-3 p-3 bg-slate-800/40 backdrop-blur-md rounded-xl border border-cyan-500/10">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full flex-shrink-0 animate-pulse"></div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium text-cyan-200 truncate block">
+                                {doc.title}
+                              </span>
+                              <span className="text-xs text-cyan-300/70">
+                                {doc.contentType} • {doc.wordCount.toLocaleString()} words
+                              </span>
+                            </div>
                           </div>
                         ))}
-                        {selectedDocuments.length > 2 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 rounded-xl border border-gray-600/50">
-                            <span className="text-sm font-medium text-gray-300">
-                              +{selectedDocuments.length - 2} more
-                            </span>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <BackgroundGradient color="purple" containerClassName="p-0" tronMode={true} intensity="subtle">
+                    <button
+                      onClick={navigateToHistory}
+                      className="group relative p-3 text-purple-300 rounded-2xl transition-all duration-300 hover:text-purple-100 bg-slate-800/60 backdrop-blur-md border border-purple-500/20 hover:border-purple-400/40"
+                    >
+                      {renderIcon(History, { className: "w-5 h-5" })}
+                    </button>
+                  </BackgroundGradient>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-900/90 backdrop-blur-md border border-purple-500/30">
+                  History
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
+            {/* Status indicator */}
+            <div className="px-6 pb-4">
+              <div className="flex items-center justify-center gap-2 text-xs text-emerald-400 bg-slate-800/30 backdrop-blur-md rounded-full px-4 py-2 border border-emerald-500/20">
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                <span className="font-medium">
+                  Powered by all-MiniLM-L6-v2 embeddings + Llama 3.2 1B LLM
+                </span>
+              </div>
+            </div>
+        </div>
+
+          {/* Messages */}
+          <div className="overflow-y-auto flex-1 p-6 space-y-6 bg-slate-900/30 backdrop-blur-sm">
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="relative mb-8">
+                  <BackgroundGradient color="cyan" containerClassName="p-0" tronMode={true} intensity="subtle">
+                    <div className="w-24 h-24 bg-slate-800/60 backdrop-blur-md rounded-3xl flex items-center justify-center border border-cyan-500/20">
+                      {renderIcon(MessageCircle, { className: "w-10 h-10 text-cyan-400" })}
+                    </div>
+                  </BackgroundGradient>
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center border-2 border-slate-900">
+                    {renderIcon(Sparkles, { className: "w-4 h-4 text-white" })}
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-cyan-100 mb-3">
+                  Ready to explore your documents
+                </h3>
+                <p className="text-cyan-200/70 max-w-md leading-relaxed">
+                  Ask me anything about your selected documents. I'll provide detailed answers with source references.
+                </p>
+              </div>
+            )}
+
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <BackgroundGradient 
+                  color={message.type === "user" ? "cyan" : "purple"} 
+                  containerClassName={`max-w-[85%] ${message.type === "user" ? "ml-auto" : "mr-auto"}`}
+                  tronMode={true}
+                  intensity="subtle"
+                >
+                  <div
+                    className={`${message.type === "user"
+                      ? "bg-slate-800/60 text-cyan-100 rounded-3xl rounded-br-lg border border-cyan-500/20"
+                      : "bg-slate-800/60 text-slate-100 rounded-3xl rounded-bl-lg border border-purple-500/20"
+                      } p-5 backdrop-blur-md shadow-lg`}
+                  >
+                    <div className="flex gap-3 items-start">
+                      {message.type === "assistant" && (
+                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center border border-purple-400/30">
+                          {renderIcon(Bot, { className: "w-4 h-4 text-white" })}
+                        </div>
+                      )}
+                      {message.type === "user" && (
+                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center border border-cyan-400/30">
+                          {renderIcon(User, { className: "w-4 h-4 text-white" })}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+
+                        {message.sources && message.sources.length > 0 && (
+                          <div className="mt-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full"></div>
+                              <p className="text-xs font-semibold text-cyan-300 uppercase tracking-wide">
+                                Sources
+                              </p>
+                            </div>
+                            {message.sources.map((source, index) => (
+                              <div key={index} className="w-full">
+                                <div className="p-4 bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-600/40 hover:border-slate-500/60 transition-all duration-200">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="font-medium text-cyan-300 text-sm">
+                                      {source.title}
+                                    </span>
+                                    <span className="text-xs text-slate-400 bg-slate-700/80 px-2 py-1 rounded-md border border-slate-600/50">
+                                      {(source.score * 100).toFixed(1)}% match
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-slate-300 leading-relaxed">
+                                    {source.snippet}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
                     </div>
+                  </div>
+                </BackgroundGradient>
+              </div>
+            ))}
 
-                    {/* Interactive folder */}
-                    <div className="flex-shrink-0 ml-4">
-                      <Folder
-                        color="#3B82F6"
-                        size={0.7}
-                        fileName={selectedDocuments.length > 1 ? `${selectedDocuments.length} docs` : selectedDocuments[0]?.title || "Documents"}
-                        className="hover:scale-110 transition-transform duration-200"
-                        onFolderClick={handleFolderClick}
-                      />
-                    </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-2 pb-0">
-                  <div className="space-y-2">
-                    {selectedDocuments.map((doc) => (
-                      <div key={doc._id} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-xl border border-gray-600/30">
-                        <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium text-gray-200 truncate block">
-                            {doc.title}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {doc.contentType} • {doc.wordCount.toLocaleString()} words
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            {/* Enhanced loading component with progress */}
+            {isLoading && (
+              <div className="flex justify-start">
+                <ProgressLoader
+                  isVisible={llmProgress.isProcessing}
+                  message={llmProgress.message}
+                  steps={llmProgress.steps}
+                  currentStep={llmProgress.currentStep}
+                  progress={llmProgress.progress}
+                  estimatedTime={llmProgress.estimatedTime}
+                />
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Status indicator */}
-          <div className="px-4 sm:px-6 pb-3">
-            <div className="flex items-center gap-2 text-xs text-emerald-400">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="font-medium">
-                Powered by all-MiniLM-L6-v2 embeddings + Llama 3.2 1B LLM
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-6 bg-gray-900/50">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="relative mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mb-4 mx-auto">
-                  {renderIcon(MessageCircle, { className: "w-8 h-8 text-white" })}
-                </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                  {renderIcon(Sparkles, { className: "w-3 h-3 text-white" })}
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Ready to explore your documents
-              </h3>
-              <p className="text-gray-400 max-w-md">
-                Ask me anything about your selected documents. I'll provide detailed answers with source references.
-              </p>
-            </div>
-          )}
-
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[85%] ${message.type === "user"
-                  ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-3xl rounded-br-lg"
-                  : "bg-gray-800 text-gray-100 rounded-3xl rounded-bl-lg border border-gray-700"
-                  } p-4 shadow-lg`}
-              >
-                <div className="flex gap-3 items-start">
-                  {message.type === "assistant" && (
-                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
-                      {renderIcon(Bot, { className: "w-4 h-4 text-white" })}
-                    </div>
+          {/* Tron-inspired input */}
+          <div className="p-6 border-t border-cyan-500/30 bg-slate-800/60 backdrop-blur-md">
+            <div className="flex gap-4 items-end">
+              <div className="flex-1 relative">
+                <BackgroundGradient color="cyan" containerClassName="w-full" tronMode={true} intensity="subtle">
+                  <textarea
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    placeholder="Ask me anything about your documents..."
+                    className="w-full px-5 py-4 pr-16 placeholder-cyan-400/60 text-cyan-100 bg-slate-800/60 backdrop-blur-md rounded-2xl border border-cyan-500/20 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all duration-300 shadow-sm"
+                    rows={2}
+                    disabled={isLoading}
+                  />
+                </BackgroundGradient>
+                {/* Character count or input status */}
+                <div className="absolute bottom-3 right-4 text-xs text-cyan-400/70">
+                  {inputMessage.length > 0 && (
+                    <span className={inputMessage.length > 500 ? "text-orange-400" : ""}>
+                      {inputMessage.length}
+                    </span>
                   )}
-                  {message.type === "user" && (
-                    <div className="flex-shrink-0 w-8 h-8 bg-white/20 rounded-2xl flex items-center justify-center">
-                      {renderIcon(User, { className: "w-4 h-4 text-white" })}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-
-                    {message.sources && message.sources.length > 0 && (
-                      <div className="mt-4 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                          <p className="text-xs font-semibold text-gray-300 uppercase tracking-wide">
-                            Sources
-                          </p>
-                        </div>
-                        {message.sources.map((source, index) => (
-                          <div
-                            key={index}
-                            className="p-3 bg-gray-700/50 rounded-2xl border border-gray-600/50"
-                          >
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="font-medium text-blue-400 text-sm">
-                                {source.title}
-                              </span>
-                              <span className="text-xs text-gray-400 bg-gray-600 px-2 py-1 rounded-full">
-                                {(source.score * 100).toFixed(1)}% match
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-300 leading-relaxed">
-                              {source.snippet}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-
-          {/* Enhanced loading component with progress */}
-          {isLoading && (
-            <div className="flex justify-start">
-              <ProgressLoader
-                isVisible={llmProgress.isProcessing}
-                message={llmProgress.message}
-                steps={llmProgress.steps}
-                currentStep={llmProgress.currentStep}
-                progress={llmProgress.progress}
-                estimatedTime={llmProgress.estimatedTime}
-              />
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="p-4 sm:p-6 border-t border-gray-600/50 bg-gray-800/90 backdrop-blur-sm">
-          <div className="flex gap-3 items-end">
-            <div className="flex-1 relative">
-              <textarea
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                placeholder="Ask me anything about your documents..."
-                className="w-full px-4 py-3 pr-12 placeholder-gray-500 text-white bg-gray-700 rounded-2xl border border-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
-                rows={2}
-                disabled={isLoading}
-              />
-              {/* Character count or input status */}
-              <div className="absolute bottom-2 right-3 text-xs text-gray-400">
-                {inputMessage.length > 0 && (
-                  <span className={inputMessage.length > 500 ? "text-orange-500" : ""}>
-                    {inputMessage.length}
-                  </span>
-                )}
-              </div>
+              
+              <BackgroundGradient color={!inputMessage.trim() || isLoading ? "white" : "cyan"} tronMode={true} intensity="subtle">
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || isLoading}
+                  className={`group relative p-4 rounded-2xl transition-all duration-300 ${
+                    !inputMessage.trim() || isLoading
+                      ? "bg-slate-700/60 text-slate-400 cursor-not-allowed border border-slate-600/30"
+                      : "bg-slate-800/60 text-cyan-400 hover:text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/40 hover:scale-105 shadow-lg hover:shadow-cyan-500/20"
+                  } backdrop-blur-md`}
+                >
+                  {renderIcon(Send, { className: "w-5 h-5" })}
+                </button>
+              </BackgroundGradient>
             </div>
             
-            <button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              className={`group relative p-3 rounded-2xl transition-all duration-200 ${
-                !inputMessage.trim() || isLoading
-                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 hover:scale-105 shadow-lg hover:shadow-xl"
-              }`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-200"></div>
-              {renderIcon(Send, { className: "w-5 h-5 relative z-10" })}
-            </button>
-          </div>
-          
-          {/* Quick actions or suggestions */}
-          <div className="flex items-center justify-between mt-3 text-xs text-gray-400">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-              <span>Ready to answer</span>
+            {/* Status and shortcuts */}
+            <div className="flex items-center justify-between mt-4 text-xs text-cyan-400/70">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
+                <span>Ready to answer</span>
+              </div>
+              <span>Press Enter to send, Shift+Enter for new line</span>
             </div>
-            <span>Press Enter to send, Shift+Enter for new line</span>
           </div>
         </div>
-      </div>
+      </BackgroundGradient>
 
       {/* Document Viewer */}
       {documentViewerOpen && selectedDocumentId && (

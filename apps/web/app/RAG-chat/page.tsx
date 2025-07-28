@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { LightweightVectorConverterStatus } from "../../components/settings/lightweight-llm-status-indicator";
 import { ParticlesBackground } from "../../components/ui/backgrounds/particles-background";
 import { Card } from "../../components/ui/card";
@@ -16,19 +16,17 @@ import { renderIcon } from "../../lib/icon-utils";
 import { ChatHistory } from "../../components/rag/chat/ChatHistory";
 import { ChatInterface } from "../../components/rag/chat/ChatInterface";
 import { DocumentSelector } from "../../components/rag/chat/DocumentSelector";
-import type { ChatConversation, Document } from "./types";
-
-type ViewState = 'selection' | 'chat' | 'history';
+import { useRagChatStore } from "../../stores/ragChatStore";
+import type { Document } from "./types";
 
 export default function RAGChatPage(): React.ReactElement {
-  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
-  const [currentView, setCurrentView] = useState<ViewState>('selection');
-  const [previousView, setPreviousView] = useState<ViewState>('selection');
-  const [selectedDocumentObjects, setSelectedDocumentObjects] = useState<
-    Document[]
-  >([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string>("");
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+  // Zustand store
+  const {
+    selectedDocuments,
+    currentView,
+    slideDirection,
+    setSelectedDocumentObjects
+  } = useRagChatStore();
 
   // Get animation settings
   const { animationEnabled } = useAnimationSettings();
@@ -44,69 +42,16 @@ export default function RAGChatPage(): React.ReactElement {
   // Update selected document objects when selection changes
   useEffect(() => {
     if (documents?.page && selectedDocuments.length > 0) {
-      const docObjects = documents.page.filter((doc: any) =>
+      const docObjects = documents.page.filter((doc: Document) =>
         selectedDocuments.includes(doc._id)
       ) as Document[];
       setSelectedDocumentObjects(docObjects);
     } else {
       setSelectedDocumentObjects([]);
     }
-  }, [documents, selectedDocuments]);
+  }, [documents, selectedDocuments, setSelectedDocumentObjects]);
 
-  const handleDocumentToggle = (documentId: string) => {
-    setSelectedDocuments((prev) =>
-      prev.includes(documentId)
-        ? prev.filter((id) => id !== documentId)
-        : [...prev, documentId]
-    );
-  };
-
-  const handleStartChat = () => {
-    if (selectedDocuments.length > 0) {
-      // Generate a new session ID for the new chat
-      setCurrentSessionId(
-        `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
-      );
-      setPreviousView(currentView);
-      setSlideDirection('left');
-      setCurrentView('chat');
-    }
-  };
-
-  const handleBackToSelection = () => {
-    setPreviousView(currentView);
-    setSlideDirection('right');
-    setCurrentView('selection');
-  };
-
-  const handleBackToPrevious = () => {
-    setPreviousView(currentView);
-    setSlideDirection('right');
-    setCurrentView(previousView);
-  };
-
-  const handleShowHistory = () => {
-    setPreviousView(currentView);
-    setSlideDirection('left');
-    setCurrentView('history');
-  };
-
-  const handleSelectConversation = (conversation: ChatConversation) => {
-    // Load the conversation's documents
-    setSelectedDocuments(conversation.documentIds);
-    setCurrentSessionId(conversation.sessionId);
-    setPreviousView(currentView);
-    setSlideDirection('right');
-    setCurrentView('chat');
-  };
-
-  const handleNewChat = () => {
-    setPreviousView(currentView);
-    setSlideDirection('right');
-    setCurrentView('selection');
-    setSelectedDocuments([]);
-    setCurrentSessionId("");
-  };
+  // All handlers are now managed by the Zustand store
 
   if (documentsLoading || documents === undefined) {
     return (
@@ -115,12 +60,12 @@ export default function RAGChatPage(): React.ReactElement {
           <div className="flex flex-col gap-4 items-center">
             {documentsError ? (
               <>
-                <div className="text-red-400 text-lg">⚠️</div>
+                <div className="text-lg text-red-400">⚠️</div>
                 <p className="text-red-300">Failed to load documents</p>
-                <p className="text-gray-400 text-sm">{documentsError.message}</p>
+                <p className="text-sm text-gray-400">{documentsError.message}</p>
                 <button 
                   onClick={retryDocuments} 
-                  className="px-4 py-2 bg-curious-cyan-600 text-white rounded hover:bg-curious-cyan-700"
+                  className="px-4 py-2 text-white rounded bg-curious-cyan-600 hover:bg-curious-cyan-700"
                 >
                   Retry
                 </button>
@@ -160,7 +105,7 @@ export default function RAGChatPage(): React.ReactElement {
         ></Hero>
 
         {/* LLM Status Indicator */}
-        <div className="mx-auto mb-4 max-w-6xl px-4">
+        <div className="px-4 mx-auto mb-4 max-w-6xl">
           <LightweightVectorConverterStatus
             size="md"
             showLabel={true}
@@ -169,8 +114,8 @@ export default function RAGChatPage(): React.ReactElement {
           />
         </div>
 
-        <div className="mx-auto max-w-6xl px-4">
-          <Card className="border-gray-700 backdrop-blur-sm bg-gray-800/50 overflow-hidden relative">
+        <div className="px-4 mx-auto max-w-6xl">
+          <Card className="overflow-hidden relative border-gray-700 backdrop-blur-sm bg-gray-800/50">
             <AnimatePresence initial={false}>
               {currentView === 'selection' && (
                 <motion.div
@@ -188,12 +133,9 @@ export default function RAGChatPage(): React.ReactElement {
                 >
                   <DocumentSelector
                     documents={documentsArray as Document[]}
-                    selectedDocuments={selectedDocuments}
-                    onDocumentToggle={handleDocumentToggle}
-                    onStartChat={handleStartChat}
-                    onShowHistory={handleShowHistory}
                   />
                 </motion.div>
+         
               )}
               
               {currentView === 'chat' && (
@@ -210,12 +152,7 @@ export default function RAGChatPage(): React.ReactElement {
                   className="absolute inset-0"
                   style={{ width: '100%' }}
                 >
-                  <ChatInterface
-                    selectedDocuments={selectedDocumentObjects}
-                    onBackToSelection={handleBackToSelection}
-                    sessionId={currentSessionId}
-                    onShowHistory={handleShowHistory}
-                  />
+                  <ChatInterface />
                 </motion.div>
               )}
               
@@ -233,13 +170,7 @@ export default function RAGChatPage(): React.ReactElement {
                   className="absolute inset-0"
                   style={{ width: '100%' }}
                 >
-                  <ChatHistory
-                    onSelectConversation={handleSelectConversation}
-                    onNewChat={handleNewChat}
-                    onBackToSelection={handleBackToSelection}
-                    onBackToPrevious={handleBackToPrevious}
-                    currentSessionId={currentSessionId}
-                  />
+                  <ChatHistory />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -247,9 +178,9 @@ export default function RAGChatPage(): React.ReactElement {
             {/* Dynamic height spacer based on current view */}
             <div className="invisible p-4 sm:p-6">
               <div className={`transition-all duration-300 ${
-                currentView === 'chat' ? 'h-[600px]' : 
-                currentView === 'history' ? 'h-[600px]' : 
-                'h-[500px]'
+                currentView === 'chat' ? 'h-[700px]' : 
+                currentView === 'history' ? 'h-[700px]' : 
+                'min-h-[800px]'
               }`} />
             </div>
           </Card>

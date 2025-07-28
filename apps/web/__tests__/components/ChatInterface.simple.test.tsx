@@ -2,7 +2,7 @@ import React from 'react'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { render, createMockDocument, mockFetchSuccess } from '../utils/test-utils'
-import { ChatInterface } from '../../app/RAG-chat/components/ChatInterface'
+import { ChatInterface } from '../../components/rag/chat/ChatInterface'
 
 // Mock Convex hooks
 jest.mock('convex/react', () => ({
@@ -104,8 +104,8 @@ describe('ChatInterface - Basic Tests', () => {
     const onShowHistory = jest.fn()
 
     render(
-      <ChatInterface 
-        {...defaultProps} 
+      <ChatInterface
+        {...defaultProps}
         onBackToSelection={onBackToSelection}
         onShowHistory={onShowHistory}
       />
@@ -158,9 +158,9 @@ describe('ChatInterface - Basic Tests', () => {
 
   it('shows loading state during message sending', async () => {
     const user = userEvent.setup()
-    
+
     // Mock delayed response
-    global.fetch = jest.fn(() => new Promise(resolve => 
+    global.fetch = jest.fn(() => new Promise(resolve =>
       setTimeout(() => resolve({
         ok: true,
         json: () => Promise.resolve({ response: 'Test response', sources: [] })

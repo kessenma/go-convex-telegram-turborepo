@@ -52,9 +52,11 @@ const RAGChatScreen = () => {
 
   // Update selected documents when IDs change
   useEffect(() => {
-    const selected = documents.filter((doc: Document) => selectedDocumentIds.includes(doc._id));
-    setSelectedDocuments(selected);
-  }, [selectedDocumentIds, documents]);
+    if (documents.length > 0) {
+      const selected = documents.filter((doc: Document) => selectedDocumentIds.includes(doc._id));
+      setSelectedDocuments(selected);
+    }
+  }, [selectedDocumentIds, documents.length]); // Use documents.length instead of documents array
 
   // Handle Convex query errors
   useEffect(() => {

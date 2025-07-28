@@ -183,12 +183,12 @@ const ExpandableNavigation: React.FC<ExpandableNavigationProps> = ({
       setSelectedCategory(item);
       setModalVisible(true);
       showModal();
-      toast.info(`${item.label} menu opened`, `Select from ${item.subItems.length} options`);
+      // Removed navigation toast notification
     } else if (item.screen) {
       onTabChange(item.id);
       setActiveTab(item.id);
       navigation.navigate(item.screen as keyof RootStackParamList);
-      toast.success(`Navigated to ${item.label}`);
+      // Removed navigation toast notification
     }
   };
 
@@ -198,7 +198,7 @@ const ExpandableNavigation: React.FC<ExpandableNavigationProps> = ({
     onTabChange(subItem.id);
     setActiveTab(subItem.id);
     navigation.navigate(subItem.screen as keyof RootStackParamList);
-    toast.success(`Navigated to ${subItem.label}`);
+    // Removed navigation toast notification
   };
 
   const showModal = () => {

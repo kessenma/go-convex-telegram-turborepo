@@ -2,7 +2,15 @@ import React from 'react'
 import { screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { render, createMockDocument } from '../utils/test-utils'
-import { DocumentSelector } from '../../app/RAG-chat/components/DocumentSelector'
+import { DocumentSelector } from '../../components/rag/chat/DocumentSelector'
+import { useRagChatStore } from '../../stores/ragChatStore'
+
+// Mock Zustand store
+jest.mock('../../stores/ragChatStore', () => ({
+  useRagChatStore: jest.fn(),
+}))
+
+const mockUseRagChatStore = useRagChatStore as jest.MockedFunction<typeof useRagChatStore>
 
 // Mock window.location
 const mockLocation = {
@@ -15,17 +23,24 @@ Object.defineProperty(window, 'location', {
 })
 
 describe('DocumentSelector', () => {
-  const defaultProps = {
+  const mockStoreActions = {
+    toggleDocument: jest.fn(),
+    navigateToChat: jest.fn(),
+    navigateToHistory: jest.fn(),
+  }
+
+  const defaultStoreState = {
     documents: [],
     selectedDocuments: [],
-    onDocumentToggle: jest.fn(),
-    onStartChat: jest.fn(),
-    onShowHistory: jest.fn(),
+    ...mockStoreActions,
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
     mockLocation.href = ''
+    
+    // Mock Zustand store
+    mockUseRagChatStore.mockReturnValue(defaultStoreState)
   })
 
   describe('Empty State', () => {
@@ -34,13 +49,13 @@ describe('DocumentSelector', () => {
         createMockDocument({ hasEmbedding: false }),
         createMockDocument({ _id: 'doc-2', hasEmbedding: false }),
       ]
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: documentsWithoutEmbeddings,
+      })
 
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={documentsWithoutEmbeddings}
-        />
-      )
+      render(<DocumentSelector />)
 
       expect(screen.getByText('No Embedded Documents Found')).toBeInTheDocument()
       expect(screen.getByText('You need to upload and embed documents before you can start chatting.')).toBeInTheDocument()
@@ -50,7 +65,7 @@ describe('DocumentSelector', () => {
     it('redirects to upload page when upload button is clicked', async () => {
       const user = userEvent.setup()
 
-      render(<DocumentSelector {...defaultProps} />)
+      render(<DocumentSelector />)
 
       const uploadButton = screen.getByRole('button', { name: /upload documents/i })
       await user.click(uploadButton)
@@ -59,12 +74,12 @@ describe('DocumentSelector', () => {
     })
 
     it('handles non-array documents gracefully', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={null as any}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: null as any,
+      })
+      
+      render(<DocumentSelector />)
 
       expect(screen.getByText('No Embedded Documents Found')).toBeInTheDocument()
     })
@@ -92,12 +107,12 @@ describe('DocumentSelector', () => {
     ]
 
     it('displays embedded documents correctly', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+      })
+      
+      render(<DocumentSelector />)
 
       expect(screen.getByText('First Document')).toBeInTheDocument()
       expect(screen.getByText('Second Document')).toBeInTheDocument()
@@ -105,12 +120,12 @@ describe('DocumentSelector', () => {
     })
 
     it('shows document metadata correctly', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+      })
+      
+      render(<DocumentSelector />)
 
       // Check file sizes
       expect(screen.getByText('1 KB')).toBeInTheDocument()
@@ -126,12 +141,12 @@ describe('DocumentSelector', () => {
     })
 
     it('shows document summary when available', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+      })
+      
+      render(<DocumentSelector />)
 
       expect(screen.getByText('This is the first document summary')).toBeInTheDocument()
     })
@@ -145,13 +160,13 @@ describe('DocumentSelector', () => {
           hasEmbedding: false,
         }),
       ]
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: mixedDocuments,
+      })
 
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={mixedDocuments}
-        />
-      )
+      render(<DocumentSelector />)
 
       expect(screen.getByText('First Document')).toBeInTheDocument()
       expect(screen.getByText('Second Document')).toBeInTheDocument()
@@ -176,30 +191,30 @@ describe('DocumentSelector', () => {
 
     it('handles document selection correctly', async () => {
       const user = userEvent.setup()
-      const onDocumentToggle = jest.fn()
+      const mockToggleDocument = jest.fn()
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        toggleDocument: mockToggleDocument,
+      })
 
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          onDocumentToggle={onDocumentToggle}
-        />
-      )
+      render(<DocumentSelector />)
 
       const firstDocument = screen.getByText('First Document').closest('div')
       await user.click(firstDocument!)
 
-      expect(onDocumentToggle).toHaveBeenCalledWith('doc-1')
+      expect(mockToggleDocument).toHaveBeenCalledWith('doc-1')
     })
 
     it('shows selected documents with different styling', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          selectedDocuments={['doc-1']}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        selectedDocuments: ['doc-1'],
+      })
+      
+      render(<DocumentSelector />)
 
       const firstDocument = screen.getByText('First Document').closest('div')
       const secondDocument = screen.getByText('Second Document').closest('div')
@@ -209,13 +224,13 @@ describe('DocumentSelector', () => {
     })
 
     it('shows checkmark for selected documents', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          selectedDocuments={['doc-1']}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        selectedDocuments: ['doc-1'],
+      })
+      
+      render(<DocumentSelector />)
 
       // The selected document should have a checkmark
       const checkboxes = screen.getAllByRole('generic') // checkboxes are rendered as divs
@@ -236,26 +251,26 @@ describe('DocumentSelector', () => {
     ]
 
     it('disables start chat button when no documents are selected', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          selectedDocuments={[]}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        selectedDocuments: [],
+      })
+      
+      render(<DocumentSelector />)
 
       const startChatButton = screen.getByRole('button', { name: /start chat \(0 selected\)/i })
       expect(startChatButton).toBeDisabled()
     })
 
     it('enables start chat button when documents are selected', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          selectedDocuments={['doc-1']}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        selectedDocuments: ['doc-1'],
+      })
+      
+      render(<DocumentSelector />)
 
       const startChatButton = screen.getByRole('button', { name: /start chat \(1 selected\)/i })
       expect(startChatButton).not.toBeDisabled()
@@ -263,39 +278,39 @@ describe('DocumentSelector', () => {
 
     it('calls onStartChat when start chat button is clicked', async () => {
       const user = userEvent.setup()
-      const onStartChat = jest.fn()
+      const mockNavigateToChat = jest.fn()
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        selectedDocuments: ['doc-1'],
+        navigateToChat: mockNavigateToChat,
+      })
 
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          selectedDocuments={['doc-1']}
-          onStartChat={onStartChat}
-        />
-      )
+      render(<DocumentSelector />)
 
       const startChatButton = screen.getByRole('button', { name: /start chat \(1 selected\)/i })
       await user.click(startChatButton)
 
-      expect(onStartChat).toHaveBeenCalled()
+      expect(mockNavigateToChat).toHaveBeenCalled()
     })
 
     it('calls onShowHistory when view history button is clicked', async () => {
       const user = userEvent.setup()
-      const onShowHistory = jest.fn()
+      const mockNavigateToHistory = jest.fn()
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        navigateToHistory: mockNavigateToHistory,
+      })
 
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          onShowHistory={onShowHistory}
-        />
-      )
+      render(<DocumentSelector />)
 
       const historyButton = screen.getByRole('button', { name: /view history/i })
       await user.click(historyButton)
 
-      expect(onShowHistory).toHaveBeenCalled()
+      expect(mockNavigateToHistory).toHaveBeenCalled()
     })
   })
 
@@ -309,13 +324,13 @@ describe('DocumentSelector', () => {
     ]
 
     it('shows different text for mobile and desktop', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          selectedDocuments={['doc-1']}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        selectedDocuments: ['doc-1'],
+      })
+      
+      render(<DocumentSelector />)
 
       // Desktop text
       expect(screen.getByText('Start Chat (1 selected)')).toBeInTheDocument()
@@ -335,14 +350,14 @@ describe('DocumentSelector', () => {
 
     it('provides tooltip for disabled start chat button', async () => {
       const user = userEvent.setup()
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        selectedDocuments: [],
+      })
 
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          selectedDocuments={[]}
-        />
-      )
+      render(<DocumentSelector />)
 
       const disabledButton = screen.getByRole('button', { name: /start chat \(0 selected\)/i })
       
@@ -355,13 +370,13 @@ describe('DocumentSelector', () => {
     })
 
     it('has proper button roles and labels', () => {
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={embeddedDocuments}
-          selectedDocuments={['doc-1']}
-        />
-      )
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: embeddedDocuments,
+        selectedDocuments: ['doc-1'],
+      })
+      
+      render(<DocumentSelector />)
 
       expect(screen.getByRole('button', { name: /start chat/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /view history/i })).toBeInTheDocument()
@@ -384,13 +399,13 @@ describe('DocumentSelector', () => {
           fileSize: 1024 * 1024, // 1 MB
         }),
       ]
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: documentsWithVariousSizes,
+      })
 
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={documentsWithVariousSizes}
-        />
-      )
+      render(<DocumentSelector />)
 
       expect(screen.getByText('512 Bytes')).toBeInTheDocument()
       expect(screen.getByText('1 MB')).toBeInTheDocument()
@@ -405,13 +420,13 @@ describe('DocumentSelector', () => {
           wordCount: 12345,
         }),
       ]
+      
+      mockUseRagChatStore.mockReturnValue({
+        ...defaultStoreState,
+        documents: documentWithLargeWordCount,
+      })
 
-      render(
-        <DocumentSelector 
-          {...defaultProps} 
-          documents={documentWithLargeWordCount}
-        />
-      )
+      render(<DocumentSelector />)
 
       expect(screen.getByText('12,345 words')).toBeInTheDocument()
     })

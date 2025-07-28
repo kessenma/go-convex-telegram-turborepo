@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../generated-convex';
 import { toast } from '../stores/useToastStore';
+import { useAppStore } from '../stores/useAppStore';
 
 interface MessageNotificationProviderProps {
   children: React.ReactNode;
@@ -11,48 +12,75 @@ interface MessageNotificationProviderProps {
 /**
  * Provider that listens for new Telegram messages and shows toast notifications
  * Uses Convex real-time subscriptions to detect new messages
+ * Only triggers notifications for actual new incoming Telegram messages
  */
 export function MessageNotificationProvider({
   children,
   enableNotifications = true,
 }: MessageNotificationProviderProps): React.ReactElement {
-  const previousMessageCountRef = useRef<number | null>(null);
   const lastMessageIdRef = useRef<number | null>(null);
+  const isInitializedRef = useRef(false);
+  const lastNotificationTimeRef = useRef<number>(0);
+  
+  // Get notification settings from app store
+  const { settings } = useAppStore();
   
   // Subscribe to messages with a small limit to get the latest messages
-  const messages = useQuery(api.messages.getAllMessages, { limit: 5 });
+  const messages = useQuery(api.messages.getAllMessages, { limit: 3 });
   
   useEffect(() => {
-    if (!enableNotifications || !messages || messages.length === 0) {
+    // Check both prop and global settings for notifications
+    const notificationsAllowed = enableNotifications && settings.notificationsEnabled;
+    
+    if (!notificationsAllowed || !messages || messages.length === 0) {
       return;
     }
     
-    const currentMessageCount = messages.length;
     const latestMessage = messages[0]; // Messages are ordered desc, so first is latest
+    const now = Date.now();
     
-    // Initialize refs on first load
-    if (previousMessageCountRef.current === null) {
-      previousMessageCountRef.current = currentMessageCount;
+    // Initialize on first load - don't show notifications for existing messages
+    if (!isInitializedRef.current) {
       lastMessageIdRef.current = latestMessage.messageId;
+      isInitializedRef.current = true;
       return;
     }
     
-    // Check if we have a new message (different messageId from the latest)
-    if (latestMessage.messageId !== lastMessageIdRef.current) {
-      // Show toast notification for new message
-      const senderName = latestMessage.firstName 
-        ? `${latestMessage.firstName}${latestMessage.lastName ? ` ${latestMessage.lastName}` : ''}`
-        : latestMessage.username || 'Unknown User';
+    // Check if we have a genuinely new message
+    const isNewMessage = latestMessage.messageId !== lastMessageIdRef.current;
+    const isRecentMessage = (now - latestMessage.timestamp) < 30000; // Message is less than 30 seconds old
+    const hasMinTimeBetweenNotifications = (now - lastNotificationTimeRef.current) > 2000; // At least 2 seconds between notifications
+    
+    if (isNewMessage && isRecentMessage && hasMinTimeBetweenNotifications) {
+      // Determine sender name from available fields
+      let senderName = 'Unknown User';
+      if (latestMessage.firstName) {
+        senderName = latestMessage.firstName;
+        if (latestMessage.lastName) {
+          senderName += ` ${latestMessage.lastName}`;
+        }
+      } else if (latestMessage.username) {
+        senderName = latestMessage.username;
+      }
       
+      // Create message preview
       const messagePreview = latestMessage.text.length > 50 
         ? `${latestMessage.text.substring(0, 50)}...` 
         : latestMessage.text;
       
+      // Show notification only for new Telegram messages
+      console.log('Showing notification for new Telegram message:', {
+        messageId: latestMessage.messageId,
+        sender: senderName,
+        timestamp: new Date(latestMessage.timestamp).toISOString(),
+        preview: messagePreview.substring(0, 20) + '...'
+      });
+      
       toast.info(
-        `New message from ${senderName}`,
+        `New Telegram message from ${senderName}`,
         messagePreview,
         {
-          duration: 5000, // Show for 5 seconds
+          duration: 6000, // Show for 6 seconds
           action: {
             label: 'View',
             onPress: () => {
@@ -63,12 +91,21 @@ export function MessageNotificationProvider({
         }
       );
       
-      // Update refs
+      // Update tracking refs
+      lastMessageIdRef.current = latestMessage.messageId;
+      lastNotificationTimeRef.current = now;
+    } else if (isNewMessage) {
+      // Update the last message ID even if we don't show a notification
+      // This prevents showing notifications for old messages when the app restarts
+      console.log('Skipping notification for message (not recent or too frequent):', {
+        messageId: latestMessage.messageId,
+        isRecent: isRecentMessage,
+        hasMinTime: hasMinTimeBetweenNotifications,
+        messageAge: (now - latestMessage.timestamp) / 1000 + 's ago'
+      });
       lastMessageIdRef.current = latestMessage.messageId;
     }
-    
-    previousMessageCountRef.current = currentMessageCount;
-  }, [messages, enableNotifications]);
+  }, [messages, enableNotifications, settings.notificationsEnabled]);
   
   return <>{children}</>;
 }
