@@ -11,9 +11,11 @@ import { api } from '../generated-convex';
 import DocumentSelector from '../components/rag/DocumentSelector';
 import ChatInterface from '../components/rag/ChatInterface';
 import DocumentHistory from '../components/rag/DocumentHistory';
+import { useRagChatStore, type Document as StoreDocument, type ChatConversation } from '../stores/useRagChatStore';
+import type { GenericId as Id } from 'convex/values';
 
 interface Document {
-  _id: string;
+  _id: Id<"rag_documents">;
   title: string;
   content: string;
   contentType: string;
@@ -24,25 +26,23 @@ interface Document {
   hasEmbedding: boolean;
 }
 
-interface ChatSession {
-  id: string;
-  title: string;
-  documentIds: string[];
-  documentTitles: string[];
-  messageCount: number;
-  lastMessage: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-type ScreenState = 'selector' | 'chat' | 'history';
+// Use the store's ChatConversation type for consistency
+type ChatSession = ChatConversation;
 
 const RAGChatScreen = () => {
   const navigation = useNavigation();
-  const [currentScreen, setCurrentScreen] = useState<ScreenState>('selector');
-  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
-  const [selectedDocuments, setSelectedDocuments] = useState<Document[]>([]);
-  const [sessionId] = useState(() => `mobile-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const {
+    currentView,
+    selectedDocuments: selectedDocumentIds,
+    selectedDocumentObjects,
+    setSelectedDocuments,
+    setSelectedDocumentObjects,
+    navigateToChat,
+    navigateToSelection,
+    navigateToHistory,
+    navigateBack,
+    currentSessionId,
+  } = useRagChatStore();
 
   // Fetch documents from Convex
   const documentsQuery = useQuery(api.documents.getAllDocuments, { limit: 50 });
@@ -53,10 +53,20 @@ const RAGChatScreen = () => {
   // Update selected documents when IDs change
   useEffect(() => {
     if (documents.length > 0) {
-      const selected = documents.filter((doc: Document) => selectedDocumentIds.includes(doc._id));
-      setSelectedDocuments(selected);
+      const selected = documents.filter((doc: Document) => 
+        selectedDocumentIds.includes(doc._id as Id<"rag_documents">)
+      );
+      // Convert to store document format
+      const storeDocuments: StoreDocument[] = selected.map((doc: Document) => ({
+        _id: doc._id,
+        title: doc.title,
+        content: doc.content,
+        fileType: doc.contentType,
+        uploadedAt: doc.uploadedAt,
+      }));
+      setSelectedDocumentObjects(storeDocuments);
     }
-  }, [selectedDocumentIds, documents.length]); // Use documents.length instead of documents array
+  }, [selectedDocumentIds, documents.length, setSelectedDocumentObjects]);
 
   // Handle Convex query errors
   useEffect(() => {
@@ -66,13 +76,11 @@ const RAGChatScreen = () => {
   }, [hasError]);
 
   const handleDocumentToggle = (documentId: string) => {
-    setSelectedDocumentIds(prev => {
-      if (prev.includes(documentId)) {
-        return prev.filter(id => id !== documentId);
-      } else {
-        return [...prev, documentId];
-      }
-    });
+    const docId = documentId as Id<"rag_documents">;
+    const newSelection = selectedDocumentIds.includes(docId)
+      ? selectedDocumentIds.filter(id => id !== docId)
+      : [...selectedDocumentIds, docId];
+    setSelectedDocuments(newSelection);
   };
 
   const handleStartChat = () => {
@@ -80,28 +88,27 @@ const RAGChatScreen = () => {
       Alert.alert('No Documents Selected', 'Please select at least one document to start chatting.');
       return;
     }
-    setCurrentScreen('chat');
+    navigateToChat();
   };
 
   const handleBackToSelection = () => {
-    setCurrentScreen('selector');
+    navigateToSelection();
   };
 
   const handleShowHistory = () => {
-    setCurrentScreen('history');
+    navigateToHistory();
   };
 
-  const handleContinueChat = (session: ChatSession) => {
-    // Load the session's documents
-    setSelectedDocumentIds(session.documentIds);
-    setCurrentScreen('chat');
+  const handleContinueChat = (session: ChatConversation) => {
+    // The store's selectConversation will handle this automatically
+    // No need to manually set documents or navigate
   };
 
   const handleGoBack = () => {
-    if (currentScreen === 'selector') {
+    if (currentView === 'selection') {
       navigation.goBack();
     } else {
-      setCurrentScreen('selector');
+      navigateBack();
     }
   };
 
@@ -114,12 +121,12 @@ const RAGChatScreen = () => {
   }
 
   const renderCurrentScreen = () => {
-    switch (currentScreen) {
-      case 'selector':
+    switch (currentView) {
+      case 'selection':
         return (
           <DocumentSelector
             documents={documents}
-            selectedDocuments={selectedDocumentIds}
+            selectedDocuments={selectedDocumentIds.map(id => id as string)}
             onDocumentToggle={handleDocumentToggle}
             onStartChat={handleStartChat}
             onShowHistory={handleShowHistory}
@@ -130,10 +137,18 @@ const RAGChatScreen = () => {
       case 'chat':
         return (
           <ChatInterface
-            selectedDocuments={selectedDocuments}
+            selectedDocuments={selectedDocumentObjects.map((doc: StoreDocument) => ({
+              _id: doc._id as string,
+              title: doc.title,
+              content: doc.content || '',
+              contentType: doc.fileType || 'text',
+              fileSize: 0,
+              wordCount: 0,
+              uploadedAt: doc.uploadedAt || Date.now(),
+              hasEmbedding: true,
+            }))}
             onBackToSelection={handleBackToSelection}
             onShowHistory={handleShowHistory}
-            sessionId={sessionId}
           />
         );
       

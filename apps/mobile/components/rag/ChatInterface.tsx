@@ -16,6 +16,7 @@ import { useQuery } from 'convex/react';
 import type { GenericId as Id } from 'convex/values';
 import { getApiUrl } from '../../config';
 import { api } from '../../generated-convex';
+import { useRagChatStore } from '../../stores/useRagChatStore';
 
 interface Document {
   _id: string;
@@ -59,14 +60,14 @@ interface ChatInterfaceProps {
   selectedDocuments: Document[];
   onBackToSelection: () => void;
   onShowHistory: () => void;
-  sessionId: string;
+  sessionId?: string; // Make optional since we'll get it from store
 }
 
 export function ChatInterface({
   selectedDocuments,
   onBackToSelection,
   onShowHistory,
-  sessionId,
+  sessionId: propSessionId,
 }: ChatInterfaceProps): React.ReactElement {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -75,15 +76,26 @@ export function ChatInterface({
   const [_conversationId, _setConversationId] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Get session and conversation info from store
+  const { currentSessionId, currentConversationId } = useRagChatStore();
+  
+  // Use session from store or fallback to prop
+  const sessionId = currentSessionId || propSessionId || '';
+
   // Convex queries for conversation persistence
   const existingConversation = useQuery(
     api.ragChat.getConversationBySessionId,
-    { sessionId }
+    sessionId ? { sessionId } : "skip"
   );
+  
+  // If we have a conversation ID from store, use it directly, otherwise use the found conversation
+  const conversationToUse = currentConversationId ? 
+    { _id: currentConversationId } : existingConversation;
+    
   const conversationMessages = useQuery(
     api.ragChat.getConversationMessages,
-    existingConversation
-      ? { conversationId: existingConversation._id as Id<"rag_conversations"> }
+    conversationToUse
+      ? { conversationId: conversationToUse._id as Id<"rag_conversations"> }
       : "skip"
   );
 

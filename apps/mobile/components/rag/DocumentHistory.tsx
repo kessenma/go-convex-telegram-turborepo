@@ -10,17 +10,13 @@ import {
   RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useQuery, useMutation } from 'convex/react';
+import type { GenericId as Id } from 'convex/values';
+import { api } from '../../generated-convex';
+import { useRagChatStore, type ChatConversation } from '../../stores/useRagChatStore';
 
-interface ChatSession {
-  id: string;
-  title: string;
-  documentIds: string[];
-  documentTitles: string[];
-  messageCount: number;
-  lastMessage: string;
-  createdAt: number;
-  updatedAt: number;
-}
+// Use the store's ChatConversation type for consistency
+type ChatSession = ChatConversation;
 
 interface DocumentHistoryProps {
   onBackToSelection: () => void;
@@ -31,52 +27,25 @@ export function DocumentHistory({
   onBackToSelection,
   onContinueChat,
 }: DocumentHistoryProps): React.ReactElement {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
+  // Use the RAG chat store
+  const { selectConversation } = useRagChatStore();
+
+  // Fetch recent conversations from Convex
+  const recentConversations = useQuery(api.ragChat.getRecentConversations, { limit: 20 });
+  const deactivateConversation = useMutation(api.ragChat.deactivateConversation);
+
+  const sessions: ChatSession[] = recentConversations || [];
+  const loading = recentConversations === undefined;
+
   const loadChatHistory = async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
-      // TODO: Replace with actual API call to fetch chat history
-      // For now, using mock data
-      const mockSessions: ChatSession[] = [
-        {
-          id: '1',
-          title: 'Discussion about AI Ethics',
-          documentIds: ['doc1', 'doc2'],
-          documentTitles: ['AI Ethics Paper', 'Machine Learning Guidelines'],
-          messageCount: 15,
-          lastMessage: 'Thank you for the detailed explanation about bias in AI systems.',
-          createdAt: Date.now() - 86400000, // 1 day ago
-          updatedAt: Date.now() - 3600000, // 1 hour ago
-        },
-        {
-          id: '2',
-          title: 'Technical Documentation Review',
-          documentIds: ['doc3'],
-          documentTitles: ['API Documentation'],
-          messageCount: 8,
-          lastMessage: 'Can you explain the authentication flow in more detail?',
-          createdAt: Date.now() - 172800000, // 2 days ago
-          updatedAt: Date.now() - 7200000, // 2 hours ago
-        },
-      ];
-
-      setSessions(mockSessions);
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-      Alert.alert('Error', 'Failed to load chat history. Please try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    if (isRefresh) {
+      setRefreshing(true);
+      // Convex will automatically refetch, so we just need to handle the refresh state
+      setTimeout(() => setRefreshing(false), 1000);
     }
   };
 
@@ -96,8 +65,13 @@ export function DocumentHistory({
           style: 'destructive',
           onPress: async () => {
             try {
-              // TODO: Replace with actual API call to delete sessions
-              setSessions(prev => prev.filter(session => !selectedSessions.includes(session.id)));
+              // Delete conversations using Convex mutation
+              for (const sessionId of selectedSessions) {
+                const session = sessions.find(s => s._id === sessionId);
+                if (session) {
+                  await deactivateConversation({ conversationId: session._id });
+                }
+              }
               setSelectedSessions([]);
               setIsSelectionMode(false);
             } catch (error) {
@@ -218,25 +192,38 @@ export function DocumentHistory({
           showsVerticalScrollIndicator={false}
         >
           {sessions.map((session) => {
-            const isSelected = selectedSessions.includes(session.id);
+            const isSelected = selectedSessions.includes(session._id);
 
             return (
               <TouchableOpacity
-                key={session.id}
+                key={session._id}
                 style={[
                   styles.sessionCard,
                   isSelected && styles.sessionCardSelected,
                 ]}
                 onPress={() => {
                   if (isSelectionMode) {
-                    toggleSessionSelection(session.id);
+                    toggleSessionSelection(session._id);
                   } else {
+                    // Use the store to select conversation and navigate
+                    selectConversation({
+                      _id: session._id,
+                      _creationTime: session._creationTime,
+                      sessionId: session.sessionId,
+                      title: session.title,
+                      documentIds: session.documentIds,
+                      documentTitles: session.documentTitles,
+                      messageCount: session.messageCount,
+                      lastMessage: session.lastMessage,
+                      lastUpdated: session.lastUpdated,
+                      isActive: true
+                    });
                     onContinueChat(session);
                   }
                 }}
                 onLongPress={() => {
                   if (!isSelectionMode) {
-                    startSelectionMode(session.id);
+                    startSelectionMode(session._id);
                   }
                 }}
               >
@@ -259,7 +246,7 @@ export function DocumentHistory({
                       )}
                     </View>
                     <Text style={styles.sessionDate}>
-                      {formatDate(session.updatedAt)}
+                      {formatDate(session.lastUpdated || session._creationTime)}
                     </Text>
                   </View>
 
@@ -271,9 +258,9 @@ export function DocumentHistory({
                     <View style={styles.sessionMetaItem}>
                       <Icon name="file-text" size={12} color="#666" />
                       <Text style={styles.sessionMetaText}>
-                        {session.documentTitles.length === 1
+                        {session.documentTitles && session.documentTitles.length === 1
                           ? session.documentTitles[0]
-                          : `${session.documentTitles.length} documents`}
+                          : `${session.documentTitles?.length || 0} documents`}
                       </Text>
                     </View>
                     <View style={styles.sessionMetaItem}>

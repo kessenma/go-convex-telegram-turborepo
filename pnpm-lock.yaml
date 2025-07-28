@@ -55,6 +55,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@babel/runtime':
+        specifier: ^7.28.2
+        version: 7.28.2
       '@react-navigation/bottom-tabs':
         specifier: ^7.4.2
         version: 7.4.2(@react-navigation/native@7.1.14(react-native@0.80.1(@babel/core@7.27.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@types/react@19.1.8)(react@19.1.0))(react@19.1.0))(react-native-safe-area-context@5.5.0(react-native@0.80.1(@babel/core@7.27.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@types/react@19.1.8)(react@19.1.0))(react@19.1.0))(react-native-screens@4.11.1(react-native@0.80.1(@babel/core@7.27.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@types/react@19.1.8)(react@19.1.0))(react@19.1.0))(react-native@0.80.1(@babel/core@7.27.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@types/react@19.1.8)(react@19.1.0))(react@19.1.0)
@@ -113,6 +116,9 @@ importers:
       '@babel/core':
         specifier: ^7.27.7
         version: 7.27.7
+      '@babel/plugin-proposal-function-bind':
+        specifier: ^7.27.1
+        version: 7.27.1(@babel/core@7.27.7)
       '@react-native-community/cli':
         specifier: 15.0.1
         version: 15.0.1(typescript@5.0.4)
@@ -163,7 +169,7 @@ importers:
         version: 2.8.8
       react-native-dotenv:
         specifier: ^3.4.11
-        version: 3.4.11(@babel/runtime@7.27.6)
+        version: 3.4.11(@babel/runtime@7.28.2)
       react-test-renderer:
         specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
@@ -615,6 +621,12 @@ packages:
     peerDependencies:
       '@babel/core': ^7.0.0-0
 
+  '@babel/plugin-proposal-function-bind@7.27.1':
+    resolution: {integrity: sha512-CyWwteAXrh7X5IRCQxagcNAIJ8TDPdikCB8m9G+yas1flyvMpC79FvnLOmOa3aAV5u6Y4RhdJU8EolpTUgugOQ==}
+    engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+
   '@babel/plugin-proposal-nullish-coalescing-operator@7.18.6':
     resolution: {integrity: sha512-wQxQzxYeJqHcfppzBDnm1yAY0jSRkUXR2z8RePZYrKwMKgMlE8+Z6LUno+bd6LvbGh8Gltvy74+9pIYkr+XkKA==}
     engines: {node: '>=6.9.0'}
@@ -980,6 +992,10 @@ packages:
 
   '@babel/runtime@7.27.6':
     resolution: {integrity: sha512-vbavdySgbTTrmFE+EsiqUTzlOr5bzlnJtUv9PynGCAKvfQqjIXbvFdumPM/GxMDfyuGMJaJAU6TO4zc1Jf1i8Q==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/runtime@7.28.2':
+    resolution: {integrity: sha512-KHp2IflsnGywDjBWDkR9iEqiWSpc8GIi0lgTT3mOElT0PP1tG26P4tmFI2YvAdzgq9RGyoHZQEIEdZy6Ec5xCA==}
     engines: {node: '>=6.9.0'}
 
   '@babel/template@7.27.2':
@@ -8397,6 +8413,11 @@ snapshots:
       '@babel/core': 7.27.7
       '@babel/helper-plugin-utils': 7.27.1
 
+  '@babel/plugin-proposal-function-bind@7.27.1(@babel/core@7.27.7)':
+    dependencies:
+      '@babel/core': 7.27.7
+      '@babel/helper-plugin-utils': 7.27.1
+
   '@babel/plugin-proposal-nullish-coalescing-operator@7.18.6(@babel/core@7.27.7)':
     dependencies:
       '@babel/core': 7.27.7
@@ -8797,6 +8818,8 @@ snapshots:
       core-js-pure: 3.41.0
 
   '@babel/runtime@7.27.6': {}
+
+  '@babel/runtime@7.28.2': {}
 
   '@babel/template@7.27.2':
     dependencies:
@@ -15242,7 +15265,7 @@ snapshots:
 
   metro-runtime@0.82.4:
     dependencies:
-      '@babel/runtime': 7.27.6
+      '@babel/runtime': 7.28.2
       flow-enums-runtime: 0.0.6
 
   metro-source-map@0.82.4:
@@ -16062,9 +16085,9 @@ snapshots:
 
   react-is@19.1.0: {}
 
-  react-native-dotenv@3.4.11(@babel/runtime@7.27.6):
+  react-native-dotenv@3.4.11(@babel/runtime@7.28.2):
     dependencies:
-      '@babel/runtime': 7.27.6
+      '@babel/runtime': 7.28.2
       dotenv: 16.6.1
 
   react-native-gesture-handler@2.27.1(react-native@0.80.1(@babel/core@7.27.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@types/react@19.1.8)(react@19.1.0))(react@19.1.0):
