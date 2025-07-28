@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import TelegramBot from "node-telegram-bot-api";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "./../../../../generated-convex";
 
 export async function POST(request: NextRequest) {
   console.log("=== TELEGRAM SEND TO THREAD API CALLED ===");
@@ -72,32 +74,29 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("💾 Saving message to Convex database with thread linking...");
-    const convexPayload = {
-      messageId: telegramResult.message_id,
-      chatId: chatId,
-      text: text,
-      messageType: "bot_message",
-      timestamp: telegramResult.date * 1000,
-      messageThreadId: messageThreadId || null,
-      threadDocId: threadDocId, // Link to specific thread
-    };
-    console.log("Convex payload:", JSON.stringify(convexPayload, null, 2));
+    
+    try {
+      // Initialize Convex client
+      const convex = new ConvexHttpClient(convexUrl);
+      
+      const convexPayload = {
+        messageId: telegramResult.message_id,
+        chatId: chatId,
+        text: text,
+        messageType: "bot_message",
+        timestamp: telegramResult.date * 1000,
+        messageThreadId: messageThreadId || undefined,
+        threadDocId: threadDocId, // Link to specific thread
+      };
+      console.log("Convex payload:", JSON.stringify(convexPayload, null, 2));
 
-    const saveResponse = await fetch(`${convexUrl}/api/telegram/messages`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(convexPayload),
-    });
-
-    if (!saveResponse.ok) {
-      const errorText = await saveResponse.text();
-      console.error("❌ Failed to save message to Convex:", errorText);
-      console.error("Response status:", saveResponse.status);
+      // Use the proper Convex mutation
+      const saveResult = await convex.mutation(api.messagesThread.saveMessageToThread, convexPayload);
+      console.log("✅ Message saved to Convex successfully:", saveResult);
+    } catch (convexError) {
+      console.error("❌ Failed to save message to Convex:", convexError);
+      console.error("Error details:", convexError instanceof Error ? convexError.message : "Unknown error");
       // Still return success since the message was sent to Telegram
-    } else {
-      console.log("✅ Message saved to Convex successfully");
     }
 
     const response = {

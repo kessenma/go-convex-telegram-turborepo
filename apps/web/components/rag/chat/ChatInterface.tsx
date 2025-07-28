@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import type { GenericId as Id } from "convex/values";
 import {
   ArrowLeft,
@@ -36,7 +36,7 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [_conversationId, _setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<Id<"rag_conversations"> | null>(null);
   const [documentViewerOpen, setDocumentViewerOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [accordionOpen, setAccordionOpen] = useState(false);
@@ -52,10 +52,18 @@ export function ChatInterface() {
   );
   const conversationMessages = useQuery(
     api.ragChat.getConversationMessages,
-    existingConversation
-      ? { conversationId: existingConversation._id as Id<"rag_conversations"> }
-      : "skip"
+    conversationId ? { conversationId } : "skip"
   );
+  const createConversation = useMutation(api.ragChat.createConversation);
+  const addMessage = useMutation(api.ragChat.addMessage);
+  const updateConversationTitle = useMutation(api.ragChat.updateConversationTitle);
+
+  // Set conversation ID when existing conversation is found
+  useEffect(() => {
+    if (existingConversation) {
+      setConversationId(existingConversation._id as Id<"rag_conversations">);
+    }
+  }, [existingConversation]);
 
   // Load existing messages when conversation is found
   useEffect(() => {
@@ -87,8 +95,9 @@ export function ChatInterface() {
     // Prevent double submission
     if (isLoading) return;
 
+    const userMessageId = `user_${Date.now()}`;
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: userMessageId,
       type: "user",
       content: inputMessage.trim(),
       timestamp: Date.now(),
@@ -103,6 +112,28 @@ export function ChatInterface() {
     const cleanup = llmProgress.startProcessing(8); // Estimate 8 seconds
 
     try {
+      // Create conversation if it doesn't exist
+      let currentConversationId = conversationId;
+      if (!currentConversationId) {
+        currentConversationId = await createConversation({
+          sessionId,
+          documentIds: selectedDocuments.map((doc) => doc._id as Id<"rag_documents">),
+          llmModel: "Llama 3.2 1B",
+          title: currentInput.slice(0, 50) + (currentInput.length > 50 ? "..." : ""),
+        });
+        setConversationId(currentConversationId);
+      }
+
+      // Save user message to database
+      if (currentConversationId) {
+        await addMessage({
+          conversationId: currentConversationId,
+          messageId: userMessageId,
+          role: "user",
+          content: currentInput,
+        });
+      }
+
       const response = await fetch("/api/RAG/document-chat", {
         method: "POST",
         headers: {
@@ -118,14 +149,39 @@ export function ChatInterface() {
 
       if (response.ok) {
         llmProgress.completeProcessing();
+        const assistantMessageId = `assistant_${Date.now()}`;
         const assistantMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
+          id: assistantMessageId,
           type: "assistant",
           content: result.response,
           timestamp: Date.now(),
           sources: result.sources,
         };
         setMessages((prev) => [...prev, assistantMessage]);
+
+        // Save assistant message to database
+        if (currentConversationId) {
+          await addMessage({
+            conversationId: currentConversationId,
+            messageId: assistantMessageId,
+            role: "assistant",
+            content: result.response,
+            sources: result.sources?.map((source: any) => ({
+              documentId: source.documentId as Id<"rag_documents">,
+              title: source.title,
+              snippet: source.snippet,
+              score: source.score,
+            })),
+          });
+        }
+
+        // Update conversation title if this is the first exchange
+        if (messages.length === 0 && currentConversationId) {
+          await updateConversationTitle({
+            conversationId: currentConversationId,
+            title: currentInput.slice(0, 50) + (currentInput.length > 50 ? "..." : ""),
+          });
+        }
       } else {
         // Handle service unavailable (503) or other errors
         if (response.status === 503 && result.serviceUnavailable) {
@@ -169,7 +225,7 @@ export function ChatInterface() {
       <BackgroundGradient color="cyan" containerClassName="w-full" tronMode={true} intensity="normal">
         <div className="flex flex-col h-[700px] bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-cyan-500/20 shadow-2xl shadow-cyan-500/10 overflow-hidden">
           {/* Tron-inspired header */}
-          <div className="relative border-b border-cyan-500/30 bg-slate-800/60 backdrop-blur-md">
+          <div className="relative border-b backdrop-blur-md border-cyan-500/30 bg-slate-800/60">
             {/* Animated accent line */}
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
             
@@ -180,13 +236,13 @@ export function ChatInterface() {
                   <BackgroundGradient color="cyan" containerClassName="p-0" tronMode={true} intensity="subtle">
                     <button
                       onClick={navigateToSelection}
-                      className="group relative p-3 text-cyan-300 rounded-2xl transition-all duration-300 hover:text-cyan-100 bg-slate-800/60 backdrop-blur-md border border-cyan-500/20 hover:border-cyan-400/40"
+                      className="relative p-3 text-cyan-300 rounded-2xl border backdrop-blur-md transition-all duration-300 group hover:text-cyan-100 bg-slate-800/60 border-cyan-500/20 hover:border-cyan-400/40"
                     >
                       {renderIcon(ArrowLeft, { className: "w-5 h-5" })}
                     </button>
                   </BackgroundGradient>
                 </TooltipTrigger>
-                <TooltipContent className="bg-slate-900/90 backdrop-blur-md border border-cyan-500/30">
+                <TooltipContent className="border backdrop-blur-md bg-slate-900/90 border-cyan-500/30">
                   Back to Selection
                 </TooltipContent>
               </Tooltip>
@@ -200,9 +256,9 @@ export function ChatInterface() {
                   onValueChange={(value) => setAccordionOpen(value === "context")}
                 >
                   <AccordionItem value="context" className="border-none">
-                    <AccordionTrigger className="hover:no-underline py-2 px-4 rounded-2xl bg-slate-800/40 backdrop-blur-md border border-cyan-500/20 hover:border-cyan-400/40 transition-all duration-300">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center">
+                    <AccordionTrigger className="px-4 py-2 rounded-2xl border backdrop-blur-md transition-all duration-300 hover:no-underline bg-slate-800/40 border-cyan-500/20 hover:border-cyan-400/40">
+                      <div className="flex gap-3 items-center">
+                        <div className="flex justify-center items-center w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl">
                           {renderIcon(Database, { className: "w-4 h-4 text-white" })}
                         </div>
                         <div className="text-left">
@@ -218,10 +274,10 @@ export function ChatInterface() {
                     <AccordionContent className="pt-4 pb-2">
                       <div className="space-y-2">
                         {selectedDocuments.map((doc) => (
-                          <div key={doc._id} className="flex items-center gap-3 p-3 bg-slate-800/40 backdrop-blur-md rounded-xl border border-cyan-500/10">
-                            <div className="w-2 h-2 bg-cyan-400 rounded-full flex-shrink-0 animate-pulse"></div>
+                          <div key={doc._id} className="flex gap-3 items-center p-3 rounded-xl border backdrop-blur-md bg-slate-800/40 border-cyan-500/10">
+                            <div className="flex-shrink-0 w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
                             <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium text-cyan-200 truncate block">
+                              <span className="block text-sm font-medium text-cyan-200 truncate">
                                 {doc.title}
                               </span>
                               <span className="text-xs text-cyan-300/70">
@@ -241,13 +297,13 @@ export function ChatInterface() {
                   <BackgroundGradient color="purple" containerClassName="p-0" tronMode={true} intensity="subtle">
                     <button
                       onClick={navigateToHistory}
-                      className="group relative p-3 text-purple-300 rounded-2xl transition-all duration-300 hover:text-purple-100 bg-slate-800/60 backdrop-blur-md border border-purple-500/20 hover:border-purple-400/40"
+                      className="relative p-3 text-purple-300 rounded-2xl border backdrop-blur-md transition-all duration-300 group hover:text-purple-100 bg-slate-800/60 border-purple-500/20 hover:border-purple-400/40"
                     >
                       {renderIcon(History, { className: "w-5 h-5" })}
                     </button>
                   </BackgroundGradient>
                 </TooltipTrigger>
-                <TooltipContent className="bg-slate-900/90 backdrop-blur-md border border-purple-500/30">
+                <TooltipContent className="border backdrop-blur-md bg-slate-900/90 border-purple-500/30">
                   History
                 </TooltipContent>
               </Tooltip>
@@ -255,7 +311,7 @@ export function ChatInterface() {
 
             {/* Status indicator */}
             <div className="px-6 pb-4">
-              <div className="flex items-center justify-center gap-2 text-xs text-emerald-400 bg-slate-800/30 backdrop-blur-md rounded-full px-4 py-2 border border-emerald-500/20">
+              <div className="flex gap-2 justify-center items-center px-4 py-2 text-xs text-emerald-400 rounded-full border backdrop-blur-md bg-slate-800/30 border-emerald-500/20">
                 <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
                 <span className="font-medium">
                   Powered by all-MiniLM-L6-v2 embeddings + Llama 3.2 1B LLM
@@ -265,23 +321,23 @@ export function ChatInterface() {
         </div>
 
           {/* Messages */}
-          <div className="overflow-y-auto flex-1 p-6 space-y-6 bg-slate-900/30 backdrop-blur-sm">
+          <div className="overflow-y-auto flex-1 p-6 space-y-6 backdrop-blur-sm bg-slate-900/30">
             {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="flex flex-col justify-center items-center h-full text-center">
                 <div className="relative mb-8">
                   <BackgroundGradient color="cyan" containerClassName="p-0" tronMode={true} intensity="subtle">
-                    <div className="w-24 h-24 bg-slate-800/60 backdrop-blur-md rounded-3xl flex items-center justify-center border border-cyan-500/20">
+                    <div className="flex justify-center items-center w-24 h-24 rounded-3xl border backdrop-blur-md bg-slate-800/60 border-cyan-500/20">
                       {renderIcon(MessageCircle, { className: "w-10 h-10 text-cyan-400" })}
                     </div>
                   </BackgroundGradient>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center border-2 border-slate-900">
+                  <div className="flex absolute -top-2 -right-2 justify-center items-center w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full border-2 border-slate-900">
                     {renderIcon(Sparkles, { className: "w-4 h-4 text-white" })}
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-cyan-100 mb-3">
+                <h3 className="mb-3 text-xl font-semibold text-cyan-100">
                   Ready to explore your documents
                 </h3>
-                <p className="text-cyan-200/70 max-w-md leading-relaxed">
+                <p className="max-w-md leading-relaxed text-cyan-200/70">
                   Ask me anything about your selected documents. I'll provide detailed answers with source references.
                 </p>
               </div>
@@ -306,38 +362,38 @@ export function ChatInterface() {
                   >
                     <div className="flex gap-3 items-start">
                       {message.type === "assistant" && (
-                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center border border-purple-400/30">
+                        <div className="flex flex-shrink-0 justify-center items-center w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl border border-purple-400/30">
                           {renderIcon(Bot, { className: "w-4 h-4 text-white" })}
                         </div>
                       )}
                       {message.type === "user" && (
-                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center border border-cyan-400/30">
+                        <div className="flex flex-shrink-0 justify-center items-center w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl border border-cyan-400/30">
                           {renderIcon(User, { className: "w-4 h-4 text-white" })}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                        <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
 
                         {message.sources && message.sources.length > 0 && (
                           <div className="mt-4 space-y-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex gap-2 items-center">
                               <div className="w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full"></div>
-                              <p className="text-xs font-semibold text-cyan-300 uppercase tracking-wide">
+                              <p className="text-xs font-semibold tracking-wide text-cyan-300 uppercase">
                                 Sources
                               </p>
                             </div>
                             {message.sources.map((source, index) => (
                               <div key={index} className="w-full">
-                                <div className="p-4 bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-600/40 hover:border-slate-500/60 transition-all duration-200">
+                                <div className="p-4 rounded-xl border backdrop-blur-sm transition-all duration-200 bg-slate-800/60 border-slate-600/40 hover:border-slate-500/60">
                                   <div className="flex justify-between items-center mb-2">
-                                    <span className="font-medium text-cyan-300 text-sm">
+                                    <span className="text-sm font-medium text-cyan-300">
                                       {source.title}
                                     </span>
-                                    <span className="text-xs text-slate-400 bg-slate-700/80 px-2 py-1 rounded-md border border-slate-600/50">
+                                    <span className="px-2 py-1 text-xs rounded-md border text-slate-400 bg-slate-700/80 border-slate-600/50">
                                       {(source.score * 100).toFixed(1)}% match
                                     </span>
                                   </div>
-                                  <p className="text-sm text-slate-300 leading-relaxed">
+                                  <p className="text-sm leading-relaxed text-slate-300">
                                     {source.snippet}
                                   </p>
                                 </div>
@@ -370,9 +426,9 @@ export function ChatInterface() {
           </div>
 
           {/* Tron-inspired input */}
-          <div className="p-6 border-t border-cyan-500/30 bg-slate-800/60 backdrop-blur-md">
+          <div className="p-6 border-t backdrop-blur-md border-cyan-500/30 bg-slate-800/60">
             <div className="flex gap-4 items-end">
-              <div className="flex-1 relative">
+              <div className="relative flex-1">
                 <BackgroundGradient color="cyan" containerClassName="w-full" tronMode={true} intensity="subtle">
                   <textarea
                     value={inputMessage}
@@ -384,7 +440,7 @@ export function ChatInterface() {
                       }
                     }}
                     placeholder="Ask me anything about your documents..."
-                    className="w-full px-5 py-4 pr-16 placeholder-cyan-400/60 text-cyan-100 bg-slate-800/60 backdrop-blur-md rounded-2xl border border-cyan-500/20 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all duration-300 shadow-sm"
+                    className="px-5 py-4 pr-16 w-full text-cyan-100 rounded-2xl border shadow-sm backdrop-blur-md transition-all duration-300 resize-none placeholder-cyan-400/60 bg-slate-800/60 border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50"
                     rows={2}
                     disabled={isLoading}
                   />
@@ -415,8 +471,8 @@ export function ChatInterface() {
             </div>
             
             {/* Status and shortcuts */}
-            <div className="flex items-center justify-between mt-4 text-xs text-cyan-400/70">
-              <div className="flex items-center gap-2">
+            <div className="flex justify-between items-center mt-4 text-xs text-cyan-400/70">
+              <div className="flex gap-2 items-center">
                 <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
                 <span>Ready to answer</span>
               </div>
