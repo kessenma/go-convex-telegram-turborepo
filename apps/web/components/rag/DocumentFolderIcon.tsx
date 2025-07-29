@@ -4,6 +4,7 @@ import { Folder } from "lucide-react";
 import { useEffect, useState } from "react";
 import { renderIcon } from "../../lib/icon-utils";
 import DocumentViewer from "./DocumentViewer";
+import { type GenericId as Id } from "convex/values";
 
 interface DocumentFolderIconProps {
   documentId: string;
@@ -91,7 +92,7 @@ export default function DocumentFolderIcon({
       </button>
 
       <DocumentViewer
-        documentId={documentId}
+        documentId={documentId as unknown as Id<"rag_documents">}
         isOpen={isViewerOpen}
         onClose={handleCloseViewer}
         animationOrigin={clickPosition}

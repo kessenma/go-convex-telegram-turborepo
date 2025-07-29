@@ -190,8 +190,7 @@ const Folder: React.FC<FolderProps> = ({
           {fileName && (
             <div
               className={`absolute z-40 inset-0 flex items-center justify-center text-white text-xs font-medium text-center px-2 transition-all duration-200 ease-in ${
-                !isOpen ? "group-hover:-translate-y-12" : ""
-              }`}
+                !isOpen ? "group-hover:-translate-y-12" : ""}`}
               style={{
                 textShadow: "0 1px 2px rgba(0,0,0,0.8)",
                 transform: isOpen ? "translateY(-8px)" : undefined,

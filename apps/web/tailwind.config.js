@@ -136,6 +136,10 @@ export default {
           "90%": { opacity: "1" },
           "100%": { transform: "translateY(-100%)", opacity: "0" },
         },
+        "scroll-left": {
+          "0%": { transform: "translateX(100%)" },
+          "100%": { transform: "translateX(-100%)" },
+        },
       },
       animation: {
         gradient: "gradient 8s linear infinite",
@@ -151,6 +155,7 @@ export default {
         "tron-grid": "tron-grid 4s linear infinite",
         "circuit-flow": "circuit-flow 6s ease-in-out infinite",
         "data-stream": "data-stream 2s linear infinite",
+        "scroll-left": "scroll-left 15s linear infinite",
       },
     },
   },

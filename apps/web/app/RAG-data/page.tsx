@@ -3,10 +3,8 @@
 export const dynamic = "force-dynamic";
 
 import type React from "react";
-import ConversionHistory from "../../components/rag/ConversionHistory";
-import { DocumentHistory } from "../../components/rag/DocumentHistory";
+import { DocumentBrowser } from "../../components/rag/DocumentBrowser";
 import { DocumentStats } from "../../components/rag/DocumentStats";
-import { VectorEmbedding } from "../../components/rag/VectorEmbedding";
 import { VectorSearch } from "../../components/rag/VectorSearch";
 import Cubes from "../../components/ui/backgrounds/mouse-hover-cubes";
 import { Hero, TextAnimationType } from "../../components/ui/hero";
@@ -97,14 +95,10 @@ export default function RAGDataPage(): React.ReactElement | null {
             hasDocuments={stats?.totalDocuments > 0}
           />
 
-          {/* Vector Embeddings Section */}
-          <VectorEmbedding hasDocuments={stats?.totalDocuments > 0} />
+          {/* Document Browser */}
+          <DocumentBrowser documents={documents} loading={loadingDocuments} />
 
-          {/* Document History */}
-          <DocumentHistory documents={documents} loading={loadingDocuments} />
 
-          {/* Conversion History */}
-          <ConversionHistory />
         </div>
       </div>
     </div>

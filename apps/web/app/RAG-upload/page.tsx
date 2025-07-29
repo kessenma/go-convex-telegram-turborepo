@@ -5,7 +5,7 @@ export const runtime = "edge"; // Optional: use edge runtime
 
 import React, { useRef, useState } from "react";
 import { ConvexStatusIndicator } from "../../components/settings/convex-status-indicator";
-import { DocumentHistory } from "../../components/rag/DocumentHistory";
+import { DocumentBrowser } from "../../components/rag/DocumentBrowser";
 import { DocumentStats } from "../../components/rag/DocumentStats";
 import { VectorConverterStatus } from "../../components/settings/vector-status-indicator";
 import { LLMUsageBarChart } from "../../components/settings/llm-usage-bar-chart";
@@ -528,7 +528,7 @@ export default function RAGUploadPage(): React.ReactElement {
         <DocumentStats stats={stats} loading={loadingStats} />
 
         {/* Document History */}
-        <DocumentHistory documents={documents} loading={loadingDocuments} />
+        <DocumentBrowser documents={documents} loading={loadingDocuments} />
       </div>
     </div>
   );

@@ -7,17 +7,43 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   hover?: boolean;
+  style?: React.CSSProperties;
+  backgroundColor?: string;
+  borderColor?: string;
+}
+
+interface CardHeaderProps {
+  className?: string;
+  children: React.ReactNode;
+}
+
+interface CardTitleProps {
+  className?: string;
+  children: React.ReactNode;
+}
+
+interface CardContentProps {
+  className?: string;
+  children: React.ReactNode;
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ children, className }, ref) => {
+  ({ children, className, style, backgroundColor, borderColor }, ref) => {
+    // Create a combined style object that includes both the style prop and any color props
+    const combinedStyle = {
+      ...style,
+      ...(backgroundColor ? { backgroundColor } : {}),
+      ...(borderColor ? { borderColor } : {}),
+    };
+
     return (
       <div
         ref={ref}
         className={cn(
-          "bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-md border border-white/10 rounded-lg shadow-lg",
+          "bg-gradient-to-br rounded-lg border shadow-lg backdrop-blur-md from-slate-800/60 to-slate-900/60 border-white/10",
           className
         )}
+        style={Object.keys(combinedStyle).length > 0 ? combinedStyle : undefined}
       >
         {children}
       </div>
@@ -26,6 +52,44 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 );
 
 Card.displayName = "Card";
+
+export const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
+  ({ className, children, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn("flex flex-col space-y-1.5 p-6", className)}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+);
+
+CardHeader.displayName = "CardHeader";
+
+export const CardTitle = React.forwardRef<HTMLParagraphElement, CardTitleProps>(
+  ({ className, children, ...props }, ref) => (
+    <h3
+      ref={ref}
+      className={cn("text-lg font-semibold tracking-tight leading-none", className)}
+      {...props}
+    >
+      {children}
+    </h3>
+  )
+);
+
+CardTitle.displayName = "CardTitle";
+
+export const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
+  ({ className, children, ...props }, ref) => (
+    <div ref={ref} className={cn("p-6 pt-0", className)} {...props}>
+      {children}
+    </div>
+  )
+);
+
+CardContent.displayName = "CardContent";
 
 interface StatCardProps {
   title: string;
@@ -50,15 +114,15 @@ export const StatCard = ({
 
   return (
     <Card className={cn("p-6", className)}>
-      <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">
+      <h3 className="mb-2 text-sm font-semibold tracking-wide uppercase text-slate-300">
         {title}
       </h3>
-      <p className="text-3xl font-bold text-slate-100 font-mono">
+      <p className="font-mono text-3xl font-bold text-slate-100">
         {useCountUp && isNumeric ? (
           <CountUp
             to={numericValue}
             duration={2}
-            className="text-3xl font-bold text-slate-100 font-mono"
+            className="font-mono text-3xl font-bold text-slate-100"
           />
         ) : (
           value

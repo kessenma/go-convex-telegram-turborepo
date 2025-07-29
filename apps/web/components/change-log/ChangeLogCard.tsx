@@ -50,9 +50,9 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
         setLoading(true);
         setError(null);
 
-        // GitHub API endpoint for commits - only fetch basic commit info
+        // Use our API route instead of calling GitHub directly
         const response = await fetch(
-          `https://api.github.com/repos/kessenma/go-convex-telegram-turborepo/commits?per_page=${maxCommits}`
+          `/api/github/commits?per_page=${maxCommits}`
         );
 
         if (!response.ok) {
@@ -80,7 +80,7 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
       setLoadingFiles(prev => ({ ...prev, [sha]: true }));
       
       const detailResponse = await fetch(
-        `https://api.github.com/repos/kessenma/go-convex-telegram-turborepo/commits/${sha}`
+        `/api/github/commits?sha=${sha}`
       );
       
       if (!detailResponse.ok) {

@@ -44,9 +44,9 @@ export default function ChangeLog() {
         setLoading(true);
         setError(null);
 
-        // GitHub API endpoint for commits
+        // Use our API route instead of calling GitHub directly
         const response = await fetch(
-          "https://api.github.com/repos/kessenma/go-convex-telegram-turborepo/commits?per_page=10"
+          "/api/github/commits?per_page=10"
         );
 
         if (!response.ok) {
@@ -60,7 +60,7 @@ export default function ChangeLog() {
           commitsData.map(async (commit: Commit) => {
             try {
               const detailResponse = await fetch(
-                `https://api.github.com/repos/kessenma/go-convex-telegram-turborepo/commits/${commit.sha}`
+                `/api/github/commits?sha=${commit.sha}`
               );
               
               if (detailResponse.ok) {

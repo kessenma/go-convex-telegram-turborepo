@@ -16,10 +16,17 @@ import { renderIcon } from "../../lib/icon-utils";
 import { ChatHistory } from "../../components/rag/chat/ChatHistory";
 import { ChatInterface } from "../../components/rag/chat/ChatInterface";
 import { DocumentSelector } from "../../components/rag/chat/DocumentSelector";
+import DocumentViewer from "../../components/rag/DocumentViewer";
 import { useRagChatStore } from "../../stores/ragChatStore";
 import type { Document } from "./types";
+import { useState } from "react";
+import { type GenericId as Id } from "convex/values";
 
 export default function RAGChatPage(): React.ReactElement {
+  // Document viewer state
+  const [documentViewerOpen, setDocumentViewerOpen] = useState(false);
+  const [viewerDocumentId, setViewerDocumentId] = useState<Id<"rag_documents"> | null>(null);
+
   // Zustand store
   const {
     selectedDocuments,
@@ -88,104 +95,123 @@ export default function RAGChatPage(): React.ReactElement {
   const documentsArray = documents?.page || [];
 
   return (
-    <div className="relative min-h-screen">
-      <ParticlesBackground
-        className="fixed z-0"
-        animationEnabled={animationEnabled}
-        meshCount={50}
-        selectedCount={selectedDocuments.length}
-      />
-      <div className="container relative z-10 px-4 py-8 mx-auto mt-12 mb-8">
-        <Hero
-          title="RAG Chat"
-          subtitle="Have intelligent conversations with your documents using AI-powered retrieval"
-          titleAnimation={TextAnimationType.TextRoll}
-          subtitleAnimation={TextAnimationType.Shimmer}
-          animationSpeed={75}
-        ></Hero>
+    <>
+      <div className="relative min-h-screen">
+        <ParticlesBackground
+          className="fixed z-0"
+          animationEnabled={animationEnabled}
+          meshCount={50}
+          selectedCount={selectedDocuments.length}
+        />
+        <div className="container relative z-10 px-4 py-8 mx-auto mt-12 mb-8">
+          <Hero
+            title="RAG Chat"
+            subtitle="Have intelligent conversations with your documents using AI-powered retrieval"
+            titleAnimation={TextAnimationType.TextRoll}
+            subtitleAnimation={TextAnimationType.Shimmer}
+            animationSpeed={75}
+          ></Hero>
 
-        {/* LLM Status Indicator */}
-        <div className="px-4 mx-auto mb-4 max-w-6xl">
-          <LightweightVectorConverterStatus
-            size="md"
-            showLabel={true}
-            showLogs={true}
-            className="w-full"
-          />
-        </div>
+          {/* LLM Status Indicator */}
+          <div className="px-4 mx-auto mb-4 max-w-6xl">
+            <LightweightVectorConverterStatus
+              size="md"
+              showLabel={true}
+              showLogs={true}
+              className="w-full"
+            />
+          </div>
 
-        <div className="px-4 mx-auto max-w-6xl">
-          <Card className="overflow-hidden relative border-gray-700 backdrop-blur-sm bg-gray-800/50">
-            <AnimatePresence initial={false}>
-              {currentView === 'selection' && (
-                <motion.div
-                  key="selection"
-                  initial={{ x: slideDirection === 'left' ? '100%' : '-100%' }}
-                  animate={{ x: 0 }}
-                  exit={{ x: slideDirection === 'left' ? '-100%' : '100%' }}
-                  transition={{ 
-                    type: "tween",
-                    duration: 0.25,
-                    ease: [0.25, 0.46, 0.45, 0.94]
-                  }}
-                  className="absolute inset-0 p-4 sm:p-6"
-                  style={{ width: '100%' }}
-                >
-                  <DocumentSelector
-                    documents={documentsArray as Document[]}
-                  />
-                </motion.div>
-         
-              )}
+          <div className="px-4 mx-auto max-w-6xl">
+            <Card className="overflow-hidden relative border-gray-700 backdrop-blur-sm bg-gray-800/50">
+              <AnimatePresence initial={false}>
+                {currentView === 'selection' && (
+                  <motion.div
+                    key="selection"
+                    initial={{ x: slideDirection === 'left' ? '100%' : '-100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: slideDirection === 'left' ? '-100%' : '100%' }}
+                    transition={{ 
+                      type: "tween",
+                      duration: 0.25,
+                      ease: [0.25, 0.46, 0.45, 0.94]
+                    }}
+                    className="absolute inset-0 p-4 sm:p-6"
+                    style={{ width: '100%' }}
+                  >
+                    <DocumentSelector
+                      documents={documentsArray as Document[]}
+                    />
+                  </motion.div>
+           
+                )}
+                
+                {currentView === 'chat' && (
+                  <motion.div
+                    key="chat"
+                    initial={{ x: slideDirection === 'left' ? '100%' : '-100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: slideDirection === 'left' ? '-100%' : '100%' }}
+                    transition={{ 
+                      type: "tween",
+                      duration: 0.25,
+                      ease: [0.25, 0.46, 0.45, 0.94]
+                    }}
+                    className="absolute inset-0"
+                    style={{ width: '100%' }}
+                  >
+                    <ChatInterface 
+                      onOpenDocumentViewer={(documentId: string) => {
+                        setViewerDocumentId(documentId as unknown as Id<"rag_documents">);
+                        setDocumentViewerOpen(true);
+                      }}
+                    />
+                  </motion.div>
+                )}
+                
+                {currentView === 'history' && (
+                  <motion.div
+                    key="history"
+                    initial={{ x: slideDirection === 'left' ? '100%' : '-100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: slideDirection === 'left' ? '-100%' : '100%' }}
+                    transition={{ 
+                      type: "tween",
+                      duration: 0.25,
+                      ease: [0.25, 0.46, 0.45, 0.94]
+                    }}
+                    className="absolute inset-0"
+                    style={{ width: '100%' }}
+                  >
+                    <ChatHistory />
+                  </motion.div>
+                )}
+              </AnimatePresence>
               
-              {currentView === 'chat' && (
-                <motion.div
-                  key="chat"
-                  initial={{ x: slideDirection === 'left' ? '100%' : '-100%' }}
-                  animate={{ x: 0 }}
-                  exit={{ x: slideDirection === 'left' ? '-100%' : '100%' }}
-                  transition={{ 
-                    type: "tween",
-                    duration: 0.25,
-                    ease: [0.25, 0.46, 0.45, 0.94]
-                  }}
-                  className="absolute inset-0"
-                  style={{ width: '100%' }}
-                >
-                  <ChatInterface />
-                </motion.div>
-              )}
-              
-              {currentView === 'history' && (
-                <motion.div
-                  key="history"
-                  initial={{ x: slideDirection === 'left' ? '100%' : '-100%' }}
-                  animate={{ x: 0 }}
-                  exit={{ x: slideDirection === 'left' ? '-100%' : '100%' }}
-                  transition={{ 
-                    type: "tween",
-                    duration: 0.25,
-                    ease: [0.25, 0.46, 0.45, 0.94]
-                  }}
-                  className="absolute inset-0"
-                  style={{ width: '100%' }}
-                >
-                  <ChatHistory />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
-            {/* Dynamic height spacer based on current view */}
-            <div className="invisible p-4 sm:p-6">
-              <div className={`transition-all duration-300 ${
-                currentView === 'chat' ? 'h-[700px]' : 
-                currentView === 'history' ? 'h-[700px]' : 
-                'min-h-[800px]'
-              }`} />
-            </div>
-          </Card>
+              {/* Dynamic height spacer based on current view */}
+              <div className="invisible p-4 sm:p-6">
+                <div className={`transition-all duration-300 ${
+                  currentView === 'chat' ? 'h-[700px]' : 
+                  currentView === 'history' ? 'h-[700px]' : 
+                  'min-h-[800px]'
+                }`} />
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+      
+      {/* Document Viewer - Rendered outside all containers for true full-screen */}
+      {documentViewerOpen && viewerDocumentId && (
+        <DocumentViewer
+          documentId={viewerDocumentId}
+          isOpen={documentViewerOpen}
+          onClose={() => {
+            setDocumentViewerOpen(false);
+            setViewerDocumentId(null);
+          }}
+        />
+      )}
+    </>
   );
 }

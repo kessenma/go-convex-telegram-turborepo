@@ -4,6 +4,7 @@
 
 @theme inline {
   --animate-aurora: aurora 60s linear infinite;
+  --animate-scroll-left: scroll-left 15s linear infinite;
   @keyframes aurora {
     from {
       background-position:
@@ -14,6 +15,14 @@
       background-position:
         350% 50%,
         350% 50%;
+    }
+  }
+  @keyframes scroll-left {
+    0% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(-100%);
     }
   }
 }
