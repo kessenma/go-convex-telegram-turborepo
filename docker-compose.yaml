@@ -49,12 +49,14 @@ services:
       - CONVEX_SELF_HOSTED_URL=${CONVEX_SELF_HOSTED_URL:-http://localhost:3210}
       - CONVEX_DEPLOYMENT=${CONVEX_DEPLOYMENT:-self-hosted}
       - CONVEX_MAX_RAM_MB=${CONVEX_MAX_RAM_MB:-2048}
+      - CONVEX_BOOTSTRAP_TIMEOUT_MS=${CONVEX_BOOTSTRAP_TIMEOUT_MS:-60000}
+      - CONVEX_HEALTH_CHECK_TIMEOUT_MS=${CONVEX_HEALTH_CHECK_TIMEOUT_MS:-30000}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3210/version", "||", "exit", "1"]
-      interval: 10s
-      timeout: 5s
-      start_period: 30s
-      retries: 5
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/3210' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
     networks:
       - telegram-bot-network
 
@@ -148,7 +150,7 @@ services:
       - 8.8.4.4
       - 1.1.1.1
     healthcheck:
-      test: curl -f http://localhost:7999/health || exit 1
+      test: ["CMD-SHELL", "curl -f http://localhost:7999/health || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 60s
@@ -188,7 +190,7 @@ services:
       networks:
         - telegram-bot-network
       healthcheck:
-        test: curl -f http://localhost:8082/health || exit 1
+        test: ["CMD-SHELL", "curl -f http://localhost:8082/health || exit 1"]
         interval: 30s
         timeout: 15s
         start_period: 180s

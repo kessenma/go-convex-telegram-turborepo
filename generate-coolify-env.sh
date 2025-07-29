@@ -140,6 +140,8 @@ echo "NEXT_PUBLIC_TELEGRAM_BOT_RAM_RESERVATION=$telegram_bot_reservation"
 echo ""
 echo "# Convex Configuration"
 echo "CONVEX_MAX_RAM_MB=$convex_max_ram_mb"
+echo "CONVEX_BOOTSTRAP_TIMEOUT_MS=60000"
+echo "CONVEX_HEALTH_CHECK_TIMEOUT_MS=30000"
 echo ""
 
 echo "🔧 COOLIFY DEPLOYMENT STEPS:"

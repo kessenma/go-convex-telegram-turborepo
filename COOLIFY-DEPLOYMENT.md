@@ -77,14 +77,35 @@ CONVEX_DASHBOARD_PORT=6791
 The most common issue is the Convex backend failing its health check. This is usually due to:
 
 1. **Insufficient RAM**: Make sure your server has enough RAM for the allocated amounts
-2. **Slow startup**: The health check now waits 30 seconds before starting checks
-3. **Network issues**: Ensure internal Docker networking is working
+2. **Slow startup**: The health check now waits 60 seconds before starting checks
+3. **Missing tools**: The container might not have curl/wget available
+4. **Network issues**: Ensure internal Docker networking is working
 
-**Solution**: Check the logs in Coolify:
-```bash
-# In Coolify logs, look for:
-docker logs <convex-backend-container-id>
-```
+**Solutions**:
+
+1. **Check the logs** in Coolify:
+   ```bash
+   docker logs <convex-backend-container-id>
+   ```
+
+2. **Test the health check manually**:
+   ```bash
+   # Run the troubleshooting script
+   chmod +x test-convex-health.sh
+   ./test-convex-health.sh
+   ```
+
+3. **Verify the service is actually running**:
+   ```bash
+   # Check if the port is listening
+   docker exec <container-id> netstat -ln | grep 3210
+   ```
+
+4. **Increase timeout values** in Coolify environment:
+   ```bash
+   CONVEX_BOOTSTRAP_TIMEOUT_MS=120000
+   CONVEX_HEALTH_CHECK_TIMEOUT_MS=60000
+   ```
 
 ### RAM Allocation Issues
 
