@@ -76,10 +76,15 @@ export async function POST(request: NextRequest) {
     try {
       console.log("🔍 Performing vector search with dynamic scoring...");
       
-      // Use the existing vector search API that provides real similarity scores
-      const vectorSearchResponse = await fetch(`${process.env.CONVEX_HTTP_URL || "http://localhost:3211"}/api/documents/search?q=${encodeURIComponent(message)}&limit=3`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+      // Use the fixed vector search API
+      const vectorSearchResponse = await fetch(`http://localhost:3000/api/RAG/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: message,
+          limit: 3,
+          documentIds
+        })
       });
       
       if (vectorSearchResponse.ok) {
@@ -87,33 +92,30 @@ export async function POST(request: NextRequest) {
         console.log("✅ Vector search completed:", vectorResult.results?.length || 0, "results found");
         
         if (vectorResult.success && vectorResult.results && vectorResult.results.length > 0) {
-          // Filter results to only include selected documents
-          const filteredResults = vectorResult.results.filter((result: { _id: string }) =>
-            documentIds.includes(result._id)
-          );
+          const results = vectorResult.results;
           
-          if (filteredResults.length > 0) {
-            console.log("✅ Found relevant results with dynamic scores:", 
-              filteredResults.map((r: { title: string; _score: number }) => `${r.title}: ${(r._score * 100).toFixed(1)}%`));
-            
-            // Build context from the most relevant results
-            const contextParts = filteredResults.slice(0, 2).map((result: { title: string; content?: string; snippet?: string }) => {
-              return `Document: ${result.title}\n\nRelevant content:\n${result.content || result.snippet || 'No content available'}\n`;
-            });
-            
-            context = contextParts.join('\n---\n\n') + '\nAnswer the user\'s question based on this information.';
-            
-            // Create sources with real similarity scores
-            sources = filteredResults.slice(0, 3).map((result: { _id: string; title: string; content?: string; snippet?: string; _score: number }) => ({
-              documentId: result._id,
-              title: result.title,
-              snippet: (result.content || result.snippet || '').substring(0, 200),
-              score: result._score // Use the real similarity score from vector search
-            }));
-          }
+          console.log("✅ Found relevant results with dynamic scores:", 
+            results.map((r: { title: string; _score: number }) => `${r.title}: ${(r._score * 100).toFixed(1)}%`));
+          
+          // Build context from the most relevant results
+          const contextParts = results.slice(0, 2).map((result: { title: string; content?: string; snippet?: string }) => {
+            return `Document: ${result.title}\n\nRelevant content:\n${result.content || result.snippet || 'No content available'}\n`;
+          });
+          
+          context = contextParts.join('\n---\n\n') + '\nAnswer the user\'s question based on this information.';
+          
+          // Create sources with real similarity scores
+          sources = results.slice(0, 3).map((result: { _id: string; title: string; content?: string; snippet?: string; _score: number }) => ({
+            documentId: result._id,
+            title: result.title,
+            snippet: (result.content || result.snippet || '').substring(0, 200),
+            score: result._score // Use the real similarity score from vector search
+          }));
         }
       } else {
         console.warn("Vector search API returned error:", vectorSearchResponse.status);
+        const errorText = await vectorSearchResponse.text();
+        console.warn("Error details:", errorText);
       }
     } catch (vectorError) {
       console.error("Vector search failed:", vectorError);
@@ -121,44 +123,64 @@ export async function POST(request: NextRequest) {
 
     // Step 3: Fallback to document content if vector search failed or no results
     if (!context || sources.length === 0) {
-      console.log("📝 Using document content fallback...");
-      const doc = validDocuments[0] as { _id: string; title: string; content: string };
+      console.log("📝 Using document content fallback for all selected documents...");
+      
+      // Process ALL valid documents, not just the first one
+      const contextParts: string[] = [];
+      const fallbackSources: Array<{
+        documentId: string;
+        title: string;
+        snippet: string;
+        score: number;
+      }> = [];
       
       // Look for specific patterns in the query for better relevance
       const stepMatch = message.match(/step\s*(\d+)/i);
-      let relevanceScore = 0.3; // Base fallback score
-      let snippet = doc.content.substring(0, 200);
-      
-      if (stepMatch) {
-        const stepNumber = stepMatch[1];
-        const stepPattern = new RegExp(`${stepNumber}\\.[^\\d]*?(?=\\d\\.|$)`, 'i');
-        const stepMatch2 = doc.content.match(stepPattern);
-        
-        if (stepMatch2) {
-          snippet = stepMatch2[0].trim().substring(0, 200);
-          relevanceScore = 0.8; // Higher score for specific step matches
-          console.log("✅ Found specific step content, using higher relevance score");
-        }
-      }
-      
-      // Check for keyword matches to adjust relevance
       const queryWords = message.toLowerCase().split(/\s+/).filter(word => word.length > 2);
-      const contentLower = doc.content.toLowerCase();
-      const matchedWords = queryWords.filter(word => contentLower.includes(word));
       
-      if (matchedWords.length > 0) {
-        relevanceScore = Math.min(0.6, 0.3 + (matchedWords.length / queryWords.length) * 0.3);
-        console.log(`✅ Found ${matchedWords.length}/${queryWords.length} keyword matches, relevance: ${(relevanceScore * 100).toFixed(1)}%`);
-      }
+      validDocuments.forEach((doc: { _id: string; title: string; content: string }) => {
+        let relevanceScore = 0.3; // Base fallback score
+        let snippet = doc.content.substring(0, 200);
+        
+        // Check for step-specific content
+        if (stepMatch) {
+          const stepNumber = stepMatch[1];
+          const stepPattern = new RegExp(`${stepNumber}\\.[^\\d]*?(?=\\d\\.|$)`, 'i');
+          const stepMatch2 = doc.content.match(stepPattern);
+          
+          if (stepMatch2) {
+            snippet = stepMatch2[0].trim().substring(0, 200);
+            relevanceScore = 0.8; // Higher score for specific step matches
+            console.log(`✅ Found specific step content in ${doc.title}, using higher relevance score`);
+          }
+        }
+        
+        // Check for keyword matches to adjust relevance
+        const contentLower = doc.content.toLowerCase();
+        const matchedWords = queryWords.filter(word => contentLower.includes(word));
+        
+        if (matchedWords.length > 0) {
+          relevanceScore = Math.min(0.6, 0.3 + (matchedWords.length / queryWords.length) * 0.3);
+          console.log(`✅ Found ${matchedWords.length}/${queryWords.length} keyword matches in ${doc.title}, relevance: ${(relevanceScore * 100).toFixed(1)}%`);
+        }
+        
+        // Add document content to context
+        contextParts.push(`Document: ${doc.title}\n\nContent: ${doc.content}`);
+        
+        // Add to sources
+        fallbackSources.push({
+          documentId: doc._id,
+          title: doc.title,
+          snippet,
+          score: relevanceScore
+        });
+      });
       
-      context = `Document: ${doc.title}\n\nContent: ${doc.content}\n\nAnswer the user's question based on this information.`;
+      // Combine all document content into a comprehensive context
+      context = contextParts.join('\n\n---\n\n') + '\n\nAnswer the user\'s question based on the information from all these documents.';
+      sources = fallbackSources;
       
-      sources = [{
-        documentId: doc._id,
-        title: doc.title,
-        snippet,
-        score: relevanceScore // Dynamic score based on content analysis
-      }];
+      console.log(`✅ Fallback context created from ${validDocuments.length} documents`);
     }
 
     // Step 4: Call LLM directly

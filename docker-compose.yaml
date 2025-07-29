@@ -10,9 +10,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: ${NEXT_PUBLIC_CONVEX_BACKEND_RAM:-2G}
         reservations:
-          memory: 1G
+          memory: ${NEXT_PUBLIC_CONVEX_BACKEND_RAM_RESERVATION:-1G}
     ports:
       - "${NEXT_PUBLIC_CONVEX_PORT:-3210}:3210"
       - "${NEXT_PUBLIC_CONVEX_SITE_PROXY_PORT:-3211}:3211"
@@ -23,7 +23,7 @@ services:
       - INSTANCE_NAME=${CONVEX_INSTANCE_NAME:-convex-telegram-bot}
       - INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
       - CONVEX_RELEASE_VERSION_DEV=${CONVEX_RELEASE_VERSION_DEV:-}
-      - ACTIONS_USER_TIMEOUT_SECS=${ACTIONS_USER_TIMEOUT_SECS:-}
+      - ACTIONS_USER_TIMEOUT_SECS=${ACTIONS_USER_TIMEOUT_SECS:-600}
       - CONVEX_CLOUD_ORIGIN=${CONVEX_CLOUD_ORIGIN:-http://127.0.0.1:3210}
       - CONVEX_SITE_ORIGIN=${CONVEX_SITE_ORIGIN:-http://127.0.0.1:3211}
       - DATABASE_URL=${DATABASE_URL:-}
@@ -48,10 +48,13 @@ services:
       - CONVEX_URL=${CONVEX_URL:-http://localhost:3210}
       - CONVEX_SELF_HOSTED_URL=${CONVEX_SELF_HOSTED_URL:-http://localhost:3210}
       - CONVEX_DEPLOYMENT=${CONVEX_DEPLOYMENT:-self-hosted}
+      - CONVEX_MAX_RAM_MB=${CONVEX_MAX_RAM_MB:-2048}
     healthcheck:
-      test: curl -f http://localhost:3210/version
-      interval: 5s
-      start_period: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:3210/version", "||", "exit", "1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
     networks:
       - telegram-bot-network
 
@@ -63,9 +66,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: ${NEXT_PUBLIC_CONVEX_DASHBOARD_RAM:-256M}
         reservations:
-          memory: 128M
+          memory: ${NEXT_PUBLIC_CONVEX_DASHBOARD_RAM_RESERVATION:-128M}
     ports:
       - "${CONVEX_DASHBOARD_PORT:-6791}:6791"
     environment:
@@ -85,9 +88,9 @@ services:
       deploy:
         resources:
           limits:
-            memory: 128M
+            memory: ${NEXT_PUBLIC_TELEGRAM_BOT_RAM:-128M}
           reservations:
-            memory: 64M
+            memory: ${NEXT_PUBLIC_TELEGRAM_BOT_RAM_RESERVATION:-64M}
       environment:
         - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
         - CONVEX_URL=${CONVEX_URL:-http://convex-backend:3211}
@@ -114,9 +117,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: ${NEXT_PUBLIC_VECTOR_CONVERT_LLM_RAM:-2G}
         reservations:
-          memory: 1G
+          memory: ${NEXT_PUBLIC_VECTOR_CONVERT_LLM_RAM_RESERVATION:-1G}
     ports:
       - "${VECTOR_CONVERT_PORT:-7999}:7999"
     environment:
@@ -159,9 +162,9 @@ services:
       deploy:
         resources:
           limits:
-            memory: 6G
+            memory: ${NEXT_PUBLIC_LIGHTWEIGHT_LLM_RAM:-6G}
           reservations:
-            memory: 3G
+            memory: ${NEXT_PUBLIC_LIGHTWEIGHT_LLM_RAM_RESERVATION:-3G}
       ports:
       - "${LIGHTWEIGHT_LLM_PORT:-8082}:8082"
       environment:
@@ -204,9 +207,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: ${NEXT_PUBLIC_WEB_DASHBOARD_RAM:-1G}
         reservations:
-          memory: 512M
+          memory: ${NEXT_PUBLIC_WEB_DASHBOARD_RAM_RESERVATION:-512M}
     ports:
       - "${WEB_DASHBOARD_PORT:-3000}:3000"
     environment:

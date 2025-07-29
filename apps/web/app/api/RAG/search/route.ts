@@ -1,10 +1,16 @@
+import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
+import { api } from "../../../../generated-convex";
+
+const convex = new ConvexHttpClient(
+  process.env.CONVEX_HTTP_URL || "http://localhost:3211"
+);
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q") || searchParams.get("query");
-    const limit = searchParams.get("limit") || "10";
+    const limit = parseInt(searchParams.get("limit") || "10");
 
     if (!query) {
       return NextResponse.json(
@@ -13,49 +19,41 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get Convex URL from environment
-    const convexUrl =
-      process.env.CONVEX_URL ||
-      process.env.CONVEX_HTTP_URL ||
-      "http://localhost:3211";
-    if (!convexUrl) {
-      console.error("CONVEX_URL not configured");
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
-      );
-    }
+    console.log(`🔍 Vector search request: "${query}" (limit: ${limit})`);
 
-    // Build query parameters
-    const queryParams = new URLSearchParams({
-      q: query,
+    // Use Convex client to call vector search action
+    const searchResults = await convex.action(api.embeddings.searchDocumentsByVector, {
+      queryText: query,
       limit,
     });
 
-    // Forward request to Convex HTTP API
-    const convexResponse = await fetch(
-      `${convexUrl}/api/documents/search?${queryParams}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    console.log(`✅ Vector search found ${searchResults.length} results`);
 
-    const convexResult = await convexResponse.json();
+    // Format results for API response
+    const formattedResults = searchResults.map((result: any) => ({
+      _id: result.document._id,
+      _score: result._score,
+      title: result.document.title,
+      content: result.expandedContext || result.chunkText || result.document.content,
+      snippet: (result.expandedContext || result.chunkText || result.document.content || '').substring(0, 200),
+      contentType: result.document.contentType,
+      fileSize: result.document.fileSize,
+      uploadedAt: result.document.uploadedAt,
+      wordCount: result.document.wordCount,
+      summary: result.document.summary,
+      isChunkResult: result.isChunkResult,
+      chunkIndex: result.chunkIndex,
+    }));
 
-    if (!convexResponse.ok) {
-      console.error("Convex API error:", convexResult);
-      return NextResponse.json(
-        { error: convexResult.error || "Failed to search documents" },
-        { status: convexResponse.status }
-      );
-    }
-
-    return NextResponse.json(convexResult);
+    return NextResponse.json({
+      success: true,
+      results: formattedResults,
+      total: searchResults.length,
+      query,
+      limit,
+    });
   } catch (error) {
-    console.error("Search API error:", error);
+    console.error("Vector search API error:", error);
     return NextResponse.json(
       {
         error: "Internal server error",
@@ -77,49 +75,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Convex URL from environment
-    const convexUrl =
-      process.env.CONVEX_URL ||
-      process.env.CONVEX_HTTP_URL ||
-      "http://localhost:3211";
-    if (!convexUrl) {
-      console.error("CONVEX_URL not configured");
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
-      );
+    const query = body.query || body.q;
+    const limit = parseInt(body.limit?.toString() || "10");
+    const documentIds = body.documentIds;
+
+    console.log(`🔍 Vector search POST request: "${query}" (limit: ${limit})`);
+    if (documentIds) {
+      console.log(`📄 Filtering by ${documentIds.length} document IDs`);
     }
 
-    // Build query parameters for GET request to Convex
-    const queryParams = new URLSearchParams({
-      q: body.query || body.q,
-      limit: body.limit?.toString() || "10",
+    // Use Convex client to call vector search action
+    const searchResults = await convex.action(api.embeddings.searchDocumentsByVector, {
+      queryText: query,
+      limit,
+      documentIds,
     });
 
-    // Forward request to Convex HTTP API
-    const convexResponse = await fetch(
-      `${convexUrl}/api/documents/search?${queryParams}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    console.log(`✅ Vector search found ${searchResults.length} results`);
 
-    const convexResult = await convexResponse.json();
+    // Format results for API response
+    const formattedResults = searchResults.map((result: any) => ({
+      _id: result.document._id,
+      _score: result._score,
+      title: result.document.title,
+      content: result.expandedContext || result.chunkText || result.document.content,
+      snippet: (result.expandedContext || result.chunkText || result.document.content || '').substring(0, 200),
+      contentType: result.document.contentType,
+      fileSize: result.document.fileSize,
+      uploadedAt: result.document.uploadedAt,
+      wordCount: result.document.wordCount,
+      summary: result.document.summary,
+      isChunkResult: result.isChunkResult,
+      chunkIndex: result.chunkIndex,
+    }));
 
-    if (!convexResponse.ok) {
-      console.error("Convex API error:", convexResult);
-      return NextResponse.json(
-        { error: convexResult.error || "Failed to search documents" },
-        { status: convexResponse.status }
-      );
-    }
-
-    return NextResponse.json(convexResult);
+    return NextResponse.json({
+      success: true,
+      results: formattedResults,
+      total: searchResults.length,
+      query,
+      limit,
+      documentIds,
+    });
   } catch (error) {
-    console.error("Search API error:", error);
+    console.error("Vector search API error:", error);
     return NextResponse.json(
       {
         error: "Internal server error",

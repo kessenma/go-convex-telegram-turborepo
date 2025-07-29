@@ -116,6 +116,17 @@ distribute_ram() {
     echo -e "  📊 Convex Dashboard (3%): ${convex_dashboard_ram}"
     echo -e "  🤖 Telegram Bot (2%): ${telegram_bot_ram}"
     
+    # Calculate reservation values (50% of limits)
+    local lightweight_llm_reservation=$(bytes_to_optimal_unit $(echo "$lightweight_llm_bytes * 0.5" | bc | cut -d'.' -f1))
+    local convex_backend_reservation=$(bytes_to_optimal_unit $(echo "$convex_backend_bytes * 0.5" | bc | cut -d'.' -f1))
+    local vector_convert_reservation=$(bytes_to_optimal_unit $(echo "$vector_convert_bytes * 0.5" | bc | cut -d'.' -f1))
+    local web_dashboard_reservation=$(bytes_to_optimal_unit $(echo "$web_dashboard_bytes * 0.5" | bc | cut -d'.' -f1))
+    local convex_dashboard_reservation=$(bytes_to_optimal_unit $(echo "$convex_dashboard_bytes * 0.5" | bc | cut -d'.' -f1))
+    local telegram_bot_reservation=$(bytes_to_optimal_unit $(echo "$telegram_bot_bytes * 0.5" | bc | cut -d'.' -f1))
+    
+    # Calculate CONVEX_MAX_RAM_MB (convert convex backend RAM to MB)
+    local convex_max_ram_mb=$(echo "$convex_backend_bytes / 1048576" | bc)
+    
     # Update .env file with calculated values
     echo -e "${YELLOW}📝 Updating .env file with calculated allocations...${NC}"
     update_env_variable "NEXT_PUBLIC_TOTAL_RAM_ALLOCATED" "$total_ram"
@@ -125,6 +136,17 @@ distribute_ram() {
     update_env_variable "NEXT_PUBLIC_WEB_DASHBOARD_RAM" "$web_dashboard_ram"
     update_env_variable "NEXT_PUBLIC_CONVEX_DASHBOARD_RAM" "$convex_dashboard_ram"
     update_env_variable "NEXT_PUBLIC_TELEGRAM_BOT_RAM" "$telegram_bot_ram"
+    
+    # Set reservation values
+    update_env_variable "NEXT_PUBLIC_LIGHTWEIGHT_LLM_RAM_RESERVATION" "$lightweight_llm_reservation"
+    update_env_variable "NEXT_PUBLIC_CONVEX_BACKEND_RAM_RESERVATION" "$convex_backend_reservation"
+    update_env_variable "NEXT_PUBLIC_VECTOR_CONVERT_LLM_RAM_RESERVATION" "$vector_convert_reservation"
+    update_env_variable "NEXT_PUBLIC_WEB_DASHBOARD_RAM_RESERVATION" "$web_dashboard_reservation"
+    update_env_variable "NEXT_PUBLIC_CONVEX_DASHBOARD_RAM_RESERVATION" "$convex_dashboard_reservation"
+    update_env_variable "NEXT_PUBLIC_TELEGRAM_BOT_RAM_RESERVATION" "$telegram_bot_reservation"
+    
+    # Set Convex max RAM in MB
+    update_env_variable "CONVEX_MAX_RAM_MB" "$convex_max_ram_mb"
     
     echo -e "${GREEN}✅ RAM distribution complete!${NC}"
     return 0

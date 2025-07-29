@@ -387,6 +387,24 @@ if [ -z "$NEXT_PUBLIC_TOTAL_RAM_ALLOCATED" ] || [ "$NEXT_PUBLIC_TOTAL_RAM_ALLOCA
     if [ -f "./calculate-ram.sh" ]; then
         chmod +x ./calculate-ram.sh
         source ./calculate-ram.sh --distribute "$TOTAL_RAM_INPUT"
+        
+        # Export the calculated values for docker-compose
+        echo "🔄 Exporting RAM variables for Docker Compose..."
+        source .env
+        export NEXT_PUBLIC_TOTAL_RAM_ALLOCATED
+        export NEXT_PUBLIC_LIGHTWEIGHT_LLM_RAM
+        export NEXT_PUBLIC_CONVEX_BACKEND_RAM
+        export NEXT_PUBLIC_VECTOR_CONVERT_LLM_RAM
+        export NEXT_PUBLIC_WEB_DASHBOARD_RAM
+        export NEXT_PUBLIC_CONVEX_DASHBOARD_RAM
+        export NEXT_PUBLIC_TELEGRAM_BOT_RAM
+        export NEXT_PUBLIC_LIGHTWEIGHT_LLM_RAM_RESERVATION
+        export NEXT_PUBLIC_CONVEX_BACKEND_RAM_RESERVATION
+        export NEXT_PUBLIC_VECTOR_CONVERT_LLM_RAM_RESERVATION
+        export NEXT_PUBLIC_WEB_DASHBOARD_RAM_RESERVATION
+        export NEXT_PUBLIC_CONVEX_DASHBOARD_RAM_RESERVATION
+        export NEXT_PUBLIC_TELEGRAM_BOT_RAM_RESERVATION
+        export CONVEX_MAX_RAM_MB
     else
         echo "⚠️  Warning: calculate-ram.sh not found. Using default allocations."
     fi
@@ -434,6 +452,17 @@ set_ram_variable "NEXT_PUBLIC_TELEGRAM_BOT_RAM" "128M" "Telegram Bot RAM"
 set_ram_variable "NEXT_PUBLIC_VECTOR_CONVERT_LLM_RAM" "2G" "Vector Convert LLM RAM"
 set_ram_variable "NEXT_PUBLIC_LIGHTWEIGHT_LLM_RAM" "4G" "Lightweight LLM RAM"
 set_ram_variable "NEXT_PUBLIC_WEB_DASHBOARD_RAM" "512M" "Web Dashboard RAM"
+
+# Set RAM reservation variables (50% of limits by default)
+set_ram_variable "NEXT_PUBLIC_CONVEX_BACKEND_RAM_RESERVATION" "750M" "Convex Backend RAM Reservation"
+set_ram_variable "NEXT_PUBLIC_CONVEX_DASHBOARD_RAM_RESERVATION" "128M" "Convex Dashboard RAM Reservation"
+set_ram_variable "NEXT_PUBLIC_TELEGRAM_BOT_RAM_RESERVATION" "64M" "Telegram Bot RAM Reservation"
+set_ram_variable "NEXT_PUBLIC_VECTOR_CONVERT_LLM_RAM_RESERVATION" "1G" "Vector Convert LLM RAM Reservation"
+set_ram_variable "NEXT_PUBLIC_LIGHTWEIGHT_LLM_RAM_RESERVATION" "2G" "Lightweight LLM RAM Reservation"
+set_ram_variable "NEXT_PUBLIC_WEB_DASHBOARD_RAM_RESERVATION" "256M" "Web Dashboard RAM Reservation"
+
+# Set Convex max RAM in MB
+set_ram_variable "CONVEX_MAX_RAM_MB" "1536" "Convex Max RAM (MB)"
 
 # Set LLM service ports if not configured
 set_ram_variable "LIGHTWEIGHT_LLM_PORT" "8082" "Lightweight LLM Port"
