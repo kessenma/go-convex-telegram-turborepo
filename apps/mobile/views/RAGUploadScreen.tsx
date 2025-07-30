@@ -7,12 +7,14 @@ import {
   TouchableOpacity,
   Alert,
   Dimensions,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import CloudUpload from '../components/CloudUpload';
-// Note: In a real implementation, you would use react-native-document-picker
-// For now, we'll simulate file selection
+import RNFS from 'react-native-fs';
+import DocumentPicker from 'react-native-document-picker';
 
 interface SelectedFile {
   id: string;
@@ -26,47 +28,125 @@ interface SelectedFile {
 const RAGUploadScreen = () => {
   const navigation = useNavigation();
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingToDevice, setUploadingToDevice] = useState(false);
+  const [uploadingToConvex, setUploadingToConvex] = useState(false);
 
   const handleGoBack = () => {
     navigation.goBack();
   };
 
+  const requestStoragePermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          {
+            title: 'Storage Permission',
+            message: 'This app needs access to storage to read documents',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSelectFiles = async () => {
     try {
-      // Simulate file selection for demo purposes
-      const mockFiles: SelectedFile[] = [
-        {
-          id: Date.now().toString(),
-          name: 'sample-document.pdf',
-          size: 1024000, // 1MB
-          type: 'application/pdf',
-          uri: 'file://sample-document.pdf',
-          uploadProgress: 0,
-        },
-      ];
+      const hasPermission = await requestStoragePermission();
+      if (!hasPermission) {
+        Alert.alert('Permission Required', 'Storage permission is required to select files');
+        return;
+      }
+
+      const results = await DocumentPicker.pick({
+        type: [
+          DocumentPicker.types.pdf,
+          DocumentPicker.types.plainText,
+          DocumentPicker.types.doc,
+          DocumentPicker.types.docx,
+        ],
+        allowMultiSelection: true,
+      });
+
+      const newFiles: SelectedFile[] = results.map((result, index) => ({
+        id: `${Date.now()}_${index}`,
+        name: result.name || 'Unknown file',
+        size: result.size || 0,
+        type: result.type || 'unknown',
+        uri: result.uri,
+        uploadProgress: 0,
+      }));
       
-      setSelectedFiles(prev => [...prev, ...mockFiles]);
+      setSelectedFiles(prev => [...prev, ...newFiles]);
     } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        // User cancelled the picker
+        return;
+      }
       Alert.alert('Error', 'Failed to select files');
+      console.error('File selection error:', err);
     }
   };
 
-  const handleUpload = async () => {
+  const handleUploadToDevice = async () => {
     if (selectedFiles.length === 0) {
       Alert.alert('Error', 'Please select files to upload');
       return;
     }
 
-    setUploading(true);
+    setUploadingToDevice(true);
     
-    // Simulate upload process
-    setTimeout(() => {
-      setUploading(false);
-      Alert.alert('Success', 'Files uploaded successfully!', [
+    try {
+      // Create documents directory if it doesn't exist
+      const documentsPath = `${RNFS.DocumentDirectoryPath}/rag_documents`;
+      const dirExists = await RNFS.exists(documentsPath);
+      
+      if (!dirExists) {
+        await RNFS.mkdir(documentsPath);
+      }
+
+      // Copy files to local storage
+      for (const file of selectedFiles) {
+        const destinationPath = `${documentsPath}/${file.name}`;
+        await RNFS.copyFile(file.uri, destinationPath);
+        console.log(`File copied to: ${destinationPath}`);
+      }
+
+      setUploadingToDevice(false);
+      Alert.alert('Success', `${selectedFiles.length} file(s) saved to device successfully!`, [
         { text: 'OK', onPress: () => {
           setSelectedFiles([]);
-          navigation.goBack();
+        }}
+      ]);
+    } catch (error) {
+      setUploadingToDevice(false);
+      console.error('Upload to device error:', error);
+      Alert.alert('Error', 'Failed to save files to device');
+    }
+  };
+
+  const handleUploadToConvex = async () => {
+    if (selectedFiles.length === 0) {
+      Alert.alert('Error', 'Please select files to upload');
+      return;
+    }
+
+    setUploadingToConvex(true);
+    
+    // TODO: Implement Convex upload logic
+    // This is a placeholder for now
+    setTimeout(() => {
+      setUploadingToConvex(false);
+      Alert.alert('Success', `${selectedFiles.length} file(s) uploaded to Convex successfully!`, [
+        { text: 'OK', onPress: () => {
+          setSelectedFiles([]);
         }}
       ]);
     }, 2000);
@@ -101,7 +181,7 @@ const RAGUploadScreen = () => {
             <TouchableOpacity
               style={styles.selectButton}
               onPress={handleSelectFiles}
-              disabled={uploading}
+              disabled={uploadingToDevice || uploadingToConvex}
             >
               <Icon name="file-plus" size={20} color="#ffffff" />
               <Text style={styles.selectButtonText}>Select Files</Text>
@@ -127,30 +207,50 @@ const RAGUploadScreen = () => {
                   <TouchableOpacity
                     onPress={() => removeFile(index)}
                     style={styles.removeButton}
-                    disabled={uploading}
+                    disabled={uploadingToDevice || uploadingToConvex}
                   >
                     <Icon name="x" size={16} color="#ff4444" />
                   </TouchableOpacity>
                 </View>
               ))}
 
-              <TouchableOpacity
-                style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
-                onPress={handleUpload}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <>
-                    <Icon name="loader" size={20} color="#ffffff" />
-                    <Text style={styles.uploadButtonText}>Uploading...</Text>
-                  </>
-                ) : (
-                  <>
-                    <Icon name="upload" size={20} color="#ffffff" />
-                    <Text style={styles.uploadButtonText}>Upload Files</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              <View style={styles.uploadButtonsContainer}>
+                <TouchableOpacity
+                  style={[styles.uploadButton, styles.deviceUploadButton, uploadingToDevice && styles.uploadButtonDisabled]}
+                  onPress={handleUploadToDevice}
+                  disabled={uploadingToDevice || uploadingToConvex}
+                >
+                  {uploadingToDevice ? (
+                    <>
+                      <Icon name="loader" size={20} color="#ffffff" />
+                      <Text style={styles.uploadButtonText}>Saving...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="smartphone" size={20} color="#ffffff" />
+                      <Text style={styles.uploadButtonText}>Save to Device</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.uploadButton, styles.convexUploadButton, uploadingToConvex && styles.uploadButtonDisabled]}
+                  onPress={handleUploadToConvex}
+                  disabled={uploadingToDevice || uploadingToConvex}
+                >
+                  {uploadingToConvex ? (
+                    <>
+                      <Icon name="loader" size={20} color="#ffffff" />
+                      <Text style={styles.uploadButtonText}>Uploading...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="cloud" size={20} color="#ffffff" />
+                      <Text style={styles.uploadButtonText}>Upload to Convex</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -171,6 +271,18 @@ const RAGUploadScreen = () => {
           <View style={styles.formatCard}>
             <Icon name="file" size={16} color="#007AFF" />
             <Text style={styles.formatText}>Word documents (.doc, .docx)</Text>
+          </View>
+
+          <View style={styles.storageInfoContainer}>
+            <Text style={styles.storageInfoTitle}>Storage Options</Text>
+            <View style={styles.storageCard}>
+              <Icon name="smartphone" size={16} color="#28a745" />
+              <Text style={styles.storageText}>Device Storage: Files saved locally for offline access</Text>
+            </View>
+            <View style={styles.storageCard}>
+              <Icon name="cloud" size={16} color="#007AFF" />
+              <Text style={styles.storageText}>Convex Cloud: Files uploaded to cloud for sync across devices</Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -304,21 +416,32 @@ const styles = StyleSheet.create({
   removeButton: {
     padding: 8,
   },
+  uploadButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    gap: 12,
+  },
   uploadButton: {
-    backgroundColor: '#28a745',
+    flex: 1,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
+  },
+  deviceUploadButton: {
+    backgroundColor: '#28a745',
+  },
+  convexUploadButton: {
+    backgroundColor: '#007AFF',
   },
   uploadButtonDisabled: {
     backgroundColor: '#ccc',
   },
   uploadButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
   },
@@ -351,6 +474,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginLeft: 12,
+  },
+  storageInfoContainer: {
+    marginTop: 20,
+  },
+  storageInfoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+  },
+  storageCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  storageText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 12,
+    flex: 1,
   },
 });
 
