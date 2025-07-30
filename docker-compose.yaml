@@ -106,8 +106,6 @@ services:
       restart: unless-stopped
       networks:
         - telegram-bot-network
-      profiles:
-        - telegram
 
 
 
