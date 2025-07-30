@@ -42,10 +42,11 @@ export function ChangelogModal({
             <ResponsiveModalTitle>Project Changelog</ResponsiveModalTitle>
           </div>
         </ResponsiveModalHeader>
-        
+
         <ScrollArea className="h-[calc(100vh-150px)]">
           <div className="pr-4">
-            <ChainLogCard maxCommits={maxCommits} showTitle={false} />
+            {/* Only render the component when modal is open to prevent state conflicts */}
+            {isOpen && <ChainLogCard maxCommits={maxCommits} showTitle={false} />}
           </div>
         </ScrollArea>
       </ResponsiveModalContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import React from "react";
 import { GitCommit, GitBranch, ExternalLink, Loader2 } from "lucide-react";
 import { Timeline } from "../ui/timeline";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../ui/accordion";
@@ -40,7 +41,7 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
   const [commits, setCommits] = useState<Commit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
+  const [expandedAccordion, setExpandedAccordion] = useState<React.Key | null>(null);
   const [commitFiles, setCommitFiles] = useState<Record<string, CommitFile[]>>({});
   const [loadingFiles, setLoadingFiles] = useState<Record<string, boolean>>({});
 
@@ -49,6 +50,10 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
       try {
         setLoading(true);
         setError(null);
+        // Reset accordion state when fetching new commits
+        setExpandedAccordion(null);
+        setCommitFiles({});
+        setLoadingFiles({});
 
         // Use our API route instead of calling GitHub directly
         const response = await fetch(
@@ -97,11 +102,12 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
   }, [commitFiles, loadingFiles]);
   
   // Handle accordion value change
-  const handleAccordionChange = useCallback((value: string | null) => {
+  const handleAccordionChange = useCallback((value: React.Key | null) => {
     setExpandedAccordion(value);
     
     if (value) {
-      const [_, commitIndex] = value.split('-');
+      const valueStr = String(value);
+      const [_, commitIndex] = valueStr.split('-');
       const commit = commits[parseInt(commitIndex)];
       if (commit) {
         fetchCommitFiles(commit.sha);
@@ -175,62 +181,63 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
           </div>
           
           {/* File changes accordion */}
-          <Accordion 
-            className="mt-1" 
-            expandedValue={expandedAccordion}
-            onValueChange={handleAccordionChange}
-          >
-            <AccordionItem value={accordionId} className="border-none">
-              <AccordionTrigger className="px-2 py-1 text-xs rounded-md bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700">
-                <span className="flex gap-2 items-center">
-                  <span>Files changed {isExpanded && files.length > 0 ? `(${files.length})` : ''}</span>
-                  {isExpanded && files.length > 0 && (
-                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700">
-                      +{files.reduce((sum, file) => sum + (file.additions || 0), 0)}{" "}
-                      -{files.reduce((sum, file) => sum + (file.deletions || 0), 0)}
-                    </span>
-                  )}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="pt-2 pb-1">
-                {isLoading ? (
-                  <div className="flex justify-center items-center py-4">
-                    <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
-                    <span className="ml-2 text-xs text-gray-500">Loading file changes...</span>
-                  </div>
-                ) : files.length > 0 ? (
-                  <div className="overflow-y-auto p-1 space-y-2 max-h-40">
-                    {files.map((file, fileIndex) => (
-                      <div key={fileIndex} className="p-2 text-xs rounded-md bg-slate-50 dark:bg-slate-800">
-                        <div className="flex justify-between items-start">
-                          <span className="font-mono text-xs break-all">{file.filename}</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${getStatusColor(file.status)} bg-opacity-10`}>
-                            {file.status}
-                          </span>
+          <div className="mt-1">
+            <Accordion 
+              expandedValue={expandedAccordion}
+              onValueChange={handleAccordionChange}
+            >
+              <AccordionItem value={accordionId} className="border-none">
+                <AccordionTrigger className="px-2 py-1 text-xs rounded-md bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700">
+                  <span className="flex gap-2 items-center">
+                    <span>Files changed {isExpanded && files.length > 0 ? `(${files.length})` : ''}</span>
+                    {isExpanded && files.length > 0 && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700">
+                        +{files.reduce((sum, file) => sum + (file.additions || 0), 0)}{" "}
+                        -{files.reduce((sum, file) => sum + (file.deletions || 0), 0)}
+                      </span>
+                    )}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-1">
+                  {isLoading ? (
+                    <div className="flex justify-center items-center py-4">
+                      <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
+                      <span className="ml-2 text-xs text-gray-500">Loading file changes...</span>
+                    </div>
+                  ) : files.length > 0 ? (
+                    <div className="overflow-y-auto p-1 space-y-2 max-h-40">
+                      {files.map((file, fileIndex) => (
+                        <div key={`${commit.sha}-${fileIndex}`} className="p-2 text-xs rounded-md bg-slate-50 dark:bg-slate-800">
+                          <div className="flex justify-between items-start">
+                            <span className="font-mono text-xs break-all">{file.filename}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${getStatusColor(file.status)} bg-opacity-10`}>
+                              {file.status}
+                            </span>
+                          </div>
+                          {(file.additions > 0 || file.deletions > 0) && (
+                            <div className="flex gap-2 items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              <span className="text-green-500">+{file.additions}</span>
+                              <span className="text-red-500">-{file.deletions}</span>
+                              <span>({file.changes} changes)</span>
+                            </div>
+                          )}
+                          {file.patch && (
+                            <div className="overflow-x-auto p-1 mt-2 rounded bg-slate-100 dark:bg-slate-900">
+                              <pre className="text-xs font-mono whitespace-pre-wrap text-[10px]">{file.patch}</pre>
+                            </div>
+                          )}
                         </div>
-                        {(file.additions > 0 || file.deletions > 0) && (
-                          <div className="flex gap-2 items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            <span className="text-green-500">+{file.additions}</span>
-                            <span className="text-red-500">-{file.deletions}</span>
-                            <span>({file.changes} changes)</span>
-                          </div>
-                        )}
-                        {file.patch && (
-                          <div className="overflow-x-auto p-1 mt-2 rounded bg-slate-100 dark:bg-slate-900">
-                            <pre className="text-xs font-mono whitespace-pre-wrap text-[10px]">{file.patch}</pre>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-2 text-xs text-center text-gray-500">
-                    No file changes available for this commit.
-                  </div>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-2 text-xs text-center text-gray-500">
+                      No file changes available for this commit.
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
         </div>
       ),
     };
