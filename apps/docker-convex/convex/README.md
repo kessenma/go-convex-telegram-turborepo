@@ -20,7 +20,6 @@ The system is built around three main data entities:
 - **`threads.ts`** - Mutations and queries for thread management
 - **`documents.ts`** - Document management and RAG system operations
 - **`embeddings.ts`** - Vector embedding generation and similarity search
-- **`conversionJobs.ts`** - Background job tracking for conversions
 - **`requestLogs.ts`** - Request logging and statistics
 
 ### API Layer
@@ -34,7 +33,7 @@ Defines four main tables:
 - `telegram_messages`: Stores individual messages with user info, content, and thread references
 - `telegram_threads`: Manages conversation threads with metadata and message counts
 - `rag_documents`: Stores documents with vector embeddings for semantic search
-- `conversion_jobs`: Tracks background processing jobs
+
 
 Key indexes support efficient queries by chat, user, thread, timestamp, and vector similarity.
 

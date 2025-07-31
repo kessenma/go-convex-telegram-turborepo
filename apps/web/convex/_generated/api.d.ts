@@ -14,7 +14,6 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as api_ from "../api.js";
-import type * as conversionJobs from "../conversionJobs.js";
 import type * as crons from "../crons.js";
 import type * as documents from "../documents.js";
 import type * as embeddings from "../embeddings.js";
@@ -25,7 +24,6 @@ import type * as migrations from "../migrations.js";
 import type * as notifications from "../notifications.js";
 import type * as ragChat from "../ragChat.js";
 import type * as ragSearch from "../ragSearch.js";
-import type * as requestLogs from "../requestLogs.js";
 import type * as serviceStatus from "../serviceStatus.js";
 import type * as threads from "../threads.js";
 import type * as userSessions from "../userSessions.js";
@@ -40,7 +38,6 @@ import type * as userSessions from "../userSessions.js";
  */
 declare const fullApi: ApiFromModules<{
   api: typeof api_;
-  conversionJobs: typeof conversionJobs;
   crons: typeof crons;
   documents: typeof documents;
   embeddings: typeof embeddings;
@@ -51,7 +48,6 @@ declare const fullApi: ApiFromModules<{
   notifications: typeof notifications;
   ragChat: typeof ragChat;
   ragSearch: typeof ragSearch;
-  requestLogs: typeof requestLogs;
   serviceStatus: typeof serviceStatus;
   threads: typeof threads;
   userSessions: typeof userSessions;

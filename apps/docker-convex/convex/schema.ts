@@ -104,49 +104,7 @@ export default defineSchema({
     .index("by_active", ["isActive"])
     .index("by_chat_and_timestamp", ["chatId", "timestamp"]),
 
-  // Conversion jobs table - tracks LLM/embedding conversion history
-  conversion_jobs: defineTable({
-    jobId: v.string(), // Unique job identifier
-    jobType: v.string(), // "embedding", "similarity", "search", "chat"
-    status: v.string(), // "pending", "processing", "completed", "failed"
-    documentId: v.optional(v.id("rag_documents")), // Reference to document if applicable
-    inputText: v.optional(v.string()), // Input text for the job
-    outputData: v.optional(v.string()), // JSON string of output data
-    errorMessage: v.optional(v.string()), // Error message if job failed
-    processingTimeMs: v.optional(v.number()), // Time taken to process in milliseconds
-    llmModel: v.optional(v.string()), // Model used for processing
-    embeddingDimensions: v.optional(v.number()), // Dimensions of embedding if applicable
-    createdAt: v.number(), // When job was created
-    startedAt: v.optional(v.number()), // When job processing started
-    completedAt: v.optional(v.number()), // When job was completed
-    requestSource: v.optional(v.string()), // "web", "telegram", "api"
-    userId: v.optional(v.string()), // User who initiated the job
-  })
-    .index("by_status", ["status"])
-    .index("by_job_type", ["jobType"])
-    .index("by_document", ["documentId"])
-    .index("by_created_at", ["createdAt"])
-    .index("by_user", ["userId"])
-    .index("by_status_and_type", ["status", "jobType"])
-    .index("by_source", ["requestSource"]),
 
-  // Request logs table - tracks API requests for statistics
-  request_logs: defineTable({
-    endpoint: v.string(), // API endpoint that was called
-    method: v.string(), // HTTP method (GET, POST, etc.)
-    timestamp: v.number(), // Request timestamp
-    responseStatus: v.number(), // HTTP response status code
-    processingTimeMs: v.optional(v.number()), // Time taken to process request
-    userAgent: v.optional(v.string()), // User agent string
-    ipAddress: v.optional(v.string()), // Client IP address (if available)
-    requestSource: v.optional(v.string()), // "web", "telegram", "api", "health"
-    errorMessage: v.optional(v.string()), // Error message if request failed
-  })
-    .index("by_timestamp", ["timestamp"])
-    .index("by_endpoint", ["endpoint"])
-    .index("by_status", ["responseStatus"])
-    .index("by_source", ["requestSource"])
-    .index("by_endpoint_and_time", ["endpoint", "timestamp"]),
 
   // Notifications table - tracks user actions and system events
   notifications: defineTable({

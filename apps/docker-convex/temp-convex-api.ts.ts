@@ -31,65 +31,7 @@ export type PublicApiType = {
       any
     >;
   };
-  conversionJobs: {
-    createJob: FunctionReference<
-      "mutation",
-      "public",
-      {
-        createdAt: number;
-        documentId?: Id<"rag_documents">;
-        inputText?: string;
-        jobId: string;
-        jobType: string;
-        requestSource?: string;
-        status: string;
-        userId?: string;
-      },
-      any
-    >;
-    updateJobByJobId: FunctionReference<
-      "mutation",
-      "public",
-      {
-        completedAt?: number;
-        embeddingDimensions?: number;
-        errorMessage?: string;
-        jobId: string;
-        llmModel?: string;
-        outputData?: string;
-        processingTimeMs?: number;
-        startedAt?: number;
-        status?: string;
-      },
-      any
-    >;
-    getConversionJobs: FunctionReference<
-      "query",
-      "public",
-      {
-        documentId?: Id<"rag_documents">;
-        jobType?: string;
-        limit?: number;
-        page?: number;
-        status?: string;
-        userId?: string;
-      },
-      any
-    >;
-    getJobByJobId: FunctionReference<"query", "public", { jobId: string }, any>;
-    getJobStats: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      any
-    >;
-    getJobsByDocument: FunctionReference<
-      "query",
-      "public",
-      { documentId: Id<"rag_documents"> },
-      any
-    >;
-  };
+
   documents: {
     saveDocument: FunctionReference<
       "mutation",

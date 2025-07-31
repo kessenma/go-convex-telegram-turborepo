@@ -11,8 +11,7 @@ Extra Convex routes: 12
 
 MATCHED ROUTES:
 ---------------
-✅ /api/conversion-jobs
-✅ /api/conversion-jobs/stats
+
 ✅ /api/documents
 ✅ /api/documents/[id]
 ✅ /api/documents/stats

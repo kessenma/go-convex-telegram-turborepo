@@ -100,57 +100,9 @@ def log_llm_error(message):
         llm_error_logs.pop(0)
     save_llm_error_logs()
 
-def create_conversion_job(job_type, document_id=None, input_text=None, request_source="api"):
-    """Create a new conversion job in Convex"""
-    try:
-        convex_url = os.environ.get('CONVEX_URL')
-        if not convex_url:
-            return None
-            
-        job_id = str(uuid.uuid4())
-        job_data = {
-            'jobId': job_id,
-            'jobType': job_type,
-            'documentId': document_id,
-            'inputText': input_text,
-            'requestSource': request_source,
-        }
-        
-        response = requests.post(f"{convex_url}/api/conversion-jobs", json=job_data)
-        if response.status_code == 200:
-            return job_id
-        else:
-            logger.error(f"Failed to create conversion job: {response.status_code} - {response.text}")
-            return None
-    except Exception as e:
-        logger.error(f"Error creating conversion job: {e}")
-        return None
-
-def update_conversion_job(job_id, status, output_data=None, error_message=None, processing_time_ms=None):
-    """Update a conversion job status in Convex"""
-    try:
-        convex_url = os.environ.get('CONVEX_URL')
-        if not convex_url or not job_id:
-            return False
-            
-        update_data = {
-            'jobId': job_id,
-            'status': status,
-            'llmModel': 'all-MiniLM-L6-v2',
-        }
-        
-        if output_data is not None:
-            update_data['outputData'] = output_data
-        if error_message is not None:
-            update_data['errorMessage'] = error_message
-        if processing_time_ms is not None:
-            update_data['processingTimeMs'] = processing_time_ms
-            
-        response = requests.put(f"{convex_url}/api/conversion-jobs", json=update_data)
-        return response.status_code == 200
-    except Exception as e:
-        logger.error(f"Error updating conversion job: {e}")
-        return False
+# Conversion job functions removed as part of tech debt cleanup
+# These functions were previously used to track LLM/embedding conversion history
+# but are no longer needed as the conversion_jobs table has been removed
 
 def load_model():
     """Load the sentence transformer model"""
