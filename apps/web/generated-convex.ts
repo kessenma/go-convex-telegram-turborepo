@@ -171,6 +171,12 @@ export type PublicApiType = {
       Record<string, never>,
       any
     >;
+    getDocumentsByIds: FunctionReference<
+      "query",
+      "public",
+      { documentIds: Array<Id<"rag_documents">> },
+      any
+    >;
   };
   embeddings: {
     generateEmbedding: FunctionReference<

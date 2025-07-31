@@ -9,6 +9,7 @@ interface ParticlesBackgroundProps {
   animationEnabled?: boolean;
   meshCount?: number;
   selectedCount?: number;
+  errorMode?: boolean;
 }
 
 export function ParticlesBackground({
@@ -16,6 +17,7 @@ export function ParticlesBackground({
   animationEnabled = true,
   meshCount = 50,
   selectedCount = 0,
+  errorMode = false,
 }: ParticlesBackgroundProps): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<Renderer | null>(null);
@@ -64,12 +66,13 @@ export function ParticlesBackground({
     }
   `;
 
-  // Fragment shader with improved glow effect
+  // Fragment shader with improved glow effect and error mode support
   const fragment = `
     precision highp float;
 
     uniform float uOpacity;
     uniform float uGlow;
+    uniform float uErrorMode;
     varying vec3 vNormal;
     varying vec3 vPosition;
 
@@ -77,8 +80,10 @@ export function ParticlesBackground({
       vec3 normal = normalize(vNormal);
       float lighting = dot(normal, normalize(vec3(-0.5, 0.8, 0.6)));
       
-      // Base color with lighting - slightly brighter blue
-      vec3 baseColor = vec3(0.1, 0.35, 0.45) + lighting * 0.4;
+      // Base color with lighting - blue for normal, red for error
+      vec3 baseColorBlue = vec3(0.1, 0.35, 0.45) + lighting * 0.4;
+      vec3 baseColorRed = vec3(0.45, 0.1, 0.15) + lighting * 0.4;
+      vec3 baseColor = mix(baseColorBlue, baseColorRed, uErrorMode);
       
       // Calculate distance from center for inner glow effect
       float distFromCenter = length(vPosition) / 0.5; // Normalized by cube size
@@ -86,8 +91,10 @@ export function ParticlesBackground({
       // More pronounced inner glow with stronger falloff
       float innerGlow = pow(1.0 - distFromCenter, 2.0) * uGlow * 4.0;
       
-      // Brighter, more vibrant glow color
-      vec3 glowColor = vec3(0.3, 0.9, 1.0);
+      // Glow color - cyan for normal, red for error
+      vec3 glowColorBlue = vec3(0.3, 0.9, 1.0);
+      vec3 glowColorRed = vec3(1.0, 0.3, 0.4);
+      vec3 glowColor = mix(glowColorBlue, glowColorRed, uErrorMode);
       
       // Add glow effect with stronger mix
       vec3 finalColor = mix(baseColor, glowColor, innerGlow);
@@ -142,6 +149,7 @@ export function ParticlesBackground({
       uniforms: {
         uOpacity: { value: 1.0 },
         uGlow: { value: 0.0 },
+        uErrorMode: { value: errorMode ? 1.0 : 0.0 },
       },
     });
     programRef.current = program;
@@ -279,6 +287,7 @@ export function ParticlesBackground({
             value: isTransitioning && addedIndices.includes(i) ? 0.0 : 1.0,
           },
           uGlow: { value: 0.0 },
+          uErrorMode: { value: errorMode ? 1.0 : 0.0 },
         },
       });
 
@@ -352,7 +361,16 @@ export function ParticlesBackground({
         isTransitioning && addedIndices.includes(i) ? 0 : 1;
       fadeOpacityRef.current.push(initialOpacity);
     }
-  }, [meshCount, selectedCount]);
+  }, [meshCount, selectedCount, errorMode]);
+
+  // Update error mode on existing meshes
+  useEffect(() => {
+    meshesRef.current.forEach((mesh) => {
+      if (mesh.program?.uniforms.uErrorMode) {
+        mesh.program.uniforms.uErrorMode.value = errorMode ? 1.0 : 0.0;
+      }
+    });
+  }, [errorMode]);
 
   // Animation loop
   useEffect(() => {

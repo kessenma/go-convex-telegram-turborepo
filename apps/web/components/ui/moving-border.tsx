@@ -18,6 +18,7 @@ export function Button({
   borderClassName,
   duration,
   className,
+  disabled = false,
   ...otherProps
 }: {
   borderRadius?: string;
@@ -27,17 +28,20 @@ export function Button({
   borderClassName?: string;
   duration?: number;
   className?: string;
+  disabled?: boolean;
   [key: string]: any;
 }) {
   return (
     <Component
       className={cn(
-        "overflow-hidden relative w-40 h-16 text-xl bg-transparent p-[1px]",
+        "overflow-hidden relative w-40 h-16 text-xl bg-transparent p-[1px] group",
+        disabled && "cursor-not-allowed opacity-75",
         containerClassName
       )}
       style={{
         borderRadius: borderRadius,
       }}
+      disabled={disabled}
       {...otherProps}
     >
       <div
@@ -56,14 +60,21 @@ export function Button({
 
       <div
         className={cn(
-          "relative flex h-full w-full items-center justify-center border border-slate-800 bg-slate-900/[0.8] text-sm text-white antialiased backdrop-blur-xl",
+          "relative flex h-full w-full items-center justify-center border border-slate-800 bg-slate-900/[0.8] text-sm text-white antialiased backdrop-blur-xl transition-all duration-300",
+          !disabled && "group-hover:border-slate-600 group-hover:shadow-lg group-hover:shadow-current/20",
           className
         )}
         style={{
           borderRadius: `calc(${borderRadius} * 0.96)`,
         }}
       >
-        {children}
+        {/* Expanding border effect on hover - only when not disabled */}
+        {!disabled && (
+          <div className="absolute inset-0 rounded-[inherit] border-2 border-transparent bg-gradient-to-r from-transparent via-current/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" />
+        )}
+        <div className="relative z-10">
+          {children}
+        </div>
       </div>
     </Component>
   );

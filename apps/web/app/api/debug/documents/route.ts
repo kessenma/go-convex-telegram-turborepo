@@ -16,8 +16,8 @@ export async function GET() {
     });
     console.log("Documents response:", documents);
 
-    // Handle different response structures
-    const documentsList = documents.documents || documents || [];
+    // Handle paginated response structure
+    const documentsList = documents?.page || [];
     console.log("Found documents:", documentsList.length);
 
     // Check embeddings for each document

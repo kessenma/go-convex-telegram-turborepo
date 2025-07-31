@@ -82,7 +82,12 @@ export function ChatHistory(): React.ReactElement {
   const getConversationTitle = (conversation: ChatConversation) => {
     if (conversation.title) return conversation.title;
     if (conversation.documents && conversation.documents.length > 0) {
-      return `Chat with ${conversation.documents.map((d) => d.title).join(", ")}`;
+      const documentTitles = conversation.documents
+        .filter((d) => d && d.title) // Filter out undefined documents or documents without titles
+        .map((d) => d.title);
+      if (documentTitles.length > 0) {
+        return `Chat with ${documentTitles.join(", ")}`;
+      }
     }
     return "Untitled Conversation";
   };

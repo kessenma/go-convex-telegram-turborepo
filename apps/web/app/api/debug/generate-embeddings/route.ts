@@ -14,11 +14,11 @@ export async function POST() {
       limit: 10,
     });
 
-    console.log("Found documents:", documents.documents.length);
+    console.log("Found documents:", documents?.page?.length || 0);
 
     const results: any[] = [];
 
-    for (const doc of documents.documents) {
+    for (const doc of documents?.page || []) {
       try {
         // Check if document already has embeddings
         const existingEmbeddings = await convex.query(

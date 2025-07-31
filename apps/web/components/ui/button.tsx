@@ -15,13 +15,13 @@ interface ButtonProps {
 
 const buttonVariants = {
   primary:
-    "bg-gradient-to-br from-cyan-300 to-cyan-800 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5",
+    "relative overflow-hidden bg-gradient-to-br from-cyan-400/80 to-cyan-800/80 backdrop-blur-md text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 hover:from-cyan-300/90 hover:to-cyan-700/90 border border-cyan-500/20 hover:border-cyan-400/40 group",
   secondary:
-    "bg-white/25 border border-gray-200/25 text-gray-900 hover:bg-gray-50/25 hover:border-cyan-500/25 hover:-translate-y-0.5 dark:bg-gray-900/25 dark:border-gray-700/25 dark:text-white dark:hover:bg-gray-800/25 backdrop-blur-sm",
+    "relative overflow-hidden bg-slate-800/40 border border-slate-600/30 text-slate-200 hover:bg-slate-700/50 hover:border-slate-500/50 hover:-translate-y-0.5 backdrop-blur-md transition-all duration-300 group",
   tertiary:
-    "bg-black text-cyan-900 hover:bg-cyan-50/25 hover:-translate-y-0.5 dark:bg-gray-900/40 dark:text-white dark:hover:bg-gray-800/50 backdrop-blur-sm",
+    "relative overflow-hidden bg-slate-900/40 text-white hover:bg-slate-800/50 hover:-translate-y-0.5 backdrop-blur-md border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 group",
   skewed:
-    "bg-slate-950 text-white -skew-x-12 border border-b-[3px] border-white hover:-translate-y-0.5 transform transition-all duration-200",
+    "relative overflow-hidden bg-slate-950/80 text-white -skew-x-12 border border-b-[3px] border-white/80 hover:-translate-y-0.5 transform transition-all duration-200 backdrop-blur-md group",
 };
 
 const buttonSizes = {
@@ -54,13 +54,21 @@ export const Button = ({
     return React.createElement(
       Link as any,
       { href, className: baseClasses },
-      <span className={contentClasses}>{children}</span>
+      <>
+        {/* Expanding border effect on hover */}
+        <div className="absolute inset-0 rounded-[inherit] border-2 border-transparent bg-gradient-to-r from-transparent via-current/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" />
+        <span className={cn("relative z-10", contentClasses)}>{children}</span>
+      </>
     );
   }
 
   return (
     <button className={baseClasses} onClick={onClick} disabled={disabled}>
-      <span className={contentClasses}>{children}</span>
+      {/* Expanding border effect on hover */}
+      {!disabled && (
+        <div className="absolute inset-0 rounded-[inherit] border-2 border-transparent bg-gradient-to-r from-transparent via-current/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" />
+      )}
+      <span className={cn("relative z-10", contentClasses)}>{children}</span>
     </button>
   );
 };

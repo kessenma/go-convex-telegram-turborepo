@@ -69,25 +69,26 @@ export function DocumentSelector({
           </div>
         </div>
         {/* Action buttons */}
-          <div className="flex flex-col gap-4 justify-center items-center sm:flex-row">
-            <MovingButton
-              onClick={navigateToHistory}
-              className="w-full text-white backdrop-blur-md bg-slate-900/80 sm:w-auto"
-              containerClassName="w-full sm:w-auto min-w-[180px]"
-              borderClassName="bg-[radial-gradient(#64748b_40%,#475569_60%,transparent_80%)]"
-            >
-              <span className="flex gap-2 justify-center items-center">
-                {renderIcon(FileText, { className: "w-4 h-4" })}
-                <span className="hidden sm:inline">View History</span>
-                <span className="sm:hidden">History</span>
-              </span>
-            </MovingButton>
+        <div className="flex gap-3 justify-center items-center sm:gap-4">
+          <MovingButton
+            onClick={navigateToHistory}
+            className="flex-1 text-white backdrop-blur-md bg-slate-900/40 sm:w-auto sm:flex-initial"
+            containerClassName="flex-1 sm:w-auto sm:flex-initial min-w-[120px] sm:min-w-[180px]"
+            borderClassName="bg-[radial-gradient(#64748b_40%,#475569_60%,transparent_80%)]"
+          >
+            <span className="flex gap-2 justify-center items-center">
+              {renderIcon(FileText, { className: "w-4 h-4" })}
+              <span className="hidden sm:inline">View History</span>
+              <span className="sm:hidden">History</span>
+            </span>
+          </MovingButton>
 
-            {selectedDocuments.length > 0 ? (
+          {selectedDocuments.length > 0 ? (
+            <div className="flex-1 sm:w-auto sm:flex-initial min-w-[140px] sm:min-w-[200px] group">
               <MovingButton
                 onClick={handleStartChatClick}
-                className="w-full text-white backdrop-blur-md bg-slate-900/80 sm:w-auto"
-                containerClassName="w-full sm:w-auto min-w-[200px]"
+                className="w-full text-white backdrop-blur-md bg-slate-900/40 hover:bg-slate-800/60 transition-all duration-300"
+                containerClassName="w-full"
                 borderClassName="bg-[radial-gradient(#06b6d4_40%,#0ea5e9_60%,transparent_80%)]"
               >
                 <span className="flex gap-2 justify-center items-center">
@@ -96,17 +97,25 @@ export function DocumentSelector({
                   <span className="sm:hidden">Chat ({selectedDocuments.length})</span>
                 </span>
               </MovingButton>
-            ) : (
+            </div>
+          ) : (
+            <div className="flex-1 sm:w-auto sm:flex-initial min-w-[140px] sm:min-w-[200px]">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    className="flex gap-2 items-center justify-center px-6 py-3 text-slate-500 rounded-2xl border border-slate-600/30 transition-colors bg-slate-800/30 backdrop-blur-md cursor-not-allowed w-full sm:w-auto min-w-[200px]"
-                    disabled
-                  >
-                    {renderIcon(BotMessageSquare, { className: "w-4 h-4" })}
-                    <span className="hidden sm:inline">Start Chat (0 selected)</span>
-                    <span className="sm:hidden">Chat (0)</span>
-                  </button>
+                  <div className="w-full">
+                    <MovingButton
+                      className="w-full text-slate-500 backdrop-blur-md bg-slate-800/20 cursor-not-allowed"
+                      containerClassName="w-full"
+                      borderClassName="bg-[radial-gradient(#64748b_20%,#475569_40%,transparent_60%)]"
+                      disabled
+                    >
+                      <span className="flex gap-2 justify-center items-center">
+                        {renderIcon(BotMessageSquare, { className: "w-4 h-4" })}
+                        <span className="hidden sm:inline">Start Chat (0 selected)</span>
+                        <span className="sm:hidden">Chat (0)</span>
+                      </span>
+                    </MovingButton>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="top"
@@ -115,14 +124,15 @@ export function DocumentSelector({
                   <p>Please select at least one document to start chatting</p>
                 </TooltipContent>
               </Tooltip>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {filteredDocuments.length > 0 ? (
         <div className="space-y-6">
-          <div className="w-full max-h-[600px] overflow-y-auto border border-slate-600/30 rounded-2xl bg-slate-800/20 backdrop-blur-md">
-            <div className="p-4 space-y-4 w-full pb-16">
+          <div className="w-full max-h-[600px] overflow-y-auto border border-slate-600/30 rounded-2xl bg-gradient-to-br from-slate-800/20 via-slate-900/30 to-slate-800/20 backdrop-blur-md">
+            <div className="p-4 pb-16 space-y-4 w-full">
               {filteredDocuments.map((doc) => {
                 const isSelected = selectedDocuments.includes(doc._id);
                 const canSelect = isSelected || selectedDocuments.length < 3;
@@ -131,10 +141,10 @@ export function DocumentSelector({
                   <div
                     key={doc._id}
                     className={`w-full p-3 sm:p-4 cursor-pointer transition-all duration-300 rounded-2xl backdrop-blur-md ${isSelected
-                      ? "border shadow-lg bg-cyan-500/10 border-cyan-400/30 shadow-cyan-500/20"
+                      ? "border shadow-lg bg-gradient-to-br from-cyan-500/10 via-cyan-400/15 to-cyan-500/10 border-cyan-400/30 shadow-cyan-500/20"
                       : canSelect
-                        ? "border bg-slate-800/40 border-slate-600/30 hover:bg-slate-700/50 hover:border-slate-500/50"
-                        : "border cursor-not-allowed bg-slate-800/20 border-slate-700/20"
+                        ? "border bg-gradient-to-br from-slate-800/30 via-slate-700/40 to-slate-800/30 border-slate-600/30 hover:from-slate-700/40 hover:via-slate-600/50 hover:to-slate-700/40 hover:border-slate-500/50"
+                        : "border cursor-not-allowed bg-gradient-to-br from-slate-800/15 via-slate-900/20 to-slate-800/15 border-slate-700/20"
                       } ${!canSelect ? "opacity-50" : ""}`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -214,7 +224,7 @@ export function DocumentSelector({
           </div>
         </div>
       ) : (
-        <div className="p-8 w-full text-center rounded-2xl border backdrop-blur-md bg-slate-900/60 border-cyan-500/20">
+        <div className="p-8 w-full text-center rounded-2xl border backdrop-blur-md bg-gradient-to-br from-slate-900/40 via-slate-800/60 to-slate-900/40 border-cyan-500/20">
           <div className="mb-6">
             {renderIcon(FileText, {
               className: "mx-auto w-16 h-16 text-cyan-400",
@@ -229,7 +239,7 @@ export function DocumentSelector({
           </p>
           <MovingButton
             onClick={() => (window.location.href = "/RAG-upload")}
-            className="w-full text-white backdrop-blur-md bg-slate-900/80 sm:w-auto"
+            className="w-full text-white backdrop-blur-md bg-slate-900/40 sm:w-auto hover:bg-slate-800/60 transition-all duration-300"
             containerClassName="w-full sm:w-auto min-w-[180px]"
             borderClassName="bg-[radial-gradient(#06b6d4_40%,#0ea5e9_60%,transparent_80%)]"
           >

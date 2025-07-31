@@ -136,7 +136,10 @@ const DocumentHistory = memo(function DocumentHistory({
                   
                   {conversation.documentTitles && conversation.documentTitles.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {conversation.documentTitles.slice(0, 3).map((title: string, index: number) => (
+                      {conversation.documentTitles
+                        .filter((title: string) => title && typeof title === 'string') // Filter out undefined/null titles
+                        .slice(0, 3)
+                        .map((title: string, index: number) => (
                         <span 
                           key={index}
                           className="inline-flex items-center gap-1 px-2 py-1 bg-slate-700/60 text-xs text-cyan-300 rounded-md border border-slate-600/40"
@@ -145,9 +148,9 @@ const DocumentHistory = memo(function DocumentHistory({
                           {title.length > 20 ? `${title.slice(0, 20)}...` : title}
                         </span>
                       ))}
-                      {conversation.documentTitles.length > 3 && (
+                      {conversation.documentTitles.filter((title: string) => title && typeof title === 'string').length > 3 && (
                         <span className="inline-flex items-center px-2 py-1 bg-slate-700/60 text-xs text-cyan-300/70 rounded-md border border-slate-600/40">
-                          +{conversation.documentTitles.length - 3} more
+                          +{conversation.documentTitles.filter((title: string) => title && typeof title === 'string').length - 3} more
                         </span>
                       )}
                     </div>

@@ -22,10 +22,24 @@ export async function GET(request: NextRequest) {
     console.log(`🔍 Vector search request: "${query}" (limit: ${limit})`);
 
     // Use Convex client to call vector search action
-    const searchResults = await convex.action(api.embeddings.searchDocumentsByVector, {
-      queryText: query,
-      limit,
+    // Use the Convex HTTP endpoint for vector search
+    const convexUrl = process.env.CONVEX_URL || 'http://localhost:3211';
+    const response = await fetch(`${convexUrl}/api/embeddings/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+         queryText: query,
+         limit,
+       }),
     });
+    
+    if (!response.ok) {
+      throw new Error(`Convex search failed: ${response.statusText}`);
+    }
+    
+    const searchResults = await response.json();
 
     console.log(`✅ Vector search found ${searchResults.length} results`);
 
@@ -85,11 +99,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Use Convex client to call vector search action
-    const searchResults = await convex.action(api.embeddings.searchDocumentsByVector, {
-      queryText: query,
-      limit,
-      documentIds,
-    });
+    // Use the Convex HTTP endpoint for vector search
+    const convexUrl = process.env.CONVEX_URL || 'http://localhost:3211';
+    const searchUrl = `${convexUrl}/api/embeddings/search?queryText=${encodeURIComponent(query)}&limit=${limit}`;
+    
+    const response = await fetch(searchUrl);
+    if (!response.ok) {
+      throw new Error(`Convex search failed: ${response.statusText}`);
+    }
+    
+    const searchResults = await response.json();
 
     console.log(`✅ Vector search found ${searchResults.length} results`);
 

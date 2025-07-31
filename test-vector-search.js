@@ -2,115 +2,54 @@
 
 const fetch = require('node-fetch');
 
-const CONVEX_URL = 'http://localhost:3211';
-const VECTOR_SERVICE_URL = 'http://localhost:7999';
-
 async function testVectorSearch() {
-  console.log('🔍 Testing Vector Search Pipeline...\n');
-
-  // Step 1: Test embedding generation
-  console.log('1. Testing embedding generation...');
-  const query = "what is step 4?";
-  
-  const embedResponse = await fetch(`${VECTOR_SERVICE_URL}/embed`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: query })
-  });
-  
-  if (!embedResponse.ok) {
-    console.log('❌ Embedding generation failed');
-    return;
-  }
-  
-  const embedResult = await embedResponse.json();
-  console.log('✅ Query embedding generated:', embedResult.dimension, 'dimensions');
-  
-  // Step 2: Check document embeddings
-  console.log('\n2. Checking document embeddings...');
-  const docId = 'j97dw637safb3qwqk99sq3e51h7m0g9m';
+  console.log('🔍 Testing Vector Search API...');
   
   try {
-    const embeddingsResponse = await fetch(`${CONVEX_URL}/http/api/embeddings/document/${docId}`);
-    if (embeddingsResponse.ok) {
-      const embeddings = await embeddingsResponse.json();
-      console.log('✅ Found', embeddings.length, 'embeddings for document');
-      
-      if (embeddings.length > 0) {
-        const embedding = embeddings[0];
-        console.log('   - Dimension:', embedding.embeddingDimensions);
-        console.log('   - Model:', embedding.embeddingModel);
-        console.log('   - Has chunk:', !!embedding.chunkText);
-      }
-    } else {
-      console.log('❌ Failed to fetch document embeddings:', embeddingsResponse.status);
-    }
-  } catch (error) {
-    console.log('❌ Error fetching embeddings:', error.message);
-  }
-  
-  // Step 3: Test direct vector search via Convex HTTP
-  console.log('\n3. Testing direct vector search...');
-  try {
-    const searchResponse = await fetch(`${CONVEX_URL}/http/api/embeddings/search`, {
+    // Test 1: GET request
+    console.log('\n1. Testing GET request...');
+    const getResponse = await fetch('http://localhost:3000/api/RAG/search?q=test&limit=5');
+    const getData = await getResponse.text();
+    console.log('GET Response Status:', getResponse.status);
+    console.log('GET Response:', getData.substring(0, 500));
+    
+    // Test 2: POST request
+    console.log('\n2. Testing POST request...');
+    const postResponse = await fetch('http://localhost:3000/api/RAG/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        queryText: query,
-        limit: 5,
-        documentIds: [docId]
+        query: 'test document',
+        limit: 5
       })
     });
     
-    if (searchResponse.ok) {
-      const searchResults = await searchResponse.json();
-      console.log('✅ Vector search returned', searchResults.length, 'results');
-      
-      if (searchResults.length > 0) {
-        const result = searchResults[0];
-        console.log('   - Score:', result._score?.toFixed(3));
-        console.log('   - Document:', result.document?.title);
-        console.log('   - Snippet:', result.chunkText?.substring(0, 100) || 'No chunk text');
-      }
-    } else {
-      const errorText = await searchResponse.text();
-      console.log('❌ Vector search failed:', searchResponse.status);
-      console.log('   Error:', errorText);
-    }
-  } catch (error) {
-    console.log('❌ Vector search error:', error.message);
-  }
-  
-  // Step 4: Test via Web API
-  console.log('\n4. Testing via Web API...');
-  try {
-    const webResponse = await fetch('http://localhost:3000/api/RAG/chat', {
+    const postData = await postResponse.text();
+    console.log('POST Response Status:', postResponse.status);
+    console.log('POST Response:', postData.substring(0, 500));
+    
+    // Test 3: Check Convex backend directly
+    console.log('\n3. Testing Convex backend connection...');
+    const convexResponse = await fetch('http://localhost:3211/api/embeddings/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        message: query,
-        documentIds: [docId],
-        conversationHistory: []
+        queryText: 'test',
+        limit: 5
       })
     });
     
-    if (webResponse.ok) {
-      const webResult = await webResponse.json();
-      console.log('✅ Web API response received');
-      console.log('   - Response:', webResult.response?.substring(0, 100) + '...');
-      console.log('   - Sources:', webResult.sources?.length || 0);
-      
-      if (webResult.sources && webResult.sources.length > 0) {
-        const source = webResult.sources[0];
-        console.log('   - Top source score:', (source.score * 100).toFixed(1) + '%');
-        console.log('   - Is chunk result:', source.isChunkResult || false);
-      }
-    } else {
-      console.log('❌ Web API failed:', webResponse.status);
-    }
+    const convexData = await convexResponse.text();
+    console.log('Convex Response Status:', convexResponse.status);
+    console.log('Convex Response:', convexData.substring(0, 500));
+    
   } catch (error) {
-    console.log('❌ Web API error:', error.message);
+    console.error('❌ Error testing vector search:', error.message);
   }
 }
 
-testVectorSearch().catch(console.error);
+testVectorSearch();

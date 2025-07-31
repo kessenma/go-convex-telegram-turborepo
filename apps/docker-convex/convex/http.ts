@@ -657,6 +657,38 @@ export const getDocumentByIdAPI = httpAction(async (ctx, request) => {
   }
 });
 
+export const getDocumentsByIdsAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { documentIds } = body;
+    
+    if (!documentIds || !Array.isArray(documentIds)) {
+      return errorResponse("Missing or invalid documentIds array", 400);
+    }
+    
+    const documents = await ctx.runQuery(api.documents.getDocumentsByIds, { 
+      documentIds: documentIds as Id<"rag_documents">[] 
+    });
+    
+    return new Response(JSON.stringify({
+      success: true,
+      documents,
+      count: documents.length
+    }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return errorResponse("Internal server error", 500, message);
+  }
+});
+
 export const deleteDocumentAPI = httpAction(async (ctx, request) => {
   try {
     const url = new URL(request.url);
@@ -1523,6 +1555,400 @@ export const getUserSessionStatsAPI = httpAction(async (ctx, request) => {
 });
 
 // =============================================================================
+// RAG CHAT API ENDPOINTS
+// =============================================================================
+
+// Get conversation by session ID
+export const getConversationBySessionIdAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const sessionId = url.searchParams.get("sessionId");
+    
+    if (!sessionId) {
+      return errorResponse("Missing sessionId parameter", 400);
+    }
+    
+    const conversation = await ctx.runQuery(api.ragChat.getConversationBySessionId, { sessionId });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        conversation
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching conversation by session ID:", error);
+    return errorResponse(
+      "Failed to fetch conversation",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Get conversation messages
+export const getConversationMessagesAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const conversationId = url.searchParams.get("conversationId");
+    const limit = url.searchParams.get("limit");
+    
+    if (!conversationId) {
+      return errorResponse("Missing conversationId parameter", 400);
+    }
+    
+    const messages = await ctx.runQuery(api.ragChat.getConversationMessages, {
+      conversationId: conversationId as Id<"rag_conversations">,
+      limit: limit ? parseInt(limit) : undefined
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        messages,
+        count: messages.length
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching conversation messages:", error);
+    return errorResponse(
+      "Failed to fetch conversation messages",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Get recent conversations
+export const getRecentConversationsAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const limit = url.searchParams.get("limit");
+    const userId = url.searchParams.get("userId");
+    
+    const conversations = await ctx.runQuery(api.ragChat.getRecentConversations, {
+      limit: limit ? parseInt(limit) : undefined,
+      userId: userId || undefined
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        conversations,
+        count: conversations.length
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching recent conversations:", error);
+    return errorResponse(
+      "Failed to fetch recent conversations",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Create new conversation
+export const createConversationAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const {
+      sessionId,
+      documentIds,
+      title,
+      userId,
+      userAgent,
+      ipAddress,
+      llmModel
+    } = body;
+    
+    if (!sessionId || !documentIds || !llmModel) {
+      return errorResponse("Missing required fields: sessionId, documentIds, llmModel", 400);
+    }
+    
+    const conversationId = await ctx.runMutation(api.ragChat.createConversation, {
+      sessionId,
+      documentIds: documentIds as Id<"rag_documents">[],
+      title,
+      userId,
+      userAgent,
+      ipAddress,
+      llmModel
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        conversationId,
+        message: "Conversation created successfully"
+      }),
+      {
+        status: 201,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+    return errorResponse(
+      "Failed to create conversation",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Add message to conversation
+export const addMessageToConversationAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const {
+      conversationId,
+      messageId,
+      role,
+      content,
+      tokenCount,
+      processingTimeMs,
+      sources,
+      metadata
+    } = body;
+    
+    if (!conversationId || !messageId || !role || !content) {
+      return errorResponse("Missing required fields: conversationId, messageId, role, content", 400);
+    }
+    
+    const messageDocId = await ctx.runMutation(api.ragChat.addMessage, {
+      conversationId: conversationId as Id<"rag_conversations">,
+      messageId,
+      role,
+      content,
+      tokenCount,
+      processingTimeMs,
+      sources,
+      metadata
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        messageId: messageDocId,
+        message: "Message added successfully"
+      }),
+      {
+        status: 201,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error adding message to conversation:", error);
+    return errorResponse(
+      "Failed to add message",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Update conversation title
+export const updateConversationTitleAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { conversationId, title } = body;
+    
+    if (!conversationId || !title) {
+      return errorResponse("Missing required fields: conversationId, title", 400);
+    }
+    
+    await ctx.runMutation(api.ragChat.updateConversationTitle, {
+      conversationId: conversationId as Id<"rag_conversations">,
+      title
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Conversation title updated successfully"
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "PUT, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error updating conversation title:", error);
+    return errorResponse(
+      "Failed to update conversation title",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Deactivate conversation
+export const deactivateConversationAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { conversationId } = body;
+    
+    if (!conversationId) {
+      return errorResponse("Missing required field: conversationId", 400);
+    }
+    
+    await ctx.runMutation(api.ragChat.deactivateConversation, {
+      conversationId: conversationId as Id<"rag_conversations">
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Conversation deactivated successfully"
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error deactivating conversation:", error);
+    return errorResponse(
+      "Failed to deactivate conversation",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Search conversations
+export const searchConversationsAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const searchTerm = url.searchParams.get("searchTerm") || url.searchParams.get("q");
+    const limit = url.searchParams.get("limit");
+    const userId = url.searchParams.get("userId");
+    
+    if (!searchTerm) {
+      return errorResponse("Missing searchTerm parameter", 400);
+    }
+    
+    const conversations = await ctx.runQuery(api.ragChat.searchConversations, {
+      searchTerm,
+      limit: limit ? parseInt(limit) : undefined,
+      userId: userId || undefined
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        conversations,
+        count: conversations.length,
+        searchTerm
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error searching conversations:", error);
+    return errorResponse(
+      "Failed to search conversations",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Get conversation statistics
+export const getConversationStatsAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const conversationId = url.searchParams.get("conversationId");
+    
+    if (!conversationId) {
+      return errorResponse("Missing conversationId parameter", 400);
+    }
+    
+    const stats = await ctx.runQuery(api.ragChat.getConversationStats, {
+      conversationId: conversationId as Id<"rag_conversations">
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        stats
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching conversation stats:", error);
+    return errorResponse(
+      "Failed to fetch conversation stats",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// =============================================================================
 // HTTP ROUTER CONFIGURATION
 // =============================================================================
 
@@ -1637,6 +2063,12 @@ http.route({
 });
 
 http.route({
+  path: "/api/documents/by-ids",
+  method: "POST",
+  handler: getDocumentsByIdsAPI,
+});
+
+http.route({
   path: "/api/documents/stats",
   method: "GET",
   handler: getDocumentStatsAPI,
@@ -1664,6 +2096,12 @@ http.route({
 http.route({
   path: "/api/embeddings/search",
   method: "POST",
+  handler: searchDocumentsVectorAPI,
+});
+
+http.route({
+  path: "/api/embeddings/search",
+  method: "GET",
   handler: searchDocumentsVectorAPI,
 });
 
@@ -1758,6 +2196,61 @@ http.route({
   path: "/api/notifications/mark-all-read",
   method: "PUT",
   handler: markAllNotificationsAsReadAPI,
+});
+
+// RAG CHAT API ENDPOINTS
+http.route({
+  path: "/api/rag-chat/conversations/recent",
+  method: "GET",
+  handler: getRecentConversationsAPI,
+});
+
+http.route({
+  path: "/api/rag-chat/conversations/by-session",
+  method: "GET",
+  handler: getConversationBySessionIdAPI,
+});
+
+http.route({
+  path: "/api/rag-chat/conversations",
+  method: "POST",
+  handler: createConversationAPI,
+});
+
+http.route({
+  path: "/api/rag-chat/conversations/title",
+  method: "PUT",
+  handler: updateConversationTitleAPI,
+});
+
+http.route({
+  path: "/api/rag-chat/conversations/deactivate",
+  method: "DELETE",
+  handler: deactivateConversationAPI,
+});
+
+http.route({
+  path: "/api/rag-chat/conversations/search",
+  method: "GET",
+  handler: searchConversationsAPI,
+});
+
+http.route({
+  path: "/api/rag-chat/conversations/stats",
+  method: "GET",
+  handler: getConversationStatsAPI,
+});
+
+http.route({
+  path: "/api/rag-chat/messages",
+  method: "GET",
+  handler: getConversationMessagesAPI,
+});
+
+http.route({
+  path: "/api/rag-chat/messages",
+  method: "POST",
+  handler: addMessageToConversationAPI,
 });
 
 // PARAMETERIZED ROUTES (Must be placed last to avoid conflicts)

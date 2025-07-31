@@ -71,9 +71,11 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
   // Get state and actions from Zustand store
   const {
     selectedDocumentObjects: selectedDocuments,
+    selectedDocuments: selectedDocumentIds,
     currentSessionId: sessionId,
     navigateToSelection,
-    navigateToHistory
+    navigateToHistory,
+    setSelectedDocumentObjects
   } = useRagChatStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -83,6 +85,11 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+
+  // Reset carousel index when documents change
+  useEffect(() => {
+    setCarouselIndex(0);
+  }, [selectedDocuments]);
 
   // Rotate through document titles in carousel
   useEffect(() => {
@@ -101,11 +108,19 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
   // Convex queries and mutations
   const existingConversation = useQuery(
     api.ragChat.getConversationBySessionId,
-    { sessionId }
+    sessionId ? { sessionId } : "skip"
   );
   const conversationMessages = useQuery(
     api.ragChat.getConversationMessages,
     conversationId ? { conversationId } : "skip"
+  );
+  
+  // Fetch full document objects when document IDs are available
+  const fullDocuments = useQuery(
+    api.documents.getDocumentsByIds,
+    selectedDocumentIds && selectedDocumentIds.length > 0 
+      ? { documentIds: selectedDocumentIds as Id<"rag_documents">[] } 
+      : "skip"
   );
   const createConversation = useMutation(api.ragChat.createConversation);
   const addMessage = useMutation(api.ragChat.addMessage);
@@ -117,6 +132,15 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
       setConversationId(existingConversation._id as Id<"rag_conversations">);
     }
   }, [existingConversation]);
+
+  // Update selected document objects when full documents are loaded
+  useEffect(() => {
+    if (fullDocuments && selectedDocumentIds && selectedDocumentIds.length > 0) {
+      setSelectedDocumentObjects(fullDocuments as any[]);
+    } else {
+      setSelectedDocumentObjects([]);
+    }
+  }, [fullDocuments, selectedDocumentIds, setSelectedDocumentObjects]);
 
   // Load existing messages when conversation is found
   useEffect(() => {
@@ -276,9 +300,9 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
   return (
     <>
       <BackgroundGradient color="cyan" containerClassName="w-full" tronMode={true} intensity="normal">
-        <div className="flex flex-col h-[calc(100vh-2rem)] md:h-[700px] bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-cyan-500/20 shadow-2xl shadow-cyan-500/10 overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-2rem)] md:h-[700px] bg-gradient-to-br from-slate-800/40 via-slate-900/60 to-slate-800/40 backdrop-blur-xl rounded-3xl border border-cyan-500/20 shadow-2xl shadow-cyan-500/10 overflow-hidden">
           {/* Tron-inspired header */}
-          <div className="relative border-b backdrop-blur-md border-cyan-500/30 bg-slate-800/60">
+          <div className="relative border-b backdrop-blur-md border-cyan-500/30 bg-gradient-to-r from-slate-800/40 via-slate-700/60 to-slate-800/40">
             {/* Animated accent line */}
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
 
@@ -291,7 +315,7 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                     <BackgroundGradient color="cyan" containerClassName="p-0" tronMode={true} intensity="subtle">
                       <button
                         onClick={navigateToSelection}
-                        className="relative p-2.5 sm:p-3 text-cyan-300 rounded-2xl border backdrop-blur-md transition-all duration-300 group hover:text-cyan-100 bg-slate-800/60 border-cyan-500/20 hover:border-cyan-400/40"
+                        className="relative p-2.5 sm:p-3 text-cyan-300 rounded-2xl border backdrop-blur-md transition-all duration-300 group hover:text-cyan-100 bg-slate-800/30 border-cyan-500/20 hover:border-cyan-400/40 hover:bg-slate-700/40"
                       >
                         {renderIcon(ArrowLeft, { className: "w-4 h-4 sm:w-5 sm:h-5" })}
                       </button>
@@ -310,15 +334,17 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                   onValueChange={(value) => setAccordionOpen(value === "context")}
                 >
                   <AccordionItem value="context" className="border-none">
-                    <AccordionTrigger className="px-2 py-1.5 sm:px-3 sm:py-2 rounded-2xl border backdrop-blur-md transition-all duration-300 hover:no-underline bg-slate-800/40 border-cyan-500/20 hover:border-cyan-400/40 w-full">
+                    <AccordionTrigger className="px-2 py-1.5 sm:px-3 sm:py-2 rounded-2xl border backdrop-blur-md transition-all duration-300 hover:no-underline bg-slate-800/20 border-cyan-500/20 hover:border-cyan-400/40 hover:bg-slate-700/30 w-full">
                       <div className="flex flex-1 gap-2 items-center min-w-0 sm:gap-3">
-                        <div className="flex flex-shrink-0 justify-center items-center w-6 h-6 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl sm:w-7 sm:h-7">
-                          {renderIcon(TextSearch, { className: "w-3 h-3 sm:w-4 sm:h-4 text-white" })}
+                        <div className="flex flex-shrink-0 justify-center items-center w-6 h-6 rounded-xl sm:w-7 sm:h-7">
+                          {renderIcon(TextSearch, { className: "w-3 h-3 sm:w-5 sm:h-5 text-white" })}
                         </div>
                         <div className="flex-1 min-w-0 text-left">
                           <h2 className="text-xs font-bold text-cyan-100 truncate sm:text-sm">
-                            {selectedDocuments.length === 1 ? (
+                            {selectedDocuments.length === 1 && selectedDocuments[0]?.title ? (
                               `Chatting with: ${selectedDocuments[0].title}`
+                            ) : selectedDocuments.length === 1 ? (
+                              "Chatting with: Loading..."
                             ) : (
                               <div
                                 className="overflow-hidden relative h-4 sm:h-5"
@@ -339,7 +365,7 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                                             transition={{ duration: 0.4 }}
                                             className="inline-block text-xs truncate sm:text-sm"
                                           >
-                                            {selectedDocuments[carouselIndex].title}
+                                            {selectedDocuments[carouselIndex >= 0 && carouselIndex < selectedDocuments.length ? carouselIndex : 0]?.title || "Loading..."}
                                           </motion.span>
                                         </AnimatePresence>
                                       </div>
@@ -351,7 +377,7 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                                       <ul className="pl-4 space-y-1 text-xs list-disc">
                                         {selectedDocuments.map((doc, idx) => (
                                           <li key={doc._id} className={idx === carouselIndex ? "text-cyan-300" : ""}>
-                                            {doc.title}
+                                            {doc?.title || "Loading..."}
                                           </li>
                                         ))}
                                       </ul>
@@ -370,11 +396,11 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                     <AccordionContent className="pt-2 pb-1 sm:pt-3 sm:pb-2">
                       <div className="space-y-2 max-w-full">
                         {selectedDocuments.map((doc) => (
-                          <div key={doc._id} className="flex gap-2 items-center p-2 min-w-0 rounded-xl border backdrop-blur-md bg-slate-800/40 border-cyan-500/10">
+                          <div key={doc._id} className="flex gap-2 items-center p-2 min-w-0 rounded-xl border backdrop-blur-md bg-slate-800/20 border-cyan-500/10 hover:bg-slate-700/30 transition-all duration-200">
                             <div className="flex-shrink-0 w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
                             <div className="flex-1 min-w-0">
                               <span className="block text-xs font-medium text-cyan-200 truncate sm:text-sm">
-                                {doc.title}
+                                {doc?.title || "Loading..."}
                               </span>
                               <span className="text-[10px] sm:text-xs text-cyan-300/70 truncate">
                                 {doc.contentType} • {doc.wordCount.toLocaleString()} words
@@ -395,7 +421,7 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
 
                         {/* Status indicator - moved inside accordion */}
                         <div className="pt-2 border-t border-cyan-500/20">
-                          <div className="flex gap-1.5 sm:gap-2 justify-center items-center px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs text-emerald-400 rounded-full border backdrop-blur-md bg-slate-800/30 border-emerald-500/20 overflow-hidden">
+                          <div className="flex gap-1.5 sm:gap-2 justify-center items-center px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs text-emerald-400 rounded-full border backdrop-blur-md bg-gradient-to-r from-slate-800/20 via-slate-700/30 to-slate-800/20 border-emerald-500/20 overflow-hidden">
                             <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-emerald-400 rounded-full animate-pulse flex-shrink-0"></div>
                             <div className="overflow-hidden flex-1 min-w-0">
                               {/* Mobile: Smooth scrolling carousel effect with Framer Motion */}
@@ -441,7 +467,7 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                     <BackgroundGradient color="purple" containerClassName="p-0" tronMode={true} intensity="subtle">
                       <button
                         onClick={navigateToHistory}
-                        className="relative p-2.5 sm:p-3 text-purple-300 rounded-2xl border backdrop-blur-md transition-all duration-300 group hover:text-purple-100 bg-slate-800/60 border-purple-500/20 hover:border-purple-400/40"
+                        className="relative p-2.5 sm:p-3 text-purple-300 rounded-2xl border backdrop-blur-md transition-all duration-300 group hover:text-purple-100 bg-slate-800/30 border-purple-500/20 hover:border-purple-400/40 hover:bg-slate-700/40"
                       >
                         {renderIcon(History, { className: "w-4 h-4 sm:w-5 sm:h-5" })}
                       </button>
@@ -506,8 +532,8 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                 >
                   <div
                     className={`${message.type === "user"
-                      ? "bg-slate-800/60 text-cyan-100 rounded-3xl rounded-br-lg border border-cyan-500/20"
-                      : "bg-slate-800/60 text-slate-100 rounded-3xl rounded-bl-lg border border-purple-500/20"
+                      ? "bg-slate-800/40 text-cyan-100 rounded-3xl rounded-br-lg border border-cyan-500/20"
+                      : "bg-slate-800/40 text-slate-100 rounded-3xl rounded-bl-lg border border-purple-500/20"
                       } p-3 sm:p-4 md:p-5 backdrop-blur-md shadow-lg`}
                   >
                     <div className="flex gap-2 items-start sm:gap-3">
@@ -534,12 +560,12 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                             </div>
                             {message.sources.map((source, index) => (
                               <div key={index} className="w-full">
-                                <div className="p-3 rounded-xl border backdrop-blur-sm transition-all duration-200 sm:p-4 bg-slate-800/60 border-slate-600/40 hover:border-slate-500/60">
+                                <div className="p-3 rounded-xl border backdrop-blur-sm transition-all duration-200 sm:p-4 bg-gradient-to-br from-slate-800/40 via-slate-700/50 to-slate-800/40 border-slate-600/40 hover:border-slate-500/60 hover:from-slate-700/50 hover:via-slate-600/60 hover:to-slate-700/50">
                                   <div className="flex flex-col mb-2 sm:flex-row sm:justify-between sm:items-center">
                                     <span className="text-sm font-medium text-cyan-300">
-                                      {source.title}
+                                      {source?.title || "Unknown Source"}
                                     </span>
-                                    <span className="mt-1 sm:mt-0 px-2 py-0.5 sm:py-1 text-xs rounded-md border text-slate-400 bg-slate-700/80 border-slate-600/50 inline-block w-fit">
+                                    <span className="mt-1 sm:mt-0 px-2 py-0.5 sm:py-1 text-xs rounded-md border text-slate-400 bg-gradient-to-r from-slate-700/60 to-slate-600/80 border-slate-600/50 inline-block w-fit backdrop-blur-sm">
                                       {(source.score * 100).toFixed(1)}% match
                                     </span>
                                   </div>
@@ -576,7 +602,7 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
           </div>
 
           {/* Tron-inspired input */}
-          <div className="p-3 border-t backdrop-blur-md sm:p-4 md:p-6 border-cyan-500/30 bg-slate-800/60">
+          <div className="p-3 border-t backdrop-blur-md sm:p-4 md:p-6 border-cyan-500/30 bg-gradient-to-r from-slate-800/40 via-slate-700/60 to-slate-800/40">
             <div className="flex gap-2 items-end sm:gap-3 md:gap-4">
               <div className="relative flex-1">
                 <BackgroundGradient color="cyan" containerClassName="w-full" tronMode={true} intensity="subtle">
@@ -590,7 +616,7 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                       }
                     }}
                     placeholder="Ask me anything about your documents..."
-                    className="px-3 py-3 pr-12 w-full text-sm text-cyan-100 rounded-2xl border shadow-sm backdrop-blur-md transition-all duration-300 resize-none sm:px-4 md:px-5 sm:py-4 sm:pr-16 placeholder-cyan-400/60 bg-slate-800/60 border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 sm:text-base"
+                    className="px-3 py-3 pr-12 w-full text-sm text-cyan-100 rounded-2xl border shadow-sm backdrop-blur-md transition-all duration-300 resize-none sm:px-4 md:px-5 sm:py-4 sm:pr-16 placeholder-cyan-400/60 bg-slate-800/30 border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 focus:bg-slate-700/40 sm:text-base"
                     rows={2}
                     disabled={isLoading}
                   />
@@ -611,7 +637,7 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
                   disabled={!inputMessage.trim() || isLoading}
                   className={`group relative p-3 sm:p-4 rounded-2xl transition-all duration-300 ${!inputMessage.trim() || isLoading
                     ? "bg-slate-700/60 text-slate-400 cursor-not-allowed border border-slate-600/30"
-                    : "bg-slate-800/60 text-cyan-400 hover:text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/40 hover:scale-105 shadow-lg hover:shadow-cyan-500/20"
+                    : "bg-slate-800/30 text-cyan-400 hover:text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/40 hover:scale-105 shadow-lg hover:shadow-cyan-500/20 hover:bg-slate-700/40"
                     } backdrop-blur-md`}
                 >
                   {renderIcon(Send, { className: "w-4 h-4 sm:w-5 sm:h-5" })}
@@ -621,11 +647,13 @@ export function ChatInterface({ onOpenDocumentViewer }: ChatInterfaceProps = {})
 
             {/* Status and shortcuts */}
             <div className="flex justify-between items-center mt-4 text-xs text-cyan-400/70">
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center px-3 py-1.5 rounded-full bg-slate-800/20 border border-emerald-500/10 backdrop-blur-sm">
                 <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
                 <span>Ready to answer</span>
               </div>
-              <span>Press Enter to send, Shift+Enter for new line</span>
+              <div className="hidden sm:block px-3 py-1.5 rounded-full bg-slate-800/20 border border-cyan-500/10 backdrop-blur-sm">
+                <span>Press Enter to send, Shift+Enter for new line</span>
+              </div>
             </div>
           </div>
         </div>

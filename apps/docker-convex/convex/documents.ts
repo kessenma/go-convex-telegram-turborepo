@@ -374,3 +374,20 @@ export const getDocumentUploadStats = query({
     };
   },
 });
+// Get documents by their IDs
+export const getDocumentsByIds = query({
+  args: {
+    documentIds: v.array(v.id("rag_documents")),
+  },
+  handler: async (ctx, args) => {
+    const documents = await Promise.all(
+      args.documentIds.map(async (docId) => {
+        const doc = await ctx.db.get(docId);
+        return doc;
+      })
+    );
+    
+    // Filter out null documents (in case some IDs don't exist)
+    return documents.filter(Boolean);
+  },
+});

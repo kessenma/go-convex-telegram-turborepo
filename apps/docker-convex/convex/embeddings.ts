@@ -365,6 +365,12 @@ export const searchDocumentsByVector = action({
         expandedContext?: string;
       })[] = await Promise.all(
         searchResults.map(async (result: any) => {
+          // Check if result has documentId
+          if (!result.documentId) {
+            console.warn('Vector search result missing documentId:', result);
+            return null;
+          }
+          
           const document = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
             documentId: result.documentId,
           });
@@ -419,6 +425,11 @@ export const searchDocumentsByVector = action({
       
       // Filter out invalid results and apply document ID filtering
       const validResults = results.filter(result => {
+        // Filter out null results (from missing documentId)
+        if (!result) {
+          return false;
+        }
+        
         if (!result.document || !result.document.isActive) {
           console.log("Filtering out inactive or missing document");
           return false;

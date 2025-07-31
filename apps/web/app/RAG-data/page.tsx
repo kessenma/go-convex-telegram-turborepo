@@ -23,13 +23,18 @@ export default function RAGDataPage(): React.ReactElement | null {
     <div
       className="pt-20 pb-8 min-h-screen"
       onClick={(e) => {
+        // Prevent infinite loop by checking if the event originated from cubes
+        if (e.target && (e.target as Element).closest('.cubes-container')) {
+          return;
+        }
+        
         const cubesScene = document.querySelector(".cubes-container .grid");
         if (cubesScene) {
           const _rect = cubesScene.getBoundingClientRect();
           const event = new MouseEvent("click", {
             clientX: e.clientX,
             clientY: e.clientY,
-            bubbles: true,
+            bubbles: false, // Prevent bubbling to avoid infinite loop
           });
           cubesScene.dispatchEvent(event);
         }
