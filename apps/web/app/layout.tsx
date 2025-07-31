@@ -30,16 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap"
-          rel="stylesheet"
-        />
+        {/* Google Fonts preconnect links removed - now using Next.js font system */}
       </head>
       <body className={`${geistSans.variable} bg-slate-950 text-white`}>
         <GlobalErrorBoundary>

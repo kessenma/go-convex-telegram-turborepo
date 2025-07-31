@@ -57,7 +57,13 @@ export function useDocumentOperations(limit: number = 10) {
   // Optimized delete operation
   const handleDeleteDocument = useCallback(
     async (documentId: string) => {
-      return await deleteDocument(documentId);
+      try {
+        await deleteDocument(documentId);
+        return true;
+      } catch (error) {
+        console.error("Failed to delete document:", error);
+        return false;
+      }
     },
     [deleteDocument]
   );

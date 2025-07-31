@@ -438,6 +438,16 @@ export type PublicApiType = {
       },
       any
     >;
+    createDocumentDeletionNotification: FunctionReference<
+      "mutation",
+      "public",
+      {
+        documentId: Id<"rag_documents">;
+        documentTitle: string;
+        source?: string;
+      },
+      any
+    >;
   };
   ragChat: {
     createConversation: FunctionReference<

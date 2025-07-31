@@ -66,6 +66,8 @@ export function Notifications({
 
   // Show toast for new notifications
   useEffect(() => {
+    console.log("🔔 Notifications updated:", notifications?.length || 0);
+    
     if (!notifications || notifications.length === 0) {
       setPreviousNotifications([]);
       return;
@@ -78,8 +80,12 @@ export function Notifications({
           !previousNotifications.some((prev) => prev._id === notification._id)
       );
 
+      console.log("🆕 New notifications found:", newNotifications.length);
+      
       // Show toast for each new notification
       newNotifications.forEach((notification: Notification) => {
+        console.log("🔔 Processing notification:", notification.type, notification.message);
+        
         if (notification.type === "document_embedded") {
           toast.success(notification.message, {
             description: "Embedding completed successfully",
@@ -88,6 +94,12 @@ export function Notifications({
         } else if (notification.type === "document_uploaded") {
           toast.success(notification.message, {
             description: "Document uploaded successfully",
+            duration: 5000,
+          });
+        } else if (notification.type === "document_deleted") {
+          console.log("🗑️ Showing deletion notification toast");
+          toast.success(notification.message, {
+            description: "Document deleted successfully",
             duration: 5000,
           });
         } else {
@@ -244,6 +256,8 @@ export function Notifications({
         return Upload;
       case "document_embedded":
         return Database;
+      case "document_deleted":
+        return X;
       default:
         return Bell;
     }
@@ -255,6 +269,8 @@ export function Notifications({
         return "text-blue-500";
       case "document_embedded":
         return "text-green-500";
+      case "document_deleted":
+        return "text-red-500";
       default:
         return "text-gray-500";
     }

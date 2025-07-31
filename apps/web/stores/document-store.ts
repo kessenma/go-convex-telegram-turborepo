@@ -161,8 +161,11 @@ export const useDocumentStore = create<DocumentStore>()(
         console.log("🗑️ Document ID type:", typeof documentId);
         console.log("🗑️ Document ID length:", documentId.length);
 
-        // Optimistic update: remove document from store immediately
+        // Get document details before deletion for the toast
         const originalDocuments = get().documents;
+        const documentToDelete = originalDocuments.find(doc => doc._id === documentId);
+        const documentTitle = documentToDelete?.title || "Unknown Document";
+        
         console.log("📋 Original documents count:", originalDocuments.length);
 
         set((state) => ({
@@ -198,15 +201,25 @@ export const useDocumentStore = create<DocumentStore>()(
           const responseData = await response.json();
           console.log("✅ DELETE response data:", responseData);
 
-          // Document successfully deleted, keep the optimistic update
+          // Import toast dynamically to avoid SSR issues
+          const { toast } = await import("sonner");
+          toast.success(`Successfully deleted "${documentTitle}"`);
+
+          return true;
         } catch (error) {
           console.error("❌ Error in deleteDocument:", error);
           console.error(
             "❌ Document not found for deletion:",
             JSON.stringify(documentId)
           );
+          
           // Revert optimistic update on error
           set({ documents: originalDocuments });
+          
+          // Import toast dynamically to avoid SSR issues
+          const { toast } = await import("sonner");
+          toast.error(`Failed to delete "${documentTitle}"`);
+          
           throw error;
         }
       },

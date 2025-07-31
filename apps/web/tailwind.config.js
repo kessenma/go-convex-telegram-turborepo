@@ -67,7 +67,7 @@ export default {
         }
       },
       fontFamily: {
-        bitcount: ["Audiowide", "monospace"],
+        bitcount: ["var(--font-audiowide)", "monospace"],
       },
       keyframes: {
         shine: {

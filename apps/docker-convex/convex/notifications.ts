@@ -153,3 +153,23 @@ export const createDocumentEmbeddingNotification = mutation({
     });
   },
 });
+
+// Helper function to create document deletion notification
+export const createDocumentDeletionNotification = mutation({
+  args: {
+    documentTitle: v.string(),
+    documentId: v.id("rag_documents"),
+    source: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("notifications", {
+      type: "document_deleted",
+      title: "Document Deleted",
+      message: `Document "${args.documentTitle}" has been successfully deleted.`,
+      timestamp: Date.now(),
+      isRead: false,
+      documentId: args.documentId,
+      source: args.source || "web",
+    });
+  },
+});

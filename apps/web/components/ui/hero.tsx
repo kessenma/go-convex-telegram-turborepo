@@ -3,6 +3,7 @@ import type React from "react";
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
 import { useIntersectionObserver } from "../../hooks/use-intersection-observer";
 import { cn } from "../../lib/utils";
+import { Audiowide } from "next/font/google";
 import {
   Accordion,
   AccordionContent,
@@ -17,6 +18,14 @@ import ShinyText from "./text-animations/shiny-text";
 import { TextRoll } from "./text-animations/text-roll";
 import { TextShimmer } from "./text-animations/text-shimmer";
 import TrueFocus from "./text-animations/true-focus";
+
+// Initialize the Audiowide font
+const audiowide = Audiowide({
+  weight: ["400"],
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-audiowide",
+});
 
 export enum TextAnimationType {
   None = "none",
@@ -83,7 +92,7 @@ export const Hero = ({
     threshold: 0.2,
   });
   return (
-    <div className={cn("my-8", `text-${textAlign}`, className)}>
+    <div className={cn("my-8", `text-${textAlign}`, className, audiowide.variable)}>
       <h1
         className={cn(
           "mb-4 text-2xl font-bold md:text-5xl font-bitcount",
