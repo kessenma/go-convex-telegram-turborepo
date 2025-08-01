@@ -834,6 +834,63 @@ export const getAllDocumentEmbeddingsAPI = httpAction(async (ctx, request) => {
   }
 });
 
+export const getEmbeddingsForAtlasAPI = httpAction(async (ctx, request) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500); // Cap at 500 for performance
+    const offset = parseInt(searchParams.get("offset") || "0");
+    
+    // Get embeddings with document metadata for atlas visualization with pagination
+    const embeddings = await ctx.runQuery(api.embeddings.getAllEmbeddingsForAtlas, { limit, offset });
+    
+    // Transform data for Embedding Atlas with better 2D projection
+    const atlasData = embeddings.map((embedding, index) => {
+      // Simple PCA-like projection using first few dimensions
+      const vec = embedding.embedding;
+      const x = (vec[0] || 0) * 50 + (vec[2] || 0) * 25;
+      const y = (vec[1] || 0) * 50 + (vec[3] || 0) * 25;
+      
+      return {
+        id: embedding._id,
+        x: x + Math.random() * 5, // Add small jitter to prevent overlap
+        y: y + Math.random() * 5,
+        text: embedding.chunkText || embedding.documentTitle || `Chunk ${embedding.chunkIndex || 0}`,
+        document_title: embedding.documentTitle,
+        chunk_index: embedding.chunkIndex || 0,
+        embedding_model: embedding.embeddingModel,
+        created_at: new Date(embedding.createdAt).toISOString(),
+        dimensions: embedding.embeddingDimensions,
+        content_type: embedding.documentContentType,
+        // Include the full embedding for similarity calculations
+        embedding_vector: embedding.embedding
+      };
+    });
+
+    // Get total count for pagination
+    const totalCount = await ctx.runQuery(api.embeddings.getEmbeddingsCount, {});
+
+    return new Response(JSON.stringify({
+      success: true,
+      data: atlasData,
+      count: atlasData.length,
+      total: totalCount,
+      hasMore: offset + limit < totalCount
+    }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    console.error("Atlas embeddings API error:", e);
+    return errorResponse("Failed to fetch embedding data for atlas", 500, message);
+  }
+});
+
 export const createDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
   try {
     const body = await request.json();
@@ -1465,6 +1522,396 @@ export const getUserSessionStatsAPI = httpAction(async (ctx, request) => {
 });
 
 // =============================================================================
+// GENERAL CHAT API ENDPOINTS
+// =============================================================================
+
+// Get conversation by session ID
+export const getGeneralConversationBySessionIdAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const sessionId = url.searchParams.get("sessionId");
+    
+    if (!sessionId) {
+      return errorResponse("Missing sessionId parameter", 400);
+    }
+    
+    const conversation = await ctx.runQuery(api.generalChat.getConversationBySessionId, { sessionId });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        conversation
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching general conversation by session ID:", error);
+    return errorResponse(
+      "Failed to fetch conversation",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Get conversation messages
+export const getGeneralConversationMessagesAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const conversationId = url.searchParams.get("conversationId");
+    const limit = url.searchParams.get("limit");
+    
+    if (!conversationId) {
+      return errorResponse("Missing conversationId parameter", 400);
+    }
+    
+    const messages = await ctx.runQuery(api.generalChat.getConversationMessages, {
+      conversationId: conversationId as Id<"general_conversations">,
+      limit: limit ? parseInt(limit) : undefined
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        messages,
+        count: messages.length
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching general conversation messages:", error);
+    return errorResponse(
+      "Failed to fetch conversation messages",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Get recent conversations
+export const getRecentGeneralConversationsAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const limit = url.searchParams.get("limit");
+    const userId = url.searchParams.get("userId");
+    
+    const conversations = await ctx.runQuery(api.generalChat.getRecentConversations, {
+      limit: limit ? parseInt(limit) : undefined,
+      userId: userId || undefined
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        conversations,
+        count: conversations.length
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching recent general conversations:", error);
+    return errorResponse(
+      "Failed to fetch recent conversations",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Create new conversation
+export const createGeneralConversationAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const {
+      sessionId,
+      title,
+      userId,
+      userAgent,
+      ipAddress,
+      llmModel
+    } = body;
+    
+    if (!sessionId || !llmModel) {
+      return errorResponse("Missing required fields: sessionId, llmModel", 400);
+    }
+    
+    const conversationId = await ctx.runMutation(api.generalChat.createConversation, {
+      sessionId,
+      title,
+      userId,
+      userAgent,
+      ipAddress,
+      llmModel
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        conversationId,
+        message: "Conversation created successfully"
+      }),
+      {
+        status: 201,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error creating general conversation:", error);
+    return errorResponse(
+      "Failed to create conversation",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Add message to conversation
+export const addMessageToGeneralConversationAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const {
+      conversationId,
+      messageId,
+      role,
+      content,
+      tokenCount,
+      processingTimeMs,
+      metadata
+    } = body;
+    
+    if (!conversationId || !messageId || !role || !content) {
+      return errorResponse("Missing required fields: conversationId, messageId, role, content", 400);
+    }
+    
+    const messageDocId = await ctx.runMutation(api.generalChat.addMessage, {
+      conversationId: conversationId as Id<"general_conversations">,
+      messageId,
+      role,
+      content,
+      tokenCount,
+      processingTimeMs,
+      metadata
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        messageId: messageDocId,
+        message: "Message added successfully"
+      }),
+      {
+        status: 201,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error adding message to general conversation:", error);
+    return errorResponse(
+      "Failed to add message",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Update conversation title
+export const updateGeneralConversationTitleAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { conversationId, title } = body;
+    
+    if (!conversationId || !title) {
+      return errorResponse("Missing required fields: conversationId, title", 400);
+    }
+    
+    await ctx.runMutation(api.generalChat.updateConversationTitle, {
+      conversationId: conversationId as Id<"general_conversations">,
+      title
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Conversation title updated successfully"
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "PUT, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error updating general conversation title:", error);
+    return errorResponse(
+      "Failed to update conversation title",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Deactivate conversation
+export const deactivateGeneralConversationAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { conversationId } = body;
+    
+    if (!conversationId) {
+      return errorResponse("Missing required field: conversationId", 400);
+    }
+    
+    await ctx.runMutation(api.generalChat.deactivateConversation, {
+      conversationId: conversationId as Id<"general_conversations">
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Conversation deactivated successfully"
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error deactivating general conversation:", error);
+    return errorResponse(
+      "Failed to deactivate conversation",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Search conversations
+export const searchGeneralConversationsAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const searchTerm = url.searchParams.get("searchTerm") || url.searchParams.get("q");
+    const limit = url.searchParams.get("limit");
+    const userId = url.searchParams.get("userId");
+    
+    if (!searchTerm) {
+      return errorResponse("Missing searchTerm parameter", 400);
+    }
+    
+    const conversations = await ctx.runQuery(api.generalChat.searchConversations, {
+      searchTerm,
+      limit: limit ? parseInt(limit) : undefined,
+      userId: userId || undefined
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        conversations,
+        count: conversations.length,
+        searchTerm
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error searching general conversations:", error);
+    return errorResponse(
+      "Failed to search conversations",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// Get conversation statistics
+export const getGeneralConversationStatsAPI = httpAction(async (ctx, request) => {
+  try {
+    const url = new URL(request.url);
+    const conversationId = url.searchParams.get("conversationId");
+    
+    if (!conversationId) {
+      return errorResponse("Missing conversationId parameter", 400);
+    }
+    
+    const stats = await ctx.runQuery(api.generalChat.getConversationStats, {
+      conversationId: conversationId as Id<"general_conversations">
+    });
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        stats
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching general conversation stats:", error);
+    return errorResponse(
+      "Failed to fetch conversation stats",
+      500,
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+});
+
+// =============================================================================
 // RAG CHAT API ENDPOINTS
 // =============================================================================
 
@@ -2045,6 +2492,12 @@ http.route({
   handler: createDocumentEmbeddingAPI,
 });
 
+http.route({
+  path: "/api/embeddings/atlas-data",
+  method: "GET",
+  handler: getEmbeddingsForAtlasAPI,
+});
+
 
 
 // LLM MEMORY USAGE ENDPOINTS (Legacy - now handled by consolidated metrics)
@@ -2083,6 +2536,61 @@ http.route({
   path: "/api/notifications/mark-all-read",
   method: "PUT",
   handler: markAllNotificationsAsReadAPI,
+});
+
+// GENERAL CHAT API ENDPOINTS
+http.route({
+  path: "/api/general-chat/conversations/recent",
+  method: "GET",
+  handler: getRecentGeneralConversationsAPI,
+});
+
+http.route({
+  path: "/api/general-chat/conversations/by-session",
+  method: "GET",
+  handler: getGeneralConversationBySessionIdAPI,
+});
+
+http.route({
+  path: "/api/general-chat/conversations",
+  method: "POST",
+  handler: createGeneralConversationAPI,
+});
+
+http.route({
+  path: "/api/general-chat/conversations/title",
+  method: "PUT",
+  handler: updateGeneralConversationTitleAPI,
+});
+
+http.route({
+  path: "/api/general-chat/conversations/deactivate",
+  method: "DELETE",
+  handler: deactivateGeneralConversationAPI,
+});
+
+http.route({
+  path: "/api/general-chat/conversations/search",
+  method: "GET",
+  handler: searchGeneralConversationsAPI,
+});
+
+http.route({
+  path: "/api/general-chat/conversations/stats",
+  method: "GET",
+  handler: getGeneralConversationStatsAPI,
+});
+
+http.route({
+  path: "/api/general-chat/messages",
+  method: "GET",
+  handler: getGeneralConversationMessagesAPI,
+});
+
+http.route({
+  path: "/api/general-chat/messages",
+  method: "POST",
+  handler: addMessageToGeneralConversationAPI,
 });
 
 // RAG CHAT API ENDPOINTS

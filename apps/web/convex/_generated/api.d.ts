@@ -17,6 +17,7 @@ import type * as api_ from "../api.js";
 import type * as crons from "../crons.js";
 import type * as documents from "../documents.js";
 import type * as embeddings from "../embeddings.js";
+import type * as generalChat from "../generalChat.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as messagesThread from "../messagesThread.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   documents: typeof documents;
   embeddings: typeof embeddings;
+  generalChat: typeof generalChat;
   http: typeof http;
   messages: typeof messages;
   messagesThread: typeof messagesThread;

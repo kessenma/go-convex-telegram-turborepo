@@ -137,6 +137,56 @@ export const getAllDocumentEmbeddings = query({
   },
 });
 
+// Get embeddings with document metadata for Embedding Atlas
+export const getAllEmbeddingsForAtlas = query({
+  args: {
+    limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit || 100, 500); // Cap at 500 for performance
+    const offset = args.offset || 0;
+    
+    // Get embeddings with document data using pagination
+    const allEmbeddings = await ctx.db
+      .query("document_embeddings")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .order("desc")
+      .collect();
+    
+    // Apply pagination manually since Convex doesn't have native offset support
+    const embeddings = allEmbeddings.slice(offset, offset + limit);
+
+    // Enrich with document metadata
+    const enrichedEmbeddings = await Promise.all(
+      embeddings.map(async (embedding) => {
+        const document = await ctx.db.get(embedding.documentId);
+        return {
+          ...embedding,
+          documentTitle: document?.title || "Unknown Document",
+          documentContentType: document?.contentType || "unknown",
+          documentUploadedAt: document?.uploadedAt || 0,
+        };
+      })
+    );
+
+    return enrichedEmbeddings;
+  },
+});
+
+// Get total count of active embeddings
+export const getEmbeddingsCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const embeddings = await ctx.db
+      .query("document_embeddings")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+    
+    return embeddings.length;
+  },
+});
+
 // Delete all embeddings for a document
 export const deleteDocumentEmbeddings = mutation({
   args: {

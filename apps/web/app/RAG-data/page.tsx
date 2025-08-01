@@ -6,14 +6,18 @@ import type React from "react";
 import { DocumentBrowser } from "../../components/rag/DocumentBrowser";
 import { DocumentStats } from "../../components/rag/DocumentStats";
 import { VectorSearch } from "../../components/rag/VectorSearch";
+import { EmbeddingAtlasViewer } from "../../components/rag/EmbeddingAtlasViewer";
 import Cubes from "../../components/ui/backgrounds/mouse-hover-cubes";
 import { Hero, TextAnimationType } from "../../components/ui/hero";
 import { SparklesCore } from "../../components/ui/sparkles";
+
 import { useAnimationSettings } from "../../hooks/use-animation-settings";
 import { useDocumentOperations } from "../../hooks/use-document-operations";
+import { useState } from "react";
 
 export default function RAGDataPage(): React.ReactElement | null {
   const { animationEnabled } = useAnimationSettings();
+  const [isEmbeddingAtlasFullscreen, setIsEmbeddingAtlasFullscreen] = useState(false);
 
   // Use optimized document operations hook
   const { documents, stats, loadingDocuments, loadingStats } =
@@ -27,7 +31,17 @@ export default function RAGDataPage(): React.ReactElement | null {
         if (e.target && (e.target as Element).closest('.cubes-container')) {
           return;
         }
-        
+
+        // Don't interfere with any interactive elements
+        if (e.target && (e.target as Element).closest('button, canvas, svg, input, select, textarea, a, [role="button"]')) {
+          return;
+        }
+
+        // Don't interfere with EmbeddingAtlasViewer interactions
+        if (e.target && (e.target as Element).closest('.embedding-atlas-viewer')) {
+          return;
+        }
+
         const cubesScene = document.querySelector(".cubes-container .grid");
         if (cubesScene) {
           const _rect = cubesScene.getBoundingClientRect();
@@ -41,20 +55,22 @@ export default function RAGDataPage(): React.ReactElement | null {
       }}
     >
       <div className="relative min-h-screen">
-        <div className="flex overflow-hidden fixed inset-0 justify-center items-center -z-10 cubes-container">
-          <Cubes
-            gridSize={10}
-            maxAngle={90}
-            radius={2}
-            duration={{ enter: 0.1, leave: 0.2 }}
-            borderStyle="1px solid rgb(30 41 59)"
-            faceColor="rgb(2 6 23)"
-            rippleColor="rgb(51 65 85)"
-            rippleSpeed={2}
-            autoAnimate={animationEnabled}
-            rippleOnClick={animationEnabled}
-          />
-        </div>
+        {!isEmbeddingAtlasFullscreen && (
+          <div className="flex overflow-hidden fixed inset-0 justify-center items-center -z-10 cubes-container">
+            <Cubes
+              gridSize={10}
+              maxAngle={90}
+              radius={2}
+              duration={{ enter: 0.1, leave: 0.2 }}
+              borderStyle="1px solid rgb(30 41 59)"
+              faceColor="rgb(2 6 23)"
+              rippleColor="rgb(51 65 85)"
+              rippleSpeed={2}
+              autoAnimate={animationEnabled}
+              rippleOnClick={animationEnabled}
+            />
+          </div>
+        )}
         <div className="relative px-4 mx-auto max-w-4xl">
           {/* Header */}
           <Hero
@@ -98,6 +114,12 @@ export default function RAGDataPage(): React.ReactElement | null {
           <VectorSearch
             className="mb-6"
             hasDocuments={stats?.totalDocuments > 0}
+          />
+
+          {/* Embedding Atlas Viewer */}
+          <EmbeddingAtlasViewer
+            className="mb-6"
+            onFullscreenChange={setIsEmbeddingAtlasFullscreen}
           />
 
           {/* Document Browser */}

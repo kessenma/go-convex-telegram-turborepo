@@ -128,22 +128,52 @@ export default defineSchema({
     sessionId: v.string(), // Unique session identifier
     title: v.optional(v.string()), // Optional conversation title
     documentIds: v.array(v.id("rag_documents")), // Documents being chatted with
+    documentTitles: v.array(v.string()), // Document titles for quick display
     userId: v.optional(v.string()), // User identifier (if available)
     userAgent: v.optional(v.string()), // User agent for web sessions
     ipAddress: v.optional(v.string()), // IP address for tracking
     isActive: v.boolean(), // Whether conversation is still active
+    isPublic: v.boolean(), // Whether conversation is publicly accessible
     createdAt: v.number(), // When conversation started
     lastMessageAt: v.number(), // When last message was sent
     messageCount: v.number(), // Total number of messages in conversation
     totalTokensUsed: v.number(), // Total tokens consumed in this conversation
     llmModel: v.string(), // LLM model being used for this conversation
+    metadata: v.optional(v.string()), // JSON string for additional data like chat mode, settings
   })
     .index("by_session_id", ["sessionId"])
     .index("by_user", ["userId"])
     .index("by_created_at", ["createdAt"])
     .index("by_last_message", ["lastMessageAt"])
     .index("by_active", ["isActive"])
-    .index("by_active_and_last_message", ["isActive", "lastMessageAt"]),
+    .index("by_active_and_last_message", ["isActive", "lastMessageAt"])
+    .index("by_public", ["isPublic"])
+    .index("by_llm_model", ["llmModel"]),
+
+  // General chat conversations table - stores general chat sessions without documents
+  general_conversations: defineTable({
+    sessionId: v.string(), // Unique session identifier
+    title: v.optional(v.string()), // Optional conversation title
+    userId: v.optional(v.string()), // User identifier (if available)
+    userAgent: v.optional(v.string()), // User agent for web sessions
+    ipAddress: v.optional(v.string()), // IP address for tracking
+    isActive: v.boolean(), // Whether conversation is still active
+    isPublic: v.boolean(), // Whether conversation is publicly accessible
+    createdAt: v.number(), // When conversation started
+    lastMessageAt: v.number(), // When last message was sent
+    messageCount: v.number(), // Total number of messages in conversation
+    totalTokensUsed: v.number(), // Total tokens consumed in this conversation
+    llmModel: v.string(), // LLM model being used for this conversation
+    metadata: v.optional(v.string()), // JSON string for additional data like chat mode, settings
+  })
+    .index("by_session_id", ["sessionId"])
+    .index("by_user", ["userId"])
+    .index("by_created_at", ["createdAt"])
+    .index("by_last_message", ["lastMessageAt"])
+    .index("by_active", ["isActive"])
+    .index("by_active_and_last_message", ["isActive", "lastMessageAt"])
+    .index("by_public", ["isPublic"])
+    .index("by_llm_model", ["llmModel"]),
 
   // RAG chat messages table - stores individual messages in conversations
   rag_chat_messages: defineTable({
@@ -165,6 +195,78 @@ export default defineSchema({
     .index("by_conversation", ["conversationId"])
     .index("by_timestamp", ["timestamp"])
     .index("by_role", ["role"])
+    .index("by_conversation_and_timestamp", ["conversationId", "timestamp"]),
+
+  // General chat messages table - stores individual messages in general conversations
+  general_chat_messages: defineTable({
+    conversationId: v.id("general_conversations"), // Reference to conversation
+    messageId: v.string(), // Unique message identifier
+    role: v.string(), // "user" or "assistant"
+    content: v.string(), // Message content
+    timestamp: v.number(), // When message was created
+    tokenCount: v.optional(v.number()), // Number of tokens in this message
+    processingTimeMs: v.optional(v.number()), // Time taken to generate (for assistant messages)
+    metadata: v.optional(v.string()), // JSON string for additional data
+  })
+    .index("by_conversation", ["conversationId"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_role", ["role"])
+    .index("by_conversation_and_timestamp", ["conversationId", "timestamp"]),
+
+  // Unified conversations table - unified view for both general and RAG conversations
+  unified_conversations: defineTable({
+    sessionId: v.string(), // Unique session identifier
+    type: v.union(v.literal("general"), v.literal("rag")), // Conversation type
+    title: v.optional(v.string()), // Optional conversation title
+    documentIds: v.array(v.id("rag_documents")), // Documents for RAG mode (empty for general)
+    documentTitles: v.array(v.string()), // Document titles for quick display
+    userId: v.optional(v.string()), // User identifier (if available)
+    userAgent: v.optional(v.string()), // User agent for web sessions
+    ipAddress: v.optional(v.string()), // IP address for tracking
+    isActive: v.boolean(), // Whether conversation is still active
+    isPublic: v.boolean(), // Whether conversation is publicly accessible
+    createdAt: v.number(), // When conversation started
+    lastMessageAt: v.number(), // When last message was sent
+    messageCount: v.number(), // Total number of messages in conversation
+    totalTokensUsed: v.number(), // Total tokens consumed in this conversation
+    llmModel: v.string(), // LLM model being used for this conversation
+    chatMode: v.string(), // Chat mode identifier from UI
+    settings: v.optional(v.string()), // JSON string for UI settings and preferences
+    metadata: v.optional(v.string()), // JSON string for additional data
+  })
+    .index("by_session_id", ["sessionId"])
+    .index("by_type", ["type"])
+    .index("by_user", ["userId"])
+    .index("by_created_at", ["createdAt"])
+    .index("by_last_message", ["lastMessageAt"])
+    .index("by_active", ["isActive"])
+    .index("by_active_and_last_message", ["isActive", "lastMessageAt"])
+    .index("by_public", ["isPublic"])
+    .index("by_llm_model", ["llmModel"])
+    .index("by_chat_mode", ["chatMode"]),
+
+  // Unified chat messages table - stores messages for unified conversations
+  unified_chat_messages: defineTable({
+    conversationId: v.id("unified_conversations"), // Reference to unified conversation
+    messageId: v.string(), // Unique message identifier
+    role: v.string(), // "user" or "assistant"
+    content: v.string(), // Message content
+    timestamp: v.number(), // When message was created
+    tokenCount: v.optional(v.number()), // Number of tokens in this message
+    processingTimeMs: v.optional(v.number()), // Time taken to generate (for assistant messages)
+    sources: v.optional(v.array(v.object({
+      documentId: v.id("rag_documents"),
+      title: v.string(),
+      snippet: v.string(),
+      score: v.number(),
+    }))), // Source documents used for assistant responses (RAG mode)
+    metadata: v.optional(v.string()), // JSON string for additional data
+    chatMode: v.string(), // Chat mode when message was sent
+  })
+    .index("by_conversation", ["conversationId"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_role", ["role"])
+    .index("by_chat_mode", ["chatMode"])
     .index("by_conversation_and_timestamp", ["conversationId", "timestamp"]),
 
   // User sessions table - tracks active user sessions for real-time user count
