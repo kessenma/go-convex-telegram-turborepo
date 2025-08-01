@@ -78,6 +78,35 @@ rm -f .env.docker.bak
 
 # Deploy using the self-hosted configuration
 echo "🚀 Deploying Convex functions..."
-npx convex deploy --yes --env-file .env.docker
+
+# Try to deploy, capture output and exit code
+DEPLOY_OUTPUT=$(npx convex deploy --yes --env-file .env.docker 2>&1) || DEPLOY_EXIT_CODE=$?
+
+if [ ${DEPLOY_EXIT_CODE:-0} -ne 0 ]; then
+  echo "⚠️  Initial deployment failed, checking if migrations are needed..."
+  echo "$DEPLOY_OUTPUT"
+  
+  # Check if the error is related to schema validation
+  if echo "$DEPLOY_OUTPUT" | grep -q "Schema validation failed"; then
+    echo "🔧 Schema validation failed - running migrations..."
+    
+    # Run the migration for missing conversation fields
+    echo "📝 Running migration: addMissingConversationFields..."
+    npx convex run migrations:addMissingConversationFields --env-file .env.docker
+    
+    # Also run the hasEmbedding migration in case it's needed
+    echo "📝 Running migration: addHasEmbeddingField..."
+    npx convex run migrations:addHasEmbeddingField --env-file .env.docker
+    
+    echo "🔄 Retrying deployment after migrations..."
+    npx convex deploy --yes --env-file .env.docker
+  else
+    echo "❌ Deployment failed for reasons other than schema validation"
+    echo "$DEPLOY_OUTPUT"
+    exit ${DEPLOY_EXIT_CODE}
+  fi
+else
+  echo "$DEPLOY_OUTPUT"
+fi
 
 echo "✅ Convex production deployment complete!"
