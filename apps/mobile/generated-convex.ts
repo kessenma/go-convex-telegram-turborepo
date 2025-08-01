@@ -158,6 +158,18 @@ export type PublicApiType = {
       Record<string, never>,
       any
     >;
+    getAllEmbeddingsForAtlas: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; offset?: number },
+      any
+    >;
+    getEmbeddingsCount: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      any
+    >;
     deleteDocumentEmbeddings: FunctionReference<
       "mutation",
       "public",
@@ -574,6 +586,103 @@ export type PublicApiType = {
       "mutation",
       "public",
       Record<string, never>,
+      any
+    >;
+  };
+  generalChat: {
+    createConversation: FunctionReference<
+      "mutation",
+      "public",
+      {
+        ipAddress?: string;
+        llmModel: string;
+        sessionId: string;
+        title?: string;
+        userAgent?: string;
+        userId?: string;
+      },
+      any
+    >;
+    addMessage: FunctionReference<
+      "mutation",
+      "public",
+      {
+        content: string;
+        conversationId: Id<"general_conversations">;
+        messageId: string;
+        metadata?: string;
+        processingTimeMs?: number;
+        role: string;
+        tokenCount?: number;
+      },
+      any
+    >;
+    getConversationBySessionId: FunctionReference<
+      "query",
+      "public",
+      { sessionId: string },
+      any
+    >;
+    getConversationMessages: FunctionReference<
+      "query",
+      "public",
+      { conversationId: Id<"general_conversations">; limit?: number },
+      any
+    >;
+    getRecentConversations: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; userId?: string },
+      any
+    >;
+    updateConversationTitle: FunctionReference<
+      "mutation",
+      "public",
+      { conversationId: Id<"general_conversations">; title: string },
+      any
+    >;
+    deactivateConversation: FunctionReference<
+      "mutation",
+      "public",
+      { conversationId: Id<"general_conversations"> },
+      any
+    >;
+    searchConversations: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; searchTerm: string; userId?: string },
+      any
+    >;
+    getConversationStats: FunctionReference<
+      "query",
+      "public",
+      { conversationId: Id<"general_conversations"> },
+      any
+    >;
+  };
+  conversations: {
+    index: {
+      updateConversationType: FunctionReference<
+        "mutation",
+        "public",
+        {
+          conversationId: Id<"unified_conversations">;
+          documentIds?: Array<Id<"rag_documents">>;
+          documentTitles?: Array<string>;
+          newType: "general" | "rag";
+        },
+        any
+      >;
+    };
+    updateConversationType: FunctionReference<
+      "mutation",
+      "public",
+      {
+        conversationId: Id<"unified_conversations">;
+        documentIds?: Array<Id<"rag_documents">>;
+        documentTitles?: Array<string>;
+        newType: "general" | "rag";
+      },
       any
     >;
   };

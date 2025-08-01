@@ -660,5 +660,31 @@ export type PublicApiType = {
       any
     >;
   };
+  conversations: {
+    index: {
+      updateConversationType: FunctionReference<
+        "mutation",
+        "public",
+        {
+          conversationId: Id<"unified_conversations">;
+          documentIds?: Array<Id<"rag_documents">>;
+          documentTitles?: Array<string>;
+          newType: "general" | "rag";
+        },
+        any
+      >;
+    };
+    updateConversationType: FunctionReference<
+      "mutation",
+      "public",
+      {
+        conversationId: Id<"unified_conversations">;
+        documentIds?: Array<Id<"rag_documents">>;
+        documentTitles?: Array<string>;
+        newType: "general" | "rag";
+      },
+      any
+    >;
+  };
 };
 export type InternalApiType = {};

@@ -180,6 +180,7 @@ export default function MobileNavigation(): React.ReactElement {
     { href: "/RAG-upload", label: "Upload", icon: Upload },
     { href: "/RAG-data", label: "Data", icon: Library },
     { href: "/RAG-chat", label: "Chat", icon: BotMessageSquare },
+    { href: "/ai-chat", label: "AI Chat (Vercel SDK)", icon: Bot },
 
     // Console section
     {
@@ -426,7 +427,7 @@ export default function MobileNavigation(): React.ReactElement {
                     >
                       RAG
                     </motion.div>
-                    {navItems.slice(6, 9).map((item, index) => {
+                    {navItems.slice(6, 10).map((item, index) => {
                       const IconComponent = item.icon;
                       const isActive = pathname === item.href;
 
@@ -483,7 +484,7 @@ export default function MobileNavigation(): React.ReactElement {
                     >
                       Console
                     </motion.div>
-                    {navItems.slice(9).map((item, index) => {
+                    {navItems.slice(10).map((item, index) => {
                       const IconComponent = item.icon;
                       const isActive = pathname === item.href;
                       const _isExternal = item.href.startsWith("http");

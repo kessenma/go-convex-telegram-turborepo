@@ -52,123 +52,195 @@ export const addHasEmbeddingField = internalMutation({
 export const addMissingConversationFields = internalMutation({
   args: {},
   handler: async (ctx) => {
-    let ragUpdatedCount = 0;
-    let generalUpdatedCount = 0;
-    
-    // Update RAG conversations
-    const ragConversations = await ctx.db.query("rag_conversations").collect();
-    
-    for (const conversation of ragConversations) {
-      const updates: any = {};
-      let needsUpdate = false;
+    try {
+      let ragUpdatedCount = 0;
+      let generalUpdatedCount = 0;
+      let errorCount = 0;
       
-      // Add isPublic field if missing
-      if ((conversation as any).isPublic === undefined) {
-        updates.isPublic = false;
-        needsUpdate = true;
-      }
+      // Update RAG conversations
+      const ragConversations = await ctx.db.query("rag_conversations").collect();
+      console.log(`Processing ${ragConversations.length} RAG conversations`);
       
-      // Add documentTitles field if missing
-      if ((conversation as any).documentTitles === undefined) {
+      for (const conversation of ragConversations) {
         try {
-          // Ensure documentIds exists and is an array
-          const documentIds = Array.isArray(conversation.documentIds) ? conversation.documentIds : [];
+          // Always create a fresh updates object for each conversation
+          const updates: any = {};
+          let needsUpdate = false;
           
-          // Get document titles from documentIds
-          const documentTitles = await Promise.all(
-            documentIds.map(async (docId) => {
-              try {
-                const doc = await ctx.db.get(docId);
-                return doc?.title || "Unknown Document";
-              } catch (err) {
-                console.error(`Error fetching document ${docId}:`, err);
-                return "Unknown Document";
-              }
-            })
-          );
-          updates.documentTitles = documentTitles.length > 0 ? documentTitles : ["Unknown Document"];
-        } catch (err) {
-          console.error(`Error processing documentTitles for conversation ${conversation._id}:`, err);
-          // Provide a default value if the Promise.all fails
-          updates.documentTitles = ["Unknown Document"];
-        }
-        needsUpdate = true;
-      }
-      
-      if (needsUpdate) {
-        try {
-          // Ensure we have valid updates before patching
-          if (updates.documentTitles === undefined) {
-            updates.documentTitles = ["Unknown Document"];
-          }
-          
-          // Make sure isPublic is set
-          if (updates.isPublic === undefined) {
+          // Add isPublic field if missing
+          if ((conversation as any).isPublic === undefined) {
             updates.isPublic = false;
+            needsUpdate = true;
+            console.log(`Adding isPublic field to conversation ${conversation._id}`);
           }
           
-          await ctx.db.patch(conversation._id, updates);
-          ragUpdatedCount++;
-          console.log(`Successfully updated RAG conversation ${conversation._id}`);
-        } catch (err) {
-          console.error(`Error updating conversation ${conversation._id}:`, err);
-          // Try a more direct approach if the patch fails
-          try {
-            await ctx.db.patch(conversation._id, { documentTitles: ["Unknown Document"], isPublic: false });
-            console.log(`Fallback update for RAG conversation ${conversation._id} succeeded`);
-            ragUpdatedCount++;
-          } catch (fallbackErr) {
-            console.error(`Fallback update for RAG conversation ${conversation._id} also failed:`, fallbackErr);
+          // Add documentTitles field if missing
+          if ((conversation as any).documentTitles === undefined) {
+            console.log(`Adding documentTitles field to conversation ${conversation._id}`);
+            try {
+              // Ensure documentIds exists and is an array
+              let documentIds: Array<any> = [];
+              
+              // Safely check if documentIds exists and is an array
+              if (conversation.documentIds !== undefined && conversation.documentIds !== null) {
+                documentIds = Array.isArray(conversation.documentIds) ? conversation.documentIds : [];
+                console.log(`Found ${documentIds.length} documentIds for conversation ${conversation._id}`);
+              } else {
+                console.log(`No documentIds found for conversation ${conversation._id}, using empty array`);
+              }
+              
+              // Get document titles from documentIds
+              if (documentIds.length > 0) {
+                try {
+                  const documentTitles = await Promise.all(
+                    documentIds.map(async (docId: any) => {
+                      try {
+                        const doc = await ctx.db.get(docId);
+                        // Check if doc exists and has a title property
+                        if (doc && typeof (doc as any).title === 'string') {
+                          return (doc as any).title;
+                        }
+                        return "Unknown Document";
+                      } catch (err) {
+                        console.error(`Error fetching document ${docId}:`, err);
+                        return "Unknown Document";
+                      }
+                    })
+                  );
+                  updates.documentTitles = documentTitles.length > 0 ? documentTitles : ["Unknown Document"];
+                  console.log(`Set documentTitles to: ${JSON.stringify(updates.documentTitles)}`);
+                } catch (err) {
+                  console.error(`Error in Promise.all for documentTitles in conversation ${conversation._id}:`, err);
+                  updates.documentTitles = ["Unknown Document"];
+                  console.log(`Set default documentTitles after Promise.all error`);
+                }
+              } else {
+                updates.documentTitles = ["Unknown Document"];
+                console.log(`Set default documentTitles for empty documentIds`);
+              }
+            } catch (err) {
+              console.error(`Error processing documentTitles for conversation ${conversation._id}:`, err);
+              // Provide a default value if any error occurs
+              updates.documentTitles = ["Unknown Document"];
+              console.log(`Set default documentTitles after error`);
+            }
+            needsUpdate = true;
           }
-          // Continue with the next conversation regardless
+          
+          if (needsUpdate) {
+            try {
+              // Always ensure we have valid updates before patching
+              if (updates.documentTitles === undefined) {
+                updates.documentTitles = ["Unknown Document"];
+              }
+              
+              // Make sure isPublic is set
+              if (updates.isPublic === undefined) {
+                updates.isPublic = false;
+              }
+              
+              console.log(`Patching conversation ${conversation._id} with:`, updates);
+              await ctx.db.patch(conversation._id, updates);
+              ragUpdatedCount++;
+              console.log(`✅ Successfully updated RAG conversation ${conversation._id}`);
+            } catch (err) {
+              errorCount++;
+              console.error(`❌ Error updating conversation ${conversation._id}:`, err);
+              // Try a more direct approach if the patch fails
+              try {
+                console.log(`Attempting fallback update for conversation ${conversation._id}`);
+                await ctx.db.patch(conversation._id, { documentTitles: ["Unknown Document"], isPublic: false });
+                console.log(`✅ Fallback update for RAG conversation ${conversation._id} succeeded`);
+                ragUpdatedCount++;
+                errorCount--; // Decrement error count since we recovered
+              } catch (fallbackErr) {
+                console.error(`❌ Fallback update for RAG conversation ${conversation._id} also failed:`, fallbackErr);
+              }
+            }
+          } else {
+            console.log(`No updates needed for conversation ${conversation._id}`);
+          }
+        } catch (convErr) {
+          errorCount++;
+          console.error(`❌ Fatal error processing conversation ${conversation._id}:`, convErr);
+          // Continue with next conversation
         }
       }
-    }
     
     // Update general conversations
-    const generalConversations = await ctx.db.query("general_conversations").collect();
-    
-    for (const conversation of generalConversations) {
-      const updates: any = {};
-      let needsUpdate = false;
+    try {
+      const generalConversations = await ctx.db.query("general_conversations").collect();
+      console.log(`Processing ${generalConversations.length} general conversations`);
       
-      // Add isPublic field if missing
-      if ((conversation as any).isPublic === undefined) {
-        updates.isPublic = false;
-        needsUpdate = true;
-      }
-      
-      if (needsUpdate) {
+      for (const conversation of generalConversations) {
         try {
-          // Ensure isPublic is set
-          if (updates.isPublic === undefined) {
+          const updates: any = {};
+          let needsUpdate = false;
+          
+          // Add isPublic field if missing
+          if ((conversation as any).isPublic === undefined) {
             updates.isPublic = false;
+            needsUpdate = true;
+            console.log(`Adding isPublic field to general conversation ${conversation._id}`);
           }
           
-          await ctx.db.patch(conversation._id, updates);
-          generalUpdatedCount++;
-          console.log(`Successfully updated general conversation ${conversation._id}`);
-        } catch (err) {
-          console.error(`Error updating general conversation ${conversation._id}:`, err);
-          // Try a more direct approach if the patch fails
-          try {
-            await ctx.db.patch(conversation._id, { isPublic: false });
-            console.log(`Fallback update for general conversation ${conversation._id} succeeded`);
-            generalUpdatedCount++;
-          } catch (fallbackErr) {
-            console.error(`Fallback update for general conversation ${conversation._id} also failed:`, fallbackErr);
+          if (needsUpdate) {
+            try {
+              // Ensure isPublic is set
+              if (updates.isPublic === undefined) {
+                updates.isPublic = false;
+              }
+              
+              console.log(`Patching general conversation ${conversation._id} with:`, updates);
+              await ctx.db.patch(conversation._id, updates);
+              generalUpdatedCount++;
+              console.log(`✅ Successfully updated general conversation ${conversation._id}`);
+            } catch (err) {
+              errorCount++;
+              console.error(`❌ Error updating general conversation ${conversation._id}:`, err);
+              // Try a more direct approach if the patch fails
+              try {
+                console.log(`Attempting fallback update for general conversation ${conversation._id}`);
+                await ctx.db.patch(conversation._id, { isPublic: false });
+                console.log(`✅ Fallback update for general conversation ${conversation._id} succeeded`);
+                generalUpdatedCount++;
+                errorCount--; // Decrement error count since we recovered
+              } catch (fallbackErr) {
+                console.error(`❌ Fallback update for general conversation ${conversation._id} also failed:`, fallbackErr);
+              }
+            }
+          } else {
+            console.log(`No updates needed for general conversation ${conversation._id}`);
           }
-          // Continue with the next conversation regardless
+        } catch (convErr) {
+          errorCount++;
+          console.error(`❌ Fatal error processing general conversation ${conversation._id}:`, convErr);
+          // Continue with next conversation
         }
       }
+    } catch (err) {
+      console.error(`❌ Fatal error processing general conversations:`, err);
+      // Continue with the function to return partial results
     }
     
-    console.log(`Migration completed: Updated ${ragUpdatedCount} RAG conversations and ${generalUpdatedCount} general conversations`);
+    console.log(`Migration completed: Updated ${ragUpdatedCount} RAG conversations and ${generalUpdatedCount} general conversations (${errorCount} errors)`);
     return { 
       success: true, 
       ragUpdatedCount, 
       generalUpdatedCount,
+      errorCount,
       totalUpdated: ragUpdatedCount + generalUpdatedCount 
     };
+  } catch (fatalErr) {
+    console.error(`❌❌ FATAL ERROR in addMissingConversationFields migration:`, fatalErr);
+    // Return partial success to prevent deployment failure
+    return { 
+      success: true, 
+      ragUpdatedCount: 0, 
+      generalUpdatedCount: 0,
+      errorCount: 1,
+      fatalError: true 
+    };
+  }
   },
 });

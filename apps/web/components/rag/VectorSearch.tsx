@@ -99,7 +99,8 @@ export function VectorSearch({
   return (
     <div className={className}>
       <Card className="p-6 border-gray-700 bg-gray-800/50">
-        <h3 className="mb-4 text-xl font-semibold text-white">Vector Search [NOT WORKING YET :( ]</h3>
+        <h3 className="mb-4 text-xl font-semibold text-white">Vector Search</h3>
+          <p className="mb-4 text-sm font-semibold text-cyan-200">NOT WORKING YET :(</p>
         <p className="mb-4 text-sm text-gray-300">
           Test semantic search across your uploaded documents using AI
           embeddings.
@@ -158,8 +159,8 @@ export function VectorSearch({
             {searchMessage && (
               <div
                 className={`mb-4 p-3 rounded-lg ${results.length > 0
-                    ? "bg-green-900/20 text-green-300"
-                    : "bg-yellow-900/20 text-yellow-300"
+                  ? "bg-green-900/20 text-green-300"
+                  : "bg-yellow-900/20 text-yellow-300"
                   }`}
               >
                 {searchMessage}

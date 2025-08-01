@@ -110,6 +110,22 @@ cd ../..
 # Deploy to web app if requested
 if [ "$DEPLOY_WEB" = true ]; then
     echo "📋 Copying generated API to web application..."
+    
+    # Check if the file already exists and get its stats before overwriting
+    WEB_OLD_LINE_COUNT=0
+    WEB_OLD_MODULES=""
+    if [ -f "$WEB_APP_DIR/$GENERATED_API_FILE" ]; then
+        WEB_OLD_LINE_COUNT=$(wc -l < "$WEB_APP_DIR/$GENERATED_API_FILE")
+        echo "   📊 Previous API file had $WEB_OLD_LINE_COUNT lines"
+        
+        # Get list of modules from old file
+        WEB_OLD_MODULES=$(grep -o "import type \* as [a-zA-Z_]\+" "$WEB_APP_DIR/$GENERATED_API_FILE" | sed 's/import type \* as //' || echo "None")
+        echo "   📋 Previous API modules: $(echo $WEB_OLD_MODULES | tr ' ' ', ')"
+    else
+        echo "   📝 No previous API file found"
+    fi
+    
+    # Copy the new file
     cp "$DOCKER_CONVEX_DIR/$TEMP_API_FILE.ts" "$WEB_APP_DIR/$GENERATED_API_FILE"
     
     # Verify the file was copied successfully
@@ -124,6 +140,22 @@ fi
 # Deploy to mobile app if requested
 if [ "$DEPLOY_MOBILE" = true ]; then
     echo "📋 Copying generated API to mobile application..."
+    
+    # Check if the file already exists and get its stats before overwriting
+    MOBILE_OLD_LINE_COUNT=0
+    MOBILE_OLD_MODULES=""
+    if [ -f "$MOBILE_APP_DIR/$GENERATED_API_FILE" ]; then
+        MOBILE_OLD_LINE_COUNT=$(wc -l < "$MOBILE_APP_DIR/$GENERATED_API_FILE")
+        echo "   📊 Previous API file had $MOBILE_OLD_LINE_COUNT lines"
+        
+        # Get list of modules from old file
+        MOBILE_OLD_MODULES=$(grep -o "import type \* as [a-zA-Z_]\+" "$MOBILE_APP_DIR/$GENERATED_API_FILE" | sed 's/import type \* as //' || echo "None")
+        echo "   📋 Previous API modules: $(echo $MOBILE_OLD_MODULES | tr ' ' ', ')"
+    else
+        echo "   📝 No previous API file found"
+    fi
+    
+    # Copy the new file
     cp "$DOCKER_CONVEX_DIR/$TEMP_API_FILE.ts" "$MOBILE_APP_DIR/$GENERATED_API_FILE"
     
     # Verify the file was copied successfully
@@ -138,9 +170,9 @@ fi
 # Clean up temporary file
 rm "$DOCKER_CONVEX_DIR/$TEMP_API_FILE.ts"
 
-# Display file information
+# Display file information and changes
 echo ""
-echo "📊 Generated API file statistics:"
+echo "📊 Generated API file statistics and changes:"
 
 if [ "$DEPLOY_WEB" = true ]; then
     API_FILE_SIZE=$(wc -c < "$WEB_APP_DIR/$GENERATED_API_FILE")
@@ -148,6 +180,55 @@ if [ "$DEPLOY_WEB" = true ]; then
     echo "   📄 Web: $WEB_APP_DIR/$GENERATED_API_FILE"
     echo "   📏 Size: $API_FILE_SIZE bytes"
     echo "   📝 Lines: $API_LINE_COUNT"
+    
+    # Show line count difference if there was a previous file
+    if [ "$WEB_OLD_LINE_COUNT" -gt 0 ]; then
+        LINE_DIFF=$((API_LINE_COUNT - WEB_OLD_LINE_COUNT))
+        if [ "$LINE_DIFF" -gt 0 ]; then
+            echo "   📈 Added $LINE_DIFF lines"
+        elif [ "$LINE_DIFF" -lt 0 ]; then
+            echo "   📉 Removed $((LINE_DIFF * -1)) lines"
+        else
+            echo "   📊 Line count unchanged"
+        fi
+    fi
+    
+    # Check for available modules in the generated API
+    echo "   📋 Available API modules:"
+    WEB_NEW_MODULES=$(grep -o "import type \* as [a-zA-Z_]\+" "$WEB_APP_DIR/$GENERATED_API_FILE" | sed 's/import type \* as //' || echo "None")
+    grep -o "import type \* as [a-zA-Z_]\+" "$WEB_APP_DIR/$GENERATED_API_FILE" | sed 's/import type \* as /      - /' || echo "      No modules found"
+    
+    # Show module differences if there was a previous file
+    if [ -n "$WEB_OLD_MODULES" ] && [ "$WEB_OLD_MODULES" != "None" ]; then
+        # Find added modules
+        for module in $WEB_NEW_MODULES; do
+            if ! echo "$WEB_OLD_MODULES" | grep -q "$module"; then
+                echo "      ➕ Added module: $module"
+            fi
+        done
+        
+        # Find removed modules
+        for module in $WEB_OLD_MODULES; do
+            if ! echo "$WEB_NEW_MODULES" | grep -q "$module"; then
+                echo "      ➖ Removed module: $module"
+            fi
+        done
+    fi
+    
+    # Check specifically for conversations module
+    if grep -q "conversations" "$WEB_APP_DIR/$GENERATED_API_FILE"; then
+        echo "   ✅ conversations module is included"
+    else
+        echo "   ❌ conversations module is NOT included"
+    fi
+    
+    # Check for specific functions of interest
+    echo "   🔍 Checking for specific functions:"
+    if grep -q "updateConversationType" "$WEB_APP_DIR/$GENERATED_API_FILE"; then
+        echo "      ✅ updateConversationType function is included"
+    else
+        echo "      ❌ updateConversationType function is NOT included"
+    fi
 fi
 
 if [ "$DEPLOY_MOBILE" = true ]; then
@@ -156,6 +237,55 @@ if [ "$DEPLOY_MOBILE" = true ]; then
     echo "   📄 Mobile: $MOBILE_APP_DIR/$GENERATED_API_FILE"
     echo "   📏 Size: $API_FILE_SIZE bytes"
     echo "   📝 Lines: $API_LINE_COUNT"
+    
+    # Show line count difference if there was a previous file
+    if [ "$MOBILE_OLD_LINE_COUNT" -gt 0 ]; then
+        LINE_DIFF=$((API_LINE_COUNT - MOBILE_OLD_LINE_COUNT))
+        if [ "$LINE_DIFF" -gt 0 ]; then
+            echo "   📈 Added $LINE_DIFF lines"
+        elif [ "$LINE_DIFF" -lt 0 ]; then
+            echo "   📉 Removed $((LINE_DIFF * -1)) lines"
+        else
+            echo "   📊 Line count unchanged"
+        fi
+    fi
+    
+    # Check for available modules in the generated API
+    echo "   📋 Available API modules:"
+    MOBILE_NEW_MODULES=$(grep -o "import type \* as [a-zA-Z_]\+" "$MOBILE_APP_DIR/$GENERATED_API_FILE" | sed 's/import type \* as //' || echo "None")
+    grep -o "import type \* as [a-zA-Z_]\+" "$MOBILE_APP_DIR/$GENERATED_API_FILE" | sed 's/import type \* as /      - /' || echo "      No modules found"
+    
+    # Show module differences if there was a previous file
+    if [ -n "$MOBILE_OLD_MODULES" ] && [ "$MOBILE_OLD_MODULES" != "None" ]; then
+        # Find added modules
+        for module in $MOBILE_NEW_MODULES; do
+            if ! echo "$MOBILE_OLD_MODULES" | grep -q "$module"; then
+                echo "      ➕ Added module: $module"
+            fi
+        done
+        
+        # Find removed modules
+        for module in $MOBILE_OLD_MODULES; do
+            if ! echo "$MOBILE_NEW_MODULES" | grep -q "$module"; then
+                echo "      ➖ Removed module: $module"
+            fi
+        done
+    fi
+    
+    # Check specifically for conversations module
+    if grep -q "conversations" "$MOBILE_APP_DIR/$GENERATED_API_FILE"; then
+        echo "   ✅ conversations module is included"
+    else
+        echo "   ❌ conversations module is NOT included"
+    fi
+    
+    # Check for specific functions of interest
+    echo "   🔍 Checking for specific functions:"
+    if grep -q "updateConversationType" "$MOBILE_APP_DIR/$GENERATED_API_FILE"; then
+        echo "      ✅ updateConversationType function is included"
+    else
+        echo "      ❌ updateConversationType function is NOT included"
+    fi
 fi
 
 echo ""

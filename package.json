@@ -12,6 +12,7 @@
 
     "docker:deploy-convex": "./helper-scripts/deploy-convex.sh",
     "convex:deploy-api": "./helper-scripts/deploy-convex-api.sh",
+    "convex:deploy-all": "./helper-scripts/deploy-convex-all.sh",
     "convex:deploy-prod": "./helper-scripts/deploy-convex-prod.sh",
     "check-web-convex-endpoints": "./helper-scripts/api-web-convex-check.sh",
     "get-admin-key": "docker compose exec convex-backend ./generate_admin_key.sh",

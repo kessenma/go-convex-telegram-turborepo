@@ -37,7 +37,6 @@ export function useLLMProgress() {
     });
 
     // Simulate step progression
-    let currentStep = 0;
     const stepDuration = (estimatedTime || 10) / PROCESSING_STEPS.length * 1000;
     
     const progressInterval = setInterval(() => {
@@ -47,23 +46,31 @@ export function useLLMProgress() {
           return prev;
         }
 
+        const nextStep = prev.currentStep + 1;
+        
+        // Stop if we've reached the end
+        if (nextStep >= PROCESSING_STEPS.length) {
+          clearInterval(progressInterval);
+          return {
+            ...prev,
+            currentStep: PROCESSING_STEPS.length - 1,
+            progress: 95,
+            message: PROCESSING_STEPS[PROCESSING_STEPS.length - 1] || "Processing",
+          };
+        }
+
         const newProgress = Math.min(
-          ((currentStep + 1) / PROCESSING_STEPS.length) * 100,
+          (nextStep / PROCESSING_STEPS.length) * 100,
           95 // Never reach 100% until completion
         );
 
         return {
           ...prev,
-          currentStep,
+          currentStep: nextStep,
           progress: newProgress,
-          message: PROCESSING_STEPS[currentStep] || "Processing",
+          message: PROCESSING_STEPS[nextStep] || "Processing",
         };
       });
-
-      currentStep++;
-      if (currentStep >= PROCESSING_STEPS.length) {
-        clearInterval(progressInterval);
-      }
     }, stepDuration);
 
     return () => clearInterval(progressInterval);

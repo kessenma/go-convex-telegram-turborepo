@@ -117,10 +117,15 @@ export default function Navigation(): React.ReactElement {
           label: "Architecture",
           icon: Blocks as React.FC<{ className?: string }>,
         },
+        {
+          href: "/ai-chat",
+          label: "General chat",
+          icon: Bot as React.FC<{ className?: string }>,
+        },
       ],
     },
     {
-      label: "Messages",
+      label: "Telegram",
       icon: MessagesSquare as React.FC<{ className?: string }>,
       dropdown: [
         {
@@ -141,7 +146,7 @@ export default function Navigation(): React.ReactElement {
       ],
     },
     {
-      label: "RAG",
+      label: "Data",
       icon: Layers as React.FC<{ className?: string }>,
       dropdown: [
         {
@@ -156,7 +161,7 @@ export default function Navigation(): React.ReactElement {
         },
         {
           href: "/RAG-chat",
-          label: "Chat",
+          label: "RAG Chat",
           icon: BotMessageSquare as React.FC<{ className?: string }>,
         },
       ],
@@ -235,8 +240,8 @@ export default function Navigation(): React.ReactElement {
           {navItems.map((item) => {
             const IconComponent = item.icon;
             const isConsole = item.label === "Console";
-            const isMessages = item.label === "Messages";
-            const isRAG = item.label === "RAG";
+            const isMessages = item.label === "Telegram";
+            const isRAG = item.label === "Data";
             const isHome = item.label === "Home";
             const _isAbout = item.label === "About";
             const _isArchitecture = item.label === "Architecture";

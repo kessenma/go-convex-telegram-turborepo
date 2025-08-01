@@ -305,14 +305,14 @@ export function ParticlesBackground({
       if (selectedCount > 0) {
         // Position selected cubes - preserve first cube position when transitioning
         if (selectedCount === 1) {
-          mesh.position.set(0, 8, 0); // Single cube at center
+          mesh.position.set(0, 50, 0); // Single cube at center
         } else {
           // Improved positioning for multiple selected documents
           // Calculate positions using a spiral arrangement for better scaling with many documents
 
           // Keep first cube at center position
           if (i === 0) {
-            mesh.position.set(0, 8, 0);
+            mesh.position.set(0, 50, 0);
           } else {
             // Use a golden ratio-based arrangement
             const goldenRatio = 1.618033988749895;

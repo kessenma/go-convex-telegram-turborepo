@@ -14,7 +14,7 @@ import { useAnimationSettings } from "../../hooks/use-animation-settings";
 import { useSafeQuery } from "../../hooks/use-safe-convex";
 import { renderIcon } from "../../lib/icon-utils";
 import { ChatHistory } from "../../components/rag/chat/ChatHistory";
-import { ChatInterface } from "../../components/rag/chat/ChatInterface";
+import { AIChatInterface } from "../../components/rag/chat/AIChatInterface";
 import { DocumentSelector } from "../../components/rag/chat/DocumentSelector";
 import { ChatErrorBoundary } from "../../components/rag/chat/ChatErrorBoundary";
 import { ChatErrorState } from "../../components/rag/chat/ChatErrorState";
@@ -96,8 +96,8 @@ export default function RAGChatPage(): React.ReactElement {
                     {renderIcon(Loader2, {
                       className: "w-8 h-8 animate-spin text-cyan-400",
                     })}
-                    <p className="text-slate-300 text-lg">Loading your documents...</p>
-                    <p className="text-slate-500 text-sm">This may take a moment</p>
+                    <p className="text-lg text-slate-300">Loading your documents...</p>
+                    <p className="text-sm text-slate-500">This may take a moment</p>
                   </div>
                 )}
               </Card>
@@ -130,17 +130,7 @@ export default function RAGChatPage(): React.ReactElement {
             animationSpeed={75}
           ></Hero>
 
-          {/* LLM Status Indicator */}
-          <div className="px-4 mx-auto mb-4 max-w-6xl">
-            <LightweightVectorConverterStatus
-              size="md"
-              showLabel={true}
-              showLogs={true}
-              className="w-full"
-            />
-          </div>
-
-          <div className="px-4 mx-auto max-w-6xl">
+          <div className="px-4 mx-auto mt-20 max-w-6xl">
             <ChatErrorBoundary>
               <Card className="overflow-hidden relative border-gray-700 backdrop-blur-sm bg-gray-800/50">
                 <AnimatePresence initial={false}>
@@ -179,7 +169,7 @@ export default function RAGChatPage(): React.ReactElement {
                       className="absolute inset-0"
                       style={{ width: '100%' }}
                     >
-                      <ChatInterface 
+                      <AIChatInterface 
                         onOpenDocumentViewer={(documentId: string) => {
                           setViewerDocumentId(documentId as unknown as Id<"rag_documents">);
                           setDocumentViewerOpen(true);
@@ -219,6 +209,15 @@ export default function RAGChatPage(): React.ReactElement {
             </ChatErrorBoundary>
           </div>
         </div>
+                  {/* LLM Status Indicator */}
+          <div className="px-4 mx-auto mb-4 max-w-6xl">
+            <LightweightVectorConverterStatus
+              size="md"
+              showLabel={true}
+              showLogs={true}
+              className="w-full"
+            />
+          </div>
       </div>
       
       {/* Document Viewer - Rendered outside all containers for true full-screen */}

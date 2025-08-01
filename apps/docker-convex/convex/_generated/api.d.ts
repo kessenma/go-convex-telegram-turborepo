@@ -14,6 +14,8 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as api_ from "../api.js";
+import type * as conversations_index from "../conversations/index.js";
+import type * as conversations from "../conversations.js";
 import type * as crons from "../crons.js";
 import type * as documents from "../documents.js";
 import type * as embeddings from "../embeddings.js";
@@ -39,6 +41,8 @@ import type * as userSessions from "../userSessions.js";
  */
 declare const fullApi: ApiFromModules<{
   api: typeof api_;
+  "conversations/index": typeof conversations_index;
+  conversations: typeof conversations;
   crons: typeof crons;
   documents: typeof documents;
   embeddings: typeof embeddings;

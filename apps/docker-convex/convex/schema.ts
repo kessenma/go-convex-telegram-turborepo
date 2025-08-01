@@ -128,12 +128,12 @@ export default defineSchema({
     sessionId: v.string(), // Unique session identifier
     title: v.optional(v.string()), // Optional conversation title
     documentIds: v.array(v.id("rag_documents")), // Documents being chatted with
-    documentTitles: v.array(v.string()), // Document titles for quick display
+    documentTitles: v.optional(v.array(v.string())), // Document titles for quick display
     userId: v.optional(v.string()), // User identifier (if available)
     userAgent: v.optional(v.string()), // User agent for web sessions
     ipAddress: v.optional(v.string()), // IP address for tracking
     isActive: v.boolean(), // Whether conversation is still active
-    isPublic: v.boolean(), // Whether conversation is publicly accessible
+    isPublic: v.optional(v.boolean()), // Whether conversation is publicly accessible
     createdAt: v.number(), // When conversation started
     lastMessageAt: v.number(), // When last message was sent
     messageCount: v.number(), // Total number of messages in conversation
