@@ -9,8 +9,6 @@ services:
     stop_signal: SIGINT
     deploy:
       resources:
-        limits:
-          memory: ${NEXT_PUBLIC_CONVEX_BACKEND_RAM:-2G}
         reservations:
           memory: ${NEXT_PUBLIC_CONVEX_BACKEND_RAM_RESERVATION:-1G}
     ports:
