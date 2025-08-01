@@ -16,14 +16,24 @@ export const createConversation = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     
+    // Get document titles for the documentTitles field
+    const documentTitles = await Promise.all(
+      args.documentIds.map(async (docId) => {
+        const doc = await ctx.db.get(docId);
+        return doc?.title || "Unknown Document";
+      })
+    );
+    
     const conversationId = await ctx.db.insert("rag_conversations", {
       sessionId: args.sessionId,
       title: args.title,
       documentIds: args.documentIds,
+      documentTitles,
       userId: args.userId,
       userAgent: args.userAgent,
       ipAddress: args.ipAddress,
       isActive: true,
+      isPublic: false,
       createdAt: now,
       lastMessageAt: now,
       messageCount: 0,

@@ -1,7 +1,6 @@
 // apps/docker-convex/convex/generalChat.ts
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
 
 // Create a new general conversation
 export const createConversation = mutation({
@@ -21,6 +20,7 @@ export const createConversation = mutation({
       userAgent: args.userAgent,
       ipAddress: args.ipAddress,
       isActive: true,
+      isPublic: false,
       createdAt: Date.now(),
       lastMessageAt: Date.now(),
       messageCount: 0,
@@ -203,7 +203,7 @@ export const getConversationStats = query({
       averageProcessingTime:
         assistantMessages.length > 0
           ? assistantMessages.reduce((sum, m) => sum + (m.processingTimeMs || 0), 0) /
-            assistantMessages.length
+          assistantMessages.length
           : 0,
     };
   },
