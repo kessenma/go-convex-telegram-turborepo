@@ -10,13 +10,18 @@ export const addHasEmbeddingField = internalMutation({
     let updatedCount = 0;
     
     for (const doc of documents) {
-      // Check if the document already has the hasEmbedding field
-      if ((doc as any).hasEmbedding === undefined) {
-        // Update the document to add hasEmbedding: false
-        await ctx.db.patch(doc._id, {
-          hasEmbedding: false,
-        });
-        updatedCount++;
+      try {
+        // Check if the document already has the hasEmbedding field
+        if ((doc as any).hasEmbedding === undefined) {
+          // Update the document to add hasEmbedding: false
+          await ctx.db.patch(doc._id, {
+            hasEmbedding: false,
+          });
+          updatedCount++;
+        }
+      } catch (err) {
+        console.error(`Error updating hasEmbedding for document ${doc._id}:`, err);
+        // Continue with the next document
       }
     }
     
@@ -47,20 +52,36 @@ export const addMissingConversationFields = internalMutation({
       
       // Add documentTitles field if missing
       if ((conversation as any).documentTitles === undefined) {
-        // Get document titles from documentIds
-        const documentTitles = await Promise.all(
-          conversation.documentIds.map(async (docId) => {
-            const doc = await ctx.db.get(docId);
-            return doc?.title || "Unknown Document";
-          })
-        );
-        updates.documentTitles = documentTitles;
+        try {
+          // Get document titles from documentIds
+          const documentTitles = await Promise.all(
+            conversation.documentIds.map(async (docId) => {
+              try {
+                const doc = await ctx.db.get(docId);
+                return doc?.title || "Unknown Document";
+              } catch (err) {
+                console.error(`Error fetching document ${docId}:`, err);
+                return "Unknown Document";
+              }
+            })
+          );
+          updates.documentTitles = documentTitles;
+        } catch (err) {
+          console.error(`Error processing documentTitles for conversation ${conversation._id}:`, err);
+          // Provide a default value if the Promise.all fails
+          updates.documentTitles = conversation.documentIds.map(() => "Unknown Document");
+        }
         needsUpdate = true;
       }
       
       if (needsUpdate) {
-        await ctx.db.patch(conversation._id, updates);
-        ragUpdatedCount++;
+        try {
+          await ctx.db.patch(conversation._id, updates);
+          ragUpdatedCount++;
+        } catch (err) {
+          console.error(`Error updating conversation ${conversation._id}:`, err);
+          // Continue with the next conversation
+        }
       }
     }
     
@@ -78,8 +99,13 @@ export const addMissingConversationFields = internalMutation({
       }
       
       if (needsUpdate) {
-        await ctx.db.patch(conversation._id, updates);
-        generalUpdatedCount++;
+        try {
+          await ctx.db.patch(conversation._id, updates);
+          generalUpdatedCount++;
+        } catch (err) {
+          console.error(`Error updating general conversation ${conversation._id}:`, err);
+          // Continue with the next conversation
+        }
       }
     }
     
