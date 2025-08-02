@@ -50,11 +50,11 @@ services:
       - CONVEX_BOOTSTRAP_TIMEOUT_MS=${CONVEX_BOOTSTRAP_TIMEOUT_MS:-60000}
       - CONVEX_HEALTH_CHECK_TIMEOUT_MS=${CONVEX_HEALTH_CHECK_TIMEOUT_MS:-30000}
     healthcheck:
-      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/3210' || exit 1"]
-      interval: 15s
+      test: ["CMD-SHELL", "curl -sf http://localhost:3210 || exit 1"]
+      interval: 30s
       timeout: 10s
-      start_period: 60s
-      retries: 3
+      start_period: 120s
+      retries: 5
     networks:
       - telegram-bot-network
 
