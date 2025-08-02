@@ -256,14 +256,56 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
         setGeneralMessages(formattedMessages);
       } else {
         setRagMessages(formattedMessages);
-        if (loadedConversation.conversation.documentIds) {
-          setSelectedDocuments(loadedConversation.conversation.documentIds);
+        // If it's a RAG conversation, load the documents
+        if (loadedConversation.conversation.documentIds && loadedConversation.conversation.documentTitles) {
+          // Fetch the actual documents to get complete document objects
+          const fetchDocuments = async () => {
+            try {
+              // Use the documents we already fetched if available
+              if (documents) {
+                const docMap = new Map(documents.map(doc => [doc._id, doc]));
+                const docs = loadedConversation.conversation.documentIds.map((id: string, index: number) => {
+                  // Use the document from our cache if available, otherwise create a placeholder
+                  const doc = docMap.get(id) || {
+                    _id: id,
+                    title: loadedConversation.conversation.documentTitles[index] || 'Untitled Document',
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    userId: '',
+                    fileType: '',
+                    fileSize: 0,
+                    status: 'processed'
+                  };
+                  return doc;
+                });
+                setSelectedDocuments(docs);
+              } else {
+                // If documents aren't loaded yet, create placeholders
+                const docs = loadedConversation.conversation.documentIds.map((id: string, index: number) => ({
+                  _id: id,
+                  title: loadedConversation.conversation.documentTitles[index] || 'Untitled Document',
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                  userId: '',
+                  fileType: '',
+                  fileSize: 0,
+                  status: 'processed'
+                }));
+                setSelectedDocuments(docs);
+              }
+            } catch (error) {
+              console.error('Error loading documents for conversation:', error);
+              toast.error('Failed to load documents for this conversation');
+            }
+          };
+          
+          fetchDocuments();
         }
       }
       setCurrentConversation(loadedConversation.conversation._id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationLoader.messages, loadedConversation?.conversation?._id, loadedConversation?.type]);
+  }, [conversationLoader.messages, loadedConversation?.conversation?._id, loadedConversation?.type, documents]);
 
   // Scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -381,16 +423,41 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
 
   // Handle conversation selection from history - memoized
   const handleConversationSelect = useCallback((conversation: any, type: 'general' | 'rag') => {
+    console.log('Selected conversation:', conversation, 'type:', type);
+    // Set the loaded conversation which will trigger the useEffect to load messages
     setLoadedConversation({ conversation, type });
     setIsHistoryModalOpen(false);
     
-    // If it's a RAG conversation, set the document count
+    // Set the current conversation ID in the store
+    setCurrentConversation(conversation._id);
+    
+    // Set the chat mode based on the conversation type
+    setChatMode(type);
+    
+    // If it's a RAG conversation, set the document count and load documents
     if (type === 'rag' && conversation.documentIds) {
       onDocumentCountChange?.(conversation.documentIds.length);
+      
+      // Create Document objects from the IDs and titles
+      if (conversation.documentIds && conversation.documentTitles) {
+        const docs = conversation.documentIds.map((id: string, index: number) => ({
+          _id: id,
+          title: conversation.documentTitles[index] || 'Untitled Document',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          userId: '',
+          fileType: '',
+          fileSize: 0,
+          status: 'processed'
+        }));
+        setSelectedDocuments(docs);
+      }
     } else {
+      // For general chat, clear documents
+      clearDocuments();
       onDocumentCountChange?.(0);
     }
-  }, [onDocumentCountChange]);
+  }, [onDocumentCountChange, setCurrentConversation, setChatMode, setSelectedDocuments, clearDocuments]);
 
   // Handle document click to open viewer - memoized
   const handleDocumentClick = useCallback((documentId: string) => {
@@ -484,9 +551,9 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
             {selectedDocuments.length > 0 && (
               <div className="px-3 pb-3 sm:px-4 md:px-6 sm:pb-4">
                 <div className="flex flex-wrap gap-2">
-                  {selectedDocuments.map((doc) => (
+                  {selectedDocuments.map((doc, index) => (
                     <div 
-                      key={doc._id} 
+                      key={`doc-${doc._id}-${index}`} 
                       className="flex gap-2 items-center px-3 py-1 rounded-lg border transition-all duration-200 cursor-pointer bg-slate-700/50 border-cyan-500/20 hover:bg-slate-600/50"
                       onClick={() => handleDocumentClick(doc._id)}
                       title="Click to view document"
@@ -517,7 +584,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
                     <>
                       {selectedDocuments.slice(0, 3).map((doc, index) => (
                         <div 
-                          key={doc._id}
+                          key={`orbit-${doc._id}-${index}`}
                           className={`flex absolute z-10 justify-center items-center w-8 h-8 rounded-full orbit-animation-${index + 1}`}
                         >
                           <div className="flex justify-center items-center w-6 h-6 rounded-full border bg-cyan-400/20 border-cyan-400/40">

@@ -1071,7 +1071,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                                         <InteractiveEmbeddingPlot
                                                             data={atlasData}
                                                             is3D={is3D}
-                                                            isFullscreen={false}
+                                                            isFullscreen={true}
                                                             onToggle3D={toggle3D}
                                                             onToggleFullscreen={openModal}
                                                         />
