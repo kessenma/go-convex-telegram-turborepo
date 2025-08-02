@@ -12,7 +12,7 @@ echo "🚀 Deploying Convex functions to production..."
 cd apps/docker-convex
 
 # Determine if we're in production by checking hostname
-if [[ $(hostname) == *"rag-ubuntu"* ]]; then
+if echo "$(hostname)" | grep -q "rag-ubuntu"; then
   # Production environment - use actual server IP
   SERVER_IP="157.180.80.201"
   echo "🌎 Using production server IP: $SERVER_IP"
@@ -27,15 +27,17 @@ NEXT_PUBLIC_CONVEX_PORT=3210
 CONVEX_SITE_PORT=3211
 
 # Set environment variables for self-hosted deployment
-export CONVEX_SELF_HOSTED_URL=http://$SERVER_IP:$NEXT_PUBLIC_CONVEX_PORT
 export CONVEX_URL=http://$SERVER_IP:$NEXT_PUBLIC_CONVEX_PORT
+# Don't set CONVEX_SELF_HOSTED_URL when CONVEX_DEPLOYMENT is set
+# export CONVEX_SELF_HOSTED_URL=http://$SERVER_IP:$NEXT_PUBLIC_CONVEX_PORT
 
 echo "🔗 Using Convex URL: $CONVEX_URL"
 
 # Update .env.docker with the correct server configuration
 echo "📝 Updating .env.docker with server configuration..."
 sed -i.bak "s|CONVEX_URL=.*|CONVEX_URL=$CONVEX_URL|g" .env.docker
-sed -i.bak "s|CONVEX_SELF_HOSTED_URL=.*|CONVEX_SELF_HOSTED_URL=$CONVEX_URL|g" .env.docker
+# Don't set CONVEX_SELF_HOSTED_URL when CONVEX_DEPLOYMENT is set
+# sed -i.bak "s|CONVEX_SELF_HOSTED_URL=.*|CONVEX_SELF_HOSTED_URL=$CONVEX_URL|g" .env.docker
 sed -i.bak "s|CONVEX_CLOUD_ORIGIN=.*|CONVEX_CLOUD_ORIGIN=$CONVEX_URL|g" .env.docker
 sed -i.bak "s|NEXT_PUBLIC_DEPLOYMENT_URL=.*|NEXT_PUBLIC_DEPLOYMENT_URL=$CONVEX_URL|g" .env.docker
 rm -f .env.docker.bak
