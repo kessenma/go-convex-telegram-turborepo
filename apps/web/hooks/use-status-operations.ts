@@ -19,18 +19,18 @@ export function useStatusOperations() {
     setLightweightLlmStatus,
     setConvexStatus,
     setDockerStatus,
-    setUserCountStatus,
+
     checkLLMStatus,
     checkLightweightLlmStatus,
     checkConvexStatus,
     checkDockerStatus,
-    checkUserCountStatus,
+
     checkAllStatus,
     optimisticLLMUpdate,
     optimisticLightweightLlmUpdate,
     optimisticConvexUpdate,
     optimisticDockerUpdate,
-    optimisticUserCountUpdate,
+
   } = useStatusStore();
 
   // Memoized status check functions
@@ -50,9 +50,7 @@ export function useStatusOperations() {
     return await checkDockerStatus();
   }, [checkDockerStatus]);
 
-  const handleCheckUserCountStatus = useCallback(async () => {
-    return await checkUserCountStatus();
-  }, [checkUserCountStatus]);
+
 
   const handleCheckAllStatus = useCallback(async () => {
     return await checkAllStatus();
@@ -87,12 +85,7 @@ export function useStatusOperations() {
     [optimisticDockerUpdate]
   );
 
-  const updateUserCountStatusOptimistically = useCallback(
-    (partialStatus: Partial<typeof statusData.userCountStatus>) => {
-      optimisticUserCountUpdate(partialStatus);
-    },
-    [optimisticUserCountUpdate]
-  );
+
 
   // Note: Polling is now handled by the centralized HealthCheckProvider
   // Individual components should use the specific status hooks instead
@@ -110,7 +103,7 @@ export function useStatusOperations() {
     checkLightweightLlmStatus: handleCheckLightweightLlmStatus,
     checkConvexStatus: handleCheckConvexStatus,
     checkDockerStatus: handleCheckDockerStatus,
-    checkUserCountStatus: handleCheckUserCountStatus,
+
     checkAllStatus: handleCheckAllStatus,
 
     // Optimistic updates
@@ -118,14 +111,14 @@ export function useStatusOperations() {
     updateLightweightLlmStatusOptimistically,
     updateConvexStatusOptimistically,
     updateDockerStatusOptimistically,
-    updateUserCountStatusOptimistically,
+
 
     // Direct store actions (for advanced usage)
     setLLMStatus,
     setLightweightLlmStatus,
     setConvexStatus,
     setDockerStatus,
-    setUserCountStatus,
+
   };
 }
 
@@ -209,23 +202,3 @@ export function useConvexStatus() {
  * Hook specifically for User Count status monitoring
  * Now uses centralized data source without individual polling
  */
-export function useUserCountStatus() {
-  const {
-    userCountStatus,
-    loading,
-    lastUpdated,
-    consecutiveErrors,
-    pollingIntervals,
-  } = useStatusData();
-  const { checkUserCountStatus, optimisticUserCountUpdate } = useStatusStore();
-
-  return {
-    status: userCountStatus,
-    loading: loading.userCount,
-    lastUpdated: lastUpdated.userCount,
-    consecutiveErrors: consecutiveErrors.userCount,
-    pollingInterval: pollingIntervals.userCount,
-    checkStatus: checkUserCountStatus,
-    updateOptimistically: optimisticUserCountUpdate,
-  };
-}

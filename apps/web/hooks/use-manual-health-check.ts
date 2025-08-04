@@ -14,7 +14,7 @@ export function useManualHealthCheck() {
     checkLightweightLlmStatus,
     checkConvexStatus,
     checkDockerStatus,
-    checkUserCountStatus,
+
     checkAllStatus,
   } = useStatusStore();
 
@@ -57,14 +57,7 @@ export function useManualHealthCheck() {
     }
   }, [checkDockerStatus]);
 
-  const checkUserCount = useCallback(async () => {
-    try {
-      return await checkUserCountStatus();
-    } catch (error) {
-      console.warn("Manual User Count check failed:", error);
-      return false;
-    }
-  }, [checkUserCountStatus]);
+
 
   // Check all services
   const checkAll = useCallback(async () => {
@@ -77,7 +70,7 @@ export function useManualHealthCheck() {
         lightweightLlm: false,
         convex: false,
         docker: false,
-        userCount: false,
+
       };
     }
   }, [checkAllStatus]);
@@ -97,7 +90,7 @@ export function useManualHealthCheck() {
     checkLightweightLLM,
     checkConvex,
     checkDocker,
-    checkUserCount,
+
     checkAll,
 
     // Centralized check (respects timing constraints)

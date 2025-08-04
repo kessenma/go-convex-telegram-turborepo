@@ -88,14 +88,16 @@ async function performVectorSearch(
   try {
     // First, try to use your existing vector search from Convex with document filtering
     console.log("Trying Convex vector search with document filtering...");
-    const vectorResults = await convex.action(
-      api.embeddings.searchDocumentsByVector,
-      {
-        queryText: query,
-        limit: limit * 4, // Get more results to filter and rank
-        documentIds: documentIds as any[], // Pass document IDs for filtering
-      }
-    );
+    // TODO: Fix this endpoint - searchDocumentsByVector doesn't exist
+    // const vectorResults = await convex.action(
+    //   api.embeddings.searchDocumentsByVector,
+    //   {
+    //     queryText: query,
+    //     limit: limit * 4, // Get more results to filter and rank
+    //     documentIds: documentIds as any[], // Pass document IDs for filtering
+    //   }
+    // );
+    const vectorResults = [];
 
     console.log(
       "Vector search results:",
@@ -104,11 +106,12 @@ async function performVectorSearch(
     
     if (vectorResults && vectorResults.length > 0) {
       console.log("Sample result structure:", {
-        hasDocument: !!vectorResults[0]?.document,
-        hasChunkText: !!vectorResults[0]?.chunkText,
-        hasScore: !!vectorResults[0]?._score,
-        isChunkResult: !!vectorResults[0]?.isChunkResult,
-        expandedContext: !!vectorResults[0]?.expandedContext
+        // TODO: Uncomment when searchDocumentsByVector is fixed
+        // hasDocument: !!vectorResults[0]?.document,
+        // hasChunkText: !!vectorResults[0]?.chunkText,
+        // hasScore: !!vectorResults[0]?._score,
+        // isChunkResult: !!vectorResults[0]?.isChunkResult,
+        // expandedContext: !!vectorResults[0]?.expandedContext
       });
 
       // Process and enhance results

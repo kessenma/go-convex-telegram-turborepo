@@ -188,16 +188,6 @@ export type PublicApiType = {
       Record<string, never>,
       any
     >;
-    searchDocumentsByVector: FunctionReference<
-      "action",
-      "public",
-      {
-        documentIds?: Array<Id<"rag_documents">>;
-        limit?: number;
-        queryText: string;
-      },
-      any
-    >;
   };
   generalChat: {
     createConversation: FunctionReference<
@@ -522,44 +512,6 @@ export type PublicApiType = {
       any
     >;
   };
-  ragSearch: {
-    generateEmbedding: FunctionReference<
-      "action",
-      "public",
-      { text: string },
-      any
-    >;
-    vectorSearch: FunctionReference<
-      "action",
-      "public",
-      {
-        documentIds?: Array<Id<"rag_documents">>;
-        limit?: number;
-        query: string;
-      },
-      any
-    >;
-    ragSearch: FunctionReference<
-      "action",
-      "public",
-      {
-        documentIds: Array<Id<"rag_documents">>;
-        limit?: number;
-        query: string;
-      },
-      any
-    >;
-    getRagContext: FunctionReference<
-      "action",
-      "public",
-      {
-        documentIds: Array<Id<"rag_documents">>;
-        maxContextLength?: number;
-        query: string;
-      },
-      any
-    >;
-  };
   serviceStatus: {
     updateServiceStatus: FunctionReference<
       "mutation",
@@ -683,6 +635,39 @@ export type PublicApiType = {
       "query",
       "public",
       Record<string, never>,
+      any
+    >;
+  };
+  presence: {
+    heartbeat: FunctionReference<
+      "mutation",
+      "public",
+      { interval: number; roomId: string; sessionId: string; userId: string },
+      any
+    >;
+    list: FunctionReference<"query", "public", { roomToken: string }, any>;
+    disconnect: FunctionReference<
+      "mutation",
+      "public",
+      { sessionToken: string },
+      any
+    >;
+    getActiveUserCount: FunctionReference<
+      "query",
+      "public",
+      { roomId?: string },
+      any
+    >;
+  };
+  vectorSearch: {
+    searchDocumentsByVector: FunctionReference<
+      "action",
+      "public",
+      {
+        documentIds?: Array<Id<"rag_documents">>;
+        limit?: number;
+        queryText: string;
+      },
       any
     >;
   };

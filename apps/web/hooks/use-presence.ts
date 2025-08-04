@@ -1,8 +1,8 @@
 "use client";
 
 import { api } from "../generated-convex";
-import usePresence from "@convex-dev/presence/react";
-import { useEffect, useState } from "react";
+import useConvexPresence from "@convex-dev/presence/react";
+import { useState } from "react";
 
 /**
  * Hook to manage user presence for tracking active users
@@ -10,15 +10,15 @@ import { useEffect, useState } from "react";
  * @param enabled - Whether to enable presence tracking (defaults to true)
  * @param roomId - Room identifier for presence tracking (defaults to "main-site")
  */
-export function useUserPresence(enabled: boolean = true, roomId: string = "main-site") {
+export function usePresence(enabled: boolean = true, roomId: string = "main-site") {
   const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   
-  // Use the Convex presence hook
-  const presenceState = usePresence(
-    enabled ? api.presence : undefined,
+  // Use the Convex presence hook - only call when enabled
+  const presenceState = enabled ? useConvexPresence(
+    api.presence,
     roomId,
     userId
-  );
+  ) : null;
 
   // Extract just the count for compatibility with existing components
   const activeUserCount = presenceState?.length || 0;
@@ -27,6 +27,6 @@ export function useUserPresence(enabled: boolean = true, roomId: string = "main-
     activeUserCount,
     presenceState,
     userId,
-    isActive: enabled && presenceState !== undefined,
+    isActive: enabled && presenceState !== null,
   };
 }

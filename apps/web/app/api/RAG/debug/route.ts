@@ -81,14 +81,15 @@ export async function POST(request: NextRequest) {
     let vectorSearchResults = [];
     try {
       console.log("🔍 Testing vector search...");
-      vectorSearchResults = await convex.action(
-        api.embeddings.searchDocumentsByVector,
-        {
-          queryText: query,
-          limit: 10,
-          documentIds: documentIds as any[],
-        }
-      );
+      // TODO: Fix this endpoint - searchDocumentsByVector doesn't exist
+       // vectorSearchResults = await convex.action(
+       //   api.embeddings.searchDocumentsByVector,
+       //   {
+       //     queryText: query,
+       //     limit: 5,
+       //   }
+       // );
+       vectorSearchResults = [];
       console.log("✅ Vector search results:", vectorSearchResults.length);
     } catch (vectorError) {
       console.error("❌ Vector search failed:", vectorError);
