@@ -642,7 +642,23 @@ export type PublicApiType = {
     heartbeat: FunctionReference<
       "mutation",
       "public",
-      { interval: number; roomId: string; sessionId: string; userId: string },
+      {
+        as?: string;
+        city?: string;
+        coordinates?: Array<number>;
+        country?: string;
+        countryCode?: string;
+        interval: number;
+        ipAddress?: string;
+        isp?: string;
+        org?: string;
+        region?: string;
+        roomId: string;
+        sessionId: string;
+        timezone?: string;
+        userId: string;
+        zip?: string;
+      },
       any
     >;
     list: FunctionReference<"query", "public", { roomToken: string }, any>;
@@ -653,6 +669,18 @@ export type PublicApiType = {
       any
     >;
     getActiveUserCount: FunctionReference<
+      "query",
+      "public",
+      { roomId?: string },
+      any
+    >;
+    getActiveUsersWithLocation: FunctionReference<
+      "query",
+      "public",
+      { roomId?: string },
+      any
+    >;
+    getPresenceDebugInfo: FunctionReference<
       "query",
       "public",
       { roomId?: string },
@@ -670,6 +698,36 @@ export type PublicApiType = {
       },
       any
     >;
+  };
+  userLocation: {
+    updateUserLocation: FunctionReference<
+      "mutation",
+      "public",
+      {
+        as?: string;
+        city?: string;
+        coordinates?: Array<number>;
+        country: string;
+        countryCode?: string;
+        ipAddress: string;
+        isp?: string;
+        org?: string;
+        region?: string;
+        sessionId: string;
+        timezone?: string;
+        userId: string;
+        zip?: string;
+      },
+      any
+    >;
+    getUserLocation: FunctionReference<
+      "query",
+      "public",
+      { sessionId: string; userId: string },
+      any
+    >;
+    getAllUserLocations: FunctionReference<"query", "public", any, any>;
+    cleanupOldLocations: FunctionReference<"mutation", "public", any, any>;
   };
 };
 export type InternalApiType = {};

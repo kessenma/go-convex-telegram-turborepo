@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Settings as SettingsIcon, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { ExpandableCard } from "../ui/expandable-card-reusable";
-import { ScrollArea } from "../ui/scroll-area";
+
 import { Switch } from "../ui/switch";
 import { useOutsideClick } from "../../hooks/use-outside-clicks";
 import { renderIcon } from "../../lib/icon-utils";
@@ -16,6 +16,7 @@ import { VectorConverterStatus } from "./vector-status-indicator";
 
 import { UserCountIndicator } from "./user-count-indicator";
 import { ChangelogModal } from "../change-log/ChangelogModal";
+
 
 interface SettingsProps {
   className?: string;
@@ -181,8 +182,9 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
         buttonPosition={buttonPosition}
         liquidGlass={true}
         layoutId={`settings-card-${id}`}
+        zIndex={100}
       >
-        <ScrollArea className="h-[calc(min(60vh,500px))] overflow-y-auto">
+        <div className="h-[calc(min(60vh,500px))] overflow-y-auto overflow-x-visible">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-white font-md text-sn">
@@ -231,16 +233,16 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                   </motion.div>
 
                   <motion.div
-                      variants={{
+                    variants={{
                       hidden: { opacity: 0, y: 5 },
                       visible: { opacity: 1, y: 0 },
                     }}>
-                  <VectorConverterStatus
-                  size="sm"
-                  showLogs={true}
-                  showSummary={false}
-                  variant="consolidated"
-                  />
+                    <VectorConverterStatus
+                      size="sm"
+                      showLogs={true}
+                      showSummary={false}
+                      variant="consolidated"
+                    />
                   </motion.div>
 
                   {/* Convex Status */}
@@ -281,6 +283,8 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                       showLogs={false}
                     />
                   </motion.div>
+
+
                 </motion.div>
               </div>
 
@@ -383,7 +387,7 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </ExpandableCard>
     </div>
   );

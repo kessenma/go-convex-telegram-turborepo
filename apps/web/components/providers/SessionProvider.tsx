@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePresence } from "../../hooks/use-presence";
 
 /**
  * Client component that manages user presence
@@ -22,12 +21,8 @@ export function SessionProvider({
     setHasConsented(consent === "true");
   }, []);
 
-  // Only initialize user presence tracking if user has consented
-  const shouldTrack = hasConsented === true;
-  const { userId, isActive } = usePresence(shouldTrack);
-
-  // Optional: You can expose presence info via context if needed
-  // For now, we just need the hook to run
+  // Note: Presence tracking is now handled directly in components that need it
+  // This provider is kept for future session management features
 
   return <>{children}</>;
 }

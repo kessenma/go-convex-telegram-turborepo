@@ -70,6 +70,7 @@
     "@types/pdfjs-dist": "^2.10.378",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",
+
     "autoprefixer": "^10.4.20",
     "eslint": "^9.29.0",
     "eslint-plugin-unused-imports": "^4.1.4",

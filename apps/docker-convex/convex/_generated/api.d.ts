@@ -20,6 +20,7 @@ import type * as https_endpoints_documents_index from "../https_endpoints/docume
 import type * as https_endpoints_embedding_index from "../https_endpoints/embedding/index.js";
 import type * as https_endpoints_monitoring_index from "../https_endpoints/monitoring/index.js";
 import type * as https_endpoints_notifications_index from "../https_endpoints/notifications/index.js";
+import type * as https_endpoints_shared_ip_utils from "../https_endpoints/shared/ip_utils.js";
 import type * as https_endpoints_shared_utils from "../https_endpoints/shared/utils.js";
 import type * as https_endpoints_telegram_index from "../https_endpoints/telegram/index.js";
 import type * as messages from "../messages.js";
@@ -33,6 +34,7 @@ import type * as ragChat from "../ragChat.js";
 import type * as serviceStatus from "../serviceStatus.js";
 import type * as shared from "../shared.js";
 import type * as threads from "../threads.js";
+import type * as userLocation from "../userLocation.js";
 import type * as userSessions from "../userSessions.js";
 import type * as vectorSearch from "../vectorSearch.js";
 
@@ -63,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   "https_endpoints/embedding/index": typeof https_endpoints_embedding_index;
   "https_endpoints/monitoring/index": typeof https_endpoints_monitoring_index;
   "https_endpoints/notifications/index": typeof https_endpoints_notifications_index;
+  "https_endpoints/shared/ip_utils": typeof https_endpoints_shared_ip_utils;
   "https_endpoints/shared/utils": typeof https_endpoints_shared_utils;
   "https_endpoints/telegram/index": typeof https_endpoints_telegram_index;
   messages: typeof messages;
@@ -76,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   serviceStatus: typeof serviceStatus;
   shared: typeof shared;
   threads: typeof threads;
+  userLocation: typeof userLocation;
   userSessions: typeof userSessions;
   vectorSearch: typeof vectorSearch;
 }>;

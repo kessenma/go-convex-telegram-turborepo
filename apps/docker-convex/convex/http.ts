@@ -26,8 +26,7 @@
 
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { api, internal } from "./_generated/api";
-import { Id } from "./_generated/dataModel";
+import { api } from "./_generated/api";
 
 // Import modular route handlers
 import * as telegramRoutes from "./https_endpoints/telegram";
@@ -36,7 +35,8 @@ import * as embeddingRoutes from "./https_endpoints/embedding";
 import * as aiChatRoutes from "./https_endpoints/ai_chat";
 import * as monitoringRoutes from "./https_endpoints/monitoring";
 import * as notificationRoutes from "./https_endpoints/notifications";
-import { errorResponse, successResponse, corsHeaders } from "./https_endpoints/shared/utils";
+
+import { errorResponse } from "./https_endpoints/shared/utils";
 
 // =============================================================================
 // API ENDPOINT IMPLEMENTATIONS
@@ -278,6 +278,12 @@ http.route({
   path: "/api/users/active-count",
   method: "GET",
   handler: monitoringRoutes.getActiveUserCountAPI,
+});
+
+http.route({
+  path: "/api/users/with-location",
+  method: "GET",
+  handler: monitoringRoutes.getUsersWithLocationAPI,
 });
 
 // TELEGRAM BOT API ENDPOINTS
@@ -551,6 +557,109 @@ http.route({
   path: "/api/rag-chat/threads/delete",
   method: "DELETE",
   handler: aiChatRoutes.deleteThreadAPI,
+});
+
+// PRESENCE API ENDPOINTS
+export const presenceHeartbeatAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { roomId, userId, sessionId, interval, location } = body;
+
+    // Validate required fields
+    if (!roomId || !userId || !sessionId || !interval) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Missing required fields: roomId, userId, sessionId, interval" 
+        }),
+        { 
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    // Use location data from frontend
+    const locationData = location || {};
+
+    // Update presence with location data
+    const heartbeatArgs = {
+      roomId,
+      userId,
+      sessionId,
+      interval,
+      ipAddress: locationData.ip || 'unknown',
+      country: locationData.country || 'Unknown',
+      countryCode: locationData.countryCode || 'Unknown',
+      region: locationData.region || 'Unknown',
+      city: locationData.city || 'Unknown',
+      zip: locationData.zip || 'Unknown',
+      timezone: locationData.timezone || 'Unknown',
+      coordinates: locationData.coordinates || [0, 0],
+      isp: locationData.isp || 'Unknown',
+      org: locationData.org || 'Unknown',
+      as: locationData.as || 'Unknown',
+    };
+    
+    await ctx.runMutation(api.presence.heartbeat, heartbeatArgs);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        location: locationData
+      }),
+      { 
+        status: 200,
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+        }
+      }
+    );
+
+  } catch (error) {
+    console.error("Presence heartbeat error:", error);
+    return new Response(
+      JSON.stringify({ 
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { 
+        status: 500,
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+        }
+      }
+    );
+  }
+});
+
+http.route({
+  path: "/api/presence/heartbeat",
+  method: "POST",
+  handler: presenceHeartbeatAPI,
+});
+
+export const presenceOptionsAPI = httpAction(async (ctx, request) => {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
+});
+
+http.route({
+  path: "/api/presence/heartbeat",
+  method: "OPTIONS",
+  handler: presenceOptionsAPI,
 });
 
 // PARAMETERIZED ROUTES (Must be placed last to avoid conflicts)
