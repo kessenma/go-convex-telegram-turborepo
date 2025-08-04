@@ -1145,7 +1145,7 @@ export const useStatusStore = create<StatusStore>()(
         setUserCountLoading(true);
 
         try {
-          const response = await fetch("/api/users/active-count", {
+          const response = await fetch("/api/users/presence-count", {
             method: "GET",
             headers: { "Content-Type": "application/json" },
             signal: AbortSignal.timeout(5000),
@@ -1167,17 +1167,16 @@ export const useStatusStore = create<StatusStore>()(
             return false;
           }
 
-          const response_data = await response.json();
-          const data = response_data.data || response_data; // Handle both wrapped and unwrapped responses
+          const data = await response.json();
           resetUserCountErrors();
           setUserCountStatus({
             status: "connected",
             ready: true,
-            message: `${data.activeUsers || 0} active users`,
-            activeUsers: data.activeUsers || 0,
-            bySource: data.bySource,
+            message: `${data.total || 0} active users`,
+            activeUsers: data.total || 0,
+            bySource: { web: data.total || 0 }, // All users are web users with presence
             details: {
-              sourceBreakdown: data.bySource,
+              sourceBreakdown: { web: data.total || 0 },
               timestamp: new Date().toISOString(),
             },
           });

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUserSession } from "../../hooks/use-user-session";
+import { useUserPresence } from "../../hooks/use-presence";
 
 /**
- * Client component that manages user sessions
+ * Client component that manages user presence
  * This component should be included in the root layout to ensure
- * user sessions are tracked on every page
+ * user presence is tracked on every page
  * Only tracks users who have consented to cookies
  */
 export function SessionProvider({
@@ -22,11 +22,11 @@ export function SessionProvider({
     setHasConsented(consent === "true");
   }, []);
 
-  // Only initialize user session tracking if user has consented
+  // Only initialize user presence tracking if user has consented
   const shouldTrack = hasConsented === true;
-  const { sessionId, isActive } = useUserSession(shouldTrack);
+  const { userId, isActive } = useUserPresence(shouldTrack);
 
-  // Optional: You can expose session info via context if needed
+  // Optional: You can expose presence info via context if needed
   // For now, we just need the hook to run
 
   return <>{children}</>;

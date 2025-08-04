@@ -83,16 +83,7 @@ export function useConsolidatedHealthCheck() {
       lastCheckTimes.current.userCount = now;
       checks.push(checkUserCountStatus().catch(() => false));
 
-      // Trigger session cleanup when checking user count (every 75 seconds)
-      // This provides additional cleanup beyond the cron job
-      checks.push(
-        fetch("/api/users/active-count/cleanup", { method: "POST" })
-          .then(() => true)
-          .catch((error) => {
-            console.debug("Session cleanup request failed:", error);
-            return false;
-          })
-      );
+      // Note: Session cleanup is now handled automatically by the presence component
     }
 
     // Execute all due checks in parallel

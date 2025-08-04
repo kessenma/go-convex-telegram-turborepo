@@ -1,3 +1,7 @@
+// COMMENTED OUT - Vector search functionality is currently broken and not needed for MVP
+// This will be re-enabled once vector search is properly implemented
+
+/*
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "../../../../generated-convex";
@@ -77,7 +81,9 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+*/
 
+/*
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -146,4 +152,22 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+*/
+
+// Temporary stub endpoints to prevent 404 errors while vector search is disabled
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json(
+    { error: "Vector search is currently disabled - feature in beta" },
+    { status: 503 }
+  );
+}
+
+export async function POST(request: NextRequest) {
+  return NextResponse.json(
+    { error: "Vector search is currently disabled - feature in beta" },
+    { status: 503 }
+  );
 }

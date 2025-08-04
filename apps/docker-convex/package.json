@@ -26,6 +26,8 @@
     "test:api": "jest --testPathPattern=__tests__/api"
   },
   "dependencies": {
+    "@convex-dev/migrations": "^0.2.9",
+    "@convex-dev/presence": "^0.1.5",
     "@convex-dev/rag": "^0.3.2",
     "convex": "1.24.8",
     "convex-helpers": "^0.1.100",

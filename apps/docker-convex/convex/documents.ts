@@ -1,5 +1,5 @@
 // apps/docker-convex/convex/documents.ts
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 
@@ -32,10 +32,12 @@ export const saveDocument = mutation({
     });
 
     // Create notification for document upload
-    await ctx.runMutation(api.notifications.createNotification, {
+    await ctx.db.insert("notifications", {
       type: "document_upload",
       title: "Document Uploaded",
       message: `Document "${args.title}" has been uploaded successfully`,
+      timestamp: now,
+      isRead: false,
       documentId: documentId,
       metadata: JSON.stringify({
         contentType: args.contentType,
@@ -45,10 +47,7 @@ export const saveDocument = mutation({
       source: "system"
     });
 
-    // Schedule embedding generation (async)
-    await ctx.scheduler.runAfter(0, internal.embeddings.processDocumentEmbedding, {
-      documentId: documentId,
-    });
+    // Note: Embedding generation removed as RAG functionality is not being used
 
     return documentId;
   },
@@ -121,9 +120,14 @@ export const deleteDocument = mutation({
   args: { documentId: v.id("rag_documents") },
   handler: async (ctx, args) => {
     // First, delete all associated embeddings
-    await ctx.runMutation(api.embeddings.deleteDocumentEmbeddings, {
-      documentId: args.documentId,
-    });
+    const embeddings = await ctx.db
+      .query("document_embeddings")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+    
+    for (const embedding of embeddings) {
+      await ctx.db.delete(embedding._id);
+    }
     
     // Then soft delete the document
     await ctx.db.patch(args.documentId, {
@@ -237,6 +241,37 @@ export const getDocumentStats = query({
     };
   },
 });
+
+// Internal helper to get document stats
+export const getDocumentStatsInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const allDocs = await ctx.db
+      .query("rag_documents")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .collect();
+
+    const totalDocuments = allDocs.length;
+    const totalWords = allDocs.reduce((sum, doc) => sum + doc.wordCount, 0);
+    const totalSize = allDocs.reduce((sum, doc) => sum + doc.fileSize, 0);
+    
+    const contentTypes = allDocs.reduce((acc, doc) => {
+      acc[doc.contentType] = (acc[doc.contentType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      totalDocuments,
+      totalWords,
+      totalSize,
+      contentTypes,
+      averageWordsPerDocument: totalDocuments > 0 ? Math.round(totalWords / totalDocuments) : 0,
+      averageSizePerDocument: totalDocuments > 0 ? Math.round(totalSize / totalDocuments) : 0,
+    };
+  },
+});
+
+
 
 // Get enhanced document statistics with embeddings and file types
 export const getEnhancedDocumentStats = query({

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Document } from '../app/RAG-chat/types';
+import type { Document } from '../types/rag';
 
 export interface ChatMessage {
   id: string;

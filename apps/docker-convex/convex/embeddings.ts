@@ -1,33 +1,96 @@
-import { action, internalAction, internalQuery, mutation, query } from "./_generated/server";
+import { action, internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 
-// Constants
-const VECTOR_SEARCH_LIMIT = 10;
 
-// Types
-interface EmbeddingResult {
-  _id: Id<"document_embeddings">;
-  documentId: Id<"rag_documents">;
-  chunkText?: string;
-  chunkIndex?: number;
-  _score: number;
-  document: any;
-}
 
-// Internal helper to get document by ID
-export const getDocumentInternal = internalQuery({
+// Removed getDocumentInternal to avoid circular dependencies
+// Use internal.shared.getDocumentByIdInternal instead
+
+// Internal helper to get embedding by ID
+export const getEmbeddingByIdInternal = internalQuery({
+  args: {
+    embeddingId: v.id("document_embeddings"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.embeddingId);
+  },
+});
+
+// Internal helper to get document embeddings
+export const getDocumentEmbeddingsInternal = internalQuery({
   args: {
     documentId: v.id("rag_documents"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.documentId);
+    return await ctx.db
+      .query("document_embeddings")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+  },
+});
+
+// Internal helper to create error notifications
+export const createErrorNotification = internalMutation({
+  args: {
+    documentId: v.id("rag_documents"),
+    error: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("notifications", {
+      type: "document_embedding_error",
+      title: "Embedding Failed",
+      message: `Failed to generate embeddings for document: ${args.error}`,
+      timestamp: Date.now(),
+      isRead: false,
+      documentId: args.documentId,
+      metadata: JSON.stringify({
+        error: args.error,
+        timestamp: Date.now()
+      }),
+      source: "system"
+    });
   },
 });
 
 // Generate embedding using the vector-convert-llm service
 export const generateEmbedding = action({
+  args: {
+    text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get the vector-convert-llm service URL from environment
+      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
+      
+      // Call the embedding service
+      const response = await fetch(`${vectorServiceUrl}/embed`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: args.text,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Vector service error: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result.embeddings;
+    } catch (error) {
+      console.error("Error generating embedding:", error);
+      throw error;
+    }
+  },
+});
+
+// Internal embedding generation to avoid circular dependencies
+export const generateEmbeddingInternal = internalAction({
   args: {
     text: v.string(),
   },
@@ -222,19 +285,11 @@ export const processDocumentWithChunking = action({
   },
   handler: async (ctx, args) => {
     try {
-      // Get the document
-      const document = await ctx.runQuery(api.documents.getDocumentById, {
-        documentId: args.documentId,
-      });
-
-      if (!document) {
-        throw new Error(`Document not found: ${args.documentId}`);
-      }
-
       // Get the vector-convert-llm service URL from environment
       const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
       
       // Call the document processing endpoint
+      // The vector service will fetch the document data itself via Convex API
       const response = await fetch(`${vectorServiceUrl}/process-document`, {
         method: "POST",
         headers: {
@@ -268,20 +323,12 @@ export const processDocumentEmbedding = internalAction({
   },
   handler: async (ctx, args): Promise<{ success: boolean; documentId: Id<"rag_documents">; embeddingDimensions?: number }> => {
     try {
-      // Get the document
-      const document: any = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
-        documentId: args.documentId,
-      });
-
-      if (!document) {
-        throw new Error(`Document not found: ${args.documentId}`);
-      }
-
       // Get the vector-convert-llm service URL from environment
       const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
       const convexUrl = process.env.CONVEX_URL || "http://convex-backend:3211";
       
       // Call the document processing endpoint with chunking
+      // The vector service will fetch the document data itself via Convex API
       const response = await fetch(`${vectorServiceUrl}/process-document`, {
         method: "POST",
         headers: {
@@ -310,22 +357,15 @@ export const processDocumentEmbedding = internalAction({
     } catch (error) {
       console.error("Error processing document embedding:", error);
       
-      // Create error notification
-      try {
-        await ctx.runMutation(api.notifications.createNotification, {
-          type: "document_embedding_error",
-          title: "Embedding Failed",
-          message: `Failed to generate embeddings for document: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          documentId: args.documentId,
-          metadata: JSON.stringify({
-            error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: Date.now()
-          }),
-          source: "system"
-        });
-      } catch (notificationError) {
-        console.error("Failed to create error notification:", notificationError);
-      }
+      // Create error notification (disabled - RAG functionality not in use)
+      // try {
+      //   await ctx.runMutation(internal.embeddings.createErrorNotification, {
+      //     documentId: args.documentId,
+      //     error: error instanceof Error ? error.message : 'Unknown error'
+      //   });
+      // } catch (notificationError) {
+      //   console.error("Failed to create error notification:", notificationError);
+      // }
       
       return {
         success: false,
@@ -369,164 +409,6 @@ export const checkLLMServiceStatus = action({
         message: `Failed to connect to service: ${error}`,
         ready: false,
       };
-    }
-  },
-});
-
-// Search documents by vector similarity with enhanced chunk support
-export const searchDocumentsByVector = action({
-  args: {
-    queryText: v.string(),
-    limit: v.optional(v.number()),
-    documentIds: v.optional(v.array(v.id("rag_documents"))),
-  },
-  handler: async (ctx, args) => {
-    try {
-      console.log(`Starting vector search for query: "${args.queryText}"`);
-      console.log(`Document filter: ${args.documentIds ? args.documentIds.length + ' documents' : 'all documents'}`);
-      
-      // Generate embedding for the query
-      const queryEmbedding = await ctx.runAction(api.embeddings.generateEmbedding, {
-        text: args.queryText,
-      });
-      
-      console.log(`Generated query embedding with ${queryEmbedding.length} dimensions`);
-      
-      // Build filter for vector search - use simple filter only
-      const filter = (q: any) => q.eq("isActive", true);
-      
-      console.log("Using simple isActive filter for vector search");
-      
-      // Perform vector search with higher limit to get more candidates
-      const searchLimit = Math.min((args.limit || VECTOR_SEARCH_LIMIT) * 4, 100);
-      const searchResults = await ctx.vectorSearch("document_embeddings", "by_embedding", {
-        vector: queryEmbedding,
-        limit: searchLimit,
-        filter,
-      });
-      
-      console.log(`Vector search found ${searchResults.length} embedding results`);
-      
-      // Get document details for each result and enhance with chunk information
-      const results: (EmbeddingResult & { 
-        isChunkResult: boolean; 
-        chunkIndex?: number; 
-        chunkText?: string;
-        expandedContext?: string;
-      })[] = await Promise.all(
-        searchResults.map(async (result: any) => {
-          // Check if result has documentId
-          if (!result.documentId) {
-            console.warn('Vector search result missing documentId:', result);
-            return null;
-          }
-          
-          const document = await ctx.runQuery(internal.embeddings.getDocumentInternal, {
-            documentId: result.documentId,
-          });
-          
-          // Get the embedding record to access chunk information
-          const embeddingRecord = await ctx.runQuery(api.embeddings.getEmbeddingById, {
-            embeddingId: result._id,
-          });
-          
-          // Check if this is a chunk-based result
-          const isChunkResult = embeddingRecord?.chunkIndex !== undefined && embeddingRecord?.chunkText;
-          
-          let expandedContext = "";
-          if (isChunkResult && embeddingRecord?.chunkText) {
-            // For chunk results, try to get surrounding context
-            try {
-              const allChunks = await ctx.runQuery(api.embeddings.getDocumentEmbeddings, {
-                documentId: result.documentId,
-              });
-              
-              // Sort chunks by index and get surrounding chunks (±1 chunk for context)
-              const sortedChunks = allChunks
-                .filter(chunk => chunk.chunkIndex !== undefined)
-                .sort((a, b) => (a.chunkIndex || 0) - (b.chunkIndex || 0));
-              
-              const currentIndex = embeddingRecord.chunkIndex;
-              const contextChunks = sortedChunks.filter(chunk => {
-                const chunkIdx = chunk.chunkIndex || 0;
-                return currentIndex !== undefined && chunkIdx >= currentIndex - 1 && chunkIdx <= currentIndex + 1;
-              });
-              
-              expandedContext = contextChunks
-                .map(chunk => chunk.chunkText || "")
-                .filter(text => text.trim().length > 0)
-                .join("\n\n");
-            } catch (contextError) {
-              console.error("Error building expanded context:", contextError);
-              expandedContext = embeddingRecord.chunkText || "";
-            }
-          }
-          
-          return {
-            ...result,
-            document,
-            isChunkResult,
-            chunkIndex: embeddingRecord?.chunkIndex,
-            chunkText: embeddingRecord?.chunkText,
-            expandedContext: expandedContext || embeddingRecord?.chunkText || "",
-          };
-        })
-      );
-      
-      // Filter out invalid results and apply document ID filtering
-      const validResults = results.filter(result => {
-        // Filter out null results (from missing documentId)
-        if (!result) {
-          return false;
-        }
-        
-        if (!result.document || !result.document.isActive) {
-          console.log("Filtering out inactive or missing document");
-          return false;
-        }
-        
-        // Filter by document IDs if specified
-        if (args.documentIds && args.documentIds.length > 0) {
-          if (!args.documentIds.includes(result.documentId)) {
-            console.log(`Filtering out document ${result.documentId} - not in requested list`);
-            return false;
-          }
-        }
-        
-        return true;
-      });
-      
-      console.log(`${validResults.length} valid results after filtering`);
-      
-      // Enhanced sorting: prioritize chunk results with higher scores
-      const sortedResults = validResults.sort((a, b) => {
-        // First, prioritize chunk results (they're more specific)
-        if (a.isChunkResult && !b.isChunkResult) return -1;
-        if (!a.isChunkResult && b.isChunkResult) return 1;
-        
-        // Then sort by relevance score
-        const scoreDiff = b._score - a._score;
-        if (Math.abs(scoreDiff) > 0.01) return scoreDiff; // Significant score difference
-        
-        // If scores are similar, prefer results with expanded context
-        if (a.expandedContext && !b.expandedContext) return -1;
-        if (!a.expandedContext && b.expandedContext) return 1;
-        
-        return 0;
-      });
-      
-      const finalLimit = args.limit || VECTOR_SEARCH_LIMIT;
-      const finalResults = sortedResults.slice(0, finalLimit);
-      
-      console.log(`Returning ${finalResults.length} results:`);
-      finalResults.forEach((result, index) => {
-        console.log(`  ${index + 1}. ${result.document.title} (score: ${result._score.toFixed(3)}, chunk: ${result.isChunkResult})`);
-      });
-      
-      return finalResults;
-    } catch (error) {
-      console.error("Error searching documents by vector:", error);
-      throw error;
     }
   },
 });

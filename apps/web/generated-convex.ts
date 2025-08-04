@@ -5,29 +5,29 @@ export const api: PublicApiType = anyApi as unknown as PublicApiType;
 export const internal: InternalApiType = anyApi as unknown as InternalApiType;
 
 export type PublicApiType = {
-  threads: {
-    getAllActiveThreads: FunctionReference<
-      "query",
+  conversations: {
+    index: {
+      updateConversationType: FunctionReference<
+        "mutation",
+        "public",
+        {
+          conversationId: Id<"unified_conversations">;
+          documentIds?: Array<Id<"rag_documents">>;
+          documentTitles?: Array<string>;
+          newType: "general" | "rag";
+        },
+        any
+      >;
+    };
+    updateConversationType: FunctionReference<
+      "mutation",
       "public",
-      { limit?: number },
-      any
-    >;
-    getThreadsInChat: FunctionReference<
-      "query",
-      "public",
-      { chatId: number; limit?: number },
-      any
-    >;
-    getThreadById: FunctionReference<
-      "query",
-      "public",
-      { threadDocId: Id<"telegram_threads"> },
-      any
-    >;
-    getThreadStats: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
+      {
+        conversationId: Id<"unified_conversations">;
+        documentIds?: Array<Id<"rag_documents">>;
+        documentTitles?: Array<string>;
+        newType: "general" | "rag";
+      },
       any
     >;
   };
@@ -196,6 +196,77 @@ export type PublicApiType = {
         limit?: number;
         queryText: string;
       },
+      any
+    >;
+  };
+  generalChat: {
+    createConversation: FunctionReference<
+      "mutation",
+      "public",
+      {
+        ipAddress?: string;
+        llmModel: string;
+        sessionId: string;
+        title?: string;
+        userAgent?: string;
+        userId?: string;
+      },
+      any
+    >;
+    addMessage: FunctionReference<
+      "mutation",
+      "public",
+      {
+        content: string;
+        conversationId: Id<"general_conversations">;
+        messageId: string;
+        metadata?: string;
+        processingTimeMs?: number;
+        role: string;
+        tokenCount?: number;
+      },
+      any
+    >;
+    getConversationBySessionId: FunctionReference<
+      "query",
+      "public",
+      { sessionId: string },
+      any
+    >;
+    getConversationMessages: FunctionReference<
+      "query",
+      "public",
+      { conversationId: Id<"general_conversations">; limit?: number },
+      any
+    >;
+    getRecentConversations: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; userId?: string },
+      any
+    >;
+    updateConversationTitle: FunctionReference<
+      "mutation",
+      "public",
+      { conversationId: Id<"general_conversations">; title: string },
+      any
+    >;
+    deactivateConversation: FunctionReference<
+      "mutation",
+      "public",
+      { conversationId: Id<"general_conversations"> },
+      any
+    >;
+    searchConversations: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; searchTerm: string; userId?: string },
+      any
+    >;
+    getConversationStats: FunctionReference<
+      "query",
+      "public",
+      { conversationId: Id<"general_conversations"> },
       any
     >;
   };
@@ -451,56 +522,6 @@ export type PublicApiType = {
       any
     >;
   };
-  userSessions: {
-    upsertSession: FunctionReference<
-      "mutation",
-      "public",
-      {
-        metadata?: string;
-        sessionId: string;
-        source: string;
-        userAgent?: string;
-        userId?: string;
-      },
-      any
-    >;
-    heartbeat: FunctionReference<
-      "mutation",
-      "public",
-      { sessionId: string },
-      any
-    >;
-    endSession: FunctionReference<
-      "mutation",
-      "public",
-      { sessionId: string },
-      any
-    >;
-    getActiveUserCount: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      any
-    >;
-    getSessionStats: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      any
-    >;
-    cleanupExpiredSessions: FunctionReference<
-      "mutation",
-      "public",
-      Record<string, never>,
-      any
-    >;
-    getActiveSessions: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      any
-    >;
-  };
   ragSearch: {
     generateEmbedding: FunctionReference<
       "action",
@@ -589,100 +610,79 @@ export type PublicApiType = {
       any
     >;
   };
-  generalChat: {
-    createConversation: FunctionReference<
+  threads: {
+    getAllActiveThreads: FunctionReference<
+      "query",
+      "public",
+      { limit?: number },
+      any
+    >;
+    getThreadsInChat: FunctionReference<
+      "query",
+      "public",
+      { chatId: number; limit?: number },
+      any
+    >;
+    getThreadById: FunctionReference<
+      "query",
+      "public",
+      { threadDocId: Id<"telegram_threads"> },
+      any
+    >;
+    getThreadStats: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      any
+    >;
+  };
+  userSessions: {
+    upsertSession: FunctionReference<
       "mutation",
       "public",
       {
-        ipAddress?: string;
-        llmModel: string;
+        metadata?: string;
         sessionId: string;
-        title?: string;
+        source: string;
         userAgent?: string;
         userId?: string;
       },
       any
     >;
-    addMessage: FunctionReference<
+    heartbeat: FunctionReference<
       "mutation",
-      "public",
-      {
-        content: string;
-        conversationId: Id<"general_conversations">;
-        messageId: string;
-        metadata?: string;
-        processingTimeMs?: number;
-        role: string;
-        tokenCount?: number;
-      },
-      any
-    >;
-    getConversationBySessionId: FunctionReference<
-      "query",
       "public",
       { sessionId: string },
       any
     >;
-    getConversationMessages: FunctionReference<
-      "query",
-      "public",
-      { conversationId: Id<"general_conversations">; limit?: number },
-      any
-    >;
-    getRecentConversations: FunctionReference<
-      "query",
-      "public",
-      { limit?: number; userId?: string },
-      any
-    >;
-    updateConversationTitle: FunctionReference<
+    endSession: FunctionReference<
       "mutation",
       "public",
-      { conversationId: Id<"general_conversations">; title: string },
+      { sessionId: string },
       any
     >;
-    deactivateConversation: FunctionReference<
-      "mutation",
-      "public",
-      { conversationId: Id<"general_conversations"> },
-      any
-    >;
-    searchConversations: FunctionReference<
+    getActiveUserCount: FunctionReference<
       "query",
       "public",
-      { limit?: number; searchTerm: string; userId?: string },
+      Record<string, never>,
       any
     >;
-    getConversationStats: FunctionReference<
+    getSessionStats: FunctionReference<
       "query",
       "public",
-      { conversationId: Id<"general_conversations"> },
+      Record<string, never>,
       any
     >;
-  };
-  conversations: {
-    index: {
-      updateConversationType: FunctionReference<
-        "mutation",
-        "public",
-        {
-          conversationId: Id<"unified_conversations">;
-          documentIds?: Array<Id<"rag_documents">>;
-          documentTitles?: Array<string>;
-          newType: "general" | "rag";
-        },
-        any
-      >;
-    };
-    updateConversationType: FunctionReference<
+    cleanupExpiredSessions: FunctionReference<
       "mutation",
       "public",
-      {
-        conversationId: Id<"unified_conversations">;
-        documentIds?: Array<Id<"rag_documents">>;
-        documentTitles?: Array<string>;
-        newType: "general" | "rag";
-      },
+      Record<string, never>,
+      any
+    >;
+    getActiveSessions: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
       any
     >;
   };

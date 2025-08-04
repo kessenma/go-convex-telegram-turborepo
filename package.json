@@ -8,6 +8,8 @@
   "scripts": {
     "setup-init": "./setup.sh",
     "docker:reset": "docker compose down -v && docker network prune -f && docker system prune -af && echo 'docker containters:' && docker ps -a",
+    "convex:reset-db": "./helper-scripts/reset-convex-database.sh",
+    "convex:full-reset": "./helper-scripts/reset-convex-database.sh && pnpm convex:deploy",
     "docker:reset-web": "./helper-scripts/reset-web-only.sh",
 
     "docker:deploy-convex": "./helper-scripts/deploy-convex.sh",

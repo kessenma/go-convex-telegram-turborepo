@@ -8,6 +8,7 @@ import { DocumentBrowser } from "../../components/rag/DocumentBrowser";
 import { DocumentStats } from "../../components/rag/DocumentStats";
 import { VectorSearch } from "../../components/rag/VectorSearch";
 import { EmbeddingAtlasViewer } from "../../components/rag/EmbeddingAtlasViewer";
+import { BetaFeatureFlag } from "../../components/ui/BetaFeatureFlag";
 import { ThreeJSUploadIcon } from "../../components/rag/ThreeJSUploadIcon";
 import { UploadForm } from "../../components/rag/UploadForm";
 import { BackgroundGradient } from "../../components/ui/backgrounds/background-gradient";
@@ -543,16 +544,20 @@ export default function RAGDataPage(): React.ReactElement | null {
           )}
 
           {/* Vector Search */}
-          <VectorSearch
-            className="mb-6"
-            hasDocuments={(stats?.totalDocuments || fallbackStats?.totalDocuments || 0) > 0}
-          />
+          <BetaFeatureFlag enabled={false} className="mb-6">
+            <VectorSearch
+              className="mb-6"
+              hasDocuments={(stats?.totalDocuments || fallbackStats?.totalDocuments || 0) > 0}
+            />
+          </BetaFeatureFlag>
 
           {/* Embedding Atlas Viewer */}
-          <EmbeddingAtlasViewer
-            className="mb-6"
-            onFullscreenChange={setIsEmbeddingAtlasFullscreen}
-          />
+          <BetaFeatureFlag enabled={false}>
+            <EmbeddingAtlasViewer
+              className="mb-6"
+              onFullscreenChange={setIsEmbeddingAtlasFullscreen}
+            />
+          </BetaFeatureFlag>
 
           {/* Document Browser */}
           <DocumentBrowser documents={documents.length > 0 ? documents : fallbackDocuments} loading={loadingDocuments || fallbackLoadingDocuments} />
