@@ -3,6 +3,52 @@ import { internalQuery, mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 
+// Helper function to save a document to the database (plain TypeScript, not Convex mutation)
+export type SaveDocumentInput = {
+  title: string;
+  content: string;
+  contentType: string;
+  tags?: string[];
+  summary?: string;
+};
+
+export async function saveDocumentToDb(ctx: any, args: SaveDocumentInput) {
+  const now = Date.now();
+  const wordCount = args.content.split(/\s+/).filter(word => word.length > 0).length;
+  const fileSize = args.content.length;
+
+  const documentId = await ctx.db.insert("rag_documents", {
+    title: args.title,
+    content: args.content,
+    contentType: args.contentType,
+    fileSize,
+    uploadedAt: now,
+    lastModified: now,
+    isActive: true,
+    tags: args.tags,
+    summary: args.summary,
+    wordCount,
+    hasEmbedding: false,
+  });
+
+  await ctx.db.insert("notifications", {
+    type: "document_upload",
+    title: "Document Uploaded",
+    message: `Document \"${args.title}\" has been uploaded successfully`,
+    timestamp: now,
+    isRead: false,
+    documentId: documentId,
+    metadata: JSON.stringify({
+      contentType: args.contentType,
+      fileSize: fileSize,
+      wordCount: wordCount
+    }),
+    source: "system"
+  });
+
+  return documentId;
+}
+
 // Save a new document to the RAG system
 export const saveDocument = mutation({
   args: {
@@ -13,75 +59,53 @@ export const saveDocument = mutation({
     summary: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
-    const wordCount = args.content.split(/\s+/).filter(word => word.length > 0).length;
-    const fileSize = args.content.length; // Simple character count for file size
-
-    const documentId = await ctx.db.insert("rag_documents", {
-      title: args.title,
-      content: args.content,
-      contentType: args.contentType,
-      fileSize,
-      uploadedAt: now,
-      lastModified: now,
-      isActive: true,
-      tags: args.tags,
-      summary: args.summary,
-      wordCount,
-      hasEmbedding: false, // Will be set to true when embedding is generated
-    });
-
-    // Create notification for document upload
-    await ctx.db.insert("notifications", {
-      type: "document_upload",
-      title: "Document Uploaded",
-      message: `Document "${args.title}" has been uploaded successfully`,
-      timestamp: now,
-      isRead: false,
-      documentId: documentId,
-      metadata: JSON.stringify({
-        contentType: args.contentType,
-        fileSize: fileSize,
-        wordCount: wordCount
-      }),
-      source: "system"
-    });
-
-    // Note: Embedding generation removed as RAG functionality is not being used
-
-    return documentId;
+    return saveDocumentToDb(ctx, args);
   },
 });
 
 
 
 // Get all documents with pagination
+export type GetAllDocumentsInput = {
+  limit?: number;
+  cursor?: string;
+};
+
+export async function getAllDocumentsFromDb(ctx: any, args: GetAllDocumentsInput) {
+  const limit = args.limit ?? 20;
+  return await ctx.db
+    .query("rag_documents")
+    .withIndex("by_active_and_date", (q: any) => q.eq("isActive", true))
+    .order("desc")
+    .paginate({
+      cursor: args.cursor ?? null,
+      numItems: limit,
+    });
+}
+
 export const getAllDocuments = query({
   args: {
     limit: v.optional(v.number()),
     cursor: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const limit = args.limit ?? 20;
-    
-    const documents = await ctx.db
-      .query("rag_documents")
-      .withIndex("by_active_and_date", (q) => q.eq("isActive", true))
-      .order("desc")
-      .paginate({
-        cursor: args.cursor ?? null,
-        numItems: limit,
-      });
-
-    return documents;
+    return getAllDocumentsFromDb(ctx, args);
   },
 });
 
 // Get a specific document by ID
+export type GetDocumentByIdInput = {
+  documentId: string;
+};
+
+export async function getDocumentByIdFromDb(ctx: any, args: GetDocumentByIdInput) {
+  return await ctx.db.get(args.documentId);
+}
+
 export const getDocumentById = query({
   args: { documentId: v.id("rag_documents") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.documentId);
+    return getDocumentByIdFromDb(ctx, args);
   },
 });
 
@@ -116,28 +140,29 @@ export const updateDocument = mutation({
 });
 
 // Delete a document (soft delete by setting isActive to false)
-export const deleteDocument = mutation({
-  args: { documentId: v.id("rag_documents") },
-  handler: async (ctx, args) => {
-    // First, delete all associated embeddings
-    const embeddings = await ctx.db
-      .query("document_embeddings")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
-    
-    for (const embedding of embeddings) {
-      await ctx.db.delete(embedding._id);
-    }
-    
-    // Then soft delete the document
-    await ctx.db.patch(args.documentId, {
-      isActive: false,
-      lastModified: Date.now(),
-    });
-    
-    return args.documentId;
-  },
-});
+export type DeleteDocumentInput = {
+  documentId: string;
+};
+
+export async function deleteDocumentFromDb(ctx: any, args: DeleteDocumentInput) {
+  // First, delete all associated embeddings
+  const embeddings = await ctx.db
+    .query("document_embeddings")
+    .withIndex("by_document", (q: any) => q.eq("documentId", args.documentId))
+    .collect();
+
+  for (const embedding of embeddings) {
+    await ctx.db.delete(embedding._id);
+  }
+
+  // Then soft delete the document
+  await ctx.db.patch(args.documentId, {
+    isActive: false,
+    lastModified: Date.now(),
+  });
+
+  return args.documentId;
+}
 
 // Search documents by content
 export const searchDocuments = query({
@@ -160,6 +185,45 @@ export const searchDocuments = query({
 });
 
 // Save multiple documents in batch
+export type SaveDocumentsBatchInput = {
+  documents: SaveDocumentInput[];
+};
+
+export async function saveDocumentsBatchToDb(ctx: any, args: SaveDocumentsBatchInput) {
+  const now = Date.now();
+  const results = [];
+  const errors = [];
+
+  for (let i = 0; i < args.documents.length; i++) {
+    try {
+      const doc = args.documents[i];
+      const wordCount = doc.content.split(/\s+/).filter(word => word.length > 0).length;
+      const fileSize = doc.content.length;
+
+      const documentId = await ctx.db.insert("rag_documents", {
+        title: doc.title,
+        content: doc.content,
+        contentType: doc.contentType as "markdown" | "text",
+        tags: doc.tags || [],
+        summary: doc.summary,
+        wordCount,
+        fileSize,
+        isActive: true,
+        hasEmbedding: false,
+        uploadedAt: now,
+        lastModified: now,
+      });
+
+      results.push({ index: i, documentId, title: doc.title });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      errors.push({ index: i, error: errorMessage });
+    }
+  }
+
+  return { results, errors };
+}
+
 export const saveDocumentsBatch = mutation({
   args: {
     documents: v.array(v.object({
@@ -171,74 +235,23 @@ export const saveDocumentsBatch = mutation({
     })),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
-    const results = [];
-    const errors = [];
-
-    for (let i = 0; i < args.documents.length; i++) {
-      try {
-        const doc = args.documents[i];
-        const wordCount = doc.content.split(/\s+/).filter(word => word.length > 0).length;
-        const fileSize = doc.content.length;
-
-        const documentId = await ctx.db.insert("rag_documents", {
-          title: doc.title,
-          content: doc.content,
-          contentType: doc.contentType as "markdown" | "text",
-          tags: doc.tags || [],
-          summary: doc.summary,
-          wordCount,
-          fileSize,
-          isActive: true,
-          hasEmbedding: false,
-          uploadedAt: now,
-          lastModified: now,
-        });
-
-        results.push({ index: i, documentId, title: doc.title });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        errors.push({ index: i, title: args.documents[i].title, error: errorMessage });
-      }
-    }
-
-    return {
-      processed: args.documents.length,
-      successful: results.length,
-      failed: errors.length,
-      results,
-      errors,
-      message: `Batch upload completed: ${results.length} successful, ${errors.length} failed`,
-    };
+    return saveDocumentsBatchToDb(ctx, { documents: args.documents });
   },
 });
 
 // Get document statistics
+export type GetDocumentStatsInput = {};
+
+export async function getDocumentStatsFromDb(ctx: any, args: GetDocumentStatsInput) {
+  // Example: count all documents in rag_documents
+  const count = await ctx.db.query("rag_documents").collect().then((docs: any[]) => docs.length);
+  return { count };
+}
+
 export const getDocumentStats = query({
   args: {},
-  handler: async (ctx) => {
-    const allDocs = await ctx.db
-      .query("rag_documents")
-      .withIndex("by_active", (q) => q.eq("isActive", true))
-      .collect();
-
-    const totalDocuments = allDocs.length;
-    const totalWords = allDocs.reduce((sum, doc) => sum + doc.wordCount, 0);
-    const totalSize = allDocs.reduce((sum, doc) => sum + doc.fileSize, 0);
-    
-    const contentTypes = allDocs.reduce((acc, doc) => {
-      acc[doc.contentType] = (acc[doc.contentType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return {
-      totalDocuments,
-      totalWords,
-      totalSize,
-      contentTypes,
-      averageWordsPerDocument: totalDocuments > 0 ? Math.round(totalWords / totalDocuments) : 0,
-      averageSizePerDocument: totalDocuments > 0 ? Math.round(totalSize / totalDocuments) : 0,
-    };
+  handler: async (ctx, args) => {
+    return getDocumentStatsFromDb(ctx, args);
   },
 });
 
@@ -274,113 +287,41 @@ export const getDocumentStatsInternal = internalQuery({
 
 
 // Get enhanced document statistics with embeddings and file types
+export type GetEnhancedDocumentStatsInput = {};
+
+export async function getEnhancedDocumentStatsFromDb(ctx: any, args: GetEnhancedDocumentStatsInput) {
+  const allDocs = await ctx.db
+    .query("rag_documents")
+    .withIndex("by_active", (q: any) => q.eq("isActive", true))
+    .collect();
+
+  // Example: If you need embeddings or other collections, query them here
+  // const allEmbeddings = await ctx.db.query("document_embeddings").collect();
+
+  const totalDocuments = allDocs.length;
+  const totalWords = allDocs.reduce((sum: number, doc: any) => sum + doc.wordCount, 0);
+  const totalSize = allDocs.reduce((sum: number, doc: any) => sum + doc.fileSize, 0);
+
+  const contentTypes = allDocs.reduce((acc: Record<string, number>, doc: any) => {
+    acc[doc.contentType] = (acc[doc.contentType] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  return {
+    totalDocuments,
+    totalWords,
+    totalSize,
+    contentTypes,
+    averageWordsPerDocument: totalDocuments > 0 ? Math.round(totalWords / totalDocuments) : 0,
+    averageSizePerDocument: totalDocuments > 0 ? Math.round(totalSize / totalDocuments) : 0,
+  };
+}
+
 export const getEnhancedDocumentStats = query({
   args: {},
-  handler: async (ctx) => {
-    // Get all active documents
-    const allDocs = await ctx.db
-      .query("rag_documents")
-      .withIndex("by_active", (q) => q.eq("isActive", true))
-      .collect();
-
-    // Get all active embeddings
-    const allEmbeddings = await ctx.db
-      .query("document_embeddings")
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
-
-    // Basic document stats
-    const totalDocuments = allDocs.length;
-    const totalWords = allDocs.reduce((sum, doc) => sum + doc.wordCount, 0);
-    const totalSize = allDocs.reduce((sum, doc) => sum + doc.fileSize, 0);
-    
-    // Content type breakdown
-    const contentTypes = allDocs.reduce((acc, doc) => {
-      acc[doc.contentType] = (acc[doc.contentType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // File type breakdown (inferred from content type and title)
-    const fileTypes = allDocs.reduce((acc, doc) => {
-      let fileType = 'other';
-      const titleLower = doc.title.toLowerCase();
-      
-      // Check file extension first for more accurate detection
-      if (titleLower.endsWith('.pdf')) {
-        fileType = 'pdf';
-      } else if (titleLower.endsWith('.docx') || titleLower.endsWith('.doc')) {
-        fileType = 'word';
-      } else if (titleLower.endsWith('.md') || doc.contentType === 'markdown') {
-        fileType = 'markdown';
-      } else if (titleLower.endsWith('.txt')) {
-        fileType = 'text';
-      } else if (doc.contentType === 'text') {
-        // For text contentType without specific extension, try to infer from title
-        if (titleLower.includes('pdf') || titleLower.includes('.pdf')) {
-          fileType = 'pdf';
-        } else if (titleLower.includes('docx') || titleLower.includes('doc') || titleLower.includes('word')) {
-          fileType = 'word';
-        } else {
-          fileType = 'text';
-        }
-      }
-      
-      acc[fileType] = (acc[fileType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Embedding statistics
-    const documentsWithEmbeddings = allDocs.filter(doc => doc.hasEmbedding).length;
-    const documentsWithoutEmbeddings = totalDocuments - documentsWithEmbeddings;
-    const totalEmbeddings = allEmbeddings.length;
-    const totalChunks = allEmbeddings.filter(emb => emb.chunkIndex !== undefined).length;
-    
-    // Embedding model breakdown
-    const embeddingModels = allEmbeddings.reduce((acc, emb) => {
-      acc[emb.embeddingModel] = (acc[emb.embeddingModel] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Calculate estimated lines of text (rough estimate: ~10-15 words per line)
-    const estimatedLines = Math.round(totalWords / 12);
-
-    // Recent activity (last 24 hours)
-    const now = Date.now();
-    const oneDayAgo = now - (24 * 60 * 60 * 1000);
-    const recentUploads = allDocs.filter(doc => doc.uploadedAt >= oneDayAgo).length;
-    const recentEmbeddings = allEmbeddings.filter(emb => emb.createdAt >= oneDayAgo).length;
-
-    return {
-      // Basic stats
-      totalDocuments,
-      totalWords,
-      totalSize,
-      estimatedLines,
-      
-      // File type breakdown
-      fileTypes,
-      contentTypes,
-      
-      // Embedding stats
-      totalEmbeddings,
-      totalChunks,
-      documentsWithEmbeddings,
-      documentsWithoutEmbeddings,
-      embeddingModels,
-      embeddingCoverage: totalDocuments > 0 ? Math.round((documentsWithEmbeddings / totalDocuments) * 100) : 0,
-      
-      // Averages
-      averageWordsPerDocument: totalDocuments > 0 ? Math.round(totalWords / totalDocuments) : 0,
-      averageSizePerDocument: totalDocuments > 0 ? Math.round(totalSize / totalDocuments) : 0,
-      averageEmbeddingsPerDocument: documentsWithEmbeddings > 0 ? Math.round(totalEmbeddings / documentsWithEmbeddings) : 0,
-      
-      // Recent activity
-      recentActivity: {
-        uploadsLast24h: recentUploads,
-        embeddingsLast24h: recentEmbeddings,
-      },
-    };
-  },
+  handler: async (ctx, args) => {
+    return getEnhancedDocumentStatsFromDb(ctx, args);
+  }
 });
 
 // Get document upload statistics based on timestamps
@@ -410,19 +351,20 @@ export const getDocumentUploadStats = query({
   },
 });
 // Get documents by their IDs
+export type GetDocumentsByIdsInput = {
+  documentIds: string[];
+};
+
+export async function getDocumentsByIdsFromDb(ctx: any, args: GetDocumentsByIdsInput) {
+  // Use .get for each ID (could be optimized if needed)
+  const docs = await Promise.all(args.documentIds.map((id) => ctx.db.get(id)));
+  // Filter out nulls (not found)
+  return docs.filter(Boolean);
+}
+
 export const getDocumentsByIds = query({
-  args: {
-    documentIds: v.array(v.id("rag_documents")),
-  },
+  args: { documentIds: v.array(v.id("rag_documents")) },
   handler: async (ctx, args) => {
-    const documents = await Promise.all(
-      args.documentIds.map(async (docId) => {
-        const doc = await ctx.db.get(docId);
-        return doc;
-      })
-    );
-    
-    // Filter out null documents (in case some IDs don't exist)
-    return documents.filter(Boolean);
+    return getDocumentsByIdsFromDb(ctx, args);
   },
 });

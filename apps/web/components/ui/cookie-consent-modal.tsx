@@ -111,13 +111,14 @@ export function CookieConsentModal({
                   your browser.
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  This app does not collect personal information, track individual
-                  users, or share data with third parties. All analytics are
-                  aggregated and anonymous. If you send a message to the
-                  Telegram Bot it will show up here for others to see + reply to
-                  your message (you can leave the thread in Telegram to not
-                  recieve the messages if you would like though). At this time
-                  the app is in beta and all data may be cleared at any time. 
+                  This app does not collect personal information,
+                  and does not share data with third parties. All analytics are
+                  aggregated and anonymous. IP addresses are logged to display 
+                  the location of users in the settings tab. If you send a 
+                  message to the Telegram Bot it will show up here for others 
+                  to see + reply to your message (you can leave the thread 
+                  in Telegram to not recieve the messages if you would like though). 
+                  At this time the app is in beta and all data may be cleared at any time. 
                 </p>
               </motion.div>
             </ResponsiveModalDescription>

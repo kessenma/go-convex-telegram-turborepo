@@ -2,6 +2,12 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { FileText, Search, Check, X, Loader2 } from 'lucide-react';
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '../../ui/accordion';
 import { renderIcon } from '../../../lib/icon-utils';
 import { BackgroundGradient } from '../../ui/backgrounds/background-gradient';
 import type { Document } from '../../../types/rag';
@@ -11,6 +17,7 @@ import {
   useDocumentCount,
   useCanAddMoreDocuments
 } from '../../../stores/unifiedChatStore';
+import { UploadForm } from '../../rag/UploadForm';
 
 interface DocumentSelectorProps {
   documents?: Document[];
@@ -102,6 +109,46 @@ export const DocumentSelector = React.memo(function DocumentSelector({
     });
   };
 
+  // Upload form state handlers
+  const [uploadMethod, setUploadMethod] = useState<'file' | 'text'>('file');
+  const [title, setTitle] = useState('');
+  const [summary, setSummary] = useState('');
+  const [textContent, setTextContent] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [uploadMessage, setUploadMessage] = useState('');
+
+  // Mock upload handlers - these would be implemented based on your actual upload logic
+  const handleFileUpload = (file: File) => {
+    setIsUploading(true);
+    // Implement actual file upload logic here
+    setTimeout(() => {
+      setIsUploading(false);
+      setUploadStatus('success');
+      setUploadMessage('File uploaded successfully!');
+    }, 2000);
+  };
+
+  const handleBatchFileUpload = (files: File[]) => {
+    setIsUploading(true);
+    // Implement actual batch file upload logic here
+    setTimeout(() => {
+      setIsUploading(false);
+      setUploadStatus('success');
+      setUploadMessage(`${files.length} files uploaded successfully!`);
+    }, 2000);
+  };
+
+  const handleTextUpload = () => {
+    setIsUploading(true);
+    // Implement actual text upload logic here
+    setTimeout(() => {
+      setIsUploading(false);
+      setUploadStatus('success');
+      setUploadMessage('Text uploaded successfully!');
+    }, 2000);
+  };
+
   if (error) {
     return (
       <div className="p-6 text-center">
@@ -158,13 +205,46 @@ export const DocumentSelector = React.memo(function DocumentSelector({
             <span className="ml-2 text-gray-400">Loading documents...</span>
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="py-8 text-center">
-            <div className="mb-4">
-              {renderIcon(FileText, { className: "mx-auto w-12 h-12 text-gray-500" })}
-            </div>
-            <p className="text-gray-400">
-              {searchTerm ? 'No documents match your search' : 'No documents available'}
-            </p>
+          <div className="py-8">
+            {searchTerm ? (
+              <div className="text-center">
+                <div className="mb-4">
+                  {renderIcon(FileText, { className: "mx-auto w-12 h-12 text-gray-500" })}
+                </div>
+                <p className="text-gray-400">No documents match your search</p>
+              </div>
+            ) : (
+              <div>
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="upload">
+                    <AccordionTrigger className="text-cyan-400 hover:text-cyan-300 text-sm">
+                      Upload Documents
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <UploadForm
+                  uploadMethod={uploadMethod}
+                  setUploadMethod={setUploadMethod}
+                  title={title}
+                  setTitle={setTitle}
+                  summary={summary}
+                  setSummary={setSummary}
+                  textContent={textContent}
+                  setTextContent={setTextContent}
+                  isUploading={isUploading}
+                  uploadStatus={uploadStatus}
+                  uploadMessage={uploadMessage}
+                  handleFileUpload={handleFileUpload}
+                  handleBatchFileUpload={handleBatchFileUpload}
+                  handleTextUpload={handleTextUpload}
+                  isGeneratingEmbeddings={false}
+                  handleGenerateEmbeddings={async () => {}}
+                  embeddingMessage=""
+                />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-3">

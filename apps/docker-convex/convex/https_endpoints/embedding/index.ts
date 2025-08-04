@@ -10,6 +10,16 @@ import { httpAction } from "../../_generated/server";
 import { api, internal } from "../../_generated/api";
 import { Id } from "../../_generated/dataModel";
 import { errorResponse, successResponse } from "../shared/utils";
+import { 
+  createDocumentEmbeddingFromDb, 
+  CreateDocumentEmbeddingInput,
+  getDocumentEmbeddingsFromDb, 
+  GetDocumentEmbeddingsInput,
+  getAllDocumentEmbeddingsFromDb, 
+  GetAllDocumentEmbeddingsInput,
+  getAllEmbeddingsForAtlasFromDb, 
+  GetAllEmbeddingsForAtlasInput 
+} from "../../embeddings";
 
 // Save document embedding
 export const saveDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
@@ -20,15 +30,16 @@ export const saveDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
     if (!documentId || !embedding) {
       return errorResponse("Missing documentId or embedding", 400);
     }
-    // TEMPORARY: Commented out due to type instantiation issues
-    // await ctx.runMutation(api.embeddings.createDocumentEmbedding, { 
-    //   documentId, 
-    //   embedding,
-    //   embeddingModel: "sentence-transformers/all-distilroberta-v1",
-    //   embeddingDimensions: embedding.length
-    // });
-    console.log("Embedding creation temporarily disabled:", documentId);
-    return successResponse({ success: true, message: "Embedding creation temporarily disabled" });
+    
+    const args: CreateDocumentEmbeddingInput = {
+      documentId,
+      embedding,
+      embeddingModel: "sentence-transformers/all-distilroberta-v1",
+      embeddingDimensions: embedding.length
+    };
+    
+    await createDocumentEmbeddingFromDb(ctx, args);
+    return successResponse({ success: true, message: "Embedding created" });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return errorResponse("Internal server error", 500, message);
@@ -58,20 +69,18 @@ export const createDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
   try {
     const body = await request.json();
     const { documentId, embedding, embeddingModel, embeddingDimensions } = body;
-    
     if (!documentId || !embedding) {
       return errorResponse("Missing required fields: documentId, embedding", 400);
     }
     
-    // TEMPORARY: Commented out due to type instantiation issues
-    // const embeddingId = await ctx.runMutation(api.embeddings.createDocumentEmbedding, {
-    //   documentId: documentId as Id<"rag_documents">,
-    //   embedding,
-    //   embeddingModel: embeddingModel || "sentence-transformers/all-distilroberta-v1",
-    //   embeddingDimensions: embeddingDimensions || embedding.length
-    // });
-    const embeddingId = "temp-embedding-id";
+    const args: CreateDocumentEmbeddingInput = {
+      documentId: documentId as string,
+      embedding,
+      embeddingModel: embeddingModel || "sentence-transformers/all-distilroberta-v1",
+      embeddingDimensions: embeddingDimensions || embedding.length
+    };
     
+    const embeddingId = await createDocumentEmbeddingFromDb(ctx, args);
     return successResponse({
       success: true,
       embeddingId,
@@ -89,17 +98,12 @@ export const getDocumentEmbeddingsAPI = httpAction(async (ctx, request) => {
   try {
     const url = new URL(request.url);
     const documentId = url.searchParams.get("documentId");
-    
     if (!documentId) {
       return errorResponse("Missing documentId parameter", 400);
     }
     
-    // TEMPORARY: Commented out due to type instantiation issues
-    // const embeddings = await ctx.runQuery(api.embeddings.getDocumentEmbeddings, {
-    //   documentId: documentId as Id<"rag_documents">
-    // });
-    const embeddings: any[] = [];
-    
+    const args: GetDocumentEmbeddingsInput = { documentId };
+    const embeddings = await getDocumentEmbeddingsFromDb(ctx, args);
     return successResponse({
       success: true,
       embeddings,
@@ -118,13 +122,11 @@ export const getAllDocumentEmbeddingsAPI = httpAction(async (ctx, request) => {
     const url = new URL(request.url);
     const limit = parseInt(url.searchParams.get("limit") || "50");
     
-    // TEMPORARY: Commented out due to type instantiation issues
-    // const embeddings = await ctx.runQuery(api.embeddings.getAllDocumentEmbeddings, { limit });
-    const embeddings: any[] = [];
-    
+    const args: GetAllDocumentEmbeddingsInput = {};
+    const embeddings = await getAllDocumentEmbeddingsFromDb(ctx, args);
     return successResponse({
       success: true,
-      embeddings,
+      embeddings: embeddings.slice(0, limit),
       count: embeddings.length
     });
   } catch (e) {
@@ -205,10 +207,8 @@ export const getEmbeddingsForAtlasAPI = httpAction(async (ctx, request) => {
     const url = new URL(request.url);
     const limit = parseInt(url.searchParams.get("limit") || "100");
     
-    // TEMPORARY: Commented out due to type instantiation issues
-    // const embeddings = await ctx.runQuery(api.embeddings.getEmbeddingsForAtlas, { limit });
-    const embeddings: any[] = [];
-    
+    const args: GetAllEmbeddingsForAtlasInput = { limit };
+    const embeddings = await getAllEmbeddingsForAtlasFromDb(ctx, args);
     return successResponse({
       success: true,
       embeddings,

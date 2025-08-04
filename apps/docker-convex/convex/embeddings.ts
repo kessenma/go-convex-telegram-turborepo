@@ -3,12 +3,94 @@ import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 
+// Helper function types and implementations (plain TypeScript, not Convex mutations/queries)
+export type CreateDocumentEmbeddingInput = {
+  documentId: string;
+  embedding: number[];
+  embeddingModel: string;
+  embeddingDimensions: number;
+  chunkText?: string;
+  chunkIndex?: number;
+  processingTimeMs?: number;
+};
 
+export async function createDocumentEmbeddingFromDb(ctx: any, args: CreateDocumentEmbeddingInput) {
+  const document = await ctx.db.get(args.documentId);
+  if (!document) {
+    throw new Error(`Document not found: ${args.documentId}`);
+  }
+  const embeddingId = await ctx.db.insert("document_embeddings", {
+    documentId: args.documentId,
+    embedding: args.embedding,
+    embeddingModel: args.embeddingModel,
+    embeddingDimensions: args.embeddingDimensions,
+    chunkText: args.chunkText,
+    chunkIndex: args.chunkIndex,
+    processingTimeMs: args.processingTimeMs,
+    isActive: true,
+    createdAt: Date.now(),
+  });
+  await ctx.db.patch(args.documentId, {
+    hasEmbedding: true,
+    lastModified: Date.now(),
+  });
+  return embeddingId;
+}
+
+export type GetDocumentEmbeddingsInput = {
+  documentId: string;
+};
+
+export async function getDocumentEmbeddingsFromDb(ctx: any, args: GetDocumentEmbeddingsInput) {
+  return await ctx.db
+    .query("document_embeddings")
+    .withIndex("by_document", (q: any) => q.eq("documentId", args.documentId))
+    .filter((q: any) => q.eq(q.field("isActive"), true))
+    .collect();
+}
+
+export type GetAllDocumentEmbeddingsInput = {};
+
+export async function getAllDocumentEmbeddingsFromDb(ctx: any, args: GetAllDocumentEmbeddingsInput) {
+  return await ctx.db
+    .query("document_embeddings")
+    .filter((q: any) => q.eq(q.field("isActive"), true))
+    .collect();
+}
+
+export type GetAllEmbeddingsForAtlasInput = {
+  limit?: number;
+  offset?: number;
+};
+
+export async function getAllEmbeddingsForAtlasFromDb(ctx: any, args: GetAllEmbeddingsForAtlasInput) {
+  const limit = Math.min(args.limit || 100, 500);
+  const offset = args.offset || 0;
+  const allEmbeddings = await ctx.db
+    .query("document_embeddings")
+    .filter((q: any) => q.eq(q.field("isActive"), true))
+    .order("desc")
+    .collect();
+  const embeddings = allEmbeddings.slice(offset, offset + limit);
+  // Enrich with document metadata
+  const enrichedEmbeddings = await Promise.all(
+    embeddings.map(async (embedding: any) => {
+      const document = await ctx.db.get(embedding.documentId);
+      return {
+        ...embedding,
+        documentTitle: document?.title || "Unknown Document",
+        documentContentType: document?.contentType || "unknown",
+        documentUploadedAt: document?.uploadedAt || 0,
+      };
+    })
+  );
+
+  return enrichedEmbeddings;
+}
 
 // Removed getDocumentInternal to avoid circular dependencies
 // Use internal.shared.getDocumentByIdInternal instead
 
-// Internal helper to get embedding by ID
 export const getEmbeddingByIdInternal = internalQuery({
   args: {
     embeddingId: v.id("document_embeddings"),
@@ -18,7 +100,6 @@ export const getEmbeddingByIdInternal = internalQuery({
   },
 });
 
-// Internal helper to get document embeddings
 export const getDocumentEmbeddingsInternal = internalQuery({
   args: {
     documentId: v.id("rag_documents"),
@@ -31,7 +112,6 @@ export const getDocumentEmbeddingsInternal = internalQuery({
   },
 });
 
-// Internal helper to create error notifications
 export const createErrorNotification = internalMutation({
   args: {
     documentId: v.id("rag_documents"),
@@ -54,17 +134,13 @@ export const createErrorNotification = internalMutation({
   },
 });
 
-// Generate embedding using the vector-convert-llm service
 export const generateEmbedding = action({
   args: {
     text: v.string(),
   },
   handler: async (ctx, args) => {
     try {
-      // Get the vector-convert-llm service URL from environment
       const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
-      
-      // Call the embedding service
       const response = await fetch(`${vectorServiceUrl}/embed`, {
         method: "POST",
         headers: {
@@ -74,12 +150,10 @@ export const generateEmbedding = action({
           text: args.text,
         }),
       });
-
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Vector service error: ${response.status} ${errorText}`);
       }
-
       const result = await response.json();
       return result.embeddings;
     } catch (error) {
@@ -89,17 +163,13 @@ export const generateEmbedding = action({
   },
 });
 
-// Internal embedding generation to avoid circular dependencies
 export const generateEmbeddingInternal = internalAction({
   args: {
     text: v.string(),
   },
   handler: async (ctx, args) => {
     try {
-      // Get the vector-convert-llm service URL from environment
       const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
-      
-      // Call the embedding service
       const response = await fetch(`${vectorServiceUrl}/embed`, {
         method: "POST",
         headers: {
@@ -109,12 +179,10 @@ export const generateEmbeddingInternal = internalAction({
           text: args.text,
         }),
       });
-
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Vector service error: ${response.status} ${errorText}`);
       }
-
       const result = await response.json();
       return result.embeddings;
     } catch (error) {
@@ -124,7 +192,6 @@ export const generateEmbeddingInternal = internalAction({
   },
 });
 
-// Create document embedding
 export const createDocumentEmbedding = mutation({
   args: {
     documentId: v.id("rag_documents"),
@@ -136,50 +203,19 @@ export const createDocumentEmbedding = mutation({
     processingTimeMs: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Check if document exists
-    const document = await ctx.db.get(args.documentId);
-    if (!document) {
-      throw new Error(`Document not found: ${args.documentId}`);
-    }
-
-    // Create embedding
-    const embeddingId = await ctx.db.insert("document_embeddings", {
-      documentId: args.documentId,
-      embedding: args.embedding,
-      embeddingModel: args.embeddingModel,
-      embeddingDimensions: args.embeddingDimensions,
-      chunkText: args.chunkText,
-      chunkIndex: args.chunkIndex,
-      processingTimeMs: args.processingTimeMs,
-      isActive: true,
-      createdAt: Date.now(),
-    });
-
-    // Update document to indicate it has an embedding
-    await ctx.db.patch(args.documentId, {
-      hasEmbedding: true,
-      lastModified: Date.now(),
-    });
-
-    return embeddingId;
+    return createDocumentEmbeddingFromDb(ctx, args);
   },
 });
 
-// Get document embeddings
 export const getDocumentEmbeddings = query({
   args: {
     documentId: v.id("rag_documents"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
-      .query("document_embeddings")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
+    return getDocumentEmbeddingsFromDb(ctx, args);
   },
 });
 
-// Get embedding by ID
 export const getEmbeddingById = query({
   args: {
     embeddingId: v.id("document_embeddings"),
@@ -189,51 +225,20 @@ export const getEmbeddingById = query({
   },
 });
 
-// Get all document embeddings
 export const getAllDocumentEmbeddings = query({
   args: {},
   handler: async (ctx, _args) => {
-    return await ctx.db
-      .query("document_embeddings")
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
+    return getAllDocumentEmbeddingsFromDb(ctx, _args);
   },
 });
 
-// Get embeddings with document metadata for Embedding Atlas
 export const getAllEmbeddingsForAtlas = query({
   args: {
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limit = Math.min(args.limit || 100, 500); // Cap at 500 for performance
-    const offset = args.offset || 0;
-    
-    // Get embeddings with document data using pagination
-    const allEmbeddings = await ctx.db
-      .query("document_embeddings")
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .order("desc")
-      .collect();
-    
-    // Apply pagination manually since Convex doesn't have native offset support
-    const embeddings = allEmbeddings.slice(offset, offset + limit);
-
-    // Enrich with document metadata
-    const enrichedEmbeddings = await Promise.all(
-      embeddings.map(async (embedding) => {
-        const document = await ctx.db.get(embedding.documentId);
-        return {
-          ...embedding,
-          documentTitle: document?.title || "Unknown Document",
-          documentContentType: document?.contentType || "unknown",
-          documentUploadedAt: document?.uploadedAt || 0,
-        };
-      })
-    );
-
-    return enrichedEmbeddings;
+    return getAllEmbeddingsForAtlasFromDb(ctx, args);
   },
 });
 

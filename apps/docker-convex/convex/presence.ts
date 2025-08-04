@@ -162,3 +162,57 @@ export const getPresenceDebugInfo = query({
 // 2. Network issues preventing disconnect signals
 // 3. Multiple browser tabs/windows from the same user
 // The presence system should auto-cleanup after the configured timeout.
+
+// Helper function to perform heartbeat logic (plain TypeScript, not Convex mutation)
+export type HeartbeatInput = {
+  roomId: string;
+  userId: string;
+  sessionId: string;
+  interval: number;
+  ipAddress?: string;
+  country?: string;
+  countryCode?: string;
+  region?: string;
+  city?: string;
+  zip?: string;
+  timezone?: string;
+  coordinates?: number[];
+  isp?: string;
+  org?: string;
+  as?: string;
+};
+
+export async function heartbeatFromDb(ctx: any, args: HeartbeatInput) {
+  const { roomId, userId, sessionId, interval, ipAddress, country, countryCode, region, city, zip, timezone, coordinates, isp, org, as } = args;
+  const result = await presence.heartbeat(ctx, roomId, userId, sessionId, interval);
+  if (ipAddress && country) {
+    const existing = await ctx.db
+      .query("userLocations")
+      .withIndex("by_user_session", (q: any) => q.eq("userId", userId).eq("sessionId", sessionId))
+      .first();
+    const locationData = {
+      ipAddress,
+      country,
+      countryCode: countryCode || 'Unknown',
+      region: region || 'Unknown',
+      city: city || 'Unknown',
+      zip: zip || 'Unknown',
+      timezone: timezone || 'Unknown',
+      coordinates: coordinates || [0, 0],
+      isp: isp || 'Unknown',
+      org: org || 'Unknown',
+      as: as || 'Unknown',
+      lastUpdated: Date.now(),
+    };
+    if (existing) {
+      await ctx.db.patch(existing._id, locationData);
+    } else {
+      await ctx.db.insert("userLocations", {
+        userId,
+        sessionId,
+        ...locationData,
+      });
+    }
+  }
+  return result;
+}

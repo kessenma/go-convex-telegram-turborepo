@@ -32,18 +32,6 @@ export type PublicApiType = {
     >;
   };
   documents: {
-    saveDocument: FunctionReference<
-      "mutation",
-      "public",
-      {
-        content: string;
-        contentType: string;
-        summary?: string;
-        tags?: Array<string>;
-        title: string;
-      },
-      any
-    >;
     getAllDocuments: FunctionReference<
       "query",
       "public",
@@ -56,51 +44,7 @@ export type PublicApiType = {
       { documentId: Id<"rag_documents"> },
       any
     >;
-    updateDocument: FunctionReference<
-      "mutation",
-      "public",
-      {
-        content?: string;
-        documentId: Id<"rag_documents">;
-        summary?: string;
-        tags?: Array<string>;
-        title?: string;
-      },
-      any
-    >;
-    deleteDocument: FunctionReference<
-      "mutation",
-      "public",
-      { documentId: Id<"rag_documents"> },
-      any
-    >;
-    searchDocuments: FunctionReference<
-      "query",
-      "public",
-      { limit?: number; searchTerm: string },
-      any
-    >;
-    saveDocumentsBatch: FunctionReference<
-      "mutation",
-      "public",
-      {
-        documents: Array<{
-          content: string;
-          contentType: string;
-          summary?: string;
-          tags?: Array<string>;
-          title: string;
-        }>;
-      },
-      any
-    >;
     getDocumentStats: FunctionReference<
-      "query",
-      "public",
-      Record<string, never>,
-      any
-    >;
-    getEnhancedDocumentStats: FunctionReference<
       "query",
       "public",
       Record<string, never>,
@@ -118,12 +62,62 @@ export type PublicApiType = {
       { documentIds: Array<Id<"rag_documents">> },
       any
     >;
+    getEnhancedDocumentStats: FunctionReference<
+      "query",
+      "public",
+      Record<string, never>,
+      any
+    >;
+    saveDocument: FunctionReference<
+      "mutation",
+      "public",
+      {
+        content: string;
+        contentType: string;
+        summary?: string;
+        tags?: Array<string>;
+        title: string;
+      },
+      any
+    >;
+    saveDocumentsBatch: FunctionReference<
+      "mutation",
+      "public",
+      {
+        documents: Array<{
+          content: string;
+          contentType: string;
+          summary?: string;
+          tags?: Array<string>;
+          title: string;
+        }>;
+      },
+      any
+    >;
+    searchDocuments: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; searchTerm: string },
+      any
+    >;
+    updateDocument: FunctionReference<
+      "mutation",
+      "public",
+      {
+        content?: string;
+        documentId: Id<"rag_documents">;
+        summary?: string;
+        tags?: Array<string>;
+        title?: string;
+      },
+      any
+    >;
   };
   embeddings: {
-    generateEmbedding: FunctionReference<
+    checkLLMServiceStatus: FunctionReference<
       "action",
       "public",
-      { text: string },
+      Record<string, never>,
       any
     >;
     createDocumentEmbedding: FunctionReference<
@@ -140,16 +134,16 @@ export type PublicApiType = {
       },
       any
     >;
-    getDocumentEmbeddings: FunctionReference<
-      "query",
+    deleteDocumentEmbeddings: FunctionReference<
+      "mutation",
       "public",
       { documentId: Id<"rag_documents"> },
       any
     >;
-    getEmbeddingById: FunctionReference<
-      "query",
+    generateEmbedding: FunctionReference<
+      "action",
       "public",
-      { embeddingId: Id<"document_embeddings"> },
+      { text: string },
       any
     >;
     getAllDocumentEmbeddings: FunctionReference<
@@ -164,28 +158,28 @@ export type PublicApiType = {
       { limit?: number; offset?: number },
       any
     >;
+    getDocumentEmbeddings: FunctionReference<
+      "query",
+      "public",
+      { documentId: Id<"rag_documents"> },
+      any
+    >;
+    getEmbeddingById: FunctionReference<
+      "query",
+      "public",
+      { embeddingId: Id<"document_embeddings"> },
+      any
+    >;
     getEmbeddingsCount: FunctionReference<
       "query",
       "public",
       Record<string, never>,
       any
     >;
-    deleteDocumentEmbeddings: FunctionReference<
-      "mutation",
-      "public",
-      { documentId: Id<"rag_documents"> },
-      any
-    >;
     processDocumentWithChunking: FunctionReference<
       "action",
       "public",
       { documentId: Id<"rag_documents">; maxChunkSize?: number },
-      any
-    >;
-    checkLLMServiceStatus: FunctionReference<
-      "action",
-      "public",
-      Record<string, never>,
       any
     >;
   };
@@ -639,29 +633,6 @@ export type PublicApiType = {
     >;
   };
   presence: {
-    heartbeat: FunctionReference<
-      "mutation",
-      "public",
-      {
-        as?: string;
-        city?: string;
-        coordinates?: Array<number>;
-        country?: string;
-        countryCode?: string;
-        interval: number;
-        ipAddress?: string;
-        isp?: string;
-        org?: string;
-        region?: string;
-        roomId: string;
-        sessionId: string;
-        timezone?: string;
-        userId: string;
-        zip?: string;
-      },
-      any
-    >;
-    list: FunctionReference<"query", "public", { roomToken: string }, any>;
     disconnect: FunctionReference<
       "mutation",
       "public",
@@ -686,6 +657,29 @@ export type PublicApiType = {
       { roomId?: string },
       any
     >;
+    heartbeat: FunctionReference<
+      "mutation",
+      "public",
+      {
+        as?: string;
+        city?: string;
+        coordinates?: Array<number>;
+        country?: string;
+        countryCode?: string;
+        interval: number;
+        ipAddress?: string;
+        isp?: string;
+        org?: string;
+        region?: string;
+        roomId: string;
+        sessionId: string;
+        timezone?: string;
+        userId: string;
+        zip?: string;
+      },
+      any
+    >;
+    list: FunctionReference<"query", "public", { roomToken: string }, any>;
   };
   vectorSearch: {
     searchDocumentsByVector: FunctionReference<
