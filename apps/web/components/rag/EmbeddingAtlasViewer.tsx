@@ -5,6 +5,7 @@ import { Card } from "../ui/card";
 import { Button as MovingButton } from "../ui/moving-border";
 import { Loader2, Eye, EyeOff, RotateCcw, Plus, Minus, Move, Maximize2, Minimize2, Box, Square, Info, ChevronDown, ChevronUp, Expand, Shrink, ChevronLeft, ChevronRight, TriangleAlert, FileText } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
+import { LoadingSpinner } from "../ui/loading-spinner";
 import {
     ResponsiveModal,
     ResponsiveModalContent,
@@ -64,46 +65,81 @@ const EmbeddingPoint = React.memo(({ position, color, scale, onClick, onPointerO
     );
 });
 
-// Loading spinner cube for Three.js scene
+// Loading spinner cube for Three.js scene - enhanced to match OGL aesthetic
 const LoadingCube = () => {
     const meshRef = useRef<THREE.Mesh>(null);
 
     useFrame((state) => {
         if (meshRef.current) {
-            meshRef.current.rotation.x = state.clock.elapsedTime * 1.2;
-            meshRef.current.rotation.y = state.clock.elapsedTime * 0.8;
+            meshRef.current.rotation.x = state.clock.elapsedTime * 0.8;
+            meshRef.current.rotation.y = state.clock.elapsedTime * 1.2;
             meshRef.current.rotation.z = state.clock.elapsedTime * 0.4;
+            
+            // Add subtle pulsing scale effect
+            const pulseScale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+            meshRef.current.scale.setScalar(pulseScale);
         }
     });
 
     return (
-        <mesh ref={meshRef} position={[0, 0, 0]}>
-            <boxGeometry args={[0.5, 0.5, 0.5]} />
-            <meshStandardMaterial
-                color="#06b6d4"
-                emissive="#06b6d4"
-                emissiveIntensity={0.5}
-                transparent
-                opacity={0.8}
-                wireframe
-            />
-        </mesh>
+        <group>
+            {/* Main solid cube */}
+            <mesh ref={meshRef} position={[0, 0, 0]}>
+                <boxGeometry args={[0.6, 0.6, 0.6]} />
+                <meshStandardMaterial
+                    color="#06b6d4"
+                    emissive="#06b6d4"
+                    emissiveIntensity={0.4}
+                    transparent
+                    opacity={0.7}
+                    roughness={0.3}
+                    metalness={0.1}
+                />
+            </mesh>
+            
+            {/* Wireframe overlay for extra glow effect */}
+            <mesh ref={meshRef} position={[0, 0, 0]}>
+                <boxGeometry args={[0.65, 0.65, 0.65]} />
+                <meshStandardMaterial
+                    color="#22d3ee"
+                    emissive="#22d3ee"
+                    emissiveIntensity={0.6}
+                    transparent
+                    opacity={0.3}
+                    wireframe
+                />
+            </mesh>
+        </group>
     );
 };
 
-// Loading scene with grid and spinning cube
+// Loading scene with grid and spinning cube - enhanced
 const LoadingScene = () => {
     return (
         <>
+            {/* Enhanced lighting for better atmosphere */}
             <ambientLight intensity={0.4} />
+            <directionalLight position={[10, 10, 5]} intensity={1} />
             <pointLight position={[10, 10, 10]} intensity={0.8} />
             <pointLight position={[-10, -10, -10]} intensity={0.4} color="#06b6d4" />
+            <spotLight position={[0, 20, 0]} intensity={0.5} angle={0.3} penumbra={1} />
 
-            {/* Grid */}
+            {/* Grid with better styling */}
             <gridHelper args={[20, 20, "#334155", "#1e293b"]} />
 
             {/* Loading cube */}
             <LoadingCube />
+            
+            {/* Loading text */}
+            <Text
+                position={[0, -2, 0]}
+                fontSize={0.3}
+                color="#06b6d4"
+                anchorX="center"
+                anchorY="middle"
+            >
+                Loading Atlas...
+            </Text>
         </>
     );
 };
@@ -967,7 +1003,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                             >
                                 {loading ? (
                                     <span className="flex items-center gap-2">
-                                        {renderIcon(Loader2, { className: "w-4 h-4 animate-spin" })}
+                                        <LoadingSpinner size="sm" use3D={true} />
                                         Loading...
                                     </span>
                                 ) : (
@@ -1018,9 +1054,16 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                         <button
                                             onClick={loadNextBatch}
                                             disabled={loading}
-                                            className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-white text-xs transition-colors disabled:opacity-50"
+                                            className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-white text-xs transition-colors disabled:opacity-50 flex items-center gap-2"
                                         >
-                                            {loading ? 'Loading...' : `Load Next ${VECTORS_PER_PAGE}`}
+                                            {loading ? (
+                                                <>
+                                                    <LoadingSpinner size="sm" use3D={true} />
+                                                    Loading...
+                                                </>
+                                            ) : (
+                                                `Load Next ${VECTORS_PER_PAGE}`
+                                            )}
                                         </button>
                                     )}
                                 </div>

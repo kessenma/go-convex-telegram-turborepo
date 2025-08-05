@@ -119,7 +119,7 @@ export async function getGeneralConversationBySessionIdFromDb(
 ) {
   const conversation = await ctx.db
     .query("general_conversations")
-    .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
+    .withIndex("by_session_id", (q: any) => q.eq("sessionId", args.sessionId))
     .first();
   
   return conversation;
@@ -133,7 +133,7 @@ export async function getGeneralConversationMessagesFromDb(
   
   const messages = await ctx.db
     .query("general_chat_messages")
-    .withIndex("by_conversation_and_timestamp", (q) => 
+    .withIndex("by_conversation_and_timestamp", (q: any) => 
       q.eq("conversationId", args.conversationId)
     )
     .order("desc")
@@ -150,12 +150,12 @@ export async function getRecentGeneralConversationsFromDb(
   
   let conversationQuery = ctx.db
     .query("general_conversations")
-    .withIndex("by_active_and_last_message", (q) => q.eq("isActive", true));
+    .withIndex("by_active_and_last_message", (q: any) => q.eq("isActive", true));
   
   if (args.userId) {
     conversationQuery = ctx.db
       .query("general_conversations")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId));
+      .withIndex("by_user", (q: any) => q.eq("userId", args.userId));
   }
   
   const conversations = await conversationQuery

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Settings as SettingsIcon, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ExpandableCard } from "../ui/expandable-card-reusable";
 
 import { Switch } from "../ui/switch";
@@ -16,6 +17,8 @@ import { VectorConverterStatus } from "./vector-status-indicator";
 
 import { UserCountIndicator } from "./user-count-indicator";
 import { ChangelogModal } from "../change-log/ChangelogModal";
+import { useNavigationLoading } from "../../contexts/NavigationLoadingContext";
+import { LoadingSpinner } from "../ui/loading-spinner";
 
 
 interface SettingsProps {
@@ -33,6 +36,8 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const id = useId();
+  const router = useRouter();
+  const { isLoading, loadingPath, startLoading } = useNavigationLoading();
 
   // Status hooks not needed anymore since components manage their own state
 
@@ -160,6 +165,12 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
       // Dispatch custom event to notify other components
       window.dispatchEvent(new CustomEvent("animationSettingsChanged"));
     }
+  };
+
+  const handleSystemStatusClick = () => {
+    startLoading("/system-status");
+    router.push("/system-status");
+    setIsOpen(false); // Close settings panel
   };
 
   useOutsideClick(ref, (_event: MouseEvent | TouchEvent) => setIsOpen(false));
@@ -374,12 +385,20 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                           }
                           maxCommits={-1}
                         />
-                        <a
-                          href="/system-status"
+                        <button
+                          onClick={handleSystemStatusClick}
                           className="flex gap-1 items-center text-sm text-emerald-400 transition-colors hover:text-emerald-300"
+                          disabled={isLoading && loadingPath === "/system-status"}
                         >
-                          System Status
-                        </a>
+                          {isLoading && loadingPath === "/system-status" ? (
+                            <>
+                              <LoadingSpinner size="sm" use3D={true} />
+                              Loading...
+                            </>
+                          ) : (
+                            "System Status"
+                          )}
+                        </button>
                       </div>
                     </div>
                   </motion.div>

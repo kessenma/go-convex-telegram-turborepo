@@ -10,6 +10,11 @@ import { httpAction } from "../../_generated/server";
 import { api } from "../../_generated/api";
 import { Id } from "../../_generated/dataModel";
 import { errorResponse, successResponse } from "../shared/utils";
+
+// Helper to avoid deep type inference when fetching a document by ID via runQuery
+async function fetchDocumentById(ctx: any, documentId: string) {
+  return getDocumentByIdFromDb(ctx, { documentId });
+}
 import { saveDocumentToDb, SaveDocumentInput, saveDocumentsBatchToDb, SaveDocumentsBatchInput, getAllDocumentsFromDb, GetAllDocumentsInput, getDocumentByIdFromDb, GetDocumentByIdInput, getDocumentsByIdsFromDb, GetDocumentsByIdsInput, getDocumentStatsFromDb, GetDocumentStatsInput, getEnhancedDocumentStatsFromDb, GetEnhancedDocumentStatsInput, deleteDocumentFromDb, DeleteDocumentInput } from "../../documents";
 
 // Save a single document
@@ -28,6 +33,7 @@ export const saveDocumentAPI = httpAction(async (ctx, request) => {
       return errorResponse("Missing required fields: title, content, contentType", 400);
     }
 
+    // Call the helper function to save the document
     const args: SaveDocumentInput = {
       title: body.title,
       content: body.content,
@@ -35,7 +41,7 @@ export const saveDocumentAPI = httpAction(async (ctx, request) => {
       tags: body.tags,
       summary: body.summary
     };
-
+    
     const documentId = await saveDocumentToDb(ctx, args);
 
     return successResponse({ success: true, documentId }, 201);
@@ -66,7 +72,14 @@ export const saveDocumentsBatchAPI = httpAction(async (ctx, request) => {
         return errorResponse(`Document ${i + 1}: Content too large. Maximum size is 1MB`, 400);
       }
     }
-    const batchResult = await saveDocumentsBatchToDb(ctx, { documents: body.documents });
+    
+    // Call the helper function to save the batch of documents
+    const args: SaveDocumentsBatchInput = {
+      documents: body.documents
+    };
+    
+    const batchResult = await saveDocumentsBatchToDb(ctx, args);
+    
     return successResponse(batchResult, 201);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
@@ -80,7 +93,8 @@ export const getDocumentsAPI = httpAction(async (ctx, request) => {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20");
     const cursor = searchParams.get("cursor") || undefined;
-    const paginatedDocs = await getAllDocumentsFromDb(ctx, { limit, cursor });
+    const args: GetAllDocumentsInput = { limit, cursor };
+    const paginatedDocs = await getAllDocumentsFromDb(ctx, args);
     return successResponse(paginatedDocs);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
@@ -105,7 +119,10 @@ export const getDocumentByIdAPI = httpAction(async (ctx, request) => {
     if (!documentId) {
       return errorResponse("Missing documentId in path or query parameter", 400);
     }
-    const foundDoc = await getDocumentByIdFromDb(ctx, { documentId });
+    
+    // Fetch document using wrapper to avoid deep type inference issues
+    const foundDoc = await fetchDocumentById(ctx, documentId);
+    
     if (!foundDoc) {
       return errorResponse("Document not found", 404);
     }
@@ -124,7 +141,8 @@ export const getDocumentsByIdsAPI = httpAction(async (ctx, request) => {
     if (!documentIds || !Array.isArray(documentIds)) {
       return errorResponse("Missing or invalid documentIds array", 400);
     }
-    const documents = await getDocumentsByIdsFromDb(ctx, { documentIds });
+    const args: GetDocumentsByIdsInput = { documentIds };
+    const documents = await getDocumentsByIdsFromDb(ctx, args);
     return successResponse({
       success: true,
       documents,
@@ -157,7 +175,8 @@ export const deleteDocumentAPI = httpAction(async (ctx, request) => {
 // Get document statistics
 export const getDocumentStatsAPI = httpAction(async (ctx, request) => {
   try {
-    const documentStats = await getDocumentStatsFromDb(ctx, {});
+    const args: GetDocumentStatsInput = {};
+    const documentStats = await getDocumentStatsFromDb(ctx, args);
     return successResponse(documentStats);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
@@ -168,7 +187,8 @@ export const getDocumentStatsAPI = httpAction(async (ctx, request) => {
 // Get enhanced document statistics with embeddings and file types
 export const getEnhancedDocumentStatsAPI = httpAction(async (ctx, request) => {
   try {
-    const stats = await getEnhancedDocumentStatsFromDb(ctx, {});
+    const args: GetEnhancedDocumentStatsInput = {};
+    const stats = await getEnhancedDocumentStatsFromDb(ctx, args);
     return successResponse(stats);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";

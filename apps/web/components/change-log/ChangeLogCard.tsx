@@ -5,6 +5,7 @@ import React from "react";
 import { GitCommit, GitBranch, ExternalLink, Loader2 } from "lucide-react";
 import { Timeline } from "../ui/timeline";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../ui/accordion";
+import { LoadingSpinner } from "../ui/loading-spinner";
 
 interface CommitFile {
   filename: string;
@@ -80,18 +81,18 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
   // Function to fetch file details for a specific commit
   const fetchCommitFiles = useCallback(async (sha: string) => {
     if (commitFiles[sha] || loadingFiles[sha]) return;
-    
+
     try {
       setLoadingFiles(prev => ({ ...prev, [sha]: true }));
-      
+
       const detailResponse = await fetch(
         `/api/github/commits?sha=${sha}`
       );
-      
+
       if (!detailResponse.ok) {
         throw new Error(`GitHub API error: ${detailResponse.status}`);
       }
-      
+
       const detailData = await detailResponse.json();
       setCommitFiles(prev => ({ ...prev, [sha]: detailData.files || [] }));
     } catch (error) {
@@ -100,11 +101,11 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
       setLoadingFiles(prev => ({ ...prev, [sha]: false }));
     }
   }, [commitFiles, loadingFiles]);
-  
+
   // Handle accordion value change
   const handleAccordionChange = useCallback((value: React.Key | null) => {
     setExpandedAccordion(value);
-    
+
     if (value) {
       const valueStr = String(value);
       const [_, commitIndex] = valueStr.split('-');
@@ -124,7 +125,7 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
       day: "numeric",
     });
   };
-  
+
   // Function to format file status
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -138,14 +139,14 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
         return "text-gray-500";
     }
   };
-  
+
   // Prepare timeline data from commits
   const timelineData = commits.map((commit, index) => {
     const files = commitFiles[commit.sha] || [];
     const isLoading = loadingFiles[commit.sha] || false;
     const accordionId = `files-${index}`;
     const isExpanded = expandedAccordion === accordionId;
-    
+
     return {
       title: formatDate(commit.commit.author.date),
       content: (
@@ -166,7 +167,7 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
               </div>
             </div>
           </div>
-          
+
           <div className="flex gap-2 items-center text-xs">
             <a
               href={commit.html_url}
@@ -179,10 +180,10 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
             </a>
             <span className="text-gray-500 dark:text-gray-400">SHA: {commit.sha.substring(0, 7)}</span>
           </div>
-          
+
           {/* File changes accordion */}
           <div className="mt-1">
-            <Accordion 
+            <Accordion
               expandedValue={expandedAccordion}
               onValueChange={handleAccordionChange}
             >
@@ -201,8 +202,7 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
                 <AccordionContent className="pt-2 pb-1">
                   {isLoading ? (
                     <div className="flex justify-center items-center py-4">
-                      <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
-                      <span className="ml-2 text-xs text-gray-500">Loading file changes...</span>
+                      <LoadingSpinner size="sm" text="Loading file changes..." use3D={true} />
                     </div>
                   ) : files.length > 0 ? (
                     <div className="overflow-y-auto p-1 space-y-2 max-h-40">
@@ -246,8 +246,7 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
   if (loading) {
     return (
       <div className="py-4 text-center">
-        <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Loading commit history...</p>
+        <LoadingSpinner size="md" text="Loading commit history..." use3D={true} />
       </div>
     );
   }
@@ -280,15 +279,15 @@ export function ChainLogCard({ maxCommits = 5, className = "", showTitle = false
         </div>
       )}
 
-      <Timeline 
-        data={timelineData} 
+      <Timeline
+        data={timelineData}
         titleSize="small"
         compact={true}
         spacing="tight"
         lineColor="cyan-500"
         dotColor="gray-700"
       />
-      
+
       <div className="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
         <a
           href="https://github.com/kessenma/go-convex-telegram-turborepo"

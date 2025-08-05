@@ -255,6 +255,45 @@ export const getEmbeddingsCount = query({
   },
 });
 
+// Get basic embeddings data for Atlas (avoiding type issues)
+export const getBasicEmbeddingsForAtlas = query({
+  args: {
+    limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit || 100, 500);
+    const offset = args.offset || 0;
+    
+    // Get all active embeddings
+    const allEmbeddings = await ctx.db
+      .query("document_embeddings")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .order("desc")
+      .collect();
+    
+    // Apply pagination and return basic data
+    const paginatedEmbeddings = allEmbeddings.slice(offset, offset + limit);
+    
+    // Return basic embedding data without complex enrichment to avoid type issues
+    return paginatedEmbeddings.map((embedding) => ({
+      _id: embedding._id,
+      documentId: embedding.documentId,
+      embedding: embedding.embedding,
+      embeddingModel: embedding.embeddingModel,
+      embeddingDimensions: embedding.embeddingDimensions,
+      chunkText: embedding.chunkText,
+      chunkIndex: embedding.chunkIndex,
+      createdAt: embedding.createdAt,
+      isActive: embedding.isActive,
+      // Add placeholder document info that can be enriched on the frontend
+      documentTitle: "Loading...",
+      documentContentType: "unknown",
+      documentUploadedAt: 0,
+    }));
+  },
+});
+
 // Delete all embeddings for a document
 export const deleteDocumentEmbeddings = mutation({
   args: {
@@ -327,10 +366,15 @@ export const processDocumentEmbedding = internalAction({
     documentId: v.id("rag_documents"),
   },
   handler: async (ctx, args): Promise<{ success: boolean; documentId: Id<"rag_documents">; embeddingDimensions?: number }> => {
+    console.log(`🚀 Starting embedding processing for document: ${args.documentId}`);
+    
     try {
       // Get the vector-convert-llm service URL from environment
       const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
       const convexUrl = process.env.CONVEX_URL || "http://convex-backend:3211";
+      
+      console.log(`📡 Calling vector service at: ${vectorServiceUrl}/process-document`);
+      console.log(`🔗 Convex URL: ${convexUrl}`);
       
       // Call the document processing endpoint with chunking
       // The vector service will fetch the document data itself via Convex API
@@ -349,10 +393,13 @@ export const processDocumentEmbedding = internalAction({
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`❌ Vector service error: ${response.status} ${errorText}`);
         throw new Error(`Vector service error: ${response.status} ${errorText}`);
       }
 
       const result = await response.json();
+      console.log(`✅ Embedding processing completed successfully for document: ${args.documentId}`);
+      console.log(`📊 Result:`, result);
       
       return {
         success: true,
@@ -360,7 +407,7 @@ export const processDocumentEmbedding = internalAction({
         embeddingDimensions: result.embedding_dimension,
       };
     } catch (error) {
-      console.error("Error processing document embedding:", error);
+      console.error(`❌ Error processing document embedding for ${args.documentId}:`, error);
       
       // Create error notification (disabled - RAG functionality not in use)
       // try {
@@ -413,6 +460,63 @@ export const checkLLMServiceStatus = action({
         status: "error",
         message: `Failed to connect to service: ${error}`,
         ready: false,
+      };
+    }
+  },
+});
+
+// Trigger embedding for a document (public action)
+export const triggerDocumentEmbedding = action({
+  args: {
+    documentId: v.id("rag_documents"),
+  },
+  handler: async (ctx, args) => {
+    console.log(`🚀 Triggering embedding for document: ${args.documentId}`);
+    
+    try {
+      // Get the vector-convert-llm service URL from environment
+      const vectorServiceUrl = process.env.VECTOR_CONVERT_LLM_URL || "http://vector-convert-llm:7999";
+      const convexUrl = process.env.CONVEX_URL || "http://convex-backend:3211";
+      
+      console.log(`📡 Calling vector service at: ${vectorServiceUrl}/process-document`);
+      console.log(`🔗 Convex URL: ${convexUrl}`);
+      
+      // Call the document processing endpoint with chunking
+      const response = await fetch(`${vectorServiceUrl}/process-document`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: args.documentId,
+          convex_url: convexUrl,
+          use_chunking: true,
+          chunk_size: 1000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Vector service error: ${response.status} ${errorText}`);
+        throw new Error(`Vector service error: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ Embedding processing completed successfully for document: ${args.documentId}`);
+      console.log(`📊 Result:`, result);
+      
+      return {
+        success: true,
+        documentId: args.documentId,
+        embeddingDimensions: result.embedding_dimension,
+      };
+    } catch (error) {
+      console.error(`❌ Error processing document embedding for ${args.documentId}:`, error);
+      
+      return {
+        success: false,
+        documentId: args.documentId,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },

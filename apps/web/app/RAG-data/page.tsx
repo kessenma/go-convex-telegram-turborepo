@@ -183,12 +183,36 @@ export default function RAGDataPage(): React.ReactElement | null {
 
       const documentTitle = title || file.name.replace(/\.[^/.]+$/, "");
 
-      await saveDocument({
+      const documentId = await saveDocument({
         title: documentTitle,
         content,
         contentType,
         summary: documentSummary || undefined,
       });
+
+      // Trigger embedding generation for the uploaded document
+      if (documentId) {
+        try {
+          console.log(`Triggering embedding for document: ${documentId}`);
+          // Call the embedding trigger endpoint
+          const response = await fetch('/api/embeddings/trigger', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ documentId }),
+          });
+          
+          if (response.ok) {
+            console.log(`✅ Embedding triggered successfully for document: ${documentId}`);
+          } else {
+            console.warn(`⚠️ Failed to trigger embedding for document: ${documentId}`);
+          }
+        } catch (embeddingError) {
+          console.error('Error triggering embedding:', embeddingError);
+          // Don't fail the upload if embedding trigger fails
+        }
+      }
 
       setUploadStatus("success");
       setUploadMessage(`Document "${documentTitle}" uploaded successfully!`);
@@ -308,6 +332,37 @@ export default function RAGDataPage(): React.ReactElement | null {
       const result = await response.json();
 
       if (response.ok) {
+        // Trigger embeddings for successfully uploaded documents
+        if (result.results && result.results.length > 0) {
+          console.log(`Triggering embeddings for ${result.results.length} documents`);
+          
+          // Trigger embeddings for each successful document
+          const embeddingPromises = result.results.map(async (docResult: any) => {
+            if (docResult.documentId) {
+              try {
+                const embeddingResponse = await fetch('/api/embeddings/trigger', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ documentId: docResult.documentId }),
+                });
+                
+                if (embeddingResponse.ok) {
+                  console.log(`✅ Embedding triggered for document: ${docResult.documentId}`);
+                } else {
+                  console.warn(`⚠️ Failed to trigger embedding for document: ${docResult.documentId}`);
+                }
+              } catch (embeddingError) {
+                console.error(`Error triggering embedding for ${docResult.documentId}:`, embeddingError);
+              }
+            }
+          });
+          
+          // Don't wait for embeddings to complete
+          Promise.all(embeddingPromises).catch(console.error);
+        }
+        
         setUploadStatus("success");
         setUploadMessage(
           `Batch upload completed: ${result.successful} successful, ${result.failed} failed out of ${result.processed} files`
@@ -376,12 +431,36 @@ export default function RAGDataPage(): React.ReactElement | null {
     setUploadStatus("idle");
 
     try {
-      await saveDocument({
+      const documentId = await saveDocument({
         title,
         content: textContent,
         contentType: "text",
         summary: summary || undefined,
       });
+
+      // Trigger embedding generation for the uploaded document
+      if (documentId) {
+        try {
+          console.log(`Triggering embedding for text document: ${documentId}`);
+          // Call the embedding trigger endpoint
+          const response = await fetch('/api/embeddings/trigger', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ documentId }),
+          });
+          
+          if (response.ok) {
+            console.log(`✅ Embedding triggered successfully for document: ${documentId}`);
+          } else {
+            console.warn(`⚠️ Failed to trigger embedding for document: ${documentId}`);
+          }
+        } catch (embeddingError) {
+          console.error('Error triggering embedding:', embeddingError);
+          // Don't fail the upload if embedding trigger fails
+        }
+      }
 
       setUploadStatus("success");
       setUploadMessage(`Document "${title}" uploaded successfully!`);
@@ -552,7 +631,7 @@ export default function RAGDataPage(): React.ReactElement | null {
           </BetaFeatureFlag>
 
           {/* Embedding Atlas Viewer */}
-          <BetaFeatureFlag enabled={false}>
+          <BetaFeatureFlag enabled={true}>
             <EmbeddingAtlasViewer
               className="mb-6"
               onFullscreenChange={setIsEmbeddingAtlasFullscreen}

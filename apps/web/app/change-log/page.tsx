@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Card } from "../../components/ui/card";
 import { Timeline } from "../../components/ui/timeline";
 import { GitCommit, GitBranch, ExternalLink } from "lucide-react";
+import { LoadingSpinner } from "../../components/ui/loading-spinner";
 
 interface CommitFile {
   filename: string;
@@ -214,8 +215,7 @@ export default function ChangeLog() {
 
           {loading ? (
             <div className="py-20 text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-              <p className="mt-4 text-gray-500 dark:text-gray-400">Loading commit history...</p>
+              <LoadingSpinner size="lg" text="Loading commit history..." use3D={true} />
             </div>
           ) : error ? (
             <div className="py-20 text-center">

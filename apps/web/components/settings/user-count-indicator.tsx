@@ -1,6 +1,6 @@
 "use client";
 
-import { Users } from "lucide-react";
+import { Users, Globe, MapPin, Building, Mail, Clock, Wifi } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
 import { Card } from "../ui/card";

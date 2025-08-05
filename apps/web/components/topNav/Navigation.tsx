@@ -28,6 +28,8 @@ import MobileNavigation from "./mobile-navigation";
 import { Notifications } from "./Notifications";
 import { Settings } from "../settings/0Settings";
 import { StatusIndicator } from ".././ui/status-indicator";
+import { useNavigationLoading } from "../../contexts/NavigationLoadingContext";
+import { LoadingSpinner } from "../ui/loading-spinner";
 
 export default function Navigation(): React.ReactElement {
   const pathname = usePathname();
@@ -40,6 +42,14 @@ export default function Navigation(): React.ReactElement {
   }>({});
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const _id = useId();
+  const { isLoading, loadingPath, startLoading } = useNavigationLoading();
+
+  // Close dropdowns when loading completes
+  useEffect(() => {
+    if (!isLoading) {
+      setHoveredItem(null);
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -198,6 +208,7 @@ export default function Navigation(): React.ReactElement {
 
   const handleItemClick = (item: NavItem) => {
     if (item.href) {
+      startLoading(item.href);
       router.push(item.href);
     }
     // Don't do anything if there's no href (dropdown items)
@@ -207,9 +218,13 @@ export default function Navigation(): React.ReactElement {
     if (external) {
       window.open(href, "_blank");
     } else {
+      startLoading(href);
       router.push(href);
     }
-    setHoveredItem(null);
+    // Keep dropdown open during loading
+    if (!isLoading) {
+      setHoveredItem(null);
+    }
   };
 
   // Return mobile navigation for small screens
@@ -226,9 +241,16 @@ export default function Navigation(): React.ReactElement {
       <div className="flex justify-between items-center px-4 mx-auto max-w-6xl h-16">
         <div
           className="flex gap-2 items-center font-semibold text-cyan-200 cursor-pointer"
-          onClick={() => router.push("/")}
+          onClick={() => {
+            startLoading("/");
+            router.push("/");
+          }}
         >
-          {renderIcon(Bot, { className: "w-6 h-6" })}
+          {isLoading && loadingPath === "/" ? (
+            <LoadingSpinner size="sm" use3D={true} />
+          ) : (
+            renderIcon(Bot, { className: "w-6 h-6" })
+          )}
           <span
             className={`text-lg font-bold bg-gradient-to-r from-cyan-200 to-white bg-clip-text text-transparent hidden ${isScrolled ? "sm:hidden" : "sm:inline"}`}
           >
@@ -255,9 +277,9 @@ export default function Navigation(): React.ReactElement {
                 className="relative"
                 onMouseEnter={() => setHoveredItem(item.label)}
                 onMouseLeave={(e) => {
-                  // Only hide if we're not moving to the dropdown
+                  // Only hide if we're not moving to the dropdown and not loading
                   const relatedTarget = e.relatedTarget as HTMLElement | null;
-                  if (!relatedTarget?.closest?.("[data-dropdown]")) {
+                  if (!relatedTarget?.closest?.("[data-dropdown]") && !isLoading) {
                     setHoveredItem(null);
                   }
                 }}
@@ -286,7 +308,11 @@ export default function Navigation(): React.ReactElement {
                   )}
 
                   <span className="flex relative gap-2 items-center">
-                    {renderIcon(IconComponent as any, { className: "w-4 h-4" })}
+                    {isLoading && item.dropdown?.some(dropdownItem => dropdownItem.href === loadingPath) ? (
+                      <LoadingSpinner size="sm" use3D={true} />
+                    ) : (
+                      renderIcon(IconComponent as any, { className: "w-4 h-4" })
+                    )}
                     <span
                       className={`hidden md:inline ${isScrolled && !isActive ? "lg:hidden" : ""}`}
                     >
@@ -355,7 +381,7 @@ export default function Navigation(): React.ReactElement {
                           className="overflow-hidden absolute left-0 top-full z-[90] mt-1 w-48 rounded-lg shadow-lg bg-slate-950"
                           data-dropdown
                           onMouseEnter={() => setHoveredItem(item.label)}
-                          onMouseLeave={() => setHoveredItem(null)}
+                          onMouseLeave={() => !isLoading && setHoveredItem(null)}
                         >
                           {item.dropdown.map((dropdownItem, _index) => (
                             <button
@@ -371,12 +397,17 @@ export default function Navigation(): React.ReactElement {
                                   ? "text-cyan-500 bg-slate-900/50"
                                   : "text-white/80 hover:text-white hover:bg-white/10"
                               }`}
+                              disabled={isLoading && loadingPath === dropdownItem.href}
                             >
                               <div className="flex gap-2 items-center">
-                                {dropdownItem.icon &&
+                                {isLoading && loadingPath === dropdownItem.href ? (
+                                  <LoadingSpinner size="sm" use3D={true} />
+                                ) : (
+                                  dropdownItem.icon &&
                                   renderIcon(dropdownItem.icon as any, {
                                     className: "w-3 h-3",
-                                  })}
+                                  })
+                                )}
                                 {dropdownItem.label}
                               </div>
                               {isMessages &&

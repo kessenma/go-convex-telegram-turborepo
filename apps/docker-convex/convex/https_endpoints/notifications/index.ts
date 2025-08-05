@@ -6,9 +6,23 @@
  * Notification management endpoints for user notifications and alerts.
  */
 
+import { httpRouter } from "convex/server";
 import { httpAction } from "../../_generated/server";
-import { api } from "../../_generated/api";
 import { errorResponse, successResponse, corsHeaders } from "../shared/utils";
+import {
+  createNotificationFromDb,
+  getAllNotificationsFromDb,
+  getUnreadCountFromDb,
+  markAsReadFromDb,
+  markAllAsReadFromDb,
+  CreateNotificationInput,
+  GetAllNotificationsInput,
+  GetUnreadCountInput,
+  MarkAsReadInput,
+  MarkAllAsReadInput
+} from "../../notifications";
+
+const http = httpRouter();
 
 // =============================================================================
 // NOTIFICATION CRUD OPERATIONS
@@ -25,8 +39,9 @@ export const getNotificationsAPI = httpAction(async (ctx, request) => {
       return errorResponse("Missing required parameter: userId", 400);
     }
 
-    // TODO: Implement actual notification query when schema is ready
-    const notifications: any[] = [];
+    const notifications = await getAllNotificationsFromDb(ctx, {
+      limit: limit ? parseInt(limit) : undefined
+    });
     
     return new Response(
       JSON.stringify({
@@ -54,14 +69,20 @@ export const getNotificationsAPI = httpAction(async (ctx, request) => {
 export const createNotificationAPI = httpAction(async (ctx, request) => {
   try {
     const body = await request.json();
-    const { userId, title, message, type, priority } = body;
+    const { userId, title, message, type, priority, documentId, metadata } = body;
     
-    if (!userId || !title || !message) {
-      return errorResponse("Missing required fields: userId, title, message", 400);
+    // For system notifications (like document embedding), userId is optional
+    if (!title || !message) {
+      return errorResponse("Missing required fields: title, message", 400);
     }
 
-    // TODO: Implement actual notification creation when schema is ready
-    const notificationId = `temp-notification-${Date.now()}`;
+    const notificationId = await createNotificationFromDb(ctx, {
+      type: type || "general",
+      title,
+      message,
+      documentId: documentId,
+      metadata: metadata || (priority ? JSON.stringify({ priority }) : undefined)
+    });
     
     return new Response(
       JSON.stringify({
@@ -95,8 +116,7 @@ export const getUnreadNotificationsCountAPI = httpAction(async (ctx, request) =>
       return errorResponse("Missing required parameter: userId", 400);
     }
 
-    // TODO: Implement actual unread count query when schema is ready
-    const unreadCount = 0;
+    const unreadCount = await getUnreadCountFromDb(ctx, {});
     
     return new Response(
       JSON.stringify({
@@ -130,7 +150,9 @@ export const markNotificationAsReadAPI = httpAction(async (ctx, request) => {
       return errorResponse("Missing required fields: notificationId, userId", 400);
     }
 
-    // TODO: Implement actual mark as read when schema is ready
+    await markAsReadFromDb(ctx, {
+      notificationId
+    });
     
     return new Response(
       JSON.stringify({
@@ -164,7 +186,7 @@ export const markAllNotificationsAsReadAPI = httpAction(async (ctx, request) => 
       return errorResponse("Missing required field: userId", 400);
     }
 
-    // TODO: Implement actual mark all as read when schema is ready
+    await markAllAsReadFromDb(ctx, {});
     
     return new Response(
       JSON.stringify({
@@ -220,3 +242,45 @@ export const saveLLMMemoryUsageAPI = httpAction(async (ctx, request) => {
     );
   }
 });
+
+// =============================================================================
+// HTTP ROUTES
+// =============================================================================
+
+http.route({
+  path: "/notifications",
+  method: "GET",
+  handler: getNotificationsAPI
+});
+
+http.route({
+  path: "/notifications",
+  method: "POST",
+  handler: createNotificationAPI
+});
+
+http.route({
+  path: "/notifications/unread-count",
+  method: "GET",
+  handler: getUnreadNotificationsCountAPI
+});
+
+http.route({
+  path: "/notifications/mark-read",
+  method: "POST",
+  handler: markNotificationAsReadAPI
+});
+
+http.route({
+  path: "/notifications/mark-all-read",
+  method: "POST",
+  handler: markAllNotificationsAsReadAPI
+});
+
+http.route({
+  path: "/llm-memory-usage",
+  method: "POST",
+  handler: saveLLMMemoryUsageAPI
+});
+
+export default http;

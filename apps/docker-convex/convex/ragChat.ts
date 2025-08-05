@@ -137,7 +137,7 @@ export async function getRagConversationBySessionIdFromDb(
 ) {
   const conversation = await ctx.db
     .query("rag_conversations")
-    .withIndex("by_session_id", (q) => q.eq("sessionId", args.sessionId))
+    .withIndex("by_session_id", (q: any) => q.eq("sessionId", args.sessionId))
     .first();
   
   return conversation;
@@ -151,7 +151,7 @@ export async function getRagConversationMessagesFromDb(
   
   const messages = await ctx.db
     .query("rag_chat_messages")
-    .withIndex("by_conversation_and_timestamp", (q) => 
+    .withIndex("by_conversation_and_timestamp", (q: any) => 
       q.eq("conversationId", args.conversationId)
     )
     .order("desc")
@@ -168,12 +168,12 @@ export async function getRecentRagConversationsFromDb(
   
   let conversationQuery = ctx.db
     .query("rag_conversations")
-    .withIndex("by_active_and_last_message", (q) => q.eq("isActive", true));
+    .withIndex("by_active_and_last_message", (q: any) => q.eq("isActive", true));
   
   if (args.userId) {
     conversationQuery = ctx.db
       .query("rag_conversations")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId));
+      .withIndex("by_user", (q: any) => q.eq("userId", args.userId));
   }
   
   const conversations = await conversationQuery
@@ -182,9 +182,9 @@ export async function getRecentRagConversationsFromDb(
   
   // Get document titles for each conversation
   const conversationsWithDocuments = await Promise.all(
-    conversations.map(async (conversation) => {
+    conversations.map(async (conversation: any) => {
       const documents = await Promise.all(
-        conversation.documentIds.map(async (docId) => {
+        conversation.documentIds.map(async (docId: any) => {
           const doc = await ctx.db.get(docId);
           return doc ? { _id: doc._id, title: doc.title } : null;
         })

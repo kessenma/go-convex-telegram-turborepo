@@ -1,10 +1,6 @@
 // apps/docker-convex/convex/https_endpoints/ai_chat/index.ts
 import { httpRouter } from "convex/server";
 import { httpAction } from "../../_generated/server";
-import { Id } from "../../_generated/dataModel";
-import { errorResponse, successResponse } from "../shared/utils";
-import { OpenAI } from "openai";
-import { v4 as uuidv4 } from "uuid";
 import {
   createGeneralConversationFromDb,
   addGeneralMessageFromDb,
@@ -59,7 +55,7 @@ export const generalChatAPI = httpAction(async (ctx, request) => {
         ipAddress,
         llmModel: llmModel || "gpt-4",
       });
-      conversation = await ctx.db.get(conversationId);
+      conversation = await getRagConversationBySessionIdFromDb(ctx, { sessionId });
     }
 
     if (!conversation) {
@@ -136,7 +132,7 @@ export const ragChatAPI = httpAction(async (ctx, request) => {
         ipAddress,
         llmModel: llmModel || "gpt-4",
       });
-      conversation = await ctx.db.get(conversationId);
+      conversation = await getGeneralConversationBySessionIdFromDb(ctx, { sessionId });
     }
 
     if (!conversation) {
@@ -293,19 +289,15 @@ http.route({
 
       let messages;
       if (chatType === "rag") {
-        messages = await ctx.db
-          .query("rag_messages")
-          .filter((q) => q.eq(q.field("conversationId"), conversationId))
-          .filter((q) => q.eq(q.field("isActive"), true))
-          .order("desc")
-          .take(limit || 50);
+        messages = await getRagConversationMessagesFromDb(ctx, {
+          conversationId,
+          limit: limit || 50
+        });
       } else {
-        messages = await ctx.db
-          .query("general_messages")
-          .filter((q) => q.eq(q.field("conversationId"), conversationId))
-          .filter((q) => q.eq(q.field("isActive"), true))
-          .order("desc")
-          .take(limit || 50);
+        messages = await getGeneralConversationMessagesFromDb(ctx, {
+          conversationId,
+          limit: limit || 50
+        });
       }
 
       return new Response(
@@ -335,29 +327,15 @@ http.route({
 
       let conversations;
       if (chatType === "rag") {
-        let query = ctx.db
-          .query("rag_conversations")
-          .filter((q) => q.eq(q.field("isActive"), true));
-        
-        if (userId) {
-          query = query.filter((q) => q.eq(q.field("userId"), userId));
-        }
-        
-        conversations = await query
-          .order("desc")
-          .take(limit || 20);
+        conversations = await getRecentRagConversationsFromDb(ctx, {
+          limit: limit || 20,
+          userId
+        });
       } else {
-        let query = ctx.db
-          .query("general_conversations")
-          .filter((q) => q.eq(q.field("isActive"), true));
-        
-        if (userId) {
-          query = query.filter((q) => q.eq(q.field("userId"), userId));
-        }
-        
-        conversations = await query
-          .order("desc")
-          .take(limit || 20);
+        conversations = await getRecentGeneralConversationsFromDb(ctx, {
+          limit: limit || 20,
+          userId
+        });
       }
 
       return new Response(

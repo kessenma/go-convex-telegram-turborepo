@@ -1,5 +1,100 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
+import { QueryCtx, MutationCtx } from "./_generated/server";
+
+// Input types for helper functions
+export type CreateNotificationInput = {
+  type: string;
+  title: string;
+  message: string;
+  documentId?: Id<"rag_documents">;
+  metadata?: string;
+  source?: string;
+};
+
+export type GetAllNotificationsInput = {
+  limit?: number;
+};
+
+export type GetUnreadCountInput = {};
+
+export type MarkAsReadInput = {
+  notificationId: Id<"notifications">;
+};
+
+export type MarkAllAsReadInput = {};
+
+// Helper functions for HTTP actions
+export async function createNotificationFromDb(
+  ctx: any,
+  args: CreateNotificationInput
+) {
+  const notificationId = await ctx.db.insert("notifications", {
+    type: args.type,
+    title: args.title,
+    message: args.message,
+    timestamp: Date.now(),
+    isRead: false,
+    documentId: args.documentId,
+    metadata: args.metadata,
+    source: args.source || "system",
+  });
+  
+  return notificationId;
+}
+
+export async function getAllNotificationsFromDb(
+  ctx: any,
+  args: GetAllNotificationsInput
+) {
+  const notifications = await ctx.db
+    .query("notifications")
+    .withIndex("by_timestamp")
+    .order("desc")
+    .take(args.limit || 50);
+  
+  return notifications;
+}
+
+export async function getUnreadCountFromDb(
+  ctx: any,
+  args: GetUnreadCountInput
+) {
+  const unreadNotifications = await ctx.db
+    .query("notifications")
+    .withIndex("by_isRead")
+    .filter((q: any) => q.eq(q.field("isRead"), false))
+    .collect();
+  
+  return unreadNotifications.length;
+}
+
+export async function markAsReadFromDb(
+  ctx: any,
+  args: MarkAsReadInput
+) {
+  await ctx.db.patch(args.notificationId, { isRead: true });
+}
+
+export async function markAllAsReadFromDb(
+  ctx: any,
+  args: MarkAllAsReadInput
+) {
+  const unreadNotifications = await ctx.db
+    .query("notifications")
+    .withIndex("by_isRead")
+    .filter((q: any) => q.eq(q.field("isRead"), false))
+    .collect();
+  
+  let markedCount = 0;
+  for (const notification of unreadNotifications) {
+    await ctx.db.patch(notification._id, { isRead: true });
+    markedCount++;
+  }
+  
+  return markedCount;
+}
 
 // Create a new notification
 export const createNotification = mutation({

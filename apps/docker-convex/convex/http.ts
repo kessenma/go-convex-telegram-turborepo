@@ -247,6 +247,12 @@ http.route({
   handler: embeddingRoutes.getEmbeddingsForAtlasAPI,
 });
 
+http.route({
+  path: "/api/embeddings/trigger",
+  method: "POST",
+  handler: embeddingRoutes.triggerDocumentEmbeddingAPI,
+});
+
 // COMMENTED OUT - Embedding functionality is currently broken and not needed for MVP
 // These routes reference handlers that are commented out above
 /*

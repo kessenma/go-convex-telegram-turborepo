@@ -35,6 +35,8 @@ import type * as presence from "../presence.js";
 import type * as ragChat from "../ragChat.js";
 import type * as serviceStatus from "../serviceStatus.js";
 import type * as shared from "../shared.js";
+import type * as telegram_message_threads from "../telegram_message_threads.js";
+import type * as telegram_messages from "../telegram_messages.js";
 import type * as threads from "../threads.js";
 import type * as userLocation from "../userLocation.js";
 import type * as userSessions from "../userSessions.js";
@@ -82,6 +84,8 @@ declare const fullApi: ApiFromModules<{
   ragChat: typeof ragChat;
   serviceStatus: typeof serviceStatus;
   shared: typeof shared;
+  telegram_message_threads: typeof telegram_message_threads;
+  telegram_messages: typeof telegram_messages;
   threads: typeof threads;
   userLocation: typeof userLocation;
   userSessions: typeof userSessions;
