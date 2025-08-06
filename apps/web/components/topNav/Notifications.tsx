@@ -11,16 +11,19 @@ import {
   Database,
   Upload,
   X,
+  AlertCircle,
 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ExpandableCard } from "../../components/ui/expandable-card-reusable";
 import { ScrollArea } from "../../components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tool-tip";
 import { useNotifications } from "../../contexts/NotificationsContext";
 import { api } from "../../generated-convex";
 import { useOutsideClick } from "../../hooks/use-outside-clicks";
 import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
+import { DocumentViewer } from "../rag/DocumentViewer";
 
 interface NotificationsProps {
   className?: string;
@@ -47,6 +50,8 @@ export function Notifications({
     bottom?: number;
     right: number;
   }>({ top: 0, right: 0 });
+  const [selectedDocumentId, setSelectedDocumentId] = useState<Id<"rag_documents"> | null>(null);
+  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -55,9 +60,25 @@ export function Notifications({
   const notifications = useQuery(api.notifications.getAllNotifications, {
     limit: 20,
   });
+  
+
   const unreadCount = useQuery(api.notifications.getUnreadCount, {});
   const markAsRead = useMutation(api.notifications.markAsRead);
   const markAllAsRead = useMutation(api.notifications.markAllAsRead);
+  
+  // Handle opening document viewer
+  const handleOpenDocument = (documentId: Id<"rag_documents">) => {
+    // First set the document ID to trigger the query
+    setSelectedDocumentId(documentId);
+    setIsDocumentViewerOpen(true);
+    closeNotifications();
+  };
+  
+  // Handle closing document viewer
+  const handleCloseViewer = () => {
+    setIsDocumentViewerOpen(false);
+    setSelectedDocumentId(null);
+  };
 
   // Track previous notifications to detect new ones
   const [previousNotifications, setPreviousNotifications] = useState<
@@ -382,15 +403,32 @@ export function Notifications({
                         <motion.div
                           key={notification._id}
                           className={cn(
-                            "p-3 rounded-lg border transition-colors cursor-pointer",
+                            "p-3 rounded-lg border transition-colors cursor-pointer relative",
                             notification.isRead
                               ? "bg-gray-50 dark:bg-gray-800/30 border-gray-200 dark:border-gray-700"
-                              : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                              : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
+                            notification.type === "document_deleted" && "opacity-70"
                           )}
-                          onClick={() =>
-                            !notification.isRead &&
-                            handleMarkAsRead(notification._id)
-                          }
+                          onClick={() => {
+                            // Mark as read if unread
+                            if (!notification.isRead) {
+                              handleMarkAsRead(notification._id);
+                            }
+                            
+                            // Open document viewer if it's a document-related notification
+                            if (
+                              notification.documentId && 
+                              (notification.type === "document_embedded" || 
+                               notification.type === "document_uploaded")
+                            ) {
+                              handleOpenDocument(notification.documentId);
+                            }
+                            
+                            // Show toast for deleted documents
+                            if (notification.type === "document_deleted") {
+                              toast.error("This document has been deleted");
+                            }
+                          }}
                           variants={{
                             hidden: { opacity: 0, y: 10 },
                             visible: { opacity: 1, y: 0 },
@@ -413,9 +451,24 @@ export function Notifications({
                                 damping: 25,
                               }}
                             >
-                              {renderIcon(IconComponent, {
-                                className: "w-4 h-4",
-                              })}
+                              {notification.type === "document_deleted" ? (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      {renderIcon(IconComponent, {
+                                        className: "w-4 h-4",
+                                      })}
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      Document has been deleted
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : (
+                                renderIcon(IconComponent, {
+                                  className: "w-4 h-4",
+                                })
+                              )}
                             </motion.div>
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-center mb-1">
@@ -479,6 +532,14 @@ export function Notifications({
           </div>
         </ScrollArea>
       </ExpandableCard>
+      {/* Document Viewer */}
+      {selectedDocumentId && (
+        <DocumentViewer
+          documentId={selectedDocumentId}
+          isOpen={isDocumentViewerOpen}
+          onClose={handleCloseViewer}
+        />
+      )}
     </div>
   );
 }

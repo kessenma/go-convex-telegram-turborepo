@@ -136,7 +136,8 @@ export function DocumentViewer({
 
   const vectorStatus = getVectorStatus();
 
-  if (!documentData && !loading) {
+  // Check if document is not found or deleted (isActive === false)
+  if ((!documentData && !loading) || (documentData && documentData.isActive === false)) {
     return (
       <ResponsiveModal open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <ResponsiveModalContent 
@@ -149,8 +150,16 @@ export function DocumentViewer({
             </ResponsiveModalTitle>
           </ResponsiveModalHeader>
           <div className="flex flex-col h-full max-h-[80vh]">
-            <div className="flex justify-center items-center h-64">
-              <p className="text-gray-400">Document not found</p>
+            <div className="flex flex-col justify-center items-center h-64">
+              <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+              <p className="text-gray-400 text-lg font-medium">
+                {documentData ? "This document has been deleted" : "Document not found"}
+              </p>
+              {documentData && (
+                <p className="text-gray-500 text-sm mt-2">
+                  The document you're trying to access is no longer available
+                </p>
+              )}
             </div>
           </div>
         </ResponsiveModalContent>

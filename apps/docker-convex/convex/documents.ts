@@ -158,15 +158,22 @@ export async function deleteDocumentFromDb(ctx: any, args: DeleteDocumentInput) 
     throw new Error("Document not found");
   }
 
-  // First, delete all associated embeddings
+  // First, soft delete all associated embeddings
   const embeddings = await ctx.db
     .query("document_embeddings")
     .withIndex("by_document", (q: any) => q.eq("documentId", args.documentId))
+    .filter((q: any) => q.eq(q.field("isActive"), true))
     .collect();
 
-  for (const embedding of embeddings) {
-    await ctx.db.delete(embedding._id);
-  }
+  // Soft delete all embeddings by setting isActive to false
+  const deletePromises = embeddings.map((embedding: { _id: string }) =>
+    ctx.db.patch(embedding._id, {
+      isActive: false,
+    })
+  );
+
+  await Promise.all(deletePromises);
+  console.log(`Soft-deleted ${embeddings.length} embeddings for document ${args.documentId}`);
 
   // Then soft delete the document
   await ctx.db.patch(args.documentId, {
