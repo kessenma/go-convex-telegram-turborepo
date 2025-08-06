@@ -2,14 +2,17 @@
 
 import { FileText, Trash2 } from "lucide-react";
 import type React from "react";
-import { memo } from "react";
+import { memo, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../generated-convex";
 import { renderIcon } from "../../lib/icon-utils";
 import type { UploadedDocument } from "../../stores/document-store";
 import Folder from "./folder";
+import { toast } from "sonner";
+import type { GenericId as Id } from "convex/values";
 
 interface DocumentCardProps {
   document: UploadedDocument;
-  isDeleting: boolean;
   expandingDocument: { docId: string; paperIndex: number } | null;
   onPaperClick: (
     documentId: string,
@@ -17,17 +20,16 @@ interface DocumentCardProps {
     event: React.MouseEvent
   ) => void;
   onFolderClick: (documentId: string, event?: React.MouseEvent) => void;
-  onDelete: (documentId: string) => void;
 }
 
 const DocumentCard = memo(function DocumentCard({
   document,
-  isDeleting,
   expandingDocument,
   onPaperClick,
   onFolderClick,
-  onDelete,
 }: DocumentCardProps) {
+  const [deleting, setDeleting] = useState(false);
+  const deleteDocument = useMutation(api.documents.deleteDocument);
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -138,15 +140,18 @@ const DocumentCard = memo(function DocumentCard({
     }
   };
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
+  const handleDeleteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(
-      "🖱️ Delete button clicked for document:",
-      document._id,
-      document.title
-    );
-    console.log("🖱️ onDelete function type:", typeof onDelete);
-    onDelete(document._id);
+    setDeleting(true);
+    try {
+      await deleteDocument({ documentId: document._id as Id<"rag_documents"> });
+      toast.success("Document deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete document:", error);
+      toast.error("Failed to delete document");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -164,7 +169,7 @@ const DocumentCard = memo(function DocumentCard({
               : null
           }
           keepOpen={expandingDocument?.docId === document._id}
-          deleting={isDeleting}
+          deleting={deleting}
           onPaperClick={handlePaperClick}
           onFolderClick={() => onFolderClick(document._id)}
         />
@@ -178,9 +183,9 @@ const DocumentCard = memo(function DocumentCard({
         {/* Delete button overlay */}
         <button
           onClick={handleDeleteClick}
-          disabled={isDeleting}
+          disabled={deleting}
           className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 z-50 ${
-            isDeleting
+            deleting
               ? "text-gray-300 bg-gray-500 cursor-not-allowed"
               : "text-white bg-red-500 hover:bg-red-600 hover:scale-110"
           }`}

@@ -21,6 +21,8 @@ import {
   MarkAsReadInput,
   MarkAllAsReadInput
 } from "../../notifications";
+// REMOVE: import { createNotification } from "../../_generated/server";
+import { api } from "../../_generated/api";
 
 const http = httpRouter();
 
@@ -76,12 +78,14 @@ export const createNotificationAPI = httpAction(async (ctx, request) => {
       return errorResponse("Missing required fields: title, message", 400);
     }
 
-    const notificationId = await createNotificationFromDb(ctx, {
+    // Use ctx.runMutation with function reference from api
+    const notificationId = await ctx.runMutation(api.notifications.createNotification, {
       type: type || "general",
       title,
       message,
       documentId: documentId,
-      metadata: metadata || (priority ? JSON.stringify({ priority }) : undefined)
+      metadata: metadata || (priority ? JSON.stringify({ priority }) : undefined),
+      source: "system"
     });
     
     return new Response(

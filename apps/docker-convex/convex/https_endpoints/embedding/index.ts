@@ -7,7 +7,7 @@
  */
 
 import { httpAction } from "../../_generated/server";
-import { api } from "../../_generated/api";
+import { api, internal } from "../../_generated/api";
 import { Id } from "../../_generated/dataModel";
 import { errorResponse, successResponse } from "../shared/utils";
 import { 
@@ -53,10 +53,10 @@ export const generateDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
     if (!documentId) {
       return errorResponse("Missing documentId", 400);
     }
-    // TEMPORARY: Commented out due to type instantiation issues
-    // await ctx.runAction(internal.embeddings.processDocumentEmbedding, {
-    //   documentId: documentId as Id<"rag_documents">,
-    // });
+  // @ts-expect-error
+    await ctx.runAction(internal.embeddings.processDocumentEmbedding, {
+      documentId: documentId as Id<"rag_documents">,
+    });
     return successResponse({ success: true });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
@@ -73,14 +73,16 @@ export const createDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
       return errorResponse("Missing required fields: documentId, embedding", 400);
     }
     
-    const args: CreateDocumentEmbeddingInput = {
-      documentId: documentId,
+    const args = {
+      documentId: documentId as Id<"rag_documents">,
       embedding,
       embeddingModel: embeddingModel || "all-MiniLM-L6-v2",
       embeddingDimensions: embeddingDimensions || embedding.length
     };
     
-    const embeddingId = await createDocumentEmbeddingFromDb(ctx, args);
+    // Use Convex mutation for DB access in httpAction context
+    // @ts-expect-error
+    const embeddingId = await ctx.runMutation(api.embeddings.createDocumentEmbedding, args);
     
     return successResponse({
       success: true,

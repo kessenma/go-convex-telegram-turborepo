@@ -6,6 +6,12 @@ export const internal: InternalApiType = anyApi as unknown as InternalApiType;
 
 export type PublicApiType = {
   documents: {
+    deleteDocument: FunctionReference<
+      "mutation",
+      "public",
+      { documentId: Id<"rag_documents"> },
+      any
+    >;
     getAllDocuments: FunctionReference<
       "query",
       "public",

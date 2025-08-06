@@ -1,15 +1,13 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { FileText, Trash2 } from "lucide-react";
+import {useMutation } from "convex/react";
+import { FileText } from "lucide-react";
 import type React from "react";
 import { memo, useCallback, useState } from "react";
 import { api } from "../../generated-convex";
 import { renderIcon } from "../../lib/icon-utils";
 // Removed ragChatStore import - chat functionality disabled
 import { useDocumentStore } from "../../stores/document-store";
-import { BackgroundGradient } from "../ui/backgrounds/background-gradient";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tool-tip";
 import type { GenericId as Id } from "convex/values";
 import DocumentCard from "./DocumentCard";
 import DocumentViewer from "./DocumentViewer";
@@ -31,6 +29,7 @@ const DocumentBrowser = memo(function DocumentBrowser({
   
   // Get state and actions from stores
   const { deletingIds, deleteDocument } = useDocumentStore();
+  const deleteDocumentMutation = useMutation(api.documents.deleteDocument);
   
   // Chat functionality removed - focusing on document management only
 
@@ -76,20 +75,10 @@ const DocumentBrowser = memo(function DocumentBrowser({
 
   const handleDeleteDocument = useCallback(
     (documentId: string) => {
-      deleteDocument(documentId);
+      deleteDocument(documentId, deleteDocumentMutation);
     },
-    [deleteDocument]
+    [deleteDocument, deleteDocumentMutation]
   );
-
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   // Loading state for documents
   if (loading) {
@@ -139,11 +128,9 @@ const DocumentBrowser = memo(function DocumentBrowser({
                 <DocumentCard
                   key={document._id}
                   document={document}
-                  isDeleting={deletingIds.has(document._id)}
                   expandingDocument={expandingDocument}
                   onPaperClick={handlePaperClick}
                   onFolderClick={handleFolderClick}
-                  onDelete={handleDeleteDocument}
                 />
               ))}
             </div>

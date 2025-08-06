@@ -1,6 +1,27 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-const CONVEX_HTTP_URL = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
+// Cross-compatibility: Try Docker service name first, then localhost
+const DOCKER_CONVEX_URL = "http://convex-backend:3211";
+const LOCAL_CONVEX_URL = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
+
+// Helper function to try multiple endpoints for cross-compatibility
+async function tryConvexEndpoints(path: string, options?: RequestInit): Promise<Response> {
+  const endpoints = [DOCKER_CONVEX_URL, LOCAL_CONVEX_URL];
+  
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(`${endpoint}${path}`, options);
+      if (response.ok || response.status < 500) {
+        return response;
+      }
+    } catch (error) {
+      console.warn(`Failed to connect to ${endpoint}:`, error);
+      continue;
+    }
+  }
+  
+  throw new Error("All Convex endpoints failed");
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +35,7 @@ export async function GET(request: NextRequest) {
       params.append("cursor", cursor);
     }
 
-    const response = await fetch(`${CONVEX_HTTP_URL}/api/documents?${params}`);
+    const response = await tryConvexEndpoints(`/api/documents?${params}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -36,7 +57,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, content, contentType, summary, tags } = body;
 
-    const response = await fetch(`${CONVEX_HTTP_URL}/api/documents`, {
+    const response = await tryConvexEndpoints(`/api/documents`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

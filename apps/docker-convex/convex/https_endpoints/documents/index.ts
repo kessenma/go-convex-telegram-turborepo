@@ -7,24 +7,16 @@
  */
 
 import { httpAction } from "../../_generated/server";
-import { api } from "../../_generated/api";
-import { Id } from "../../_generated/dataModel";
 import { errorResponse, successResponse } from "../shared/utils";
 
 // Helper to avoid deep type inference when fetching a document by ID via runQuery
+import { Id } from "../../_generated/dataModel";
 async function fetchDocumentById(ctx: any, documentId: string) {
-  return getDocumentByIdFromDb(ctx, { documentId });
+  // Use runQuery to fetch the document from the DB since ctx.db is not available in ActionCtx
+  return ctx.runQuery("documents:getDocumentById", { documentId: documentId as Id<"rag_documents"> });
 }
 import { saveDocumentToDb, SaveDocumentInput, saveDocumentsBatchToDb, SaveDocumentsBatchInput, getAllDocumentsFromDb, GetAllDocumentsInput, getDocumentByIdFromDb, GetDocumentByIdInput, getDocumentsByIdsFromDb, GetDocumentsByIdsInput, getDocumentStatsFromDb, GetDocumentStatsInput, getEnhancedDocumentStatsFromDb, GetEnhancedDocumentStatsInput, deleteDocumentFromDb, DeleteDocumentInput } from "../../documents";
 
-// Save a single document
-type SaveDocumentArgs = {
-  title: string;
-  content: string;
-  contentType: string;
-  tags?: string[];
-  summary?: string;
-};
 
 export const saveDocumentAPI = httpAction(async (ctx, request) => {
   try {
@@ -164,10 +156,12 @@ export const deleteDocumentAPI = httpAction(async (ctx, request) => {
       return errorResponse("Missing documentId in path", 400);
     }
     await deleteDocumentFromDb(ctx, { documentId });
-    console.log("Document deletion temporarily disabled:", documentId);
-    return successResponse({ success: true, message: "Document deletion temporarily disabled" });
+    return successResponse({ success: true, message: "Document deleted successfully" });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
+    if (message === "Document not found") {
+      return errorResponse("Document not found", 404);
+    }
     return errorResponse("Internal server error", 500, message);
   }
 });

@@ -2,6 +2,8 @@
 
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { useConvex } from "convex/react";
+import { api } from "../generated-convex";
 
 interface UploadedDocument {
   _id: string;
@@ -43,7 +45,7 @@ interface DocumentStore {
   revertOptimisticDelete: (document: UploadedDocument) => void;
 
   // API actions
-  deleteDocument: (documentId: string) => Promise<boolean>;
+  deleteDocument: (documentId: string, convexMutation: any) => Promise<boolean>;
 }
 
 export const useDocumentStore = create<DocumentStore>()(
@@ -156,7 +158,7 @@ export const useDocumentStore = create<DocumentStore>()(
       },
 
       // API actions
-      deleteDocument: async (documentId) => {
+      deleteDocument: async (documentId, convexMutation) => {
         console.log("🗑️ deleteDocument called with ID:", documentId);
         console.log("🗑️ Document ID type:", typeof documentId);
         console.log("🗑️ Document ID length:", documentId.length);
@@ -177,29 +179,13 @@ export const useDocumentStore = create<DocumentStore>()(
         );
 
         try {
-          const deleteUrl = `/api/documents/${documentId}`;
-          console.log("🌐 Making DELETE request to:", deleteUrl);
+          console.log("🌐 Calling Convex deleteDocument mutation with ID:", documentId);
 
-          const response = await fetch(deleteUrl, {
-            method: "DELETE",
+          const result = await convexMutation(api.documents.deleteDocument, {
+            documentId: documentId as any,
           });
 
-          console.log(
-            "📡 DELETE response status:",
-            response.status,
-            response.statusText
-          );
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("❌ DELETE request failed:", errorText);
-            throw new Error(
-              `Failed to delete document: ${response.statusText}`
-            );
-          }
-
-          const responseData = await response.json();
-          console.log("✅ DELETE response data:", responseData);
+          console.log("✅ Convex deleteDocument result:", result);
 
           // Import toast dynamically to avoid SSR issues
           const { toast } = await import("sonner");

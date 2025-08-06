@@ -151,6 +151,13 @@ export type DeleteDocumentInput = {
 };
 
 export async function deleteDocumentFromDb(ctx: any, args: DeleteDocumentInput) {
+  console.log("[deleteDocumentFromDb] documentId:", args.documentId, "type:", typeof args.documentId);
+  const doc = await ctx.db.get(args.documentId);
+  console.log("[deleteDocumentFromDb] ctx.db.get result:", doc);
+  if (!doc) {
+    throw new Error("Document not found");
+  }
+
   // First, delete all associated embeddings
   const embeddings = await ctx.db
     .query("document_embeddings")
@@ -167,8 +174,29 @@ export async function deleteDocumentFromDb(ctx: any, args: DeleteDocumentInput) 
     lastModified: Date.now(),
   });
 
+  // Create notification for document deletion
+  await ctx.db.insert("notifications", {
+    type: "document_deleted",
+    title: "Document Deleted",
+    message: `Document "${doc.title}" has been successfully deleted.`,
+    timestamp: Date.now(),
+    isRead: false,
+    documentId: args.documentId,
+    source: "web",
+  });
+
   return args.documentId;
 }
+
+// Delete a document (soft delete)
+export const deleteDocument = mutation({
+  args: {
+    documentId: v.id("rag_documents"),
+  },
+  handler: async (ctx, args) => {
+    return deleteDocumentFromDb(ctx, args);
+  },
+});
 
 // Search documents by content
 export const searchDocuments = query({
