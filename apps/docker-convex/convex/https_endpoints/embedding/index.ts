@@ -214,15 +214,16 @@ export const getEmbeddingsForAtlasAPI = httpAction(async (ctx, request) => {
     const limit = Math.min(parseInt(url.searchParams.get("limit") || "100"), 500);
     const offset = parseInt(url.searchParams.get("offset") || "0");
     
-    // Temporary: Return empty data to avoid type issues
-    // TODO: Fix type instantiation issues and implement proper embedding fetching
-    const embeddings: any[] = [];
+    // Use ctx.runQuery to call the Convex query function from HTTP action
+    const embeddings = await ctx.runQuery(api.embeddings.getBasicEmbeddingsForAtlas, {
+      limit,
+      offset
+    });
     
     return successResponse({
       success: true,
       embeddings,
-      count: embeddings.length,
-      message: "Embeddings data for Atlas visualization (temporarily disabled due to type issues)"
+      count: embeddings.length
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";

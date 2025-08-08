@@ -3,13 +3,12 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Card } from "../ui/card";
 import { Button as MovingButton } from "../ui/moving-border";
-import { Loader2, Eye, EyeOff, RotateCcw, Plus, Minus, Move, Maximize2, Minimize2, Box, Square, Info, ChevronDown, ChevronUp, Expand, Shrink, ChevronLeft, ChevronRight, TriangleAlert, FileText } from "lucide-react";
+import { Eye, EyeOff, RotateCcw, Plus, Minus, Move, Maximize2, Minimize2, Box, Square, Info, ChevronUp, Expand, Shrink, ChevronLeft, ChevronRight, TriangleAlert, FileText } from "lucide-react";
 import { renderIcon } from "../../lib/icon-utils";
 import { LoadingSpinner } from "../ui/loading-spinner";
 import {
     ResponsiveModal,
     ResponsiveModalContent,
-    ResponsiveModalTrigger,
     ResponsiveModalTitle,
     ResponsiveModalDescription
 } from "../ui/responsive-modal";
@@ -417,9 +416,9 @@ const InteractiveEmbeddingPlot = React.memo(({
     }, []);
 
     return (
-        <div className="relative w-full h-full bg-slate-900 rounded-lg overflow-hidden">
+        <div className="overflow-hidden relative w-full h-full rounded-lg bg-slate-900">
             {/* View Mode Toggle - moved to left side */}
-            <div className="absolute top-4 left-4 bg-slate-800/90 rounded-lg p-1 border border-cyan-500/20 flex flex-col gap-1 z-20">
+            <div className="flex absolute top-4 left-4 z-20 flex-col gap-1 p-1 rounded-lg border bg-slate-800/90 border-cyan-500/20">
                 <button
                     onClick={onToggle3D}
                     className={`px-2 py-1 rounded text-xs transition-colors flex items-center justify-center ${!is3D
@@ -449,7 +448,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                         console.log('Fullscreen button clicked, isFullscreen:', isFullscreen);
                         onToggleFullscreen();
                     }}
-                    className="p-2 bg-slate-800/90 rounded-lg border border-cyan-500/20 text-cyan-300 hover:text-cyan-200 transition-colors"
+                    className="p-2 text-cyan-300 rounded-lg border transition-colors bg-slate-800/90 border-cyan-500/20 hover:text-cyan-200"
                     title={isFullscreen ? "Exit Fullscreen" : "Open in Fullscreen Modal"}
                 >
                     {renderIcon(isFullscreen ? Minimize2 : Maximize2, { className: "w-4 h-4" })}
@@ -569,38 +568,38 @@ const InteractiveEmbeddingPlot = React.memo(({
             {/* Custom tooltip with cyan/slate theme - moved to bottom center */}
             {hoveredPoint && !isDragging && isFullscreen && (
                 <div
-                    className="absolute pointer-events-none z-10 bg-slate-800/95 text-white p-3 rounded-lg shadow-lg border border-cyan-500/50 max-w-xs"
+                    className="absolute z-10 p-3 max-w-xs text-white rounded-lg border shadow-lg pointer-events-none bg-slate-800/95 border-cyan-500/50"
                     style={{
                         left: '50%',
                         bottom: '20px',
                         transform: 'translateX(-50%)'
                     }}
                 >
-                    <div className="font-medium text-sm mb-1 text-cyan-300">
+                    <div className="mb-1 text-sm font-medium text-cyan-300">
                         {hoveredPoint.document_title}
                     </div>
-                    <div className="text-xs text-slate-400 mb-2">
+                    <div className="mb-2 text-xs text-slate-400">
                         Chunk {hoveredPoint.chunk_index} • {hoveredPoint.embedding_model}
                     </div>
-                    <div className="text-xs text-slate-200 leading-relaxed">
+                    <div className="text-xs leading-relaxed text-slate-200">
                         {hoveredPoint.text.substring(0, 150)}
                         {hoveredPoint.text.length > 150 && '...'}
                     </div>
-                    <div className="text-xs text-slate-500 mt-2">
+                    <div className="mt-2 text-xs text-slate-500">
                         Position: ({hoveredPoint.x.toFixed(2)}, {hoveredPoint.y.toFixed(2)})
                     </div>
                 </div>
             )}
 
             {/* Collapsible Info Section - moved to avoid overlap */}
-            <div className="absolute top-16 left-4 bg-slate-800/90 rounded-lg border border-cyan-500/20 z-20">
+            <div className="absolute left-4 top-16 z-20 rounded-lg border bg-slate-800/90 border-cyan-500/20">
                 {showInfo ? (
                     <div className="p-3 text-xs text-slate-300">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex justify-between items-center mb-2">
                             <div className="font-medium text-cyan-300">Embedding Visualization</div>
                             <button
                                 onClick={() => setShowInfo(false)}
-                                className="text-slate-400 hover:text-cyan-300 transition-colors"
+                                className="transition-colors text-slate-400 hover:text-cyan-300"
                             >
                                 {renderIcon(ChevronUp, { className: "w-3 h-3" })}
                             </button>
@@ -613,7 +612,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                 ) : (
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="p-2 text-cyan-300 hover:text-cyan-200 transition-colors"
+                        className="p-2 text-cyan-300 transition-colors hover:text-cyan-200"
                         title="Show Information"
                     >
                         {renderIcon(Info, { className: "w-4 h-4" })}
@@ -622,8 +621,8 @@ const InteractiveEmbeddingPlot = React.memo(({
             </div>
 
             {/* Stats with cyan/slate theme */}
-            <div className="absolute top-4 right-4 bg-slate-800/90 rounded-lg p-3 text-xs text-slate-300 border border-cyan-500/20">
-                <div className="font-medium mb-1 text-cyan-300">{data.length} Embeddings</div>
+            <div className="absolute top-4 right-4 p-3 text-xs rounded-lg border bg-slate-800/90 text-slate-300 border-cyan-500/20">
+                <div className="mb-1 font-medium text-cyan-300">{data.length} Embeddings</div>
                 <div>{new Set(data.map(d => d.document_title)).size} Documents</div>
                 <div className="mt-2 text-xs text-slate-400">
                     Range: X({bounds.minX.toFixed(1)}, {bounds.maxX.toFixed(1)}) Y({bounds.minY.toFixed(1)}, {bounds.maxY.toFixed(1)})
@@ -631,17 +630,17 @@ const InteractiveEmbeddingPlot = React.memo(({
             </div>
 
             {/* Split Bottom Controls */}
-            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end z-20">
+            <div className="flex absolute right-4 bottom-4 left-4 z-20 justify-between items-end">
                 {/* Left Side - Interactive Controls */}
-                <div className="bg-slate-800/90 rounded-lg p-3 border border-cyan-500/20 max-w-xs">
+                <div className="p-3 max-w-xs rounded-lg border bg-slate-800/90 border-cyan-500/20">
                     {/* Zoom Controls (for 2D) */}
                     {!is3D && (
                         <div className="mb-3">
-                            <div className="text-xs text-cyan-300 font-medium mb-2">Zoom Controls</div>
-                            <div className="flex items-center gap-2">
+                            <div className="mb-2 text-xs font-medium text-cyan-300">Zoom Controls</div>
+                            <div className="flex gap-2 items-center">
                                 <button
                                     onClick={zoomOut}
-                                    className="p-1 bg-slate-700 hover:bg-slate-600 rounded text-cyan-300 hover:text-cyan-200 transition-colors"
+                                    className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200"
                                     title="Zoom Out"
                                 >
                                     {renderIcon(Minus, { className: "w-4 h-4" })}
@@ -651,7 +650,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                                 </span>
                                 <button
                                     onClick={zoomIn}
-                                    className="p-1 bg-slate-700 hover:bg-slate-600 rounded text-cyan-300 hover:text-cyan-200 transition-colors"
+                                    className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200"
                                     title="Zoom In"
                                 >
                                     {renderIcon(Plus, { className: "w-4 h-4" })}
@@ -663,11 +662,11 @@ const InteractiveEmbeddingPlot = React.memo(({
                     {/* Spacing Controls (for 3D) */}
                     {is3D && (
                         <div className="mb-3">
-                            <div className="text-xs text-cyan-300 font-medium mb-2">Spacing Controls</div>
-                            <div className="flex items-center gap-2">
+                            <div className="mb-2 text-xs font-medium text-cyan-300">Spacing Controls</div>
+                            <div className="flex gap-2 items-center">
                                 <button
                                     onClick={contractSpacing}
-                                    className="p-1 bg-slate-700 hover:bg-slate-600 rounded text-cyan-300 hover:text-cyan-200 transition-colors"
+                                    className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200"
                                     title="Contract Spacing"
                                 >
                                     {renderIcon(Shrink, { className: "w-4 h-4" })}
@@ -677,7 +676,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                                 </span>
                                 <button
                                     onClick={expandSpacing}
-                                    className="p-1 bg-slate-700 hover:bg-slate-600 rounded text-cyan-300 hover:text-cyan-200 transition-colors"
+                                    className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200"
                                     title="Expand Spacing"
                                 >
                                     {renderIcon(Expand, { className: "w-4 h-4" })}
@@ -688,7 +687,7 @@ const InteractiveEmbeddingPlot = React.memo(({
 
                     <button
                         onClick={resetView}
-                        className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs text-cyan-300 hover:text-cyan-200 transition-colors flex items-center justify-center gap-2"
+                        className="flex gap-2 justify-center items-center px-3 py-2 w-full text-xs text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200"
                     >
                         {renderIcon(RotateCcw, { className: "w-4 h-4" })}
                         Reset View
@@ -696,10 +695,10 @@ const InteractiveEmbeddingPlot = React.memo(({
                 </div>
 
                 {/* Right Side - Controls Info */}
-                <div className="bg-slate-800/90 rounded-lg p-3 text-xs text-slate-400 border border-cyan-500/20 max-w-xs">
-                    <div className="flex items-center gap-2 mb-2">
+                <div className="p-3 max-w-xs text-xs rounded-lg border bg-slate-800/90 text-slate-400 border-cyan-500/20">
+                    <div className="flex gap-2 items-center mb-2">
                         {renderIcon(Move, { className: "w-4 h-4 text-cyan-400" })}
-                        <span className="text-cyan-300 font-medium">
+                        <span className="font-medium text-cyan-300">
                             {is3D ? 'Drag to Orbit' : 'Click & Drag to Pan'}
                         </span>
                     </div>
@@ -728,7 +727,7 @@ const InteractiveEmbeddingPlot = React.memo(({
             {/* Selected point details with cyan/slate theme - moved to bottom */}
             {selectedPoint && (
                 <div
-                    className="absolute inset-0 bg-black/20 z-30"
+                    className="absolute inset-0 z-30 bg-black/20"
                     onClick={handleBackdropClick}
                 >
                     <div className="absolute bottom-0 left-0 right-0 bg-slate-800/95 text-white border-t border-cyan-500 max-h-[40vh] overflow-y-auto">
@@ -740,28 +739,28 @@ const InteractiveEmbeddingPlot = React.memo(({
                                         setSelectedPoint(null);
                                         setIsSelectedExpanded(false);
                                     }}
-                                    className="text-slate-400 hover:text-cyan-300 transition-colors text-lg"
+                                    className="text-lg transition-colors text-slate-400 hover:text-cyan-300"
                                 >
                                     ×
                                 </button>
                             </div>
-                            <div className="font-medium text-base mb-2 text-cyan-200">
+                            <div className="mb-2 text-base font-medium text-cyan-200">
                                 {selectedPoint.document_title}
                             </div>
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="flex justify-between items-center mb-3">
                                 <div className="text-sm text-slate-400">
                                     Chunk {selectedPoint.chunk_index} • {selectedPoint.embedding_model}
                                 </div>
                                 <button
                                     onClick={() => handleViewDocument(selectedPoint.document_id)}
-                                    className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-white text-xs transition-colors flex items-center gap-1"
+                                    className="flex gap-1 items-center px-3 py-1 text-xs text-white bg-cyan-600 rounded transition-colors hover:bg-cyan-500"
                                     disabled={!selectedPoint.document_id}
                                 >
                                     {renderIcon(FileText, { className: "w-3 h-3" })}
                                     View Document
                                 </button>
                             </div>
-                            <div className="text-sm text-slate-200 leading-relaxed mb-3">
+                            <div className="mb-3 text-sm leading-relaxed text-slate-200">
                                 {isSelectedExpanded ? (
                                     selectedPoint.text
                                 ) : (
@@ -782,7 +781,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                                             {selectedPoint.text.split(' ').length > 100 && (
                                                 <button
                                                     onClick={() => setIsSelectedExpanded(true)}
-                                                    className="ml-2 text-cyan-400 hover:text-cyan-300 transition-colors text-sm underline"
+                                                    className="ml-2 text-sm text-cyan-400 underline transition-colors hover:text-cyan-300"
                                                 >
                                                     Expand
                                                 </button>
@@ -793,7 +792,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                                             {selectedPoint.text.split(' ').length > 200 && (
                                                 <button
                                                     onClick={() => setIsSelectedExpanded(true)}
-                                                    className="ml-2 text-cyan-400 hover:text-cyan-300 transition-colors text-sm underline"
+                                                    className="ml-2 text-sm text-cyan-400 underline transition-colors hover:text-cyan-300"
                                                 >
                                                     Expand
                                                 </button>
@@ -804,7 +803,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                                 {isSelectedExpanded && (
                                     <button
                                         onClick={() => setIsSelectedExpanded(false)}
-                                        className="ml-2 text-cyan-400 hover:text-cyan-300 transition-colors text-sm underline"
+                                        className="ml-2 text-sm text-cyan-400 underline transition-colors hover:text-cyan-300"
                                     >
                                         Collapse
                                     </button>
@@ -897,27 +896,76 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
         setLoading(true);
         setError(null);
 
+        const offset = page * VECTORS_PER_PAGE;
+        const apiUrl = `/api/embeddings/atlas-data?limit=${VECTORS_PER_PAGE}&offset=${offset}`;
+        
+        console.log('=== FRONTEND ATLAS DATA FETCH START ===');
+        console.log('Fetching from URL:', apiUrl);
+        console.log('Page:', page, 'Append:', append);
+        console.log('VECTORS_PER_PAGE:', VECTORS_PER_PAGE);
+        console.log('Calculated offset:', offset);
+
         try {
-            const offset = page * VECTORS_PER_PAGE;
-            const response = await fetch(`/api/embeddings/atlas-data?limit=${VECTORS_PER_PAGE}&offset=${offset}`);
+            console.log('Making fetch request...');
+            const response = await fetch(apiUrl);
+            
+            console.log('Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                url: response.url,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Response error text:', errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            console.log('Parsing JSON response...');
             const result = await response.json();
+            
+            console.log('Parsed result:', {
+                success: result.success,
+                dataLength: result.data?.length,
+                total: result.total,
+                error: result.error,
+                sampleData: result.data?.[0] ? {
+                    id: result.data[0].id,
+                    document_title: result.data[0].document_title,
+                    hasEmbedding: !!result.data[0].embedding_vector
+                } : 'No data'
+            });
 
             if (result.success) {
                 if (append) {
-                    setData(prev => [...prev, ...result.data]);
+                    setData(prev => {
+                        console.log('Appending data, prev length:', prev.length, 'new length:', result.data.length);
+                        return [...prev, ...result.data];
+                    });
                 } else {
+                    console.log('Setting new data, length:', result.data.length);
                     setData(result.data);
                 }
                 setTotalVectors(result.total || result.data.length);
                 setHasLoaded(true);
+                console.log('Data successfully set in state');
             } else {
+                console.error('API returned success: false, error:', result.error);
                 setError(result.error || 'Failed to fetch embedding data');
             }
         } catch (err) {
+            console.error('=== FETCH ERROR ===');
+            console.error('Error details:', {
+                error: err,
+                message: err instanceof Error ? err.message : 'Unknown error',
+                stack: err instanceof Error ? err.stack : 'No stack'
+            });
             setError('Network error while fetching embedding data');
-            console.error('Error fetching embedding data:', err);
         } finally {
             setLoading(false);
+            console.log('=== FRONTEND ATLAS DATA FETCH END ===');
         }
     }, [VECTORS_PER_PAGE]);
 
@@ -973,9 +1021,9 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
         <div className={`embedding-atlas-viewer ${className || ''}`}>
             <Card className="border-gray-700 bg-gray-800/50">
                 <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex justify-between items-center mb-4">
                         <div>
-                            <h3 className="text-xl font-semibold text-white mb-2">
+                            <h3 className="mb-2 text-xl font-semibold text-white">
                                 Embedding Atlas
                             </h3>
                             <p className="text-sm text-gray-300">
@@ -1002,12 +1050,12 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                 borderClassName="bg-[radial-gradient(#0ea5e9_40%,transparent_60%)]"
                             >
                                 {loading ? (
-                                    <span className="flex items-center gap-2">
+                                    <span className="flex gap-2 items-center">
                                         <LoadingSpinner size="sm" use3D={true} />
                                         Loading...
                                     </span>
                                 ) : (
-                                    <span className="flex items-center gap-2">
+                                    <span className="flex gap-2 items-center">
                                         {renderIcon(isVisible ? EyeOff : Eye, { className: "w-4 h-4" })}
                                         {isVisible ? 'Hide Atlas' : 'Show Atlas'}
                                     </span>
@@ -1017,7 +1065,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                     </div>
 
                     {error && (
-                        <div className="mb-4 p-3 rounded-lg bg-red-900/20 text-red-300 border border-red-800">
+                        <div className="p-3 mb-4 text-red-300 rounded-lg border border-red-800 bg-red-900/20">
                             <p className="font-medium">Error loading embedding data:</p>
                             <p className="text-sm">{error}</p>
                         </div>
@@ -1028,7 +1076,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                             <div className="mb-4">
                                 {renderIcon(Eye, { className: "mx-auto w-12 h-12 text-gray-500" })}
                             </div>
-                            <p className="text-gray-400 mb-2">
+                            <p className="mb-2 text-gray-400">
                                 Click "Show Atlas" to visualize your embeddings
                             </p>
                             <p className="text-sm text-gray-500">
@@ -1039,14 +1087,14 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
 
                     {isVisible && hasLoaded && atlasData.length > 0 && (
                         <div className="mt-4">
-                            <div className="mb-4 p-3 rounded-lg bg-cyan-900/20 text-cyan-300 border border-cyan-500/30">
-                                <p className="text-sm mb-2">
+                            <div className="p-3 mb-4 text-cyan-300 rounded-lg border bg-cyan-900/20 border-cyan-500/30">
+                                <p className="mb-2 text-sm">
                                     Showing {atlasData.length} embeddings in {is3D ? '3D' : '2D'} view.
                                     Toggle between 2D/3D modes, use fullscreen for better exploration,
                                     and analyze your document relationships through clustering.
                                 </p>
-                                <div className="flex items-center justify-between text-xs">
-                                    <div className="text-slate-400 flex items-center gap-1">
+                                <div className="flex justify-between items-center text-xs">
+                                    <div className="flex gap-1 items-center text-slate-400">
                                         {renderIcon(TriangleAlert, { className: "w-3 h-3" })}
                                         Demo limited to {VECTORS_PER_PAGE} vectors per batch for performance
                                     </div>
@@ -1054,7 +1102,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                         <button
                                             onClick={loadNextBatch}
                                             disabled={loading}
-                                            className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-white text-xs transition-colors disabled:opacity-50 flex items-center gap-2"
+                                            className="flex gap-2 items-center px-3 py-1 text-xs text-white bg-cyan-600 rounded transition-colors hover:bg-cyan-500 disabled:opacity-50"
                                         >
                                             {loading ? (
                                                 <>
@@ -1068,7 +1116,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                     )}
                                 </div>
                                 <div className="mt-2 text-xs text-slate-500">
-                                    To remove this limit, edit the <code className="bg-slate-800 px-1 rounded">VECTORS_PER_PAGE</code> constant in <code className="bg-slate-800 px-1 rounded">apps/web/components/rag/EmbeddingAtlasViewer.tsx</code>
+                                    To remove this limit, edit the <code className="px-1 rounded bg-slate-800">VECTORS_PER_PAGE</code> constant in <code className="px-1 rounded bg-slate-800">apps/web/components/rag/EmbeddingAtlasViewer.tsx</code>
                                 </div>
                             </div>
 
@@ -1119,7 +1167,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                                             onToggleFullscreen={openModal}
                                                         />
                                                     </div>
-                                                    <ResponsiveModalContent side="fullscreen" className="bg-slate-900 p-0">
+                                                    <ResponsiveModalContent side="fullscreen" className="p-0 bg-slate-900">
                                                         <ResponsiveModalTitle className="sr-only">
                                                             Embedding Atlas Fullscreen View
                                                         </ResponsiveModalTitle>
@@ -1144,14 +1192,14 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                             </motion.div>
 
                             {/* Detailed data view with pagination */}
-                            <div className="mt-6 p-4 rounded-lg bg-slate-800/30 border border-cyan-500/20">
-                                <div className="flex items-center justify-between mb-4">
+                            <div className="p-4 mt-6 rounded-lg border bg-slate-800/30 border-cyan-500/20">
+                                <div className="flex justify-between items-center mb-4">
                                     <h5 className="text-lg font-medium text-cyan-300">Embedding Details</h5>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex gap-2 items-center">
                                         <button
                                             onClick={prevDetailsPage}
                                             disabled={detailsPage === 0}
-                                            className="p-1 bg-slate-700 hover:bg-slate-600 rounded text-cyan-300 hover:text-cyan-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                             title="Previous Page"
                                         >
                                             {renderIcon(ChevronLeft, { className: "w-4 h-4" })}
@@ -1162,26 +1210,26 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                         <button
                                             onClick={nextDetailsPage}
                                             disabled={detailsPage >= Math.ceil(atlasData.length / DETAILS_PER_PAGE) - 1}
-                                            className="p-1 bg-slate-700 hover:bg-slate-600 rounded text-cyan-300 hover:text-cyan-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                             title="Next Page"
                                         >
                                             {renderIcon(ChevronRight, { className: "w-4 h-4" })}
                                         </button>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                                <div className="grid overflow-y-auto grid-cols-1 gap-4 max-h-96 md:grid-cols-2 lg:grid-cols-3">
                                     {paginatedDetailsData.map((item, index) => (
                                         <div
                                             key={item.id}
-                                            className="p-3 rounded-lg bg-slate-700/50 border border-slate-600 hover:border-cyan-500/50 transition-colors"
+                                            className="p-3 rounded-lg border transition-colors bg-slate-700/50 border-slate-600 hover:border-cyan-500/50"
                                         >
-                                            <div className="text-sm font-medium text-cyan-200 mb-1 truncate">
+                                            <div className="mb-1 text-sm font-medium text-cyan-200 truncate">
                                                 {item.document_title}
                                             </div>
-                                            <div className="text-xs text-slate-400 mb-2">
+                                            <div className="mb-2 text-xs text-slate-400">
                                                 Chunk {item.chunk_index} • {item.embedding_model}
                                             </div>
-                                            <div className="text-xs text-slate-300 mb-2" style={{
+                                            <div className="mb-2 text-xs text-slate-300" style={{
                                                 display: '-webkit-box',
                                                 WebkitLineClamp: 3,
                                                 WebkitBoxOrient: 'vertical',
@@ -1199,7 +1247,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                     ))}
                                 </div>
 
-                                <div className="mt-4 text-center text-sm text-slate-400">
+                                <div className="mt-4 text-sm text-center text-slate-400">
                                     Showing {detailsPage * DETAILS_PER_PAGE + 1}-{Math.min((detailsPage + 1) * DETAILS_PER_PAGE, atlasData.length)} of {atlasData.length} embeddings
                                 </div>
                             </div>
@@ -1207,11 +1255,11 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                     )}
 
                     {isVisible && hasLoaded && atlasData.length === 0 && (
-                        <div className="mt-4 p-8 text-center rounded-lg border border-gray-600 bg-gray-700/50">
+                        <div className="p-8 mt-4 text-center rounded-lg border border-gray-600 bg-gray-700/50">
                             <div className="mb-4">
                                 {renderIcon(Eye, { className: "mx-auto w-12 h-12 text-gray-500" })}
                             </div>
-                            <p className="text-gray-400 mb-2">No embedding data found</p>
+                            <p className="mb-2 text-gray-400">No embedding data found</p>
                             <p className="text-sm text-gray-500">
                                 Upload and process some documents first to see embeddings here.
                             </p>

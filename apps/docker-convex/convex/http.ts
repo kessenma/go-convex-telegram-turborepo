@@ -253,8 +253,7 @@ http.route({
   handler: embeddingRoutes.triggerDocumentEmbeddingAPI,
 });
 
-// COMMENTED OUT - Embedding functionality is currently broken and not needed for MVP
-// These routes reference handlers that are commented out above
+// Additional embedding routes can be uncommented when needed
 /*
 http.route({
   path: "/api/embeddings/search",
@@ -298,11 +297,7 @@ http.route({
   handler: createDocumentEmbeddingAPI,
 });
 
-http.route({
-  path: "/api/embeddings/atlas-data",
-  method: "GET",
-  handler: getEmbeddingsForAtlasAPI,
-});
+// Note: The atlas-data route is already defined above
 */
 
 

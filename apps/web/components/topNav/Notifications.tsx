@@ -11,7 +11,6 @@ import {
   Database,
   Upload,
   X,
-  AlertCircle,
 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
