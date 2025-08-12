@@ -272,25 +272,32 @@ export const getBasicEmbeddingsForAtlas = query({
       .order("desc")
       .collect();
     
-    // Apply pagination and return basic data
+    // Apply pagination
     const paginatedEmbeddings = allEmbeddings.slice(offset, offset + limit);
     
-    // Return basic embedding data without complex enrichment to avoid type issues
-    return paginatedEmbeddings.map((embedding) => ({
-      _id: embedding._id,
-      documentId: embedding.documentId,
-      embedding: embedding.embedding,
-      embeddingModel: embedding.embeddingModel,
-      embeddingDimensions: embedding.embeddingDimensions,
-      chunkText: embedding.chunkText,
-      chunkIndex: embedding.chunkIndex,
-      createdAt: embedding.createdAt,
-      isActive: embedding.isActive,
-      // Add placeholder document info that can be enriched on the frontend
-      documentTitle: "Loading...",
-      documentContentType: "unknown",
-      documentUploadedAt: 0,
-    }));
+    // Enrich with document metadata
+    const enrichedEmbeddings = await Promise.all(
+      paginatedEmbeddings.map(async (embedding) => {
+        const document = await ctx.db.get(embedding.documentId);
+        return {
+          _id: embedding._id,
+          documentId: embedding.documentId,
+          embedding: embedding.embedding,
+          embeddingModel: embedding.embeddingModel,
+          embeddingDimensions: embedding.embeddingDimensions,
+          chunkText: embedding.chunkText || `Chunk ${embedding.chunkIndex || 0}`,
+          chunkIndex: embedding.chunkIndex,
+          createdAt: embedding.createdAt,
+          isActive: embedding.isActive,
+          // Enrich with actual document information
+          documentTitle: document?.title || "Unknown Document",
+          documentContentType: document?.contentType || "unknown",
+          documentUploadedAt: document?.uploadedAt || 0,
+        };
+      })
+    );
+
+    return enrichedEmbeddings;
   },
 });
 

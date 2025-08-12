@@ -26,7 +26,7 @@ export const saveDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
   try {
     const { searchParams } = new URL(request.url);
     const documentId = searchParams.get("documentId") as Id<"rag_documents">;
-    const { embedding } = await request.json();
+    const { embedding, embeddingModel, embeddingDimensions, chunkText, chunkIndex, processingTimeMs } = await request.json();
     if (!documentId || !embedding) {
       return errorResponse("Missing documentId or embedding", 400);
     }
@@ -34,8 +34,11 @@ export const saveDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
     const args: CreateDocumentEmbeddingInput = {
       documentId,
       embedding,
-      embeddingModel: "sentence-transformers/all-distilroberta-v1",
-      embeddingDimensions: embedding.length
+      embeddingModel: embeddingModel || "sentence-transformers/all-distilroberta-v1",
+      embeddingDimensions: embeddingDimensions || embedding.length,
+      chunkText,
+      chunkIndex,
+      processingTimeMs
     };
     
     await createDocumentEmbeddingFromDb(ctx, args);
@@ -68,16 +71,19 @@ export const generateDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
 export const createDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
   try {
     const body = await request.json();
-    const { documentId, embedding, embeddingModel, embeddingDimensions } = body;
+    const { documentId, embedding, embeddingModel, embeddingDimensions, chunkText, chunkIndex, processingTimeMs } = body;
     if (!documentId || !embedding) {
       return errorResponse("Missing required fields: documentId, embedding", 400);
     }
     
-    const args = {
+    const args: CreateDocumentEmbeddingInput = {
       documentId: documentId as Id<"rag_documents">,
       embedding,
       embeddingModel: embeddingModel || "all-MiniLM-L6-v2",
-      embeddingDimensions: embeddingDimensions || embedding.length
+      embeddingDimensions: embeddingDimensions || embedding.length,
+      chunkText,
+      chunkIndex,
+      processingTimeMs
     };
     
     // Use Convex mutation for DB access in httpAction context

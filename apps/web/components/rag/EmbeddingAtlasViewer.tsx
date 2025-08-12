@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useCallback, useState } from "react";
 import { Card } from "../ui/card";
 import { Button as MovingButton } from "../ui/moving-border";
 import { Eye, EyeOff, RotateCcw, Plus, Minus, Move, Maximize2, Minimize2, Box, Square, Info, ChevronUp, Expand, Shrink, ChevronLeft, ChevronRight, TriangleAlert, FileText } from "lucide-react";
@@ -18,6 +18,18 @@ import * as THREE from "three";
 import { DocumentViewer } from "./DocumentViewer";
 import { type GenericId as Id } from "convex/values";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+    useEmbeddingAtlasStore,
+    useEmbeddingData,
+    useScaledData,
+    useLoadingState,
+    useUIState,
+    useInteractionState,
+    use2DViewState,
+    usePaginationState,
+    usePaginatedDetailsData,
+    type EmbeddingData
+} from "../../stores/embedding-atlas-store";
 
 // 3D Embedding visualization component - using cubes to match app aesthetic
 const EmbeddingPoint = React.memo(({ position, color, scale, onClick, onPointerOver, onPointerOut, isSelected, isInteractive, opacity = 1 }: {
@@ -161,7 +173,7 @@ const AutoRotatingCamera = ({ isInteractive }: { isInteractive: boolean }) => {
     return null;
 };
 
-const Interactive3DPlot = React.memo(({ data, onPointHover, onPointClick, hoveredPoint, selectedPoint, spacing = 1, isInteractive = true, onCanvasClick }: {
+const Interactive3DPlot = React.memo(({ data, onPointHover, onPointClick, hoveredPoint, selectedPoint, spacing = 1, isInteractive = true, onCanvasClick, onEnableInteractivity }: {
     data: any[];
     onPointHover: (point: any | null) => void;
     onPointClick: (point: any) => void;
@@ -170,6 +182,7 @@ const Interactive3DPlot = React.memo(({ data, onPointHover, onPointClick, hovere
     spacing?: number;
     isInteractive?: boolean;
     onCanvasClick?: () => void;
+    onEnableInteractivity?: () => void;
 }) => {
     const [animationProgress, setAnimationProgress] = useState(0);
 
@@ -218,21 +231,21 @@ const Interactive3DPlot = React.memo(({ data, onPointHover, onPointClick, hovere
             <spotLight position={[0, 20, 0]} intensity={0.5} angle={0.3} penumbra={1} />
 
             {/* Invisible background plane to capture clicks */}
-            {onCanvasClick && (
-                <mesh
-                    position={[0, 0, -10]}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onCanvasClick();
-                    }}
-                    onPointerDown={(e) => {
-                        e.stopPropagation();
-                    }}
-                >
-                    <planeGeometry args={[200, 200]} />
-                    <meshBasicMaterial transparent opacity={0} side={2} />
-                </mesh>
-            )}
+            <mesh
+                position={[0, 0, -10]}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onEnableInteractivity && onEnableInteractivity();
+                    onCanvasClick && onCanvasClick();
+                }}
+                onPointerDown={(e) => {
+                    e.stopPropagation();
+                    onEnableInteractivity && onEnableInteractivity();
+                }}
+            >
+                <planeGeometry args={[200, 200]} />
+                <meshBasicMaterial transparent opacity={0} side={2} />
+            </mesh>
 
             {/* Grid */}
             <gridHelper args={[20, 20, "#334155", "#1e293b"]} />
@@ -246,6 +259,7 @@ const Interactive3DPlot = React.memo(({ data, onPointHover, onPointClick, hovere
                     scale={point.scale}
                     onClick={(e) => {
                         e.stopPropagation(); // Prevent canvas click
+                        onEnableInteractivity && onEnableInteractivity();
                         onPointClick(point);
                     }}
                     onPointerOver={() => onPointHover(point)}
@@ -257,7 +271,7 @@ const Interactive3DPlot = React.memo(({ data, onPointHover, onPointClick, hovere
             ))}
 
             {/* Auto-rotating camera for non-interactive mode */}
-            <AutoRotatingCamera isInteractive={isInteractive && !onCanvasClick} />
+            <AutoRotatingCamera isInteractive={isInteractive} />
 
             {/* Orbit controls only when in fullscreen mode */}
             {isInteractive && !onCanvasClick && <OrbitControls enablePan enableZoom enableRotate />}
@@ -271,16 +285,27 @@ const InteractiveEmbeddingPlot = React.memo(({
     is3D,
     isFullscreen,
     onToggle3D,
-    onToggleFullscreen
+    onToggleFullscreen,
+    isInteractive,
+    onEnableInteractivity,
+    spacing,
+    onExpandSpacing,
+    onContractSpacing,
+    onResetView
 }: {
     data: any[];
     is3D: boolean;
     isFullscreen: boolean;
     onToggle3D: () => void;
     onToggleFullscreen: () => void;
+    isInteractive: boolean;
+    onEnableInteractivity: () => void;
+    spacing: number;
+    onExpandSpacing: () => void;
+    onContractSpacing: () => void;
+    onResetView: () => void;
 }) => {
     const [hoveredPoint, setHoveredPoint] = useState<any>(null);
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [selectedPoint, setSelectedPoint] = useState<any>(null);
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -288,7 +313,6 @@ const InteractiveEmbeddingPlot = React.memo(({
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [panStart, setPanStart] = useState({ x: 0, y: 0 });
     const [showInfo, setShowInfo] = useState(false);
-    const [spacing, setSpacing] = useState(2); // 3D spacing multiplier
     const [isSelectedExpanded, setIsSelectedExpanded] = useState(false);
     const [documentViewerOpen, setDocumentViewerOpen] = useState(false);
     const [selectedDocumentId, setSelectedDocumentId] = useState<Id<"rag_documents"> | null>(null);
@@ -307,7 +331,6 @@ const InteractiveEmbeddingPlot = React.memo(({
         // Add padding
         const xRange = maxX - minX || 1;
         const yRange = maxY - minY || 1;
-        const padding = 0.1;
 
         const scaledData = data.map((point, index) => {
             // Normalize to 0-1, then scale to viewport with padding
@@ -345,18 +368,13 @@ const InteractiveEmbeddingPlot = React.memo(({
 
 
     const handleMouseDown = (event: React.MouseEvent) => {
+        onEnableInteractivity(); // Enable interactivity on user interaction
         setIsDragging(true);
         setDragStart({ x: event.clientX, y: event.clientY });
         setPanStart(pan);
     };
 
     const handleMouseMove = (event: React.MouseEvent) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        setMousePos({
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top
-        });
-
         if (isDragging) {
             const deltaX = event.clientX - dragStart.x;
             const deltaY = event.clientY - dragStart.y;
@@ -372,26 +390,21 @@ const InteractiveEmbeddingPlot = React.memo(({
     };
 
     const zoomIn = () => {
+        onEnableInteractivity(); // Enable interactivity on user interaction
         setZoom(prev => Math.min(3, prev * 1.2));
     };
 
     const zoomOut = () => {
+        onEnableInteractivity(); // Enable interactivity on user interaction
         setZoom(prev => Math.max(0.5, prev / 1.2));
     };
 
-    const resetView = () => {
+    const resetViewLocal = () => {
         setZoom(1);
         setPan({ x: 0, y: 0 });
         setSelectedPoint(null);
-        setSpacing(2);
-    };
-
-    const expandSpacing = () => {
-        setSpacing(prev => Math.min(5, prev * 1.3));
-    };
-
-    const contractSpacing = () => {
-        setSpacing(prev => Math.max(0.5, prev / 1.3));
+        // Reset spacing using store action
+        onResetView();
     };
 
     // Helper function to truncate text by word count
@@ -484,8 +497,9 @@ const InteractiveEmbeddingPlot = React.memo(({
                             hoveredPoint={hoveredPoint}
                             selectedPoint={selectedPoint}
                             spacing={spacing}
-                            isInteractive={true}
+                            isInteractive={isInteractive}
                             onCanvasClick={!isFullscreen ? onToggleFullscreen : undefined}
+                            onEnableInteractivity={onEnableInteractivity}
                         />
                     </Canvas>
                 </div>
@@ -529,7 +543,7 @@ const InteractiveEmbeddingPlot = React.memo(({
 
                     {/* Data points with zoom/pan transform */}
                     <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-                        {scaledData.map((point, index) => {
+                        {scaledData.map((point, _index) => {
                             const isHovered = hoveredPoint?.id === point.id;
                             const isSelected = selectedPoint?.id === point.id;
                             const radius = isSelected ? 10 : isHovered ? 8 : 5;
@@ -549,6 +563,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                                         filter={isHovered || isSelected ? "url(#glow)" : undefined}
                                         onMouseEnter={() => setHoveredPoint(point)}
                                         onClick={() => {
+                                            onEnableInteractivity(); // Enable interactivity on user interaction
                                             if (isSelected) {
                                                 setSelectedPoint(null);
                                                 setIsSelectedExpanded(false);
@@ -665,7 +680,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                             <div className="mb-2 text-xs font-medium text-cyan-300">Spacing Controls</div>
                             <div className="flex gap-2 items-center">
                                 <button
-                                    onClick={contractSpacing}
+                                    onClick={onContractSpacing}
                                     className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200"
                                     title="Contract Spacing"
                                 >
@@ -675,7 +690,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                                     {spacing.toFixed(1)}x
                                 </span>
                                 <button
-                                    onClick={expandSpacing}
+                                    onClick={onExpandSpacing}
                                     className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200"
                                     title="Expand Spacing"
                                 >
@@ -686,7 +701,7 @@ const InteractiveEmbeddingPlot = React.memo(({
                     )}
 
                     <button
-                        onClick={resetView}
+                        onClick={resetViewLocal}
                         className="flex gap-2 justify-center items-center px-3 py-2 w-full text-xs text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200"
                     >
                         {renderIcon(RotateCcw, { className: "w-4 h-4" })}
@@ -833,45 +848,43 @@ const InteractiveEmbeddingPlot = React.memo(({
 
 
 
-interface EmbeddingData {
-    id: string;
-    document_id: string;
-    x: number;
-    y: number;
-    text: string;
-    document_title: string;
-    chunk_index: number;
-    embedding_model: string;
-    created_at: string;
-    dimensions: number;
-    embedding_vector: number[];
-}
-
 interface EmbeddingAtlasViewerProps {
     className?: string;
     onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
 export function EmbeddingAtlasViewer({ className, onFullscreenChange }: EmbeddingAtlasViewerProps) {
-    const [data, setData] = useState<EmbeddingData[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [isVisible, setIsVisible] = useState(false);
-    const [hasLoaded, setHasLoaded] = useState(false);
-    const [is3D, setIs3D] = useState(true); // Start with 3D view
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentPage, setCurrentPage] = useState(0);
-    const [totalVectors, setTotalVectors] = useState(0);
-    const [detailsPage, setDetailsPage] = useState(0);
-    const VECTORS_PER_PAGE = 100;
-    const DETAILS_PER_PAGE = 12;
+    // Use store selectors for state management
+    const data = useEmbeddingData();
+    const { loading, error, hasLoaded } = useLoadingState();
+    const { isVisible, is3D, isModalOpen, isInteractive } = useUIState();
+    const { spacing } = useInteractionState();
+    const { currentPage, detailsPage, totalVectors, VECTORS_PER_PAGE, DETAILS_PER_PAGE } = usePaginationState();
+    const paginatedDetailsData = usePaginatedDetailsData();
+    
+    // Store actions
+    const {
+        setData,
+        setLoading,
+        setError,
+        setHasLoaded,
+        setTotalVectors,
+        setCurrentPage,
+        setDetailsPage,
+        setIsVisible,
+        setIs3D,
+        setIsModalOpen,
+        nextDetailsPage,
+        prevDetailsPage,
+        enableInteractivity,
+        expandSpacing,
+        contractSpacing,
+        resetView
+    } = useEmbeddingAtlasStore();
 
-
-
-    // Transform data for Embedding Atlas - memoized for performance
+    // Transform data for Embedding Atlas - now using store data
     const atlasData = useMemo(() => {
         if (!data.length) return [];
-
         return data.map(item => ({
             id: item.id,
             document_id: item.document_id,
@@ -885,12 +898,6 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
             embedding_vector: item.embedding_vector,
         }));
     }, [data]);
-
-    // Paginated details data
-    const paginatedDetailsData = useMemo(() => {
-        const startIndex = detailsPage * DETAILS_PER_PAGE;
-        return atlasData.slice(startIndex, startIndex + DETAILS_PER_PAGE);
-    }, [atlasData, detailsPage]);
 
     const fetchEmbeddingData = useCallback(async (page: number = 0, append: boolean = false) => {
         setLoading(true);
@@ -939,15 +946,9 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
             });
 
             if (result.success) {
-                if (append) {
-                    setData(prev => {
-                        console.log('Appending data, prev length:', prev.length, 'new length:', result.data.length);
-                        return [...prev, ...result.data];
-                    });
-                } else {
-                    console.log('Setting new data, length:', result.data.length);
-                    setData(result.data);
-                }
+                // Use store action to set data
+                setData(result.data, append);
+                console.log(append ? 'Appended data' : 'Set new data', 'length:', result.data.length);
                 setTotalVectors(result.total || result.data.length);
                 setHasLoaded(true);
                 console.log('Data successfully set in state');
@@ -967,55 +968,58 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
             setLoading(false);
             console.log('=== FRONTEND ATLAS DATA FETCH END ===');
         }
-    }, [VECTORS_PER_PAGE]);
+    }, [VECTORS_PER_PAGE, setData, setError, setHasLoaded, setLoading, setTotalVectors]);
 
     const toggleVisibility = useCallback(() => {
         setIsVisible(!isVisible);
         if (!isVisible && !hasLoaded) {
             fetchEmbeddingData(0, false);
         }
-    }, [isVisible, hasLoaded, fetchEmbeddingData]);
+    }, [isVisible, hasLoaded, fetchEmbeddingData, setIsVisible]);
 
     const refreshData = useCallback(() => {
         setCurrentPage(0);
         setDetailsPage(0);
         fetchEmbeddingData(0, false);
-    }, [fetchEmbeddingData]);
+    }, [fetchEmbeddingData, setCurrentPage, setDetailsPage]);
 
     const loadNextBatch = useCallback(() => {
         const nextPage = currentPage + 1;
         setCurrentPage(nextPage);
         fetchEmbeddingData(nextPage, true);
-    }, [currentPage, fetchEmbeddingData]);
+    }, [currentPage, fetchEmbeddingData, setCurrentPage]);
 
     const openModal = useCallback(() => {
         console.log('Opening modal');
         setIsModalOpen(true);
         onFullscreenChange?.(true);
-    }, [onFullscreenChange]);
+    }, [onFullscreenChange, setIsModalOpen]);
 
     const closeModal = useCallback(() => {
         console.log('Closing modal');
         setIsModalOpen(false);
         onFullscreenChange?.(false);
-    }, [onFullscreenChange]);
+    }, [onFullscreenChange, setIsModalOpen]);
 
     const toggle3D = useCallback(() => {
         setIs3D(!is3D);
-    }, [is3D]);
+    }, [is3D, setIs3D]);
 
-    const nextDetailsPage = useCallback(() => {
-        const maxPage = Math.ceil(atlasData.length / DETAILS_PER_PAGE) - 1;
-        if (detailsPage < maxPage) {
-            setDetailsPage(prev => prev + 1);
-        }
-    }, [detailsPage, atlasData.length, DETAILS_PER_PAGE]);
+    // Use store actions for pagination
+    const handleNextDetailsPage = useCallback(() => {
+        nextDetailsPage();
+    }, [nextDetailsPage]);
 
-    const prevDetailsPage = useCallback(() => {
-        if (detailsPage > 0) {
-            setDetailsPage(prev => prev - 1);
+    const handlePrevDetailsPage = useCallback(() => {
+        prevDetailsPage();
+    }, [prevDetailsPage]);
+
+    // Auto-rotation control - enable interactivity on user interaction
+    const onEnableInteractivity = useCallback(() => {
+        if (!isInteractive) {
+            enableInteractivity();
         }
-    }, [detailsPage]);
+    }, [isInteractive, enableInteractivity]);
 
     return (
         <div className={`embedding-atlas-viewer ${className || ''}`}>
@@ -1077,7 +1081,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                 {renderIcon(Eye, { className: "mx-auto w-12 h-12 text-gray-500" })}
                             </div>
                             <p className="mb-2 text-gray-400">
-                                Click "Show Atlas" to visualize your embeddings
+                                Click &quot;Show Atlas&quot; to visualize your embeddings
                             </p>
                             <p className="text-sm text-gray-500">
                                 This will load and display an interactive 2D visualization of your document embeddings.
@@ -1160,12 +1164,18 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                                 <ResponsiveModal open={isModalOpen} onOpenChange={closeModal}>
                                                     <div className="w-full h-full">
                                                         <InteractiveEmbeddingPlot
-                                                            data={atlasData}
-                                                            is3D={is3D}
-                                                            isFullscreen={true}
-                                                            onToggle3D={toggle3D}
-                                                            onToggleFullscreen={openModal}
-                                                        />
+                                            data={atlasData}
+                                            is3D={is3D}
+                                            isFullscreen={true}
+                                            onToggle3D={toggle3D}
+                                            onToggleFullscreen={openModal}
+                                            isInteractive={isInteractive}
+                                            onEnableInteractivity={onEnableInteractivity}
+                                            spacing={spacing}
+                                            onExpandSpacing={expandSpacing}
+                                            onContractSpacing={contractSpacing}
+                                            onResetView={resetView}
+                                        />
                                                     </div>
                                                     <ResponsiveModalContent side="fullscreen" className="p-0 bg-slate-900">
                                                         <ResponsiveModalTitle className="sr-only">
@@ -1176,12 +1186,18 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                                         </ResponsiveModalDescription>
                                                         <div className="w-full h-full">
                                                             <InteractiveEmbeddingPlot
-                                                                data={atlasData}
-                                                                is3D={is3D}
-                                                                isFullscreen={true}
-                                                                onToggle3D={toggle3D}
-                                                                onToggleFullscreen={closeModal}
-                                                            />
+                                                data={atlasData}
+                                                is3D={is3D}
+                                                isFullscreen={true}
+                                                onToggle3D={toggle3D}
+                                                onToggleFullscreen={closeModal}
+                                                isInteractive={isInteractive}
+                                                onEnableInteractivity={onEnableInteractivity}
+                                                spacing={spacing}
+                                                onExpandSpacing={expandSpacing}
+                                                onContractSpacing={contractSpacing}
+                                                onResetView={resetView}
+                                            />
                                                         </div>
                                                     </ResponsiveModalContent>
                                                 </ResponsiveModal>
@@ -1197,7 +1213,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                     <h5 className="text-lg font-medium text-cyan-300">Embedding Details</h5>
                                     <div className="flex gap-2 items-center">
                                         <button
-                                            onClick={prevDetailsPage}
+                                            onClick={handlePrevDetailsPage}
                                             disabled={detailsPage === 0}
                                             className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                             title="Previous Page"
@@ -1208,7 +1224,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                             Page {detailsPage + 1} of {Math.ceil(atlasData.length / DETAILS_PER_PAGE)}
                                         </span>
                                         <button
-                                            onClick={nextDetailsPage}
+                                            onClick={handleNextDetailsPage}
                                             disabled={detailsPage >= Math.ceil(atlasData.length / DETAILS_PER_PAGE) - 1}
                                             className="p-1 text-cyan-300 rounded transition-colors bg-slate-700 hover:bg-slate-600 hover:text-cyan-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                             title="Next Page"
@@ -1218,7 +1234,7 @@ export function EmbeddingAtlasViewer({ className, onFullscreenChange }: Embeddin
                                     </div>
                                 </div>
                                 <div className="grid overflow-y-auto grid-cols-1 gap-4 max-h-96 md:grid-cols-2 lg:grid-cols-3">
-                                    {paginatedDetailsData.map((item, index) => (
+                                    {paginatedDetailsData.map((item) => (
                                         <div
                                             key={item.id}
                                             className="p-3 rounded-lg border transition-colors bg-slate-700/50 border-slate-600 hover:border-cyan-500/50"

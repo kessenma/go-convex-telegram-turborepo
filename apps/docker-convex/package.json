@@ -30,7 +30,7 @@
     "@convex-dev/presence": "^0.1.5",
     "@convex-dev/rag": "^0.3.2",
     "convex": "1.24.8",
-    "convex-helpers": "^0.1.100",
+    "convex-helpers": "^0.1.102",
     "prettier": "3.5.2"
   },
   "devDependencies": {
