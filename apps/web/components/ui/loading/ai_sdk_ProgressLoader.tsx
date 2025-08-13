@@ -5,6 +5,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { BackgroundGradient } from "../backgrounds/background-gradient";
 import { LoadingCube } from "../loading-cube";
+import { AnimatedBotIcon } from "../icons/AnimatedBotIcon";
 
 interface AISDKProgressLoaderProps {
   isVisible: boolean;
@@ -101,10 +102,10 @@ export function AISDKProgressLoader({
     return currentStep >= 2 ? "cyan" : "cyan";
   };
 
-  const getBotIconState = (): "analyzing" | "connecting" | "generating" | "finalizing" | "idle" => {
+  const getBotIconState = (): "analyzing" | "processing" | "generating" | "finalizing" | "idle" => {
     switch (currentStep) {
       case 0: return "analyzing";
-      case 1: return "connecting";
+      case 1: return "processing";
       case 2: return "generating";
       case 3: return "finalizing";
       default: return "idle";
@@ -124,83 +125,102 @@ export function AISDKProgressLoader({
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div className="flex gap-4 items-center">
-              {/* 3D Loading Cube with phase-based colors */}
-              <div className="relative">
-                <motion.div
-                  className="flex justify-center items-center"
-                  animate={{
-                    scale: [1, 1.05, 1],
-                  }}
-                  transition={{
-                    scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                  }}
-                >
-                  <LoadingCube 
-                    size="lg"
-                    phase={getBotIconState()}
-                    errorMode={false}
-                  />
-                </motion.div>
-
-                 {/* Orbiting circuit elements around the loading cube */}
+              {/* Combined Loading Elements */}
+               <div className="relative flex gap-3 items-center">
+                 {/* Animated Bot Icon */}
                  <motion.div
-                   className="absolute inset-0 w-24 h-24 -m-6"
-                   animate={{ rotate: -360 }}
-                   transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                 >
-                   {/* Top dot */}
-                   <div className={`absolute w-2 h-2 rounded-full top-0 left-1/2 transform -translate-x-1/2 shadow-lg ${
-                     currentStep === 0 ? "bg-cyan-300/60 shadow-cyan-300/50" :
-                     currentStep === 1 ? "bg-cyan-400/70 shadow-cyan-400/50" :
-                     currentStep === 2 ? "bg-cyan-500/80 shadow-cyan-500/50" :
-                     currentStep === 3 ? "bg-cyan-600/90 shadow-cyan-600/50" :
-                     "bg-cyan-400 shadow-cyan-400/50"
-                   }`} />
-                   {/* Right dot */}
-                   <div className={`absolute w-2 h-2 rounded-full top-1/2 right-0 transform -translate-y-1/2 shadow-lg ${
-                     currentStep === 0 ? "bg-slate-400/60 shadow-slate-400/50" :
-                     currentStep === 1 ? "bg-cyan-300/70 shadow-cyan-300/50" :
-                     currentStep === 2 ? "bg-cyan-400/80 shadow-cyan-400/50" :
-                     currentStep === 3 ? "bg-cyan-500/90 shadow-cyan-500/50" :
-                     "bg-cyan-400 shadow-cyan-400/50"
-                   }`} />
-                   {/* Bottom dot */}
-                   <div className={`absolute w-2 h-2 rounded-full bottom-0 left-1/2 transform -translate-x-1/2 shadow-lg ${
-                     currentStep === 0 ? "bg-slate-300/60 shadow-slate-300/50" :
-                     currentStep === 1 ? "bg-slate-400/70 shadow-slate-400/50" :
-                     currentStep === 2 ? "bg-cyan-300/80 shadow-cyan-300/50" :
-                     currentStep === 3 ? "bg-cyan-400/90 shadow-cyan-400/50" :
-                     "bg-slate-400 shadow-slate-400/50"
-                   }`} />
-                   {/* Left dot */}
-                   <div className={`absolute w-2 h-2 rounded-full top-1/2 left-0 transform -translate-y-1/2 shadow-lg ${
-                     currentStep === 0 ? "bg-slate-500/60 shadow-slate-500/50" :
-                     currentStep === 1 ? "bg-slate-300/70 shadow-slate-300/50" :
-                     currentStep === 2 ? "bg-slate-400/80 shadow-slate-400/50" :
-                     currentStep === 3 ? "bg-cyan-300/90 shadow-cyan-300/50" :
-                     "bg-slate-400 shadow-slate-400/50"
-                   }`} />
-                 </motion.div>
-
-                 {/* Outer pulsing ring around the loading cube */}
-                 <motion.div
-                   className={`absolute inset-0 w-28 h-28 -m-8 border rounded-full ${
-                     currentStep === 0 ? "border-cyan-400/20" :
-                     currentStep === 1 ? "border-cyan-400/40" :
-                     currentStep === 2 ? "border-cyan-500/60" :
-                     currentStep === 3 ? "border-cyan-500/80" :
-                     "border-cyan-400/30"
-                   }`}
+                   className="flex justify-center items-center w-8 h-8"
                    animate={{
                      scale: [1, 1.1, 1],
-                     opacity: [0.3, 0.6, 0.3],
                    }}
                    transition={{
-                     duration: 3,
-                     repeat: Infinity,
-                     ease: "easeInOut",
+                     scale: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
                    }}
-                 />
+                 >
+                   <AnimatedBotIcon 
+                     className="w-full h-full text-cyan-400"
+                     state={getBotIconState()}
+                   />
+                 </motion.div>
+
+                 {/* 3D Loading Cube with phase-based colors */}
+                 <div className="relative">
+                   <motion.div
+                     className="flex justify-center items-center"
+                     animate={{
+                       scale: [1, 1.05, 1],
+                     }}
+                     transition={{
+                       scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                     }}
+                   >
+                     <LoadingCube 
+                       size="lg"
+                       phase={getBotIconState()}
+                       errorMode={false}
+                     />
+                   </motion.div>
+
+                   {/* Orbiting circuit elements around the loading cube */}
+                   <motion.div
+                     className="absolute inset-0 w-24 h-24 -m-6"
+                     animate={{ rotate: -360 }}
+                     transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                   >
+                     {/* Top dot */}
+                     <div className={`absolute w-2 h-2 rounded-full top-0 left-1/2 transform -translate-x-1/2 shadow-lg ${
+                       currentStep === 0 ? "bg-cyan-300/60 shadow-cyan-300/50" :
+                       currentStep === 1 ? "bg-cyan-400/70 shadow-cyan-400/50" :
+                       currentStep === 2 ? "bg-cyan-500/80 shadow-cyan-500/50" :
+                       currentStep === 3 ? "bg-cyan-600/90 shadow-cyan-600/50" :
+                       "bg-cyan-400 shadow-cyan-400/50"
+                     }`} />
+                     {/* Right dot */}
+                     <div className={`absolute w-2 h-2 rounded-full top-1/2 right-0 transform -translate-y-1/2 shadow-lg ${
+                       currentStep === 0 ? "bg-slate-400/60 shadow-slate-400/50" :
+                       currentStep === 1 ? "bg-cyan-300/70 shadow-cyan-300/50" :
+                       currentStep === 2 ? "bg-cyan-400/80 shadow-cyan-400/50" :
+                       currentStep === 3 ? "bg-cyan-500/90 shadow-cyan-500/50" :
+                       "bg-cyan-400 shadow-cyan-400/50"
+                     }`} />
+                     {/* Bottom dot */}
+                     <div className={`absolute w-2 h-2 rounded-full bottom-0 left-1/2 transform -translate-x-1/2 shadow-lg ${
+                       currentStep === 0 ? "bg-slate-300/60 shadow-slate-300/50" :
+                       currentStep === 1 ? "bg-slate-400/70 shadow-slate-400/50" :
+                       currentStep === 2 ? "bg-cyan-300/80 shadow-cyan-300/50" :
+                       currentStep === 3 ? "bg-cyan-400/90 shadow-cyan-400/50" :
+                       "bg-slate-400 shadow-slate-400/50"
+                     }`} />
+                     {/* Left dot */}
+                     <div className={`absolute w-2 h-2 rounded-full top-1/2 left-0 transform -translate-y-1/2 shadow-lg ${
+                       currentStep === 0 ? "bg-slate-500/60 shadow-slate-500/50" :
+                       currentStep === 1 ? "bg-slate-300/70 shadow-slate-300/50" :
+                       currentStep === 2 ? "bg-slate-400/80 shadow-slate-400/50" :
+                       currentStep === 3 ? "bg-cyan-300/90 shadow-cyan-300/50" :
+                       "bg-slate-400 shadow-slate-400/50"
+                     }`} />
+                   </motion.div>
+
+                   {/* Outer pulsing ring around the loading cube */}
+                   <motion.div
+                     className={`absolute inset-0 w-28 h-28 -m-8 border rounded-full ${
+                       currentStep === 0 ? "border-cyan-400/20" :
+                       currentStep === 1 ? "border-cyan-400/40" :
+                       currentStep === 2 ? "border-cyan-500/60" :
+                       currentStep === 3 ? "border-cyan-500/80" :
+                       "border-cyan-400/30"
+                     }`}
+                     animate={{
+                       scale: [1, 1.1, 1],
+                       opacity: [0.3, 0.6, 0.3],
+                     }}
+                     transition={{
+                       duration: 3,
+                       repeat: Infinity,
+                       ease: "easeInOut",
+                     }}
+                   />
+                 </div>
                </div>
 
                <div>

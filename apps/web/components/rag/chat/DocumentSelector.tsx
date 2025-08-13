@@ -75,6 +75,9 @@ export const DocumentSelector = React.memo(function DocumentSelector({
 
     setSelectedDocuments(newSelection);
     onDocumentSelect?.(newSelection);
+    
+    // Log the selected documents for debugging
+    console.log("Selected documents:", newSelection.map(doc => ({ id: doc._id, title: doc.title })));
   }, [selectedDocuments, isDocumentSelected, setSelectedDocuments, onDocumentSelect, maxDocuments]);
 
   // Handle select all/none

@@ -24,7 +24,7 @@ import { ResponsiveModal, ResponsiveModalContent, ResponsiveModalHeader, Respons
 import { DocumentSelector } from '../rag/chat/DocumentSelector';
 import { UnifiedChatHistory } from './UnifiedChatHistory';
 import { DocumentViewer } from '../rag/DocumentViewer';
-import { useQuery, useMutation } from 'convex/react';
+import { useMutation } from 'convex/react';
 import type { GenericId as Id } from 'convex/values';
 import { api } from '../../generated-convex';
 import { useSafeQuery } from '../../hooks/use-safe-convex';
@@ -135,6 +135,14 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
       toast.error(err.message || 'An error occurred');
       llmProgress.setError(err.message || 'Unknown error');
     },
+    onFinish: (message) => {
+      console.log('RAG chat response:', message);
+      if (message.sources) {
+        console.log('RAG sources found:', message.sources.length);
+      } else {
+        console.warn('No RAG sources in response');
+      }
+    }
   });
 
   // Choose which chat to use based on mode - memoized

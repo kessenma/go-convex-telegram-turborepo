@@ -8,7 +8,7 @@ interface LoadingCubeProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   errorMode?: boolean;
-  phase?: "analyzing" | "connecting" | "generating" | "finalizing" | "idle";
+  phase?: "analyzing" | "processing" | "generating" | "finalizing" | "idle";
 }
 
 export function LoadingCube({ 
@@ -70,16 +70,16 @@ export function LoadingCube({
       
       // Phase-based colors
       vec3 analyzingColor = vec3(0.1, 0.35, 0.45); // Blue-cyan
-      vec3 connectingColor = vec3(0.2, 0.4, 0.5); // Lighter blue
+      vec3 processingColor = vec3(0.2, 0.4, 0.5); // Lighter blue
       vec3 generatingColor = vec3(0.3, 0.5, 0.6); // Cyan
       vec3 finalizingColor = vec3(0.4, 0.6, 0.7); // Light cyan
       
       // Interpolate between phase colors
       vec3 baseColor;
       if (uPhase < 1.0) {
-        baseColor = mix(analyzingColor, connectingColor, uPhase);
+        baseColor = mix(analyzingColor, processingColor, uPhase);
       } else if (uPhase < 2.0) {
-        baseColor = mix(connectingColor, generatingColor, uPhase - 1.0);
+        baseColor = mix(processingColor, generatingColor, uPhase - 1.0);
       } else if (uPhase < 3.0) {
         baseColor = mix(generatingColor, finalizingColor, uPhase - 2.0);
       } else {
@@ -105,15 +105,15 @@ export function LoadingCube({
       
       // Phase-based glow colors
       vec3 analyzingGlow = vec3(0.3, 0.9, 1.0); // Cyan
-      vec3 connectingGlow = vec3(0.4, 0.8, 1.0); // Light cyan
+      vec3 processingGlow = vec3(0.4, 0.8, 1.0); // Light cyan
       vec3 generatingGlow = vec3(0.5, 0.7, 1.0); // Lighter cyan
       vec3 finalizingGlow = vec3(0.6, 0.9, 0.8); // Cyan-green
       
       vec3 glowColor;
       if (uPhase < 1.0) {
-        glowColor = mix(analyzingGlow, connectingGlow, uPhase);
+        glowColor = mix(analyzingGlow, processingGlow, uPhase);
       } else if (uPhase < 2.0) {
-        glowColor = mix(connectingGlow, generatingGlow, uPhase - 1.0);
+        glowColor = mix(processingGlow, generatingGlow, uPhase - 1.0);
       } else if (uPhase < 3.0) {
         glowColor = mix(generatingGlow, finalizingGlow, uPhase - 2.0);
       } else {
@@ -183,7 +183,7 @@ export function LoadingCube({
     const getPhaseValue = (phase: string) => {
       switch (phase) {
         case "analyzing": return 0.0;
-        case "connecting": return 1.0;
+        case "processing": return 1.0;
         case "generating": return 2.0;
         case "finalizing": return 3.0;
         default: return 0.0;
@@ -290,7 +290,7 @@ export function LoadingCube({
       const getPhaseValue = (phase: string) => {
         switch (phase) {
           case "analyzing": return 0.0;
-          case "connecting": return 1.0;
+          case "processing": return 1.0;
           case "generating": return 2.0;
           case "finalizing": return 3.0;
           default: return 0.0;

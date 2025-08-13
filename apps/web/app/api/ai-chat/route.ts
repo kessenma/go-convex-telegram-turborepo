@@ -25,21 +25,93 @@ export interface ChatRequestBody {
 // Get document content for context
 async function getDocumentContext(documentIds: string[]): Promise<string> {
   try {
+    console.log(`Fetching document context for ${documentIds.length} documents:`, documentIds);
+    
+    if (!documentIds || documentIds.length === 0) {
+      console.warn("No document IDs provided for context");
+      return "";
+    }
+    
     // Use direct HTTP API call to fetch documents
     const documents = await Promise.all(
       documentIds.map(async (docId) => {
         try {
-          const response = await fetch(
-            `${process.env.CONVEX_HTTP_URL || "http://localhost:3211"}/api/documents/by-id?documentId=${docId}`
-          );
-          if (!response.ok) {
-            console.error(
-              `Failed to fetch document ${docId}: ${response.status}`
+          // Try multiple endpoints for document retrieval with better error handling
+          const convexUrl = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
+          let doc = null;
+          let errorMessages: string[] = [];
+          
+          // First try the by-id endpoint with query parameter
+          try {
+            console.log(`Trying to fetch document with query param: ${docId}`);
+            const response = await fetch(
+              `${convexUrl}/api/documents/by-id?documentId=${docId}`
             );
-            return null;
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result && result.content) {
+                console.log(`Successfully fetched document via query param: ${result.title}`);
+                return result;
+              } else {
+                errorMessages.push(`Query param endpoint returned invalid document: ${JSON.stringify(result)}`);
+              }
+            } else {
+              errorMessages.push(`Query param endpoint failed: ${response.status}`);
+            }
+          } catch (e: any) {
+            errorMessages.push(`Query param endpoint error: ${e.message}`);
           }
-          const doc = await response.json();
-          return doc;
+          
+          // Try the direct path endpoint
+          try {
+            console.log(`Trying to fetch document with direct path: ${docId}`);
+            const response = await fetch(`${convexUrl}/api/documents/${docId}`);
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result && result.content) {
+                console.log(`Successfully fetched document via direct path: ${result.title}`);
+                return result;
+              } else {
+                errorMessages.push(`Direct path endpoint returned invalid document: ${JSON.stringify(result)}`);
+              }
+            } else {
+              errorMessages.push(`Direct path endpoint failed: ${response.status}`);
+            }
+          } catch (e: any) {
+            errorMessages.push(`Direct path endpoint error: ${e.message}`);
+          }
+          
+          // Try the documents/by-ids endpoint as a last resort
+          try {
+            console.log(`Trying to fetch document with by-ids endpoint: ${docId}`);
+            const response = await fetch(`${convexUrl}/api/documents/by-ids`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ documentIds: [docId] }),
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result && result.documents && result.documents.length > 0) {
+                console.log(`Successfully fetched document via by-ids endpoint: ${result.documents[0].title}`);
+                return result.documents[0];
+              } else {
+                errorMessages.push(`by-ids endpoint returned invalid document: ${JSON.stringify(result)}`);
+              }
+            } else {
+              errorMessages.push(`by-ids endpoint failed: ${response.status}`);
+            }
+          } catch (e: any) {
+            errorMessages.push(`by-ids endpoint error: ${e.message}`);
+          }
+          
+          // If all attempts failed, log the errors and return null
+          console.error(`All attempts to fetch document ${docId} failed:`, errorMessages);
+          return null;
         } catch (error) {
           console.error(`Error fetching document ${docId}:`, error);
           return null;
@@ -50,6 +122,11 @@ async function getDocumentContext(documentIds: string[]): Promise<string> {
     const validDocuments = documents.filter(Boolean);
     console.log("Valid documents found:", validDocuments.length);
 
+    if (validDocuments.length === 0) {
+      console.warn("No valid documents found for context");
+      return "";
+    }
+
     // Combine document content (truncate if too long)
     const context = validDocuments
       .map((doc) => (doc ? `Document: ${doc.title}\n${doc.content}` : ""))
@@ -57,6 +134,7 @@ async function getDocumentContext(documentIds: string[]): Promise<string> {
       .join("\n\n")
       .substring(0, 8000); // Limit context size
 
+    console.log(`Generated context of ${context.length} characters`);
     return context;
   } catch (error) {
     console.error("Error getting document context:", error);
