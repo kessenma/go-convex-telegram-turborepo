@@ -818,5 +818,77 @@ export type PublicApiType = {
       any
     >;
   };
+  unifiedChat: {
+    createConversation: FunctionReference<
+      "mutation",
+      "public",
+      {
+        chatMode: string;
+        documentIds?: Array<Id<"rag_documents">>;
+        documentTitles?: Array<string>;
+        ipAddress?: string;
+        llmModel: string;
+        metadata?: string;
+        sessionId: string;
+        settings?: string;
+        title?: string;
+        type: "general" | "rag";
+        userAgent?: string;
+        userId?: string;
+      },
+      any
+    >;
+    addMessage: FunctionReference<
+      "mutation",
+      "public",
+      {
+        chatMode: string;
+        content: string;
+        conversationId: Id<"unified_conversations">;
+        messageId: string;
+        metadata?: string;
+        processingTimeMs?: number;
+        role: string;
+        sources?: Array<{
+          documentId: Id<"rag_documents">;
+          score: number;
+          snippet: string;
+          title: string;
+        }>;
+        tokenCount?: number;
+      },
+      any
+    >;
+    getConversationBySessionId: FunctionReference<
+      "query",
+      "public",
+      { sessionId: string },
+      any
+    >;
+    getConversationMessages: FunctionReference<
+      "query",
+      "public",
+      { conversationId: Id<"unified_conversations">; limit?: number },
+      any
+    >;
+    getRecentConversations: FunctionReference<
+      "query",
+      "public",
+      { limit?: number; userId?: string },
+      any
+    >;
+    updateConversationTitle: FunctionReference<
+      "mutation",
+      "public",
+      { conversationId: Id<"unified_conversations">; title: string },
+      any
+    >;
+    deactivateConversation: FunctionReference<
+      "mutation",
+      "public",
+      { conversationId: Id<"unified_conversations"> },
+      any
+    >;
+  };
 };
 export type InternalApiType = {};

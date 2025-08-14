@@ -38,6 +38,7 @@ import type * as shared from "../shared.js";
 import type * as telegram_message_threads from "../telegram_message_threads.js";
 import type * as telegram_messages from "../telegram_messages.js";
 import type * as threads from "../threads.js";
+import type * as unifiedChat from "../unifiedChat.js";
 import type * as userLocation from "../userLocation.js";
 import type * as userSessions from "../userSessions.js";
 import type * as vectorSearch from "../vectorSearch.js";
@@ -87,6 +88,7 @@ declare const fullApi: ApiFromModules<{
   telegram_message_threads: typeof telegram_message_threads;
   telegram_messages: typeof telegram_messages;
   threads: typeof threads;
+  unifiedChat: typeof unifiedChat;
   userLocation: typeof userLocation;
   userSessions: typeof userSessions;
   vectorSearch: typeof vectorSearch;

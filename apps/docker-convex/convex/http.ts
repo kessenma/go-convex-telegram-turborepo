@@ -253,54 +253,18 @@ http.route({
   handler: embeddingRoutes.triggerDocumentEmbeddingAPI,
 });
 
-// Additional embedding routes can be uncommented when needed
-/*
-http.route({
-  path: "/api/embeddings/search",
-  method: "POST",
-  handler: searchDocumentsVectorAPI,
-});
-
+// Additional embedding routes
 http.route({
   path: "/api/embeddings/search",
   method: "GET",
-  handler: searchDocumentsVectorAPI,
+  handler: embeddingRoutes.searchDocumentsByVectorAPI,
 });
 
 http.route({
-  path: "/api/embeddings/batch",
+  path: "/api/embeddings/search",
   method: "POST",
-  handler: batchGenerateEmbeddingsAPI,
+  handler: embeddingRoutes.searchDocumentsByVectorAPI,
 });
-
-http.route({
-  path: "/api/embeddings/llm-status",
-  method: "GET",
-  handler: checkLLMServiceStatusAPI,
-});
-
-http.route({
-  path: "/api/embeddings/document",
-  method: "GET",
-  handler: getDocumentEmbeddingsAPI,
-});
-
-http.route({
-  path: "/api/embeddings/all",
-  method: "GET",
-  handler: getAllDocumentEmbeddingsAPI,
-});
-
-http.route({
-  path: "/api/embeddings/createDocumentEmbedding",
-  method: "POST",
-  handler: createDocumentEmbeddingAPI,
-});
-
-// Note: The atlas-data route is already defined above
-*/
-
-
 
 // LLM MEMORY USAGE ENDPOINTS (Legacy - now handled by consolidated metrics)
 http.route({

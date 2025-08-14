@@ -142,6 +142,48 @@ async function getDocumentContext(documentIds: string[]): Promise<string> {
   }
 }
 
+// Helper function to extract numeric values from a query string
+function extractNumericValues(query: string): string[] {
+  // Match currency amounts like $6,000 or 6,000 or 6000
+  const currencyRegex = /\$?(\d{1,3}(,\d{3})*(\.\d+)?|\d+(\.\d+)?)/g;
+  const matches = query.match(currencyRegex) || [];
+  return matches;
+}
+
+// Helper function to prioritize sections of text containing numeric values
+function prioritizeNumericSections(text: string, numericValues: string[]): string | null {
+  if (!text || numericValues.length === 0) return null;
+  
+  // Split text into paragraphs
+  const paragraphs = text.split(/\n\n+/);
+  
+  // Find paragraphs containing numeric values
+  const relevantParagraphs: string[] = [];
+  const otherParagraphs: string[] = [];
+  
+  for (const paragraph of paragraphs) {
+    if (numericValues.some(value => paragraph.includes(value))) {
+      relevantParagraphs.push(paragraph);
+    } else {
+      // Check for any dollar amounts
+      if (/\$\d+/.test(paragraph)) {
+        relevantParagraphs.push(paragraph);
+      } else {
+        otherParagraphs.push(paragraph);
+      }
+    }
+  }
+  
+  // If we found relevant paragraphs, prioritize them
+  if (relevantParagraphs.length > 0) {
+    // Put relevant paragraphs first, then include some other paragraphs for context
+    const enhancedText = [...relevantParagraphs, ...otherParagraphs.slice(0, 5)].join('\n\n');
+    return enhancedText.length < text.length ? enhancedText : text;
+  }
+  
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { messages, documentIds = [] } = await req.json() as ChatRequestBody;
@@ -172,6 +214,18 @@ export async function POST(req: NextRequest) {
       console.log("Getting document context...");
       context = await getDocumentContext(documentIds);
       console.log("Context length:", context.length);
+      
+      // Extract numeric values from the user query to highlight in context
+      const numericValues = extractNumericValues(lastUserMessage.content);
+      if (numericValues.length > 0) {
+        console.log("Detected numeric values in query:", numericValues);
+        // Try to find sections containing these values and prioritize them
+        const enhancedContext = prioritizeNumericSections(context, numericValues);
+        if (enhancedContext) {
+          context = enhancedContext;
+          console.log("Enhanced context with numeric sections");
+        }
+      }
     }
 
     // Convert messages to the format expected by the LLM service
@@ -190,6 +244,23 @@ export async function POST(req: NextRequest) {
     // Make the API call in the background
     (async () => {
       try {
+        // Enhance the context with a more generic approach
+        let enhancedPrompt = lastUserMessage.content;
+        let enhancedContext = context;
+        
+        // Extract numeric values for context prioritization only
+        const numericValues = extractNumericValues(lastUserMessage.content);
+        
+        if (context) {
+          // Use a generic enhanced context that works for all query types
+          enhancedContext = `Based on the following document content, please answer the question. Pay attention to all details in the document, including any specific numbers, dates, or values that might be relevant to the query:\n\n${context}`;
+          
+          // If we have numeric values in the query, we can still prioritize those sections
+          if (numericValues.length > 0) {
+            console.log("Query contains numeric values:", numericValues);
+          }
+        }
+
         // Call the LLM service
         const llmResponse = await fetch(`${LIGHTWEIGHT_LLM_URL}/chat`, {
           method: "POST",
@@ -197,8 +268,8 @@ export async function POST(req: NextRequest) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: lastUserMessage.content,
-            context: context ? `Based on the following document content, please answer the question:\n\n${context}` : "",
+            message: enhancedPrompt,
+            context: enhancedContext || "",
             conversation_history: conversationHistory,
             max_length: 200,
             temperature: 0.7,

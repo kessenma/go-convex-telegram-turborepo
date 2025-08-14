@@ -1,6 +1,8 @@
 import os
+import re
 import logging
 import asyncio
+import importlib.util
 from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 
@@ -28,8 +30,8 @@ logger = logging.getLogger(__name__)
 llm = None
 status_reporter = None
 
-# Model configuration - Using Phi-3 GGUF for fast RAG performance
-MODEL_PATH = os.getenv("MODEL_PATH", "./Phi-3-mini-4k-instruct-q4.gguf")
+# Model configuration - Using Llama 3.2 1B GGUF for fast RAG performance
+MODEL_PATH = os.getenv("MODEL_PATH", "./llama-3.2-1b-instruct-q4.gguf")
 N_CTX = int(os.getenv("N_CTX", "4096"))  # Context window
 N_THREADS = int(os.getenv("N_THREADS", "8"))  # CPU threads
 N_GPU_LAYERS = int(os.getenv("N_GPU_LAYERS", "0"))  # GPU layers (0 for CPU only)
@@ -57,6 +59,7 @@ class ChatResponse(BaseModel):
     response: str
     model_info: Dict[str, Any]
     usage: Dict[str, Any]
+    rag_metadata: Optional[Dict[str, Any]] = None
 
 class HealthResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -107,15 +110,15 @@ def get_memory_usage():
         }
 
 def load_model():
-    """Load the Phi-3 GGUF model using llama-cpp-python"""
+    """Load the Llama 3.2 GGUF model using llama-cpp-python"""
     global llm, status_reporter
     
     try:
         # Send loading status
         if status_reporter:
-            status_reporter.send_loading_status("Loading Phi-3 model")
+            status_reporter.send_loading_status("Loading Llama 3.2 model")
         
-        logger.info(f"Loading Phi-3 model from: {MODEL_PATH}")
+        logger.info(f"Loading Llama 3.2 model from: {MODEL_PATH}")
         logger.info(f"Context window: {N_CTX}, Threads: {N_THREADS}, GPU layers: {N_GPU_LAYERS}")
         
         # Check if model file exists
@@ -143,7 +146,7 @@ def load_model():
         
         # Send healthy status
         if status_reporter:
-            status_reporter.send_healthy_status("Phi-3-mini-4k-instruct")
+            status_reporter.send_healthy_status("Llama-3.2-1B-Instruct")
         
     except Exception as e:
         logger.error(f"Failed to load model: {str(e)}")
@@ -175,7 +178,7 @@ def get_current_status():
             'status': 'healthy',
             'ready': True,
             'message': 'Service is running normally',
-            'model': 'Phi-3-mini-4k-instruct',
+            'model': 'Llama-3.2-1B-Instruct',
             'model_loaded': True,
             'model_loading': False
         }
@@ -184,7 +187,7 @@ def get_current_status():
             'status': 'error',
             'ready': False,
             'message': 'Model not loaded',
-            'model': 'Phi-3-mini-4k-instruct',
+            'model': 'Llama-3.2-1B-Instruct',
             'model_loaded': False,
             'model_loading': False
         }
@@ -237,8 +240,56 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def format_chat_prompt(message: str, context: str = "", conversation_history: List[Dict[str, str]] = None) -> str:
-    """Format the chat prompt for Llama-3.2 with proper chat template and RAG support"""
+# Import the RAG processors
+from rag_processor import process_rag_query
+
+# Try to import LangExtract RAG processor, fall back gracefully if not available
+try:
+    from langextract_rag import enhanced_process_rag_query, get_langextract_processor
+    LANGEXTRACT_RAG_AVAILABLE = True
+    logger.info("LangExtract RAG processor imported successfully")
+except ImportError as e:
+    logger.warning(f"LangExtract RAG processor not available: {e}")
+    LANGEXTRACT_RAG_AVAILABLE = False
+    
+    # Create fallback functions
+    def enhanced_process_rag_query(message: str, context: str):
+        """Fallback function when LangExtract is not available"""
+        enhanced_message, system_msg = process_rag_query(message, context)
+        metadata = {
+            "classification": {"query_type": "fallback", "confidence": 0.5},
+            "langextract_available": False,
+            "fallback_reason": "LangExtract not available"
+        }
+        return enhanced_message, system_msg, metadata
+    
+    def get_langextract_processor():
+        """Fallback function when LangExtract is not available"""
+        class FallbackClassification:
+            def __init__(self, query_type="general", confidence=0.5, key_entities=None, 
+                        expected_answer_type="general_response", extraction_focus=None):
+                self.query_type = query_type
+                self.confidence = confidence
+                self.key_entities = key_entities or []
+                self.expected_answer_type = expected_answer_type
+                self.extraction_focus = extraction_focus or []
+        
+        class FallbackProcessor:
+            def __init__(self):
+                self.extractor = None
+                self.model_name = "fallback"
+            
+            def classify_query(self, query: str):
+                return FallbackClassification()
+        
+        return FallbackProcessor()
+
+def format_chat_prompt(message: str, context: str = "", conversation_history: List[Dict[str, str]] = None) -> tuple:
+    """Format the chat prompt for Llama-3.2 with proper chat template and RAG support
+    
+    Returns:
+        tuple: (prompt, rag_metadata)
+    """
     if conversation_history is None:
         conversation_history = []
     
@@ -259,7 +310,50 @@ def format_chat_prompt(message: str, context: str = "", conversation_history: Li
         else:
             truncated_context = context
         
-        system_msg = f"You are a helpful AI assistant. Answer questions based on the provided document information. Be concise and accurate.\n\nDocument Information:\n{truncated_context}"
+        # Process the query using our enhanced LangExtract RAG processor
+        rag_metadata = None
+        try:
+            # First try the enhanced LangExtract processor
+            enhanced_message, system_msg, rag_metadata = enhanced_process_rag_query(message, truncated_context)
+            
+            # Log the enhanced classification results
+            classification = rag_metadata.get("classification", {})
+            query_type = classification.get("query_type", "unknown")
+            confidence = classification.get("confidence", 0.0)
+            
+            logger.info(f"LangExtract classification: {query_type} (confidence: {confidence:.2f})")
+            
+            if rag_metadata.get("extracted_entities"):
+                logger.info(f"Extracted {len(rag_metadata['extracted_entities'])} relevant entities")
+            
+            if not rag_metadata.get("langextract_available", False):
+                logger.info("LangExtract not available, using fallback classification")
+                
+        except Exception as e:
+            # If there's any error in the enhanced processor, fall back to the original
+            logger.error(f"Error in enhanced RAG processor: {e}. Falling back to original processor.")
+            try:
+                enhanced_message, system_msg = process_rag_query(message, truncated_context)
+                logger.info("Using original RAG processor")
+                # Create basic metadata for fallback
+                rag_metadata = {
+                    "classification": {"query_type": "fallback", "confidence": 0.5},
+                    "langextract_available": False,
+                    "fallback_used": True
+                }
+            except Exception as e2:
+                logger.error(f"Error in original RAG processor: {e2}. Using default prompt.")
+                system_msg = (
+                    "You are a helpful AI assistant. Answer questions based on the provided document information. "
+                    "Be concise and accurate. Pay attention to all details in the document, including any specific "
+                    "numbers, dates, or values that might be relevant to the query.\n\n"
+                    f"Document Information:\n{truncated_context}"
+                )
+                rag_metadata = {
+                    "classification": {"query_type": "default", "confidence": 0.3},
+                    "langextract_available": False,
+                    "error": "Both enhanced and original processors failed"
+                }
     else:
         system_msg = "You are a helpful AI assistant. Provide clear, concise, and accurate responses."
     
@@ -278,7 +372,8 @@ def format_chat_prompt(message: str, context: str = "", conversation_history: Li
     # Add current message
     prompt += f"<|start_header_id|>user<|end_header_id|>\n\n{message}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
     
-    return prompt
+    # Return both prompt and metadata
+    return prompt, locals().get('rag_metadata', None)
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -291,7 +386,7 @@ async def health_check():
     # Send status update to Convex
     if status_reporter:
         if model_loaded:
-            status_reporter.send_healthy_status("Phi-3-mini-4k-instruct")
+            status_reporter.send_healthy_status("Llama-3.2-1B-Instruct")
         else:
             status_reporter.send_error_status("Model not loaded")
     
@@ -302,15 +397,43 @@ async def health_check():
         model_path=MODEL_PATH
     )
 
+# Helper function for general text processing
+def process_text(text: str) -> str:
+    """Process text for better formatting"""
+    # Remove excessive whitespace
+    processed = re.sub(r'\s+', ' ', text).strip()
+    return processed
+
+# Check if RAG modules are available
+def check_rag_modules():
+    """Check if the RAG modules are available and load them if needed"""
+    modules = ['quantitative_rag', 'qualitative_rag', 'rag_processor']
+    missing = []
+    
+    for module in modules:
+        if importlib.util.find_spec(module) is None:
+            missing.append(module)
+    
+    if missing:
+        logger.warning(f"Missing RAG modules: {', '.join(missing)}. Some RAG features may not be available.")
+        return False
+    
+    return True
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    """Generate a chat response using Phi-3 via llama-cpp"""
+    """Generate a chat response using Llama 3.2 via llama-cpp"""
     if llm is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
     
     try:
-        # Format the prompt
-        prompt = format_chat_prompt(
+        # Check if RAG modules are available
+        has_rag_modules = check_rag_modules()
+        if not has_rag_modules:
+            logger.warning("RAG modules not available. Using default prompt formatting.")
+        
+        # Format the prompt and get RAG metadata
+        prompt, rag_metadata = format_chat_prompt(
             message=request.message,
             context=request.context,
             conversation_history=request.conversation_history
@@ -370,7 +493,8 @@ async def chat(request: ChatRequest):
                 "input_tokens": prompt_tokens,
                 "output_tokens": completion_tokens,
                 "total_tokens": total_tokens
-            }
+            },
+            rag_metadata=rag_metadata
         )
         
     except Exception as e:
@@ -383,18 +507,100 @@ async def get_model_info():
     if llm is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
     
+    # Check LangExtract availability
+    try:
+        processor = get_langextract_processor()
+        langextract_status = {
+            "available": LANGEXTRACT_RAG_AVAILABLE and processor.extractor is not None,
+            "model": processor.model_name if processor.extractor else None,
+            "import_available": LANGEXTRACT_RAG_AVAILABLE
+        }
+    except Exception as e:
+        logger.error(f"Error checking LangExtract status: {e}")
+        langextract_status = {
+            "available": False,
+            "model": None,
+            "import_available": False,
+            "error": str(e)
+        }
+    
     return {
-        "model_name": "Phi-3-mini-4k-instruct",
+        "model_name": "Llama-3.2-1B-Instruct",
         "model_path": MODEL_PATH,
         "context_window": N_CTX,
         "threads": N_THREADS,
         "gpu_layers": N_GPU_LAYERS,
         "memory_usage": get_memory_usage(),
-        "model_exists": os.path.exists(MODEL_PATH)
+        "model_exists": os.path.exists(MODEL_PATH),
+        "langextract": langextract_status
     }
+
+class QueryClassificationRequest(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    
+    query: str
+
+class QueryClassificationResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    
+    query_type: str
+    confidence: float
+    key_entities: List[str]
+    expected_answer_type: str
+    extraction_focus: List[str]
+    langextract_available: bool
+
+@app.post("/classify-query", response_model=QueryClassificationResponse)
+async def classify_query(request: QueryClassificationRequest):
+    """Classify a query to understand its type and requirements"""
+    try:
+        processor = get_langextract_processor()
+        classification = processor.classify_query(request.query)
+        
+        return QueryClassificationResponse(
+            query_type=classification.query_type,
+            confidence=classification.confidence,
+            key_entities=classification.key_entities,
+            expected_answer_type=classification.expected_answer_type,
+            extraction_focus=classification.extraction_focus,
+            langextract_available=LANGEXTRACT_RAG_AVAILABLE and processor.extractor is not None
+        )
+        
+    except Exception as e:
+        logger.error(f"Error classifying query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to classify query: {str(e)}")
+
+def install_langextract_if_requested():
+    """Install LangExtract if requested via environment variable"""
+    install_langextract = os.getenv("INSTALL_LANGEXTRACT", "false").lower() == "true"
+    
+    if install_langextract:
+        logger.info("Installing LangExtract as requested...")
+        try:
+            import subprocess
+            import sys
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "langextract"])
+            logger.info("LangExtract installed successfully!")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to install LangExtract: {e}")
+            logger.info("Continuing without LangExtract...")
+            return False
+    else:
+        logger.info("LangExtract installation not requested (set INSTALL_LANGEXTRACT=true to enable)")
+        return False
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # Check if we're running in Docker and install LangExtract if requested
+    if os.getenv("DOCKER_CONTAINER", "false").lower() == "true" or os.path.exists("/.dockerenv"):
+        logger.info("Running in Docker container")
+        langextract_installed = install_langextract_if_requested()
+        if langextract_installed:
+            logger.info("LangExtract is available - enhanced RAG processing enabled")
+        else:
+            logger.info("LangExtract not available - using fallback RAG processing")
     
     # Get port from environment or default to 8082
     port = int(os.getenv("PORT", 8082))

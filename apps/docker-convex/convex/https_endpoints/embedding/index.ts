@@ -342,3 +342,75 @@ export const triggerDocumentEmbeddingAPI = httpAction(async (ctx, request) => {
     return errorResponse("Failed to trigger document embedding", 500, message);
   }
 });
+
+// Vector search endpoint
+export const searchDocumentsByVectorAPI = httpAction(async (ctx, request) => {
+  try {
+    let queryText: string;
+    let limit: number;
+    let documentIds: string[] | undefined;
+
+    // Handle both GET and POST requests
+    if (request.method === 'GET') {
+      const url = new URL(request.url);
+      queryText = url.searchParams.get("queryText") || url.searchParams.get("q") || "";
+      limit = parseInt(url.searchParams.get("limit") || "10");
+      documentIds = undefined;
+    } else {
+      const body = await request.json();
+      queryText = body.queryText || body.query || body.q || "";
+      limit = parseInt(body.limit?.toString() || "10");
+      documentIds = body.documentIds;
+    }
+
+    if (!queryText.trim()) {
+      return errorResponse("Missing required parameter: queryText, query, or q", 400);
+    }
+
+    console.log(`🔍 Vector search API request: "${queryText}" (limit: ${limit})`);
+    if (documentIds) {
+      console.log(`📄 Filtering by ${documentIds.length} document IDs`);
+    }
+
+    // Call the vector search action
+    const searchResults = await ctx.runAction(api.vectorSearch.searchDocumentsByVector, {
+      queryText,
+      limit,
+      documentIds: documentIds as any,
+    });
+
+    console.log(`✅ Vector search found ${searchResults.results.length} results`);
+
+    // Format results for API response compatible with test expectations
+    const formattedResults = searchResults.results.map((result: any) => ({
+      _id: result.document._id,
+      _score: result._score,
+      title: result.document.title,
+      content: result.expandedContext || result.chunkText || result.document.content,
+      snippet: (result.expandedContext || result.chunkText || result.document.content || '').substring(0, 200),
+      contentType: result.document.contentType,
+      fileSize: result.document.fileSize,
+      uploadedAt: result.document.uploadedAt,
+      wordCount: result.document.wordCount,
+      summary: result.document.summary,
+      isChunkResult: result.isChunkResult,
+      chunkIndex: result.chunkIndex,
+      documentId: result.documentId,
+      embeddingId: result._id,
+    }));
+
+    return successResponse({
+      success: true,
+      results: formattedResults,
+      total: searchResults.totalResults,
+      query: queryText,
+      limit,
+      documentIds,
+      searchType: "vector",
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    console.error("Vector search API error:", e);
+    return errorResponse("Vector search failed", 500, message);
+  }
+});
