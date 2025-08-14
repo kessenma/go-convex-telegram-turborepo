@@ -289,6 +289,28 @@ export default defineSchema({
     .index("by_active_and_heartbeat", ["isActive", "lastHeartbeat"])
     .index("by_created_at", ["createdAt"]),
 
+  // User locations table - stores IP-based location data for presence tracking
+  userLocations: defineTable({
+    userId: v.string(), // User identifier from presence system
+    sessionId: v.string(), // Session identifier from presence system
+    ipAddress: v.string(), // Client IP address
+    country: v.string(), // Country from IP geolocation
+    countryCode: v.optional(v.string()), // Country code from IP geolocation
+    region: v.optional(v.string()), // Region/state from IP geolocation
+    city: v.optional(v.string()), // City from IP geolocation
+    zip: v.optional(v.string()), // ZIP/postal code from IP geolocation
+    timezone: v.optional(v.string()), // Timezone from IP geolocation
+    coordinates: v.optional(v.array(v.number())), // [latitude, longitude] coordinates
+    isp: v.optional(v.string()), // Internet Service Provider
+    org: v.optional(v.string()), // Organization
+    as: v.optional(v.string()), // Autonomous System info
+    lastUpdated: v.number(), // When location data was last updated
+  })
+    .index("by_user_session", ["userId", "sessionId"])
+    .index("by_ip", ["ipAddress"])
+    .index("by_country", ["country"])
+    .index("by_last_updated", ["lastUpdated"]),
+
   // Service statuses table - stores status updates from Python applications
   service_statuses: defineTable({
     serviceName: v.string(), // Name of the service ("lightweight-llm", "vector-convert-llm")

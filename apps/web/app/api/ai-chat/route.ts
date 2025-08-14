@@ -25,21 +25,93 @@ export interface ChatRequestBody {
 // Get document content for context
 async function getDocumentContext(documentIds: string[]): Promise<string> {
   try {
+    console.log(`Fetching document context for ${documentIds.length} documents:`, documentIds);
+    
+    if (!documentIds || documentIds.length === 0) {
+      console.warn("No document IDs provided for context");
+      return "";
+    }
+    
     // Use direct HTTP API call to fetch documents
     const documents = await Promise.all(
       documentIds.map(async (docId) => {
         try {
-          const response = await fetch(
-            `${process.env.CONVEX_HTTP_URL || "http://localhost:3211"}/api/documents/by-id?documentId=${docId}`
-          );
-          if (!response.ok) {
-            console.error(
-              `Failed to fetch document ${docId}: ${response.status}`
+          // Try multiple endpoints for document retrieval with better error handling
+          const convexUrl = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
+          let doc = null;
+          let errorMessages: string[] = [];
+          
+          // First try the by-id endpoint with query parameter
+          try {
+            console.log(`Trying to fetch document with query param: ${docId}`);
+            const response = await fetch(
+              `${convexUrl}/api/documents/by-id?documentId=${docId}`
             );
-            return null;
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result && result.content) {
+                console.log(`Successfully fetched document via query param: ${result.title}`);
+                return result;
+              } else {
+                errorMessages.push(`Query param endpoint returned invalid document: ${JSON.stringify(result)}`);
+              }
+            } else {
+              errorMessages.push(`Query param endpoint failed: ${response.status}`);
+            }
+          } catch (e: any) {
+            errorMessages.push(`Query param endpoint error: ${e.message}`);
           }
-          const doc = await response.json();
-          return doc;
+          
+          // Try the direct path endpoint
+          try {
+            console.log(`Trying to fetch document with direct path: ${docId}`);
+            const response = await fetch(`${convexUrl}/api/documents/${docId}`);
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result && result.content) {
+                console.log(`Successfully fetched document via direct path: ${result.title}`);
+                return result;
+              } else {
+                errorMessages.push(`Direct path endpoint returned invalid document: ${JSON.stringify(result)}`);
+              }
+            } else {
+              errorMessages.push(`Direct path endpoint failed: ${response.status}`);
+            }
+          } catch (e: any) {
+            errorMessages.push(`Direct path endpoint error: ${e.message}`);
+          }
+          
+          // Try the documents/by-ids endpoint as a last resort
+          try {
+            console.log(`Trying to fetch document with by-ids endpoint: ${docId}`);
+            const response = await fetch(`${convexUrl}/api/documents/by-ids`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ documentIds: [docId] }),
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result && result.documents && result.documents.length > 0) {
+                console.log(`Successfully fetched document via by-ids endpoint: ${result.documents[0].title}`);
+                return result.documents[0];
+              } else {
+                errorMessages.push(`by-ids endpoint returned invalid document: ${JSON.stringify(result)}`);
+              }
+            } else {
+              errorMessages.push(`by-ids endpoint failed: ${response.status}`);
+            }
+          } catch (e: any) {
+            errorMessages.push(`by-ids endpoint error: ${e.message}`);
+          }
+          
+          // If all attempts failed, log the errors and return null
+          console.error(`All attempts to fetch document ${docId} failed:`, errorMessages);
+          return null;
         } catch (error) {
           console.error(`Error fetching document ${docId}:`, error);
           return null;
@@ -50,6 +122,11 @@ async function getDocumentContext(documentIds: string[]): Promise<string> {
     const validDocuments = documents.filter(Boolean);
     console.log("Valid documents found:", validDocuments.length);
 
+    if (validDocuments.length === 0) {
+      console.warn("No valid documents found for context");
+      return "";
+    }
+
     // Combine document content (truncate if too long)
     const context = validDocuments
       .map((doc) => (doc ? `Document: ${doc.title}\n${doc.content}` : ""))
@@ -57,11 +134,54 @@ async function getDocumentContext(documentIds: string[]): Promise<string> {
       .join("\n\n")
       .substring(0, 8000); // Limit context size
 
+    console.log(`Generated context of ${context.length} characters`);
     return context;
   } catch (error) {
     console.error("Error getting document context:", error);
     return "";
   }
+}
+
+// Helper function to extract numeric values from a query string
+function extractNumericValues(query: string): string[] {
+  // Match currency amounts like $6,000 or 6,000 or 6000
+  const currencyRegex = /\$?(\d{1,3}(,\d{3})*(\.\d+)?|\d+(\.\d+)?)/g;
+  const matches = query.match(currencyRegex) || [];
+  return matches;
+}
+
+// Helper function to prioritize sections of text containing numeric values
+function prioritizeNumericSections(text: string, numericValues: string[]): string | null {
+  if (!text || numericValues.length === 0) return null;
+  
+  // Split text into paragraphs
+  const paragraphs = text.split(/\n\n+/);
+  
+  // Find paragraphs containing numeric values
+  const relevantParagraphs: string[] = [];
+  const otherParagraphs: string[] = [];
+  
+  for (const paragraph of paragraphs) {
+    if (numericValues.some(value => paragraph.includes(value))) {
+      relevantParagraphs.push(paragraph);
+    } else {
+      // Check for any dollar amounts
+      if (/\$\d+/.test(paragraph)) {
+        relevantParagraphs.push(paragraph);
+      } else {
+        otherParagraphs.push(paragraph);
+      }
+    }
+  }
+  
+  // If we found relevant paragraphs, prioritize them
+  if (relevantParagraphs.length > 0) {
+    // Put relevant paragraphs first, then include some other paragraphs for context
+    const enhancedText = [...relevantParagraphs, ...otherParagraphs.slice(0, 5)].join('\n\n');
+    return enhancedText.length < text.length ? enhancedText : text;
+  }
+  
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -94,6 +214,18 @@ export async function POST(req: NextRequest) {
       console.log("Getting document context...");
       context = await getDocumentContext(documentIds);
       console.log("Context length:", context.length);
+      
+      // Extract numeric values from the user query to highlight in context
+      const numericValues = extractNumericValues(lastUserMessage.content);
+      if (numericValues.length > 0) {
+        console.log("Detected numeric values in query:", numericValues);
+        // Try to find sections containing these values and prioritize them
+        const enhancedContext = prioritizeNumericSections(context, numericValues);
+        if (enhancedContext) {
+          context = enhancedContext;
+          console.log("Enhanced context with numeric sections");
+        }
+      }
     }
 
     // Convert messages to the format expected by the LLM service
@@ -112,6 +244,23 @@ export async function POST(req: NextRequest) {
     // Make the API call in the background
     (async () => {
       try {
+        // Enhance the context with a more generic approach
+        let enhancedPrompt = lastUserMessage.content;
+        let enhancedContext = context;
+        
+        // Extract numeric values for context prioritization only
+        const numericValues = extractNumericValues(lastUserMessage.content);
+        
+        if (context) {
+          // Use a generic enhanced context that works for all query types
+          enhancedContext = `Based on the following document content, please answer the question. Pay attention to all details in the document, including any specific numbers, dates, or values that might be relevant to the query:\n\n${context}`;
+          
+          // If we have numeric values in the query, we can still prioritize those sections
+          if (numericValues.length > 0) {
+            console.log("Query contains numeric values:", numericValues);
+          }
+        }
+
         // Call the LLM service
         const llmResponse = await fetch(`${LIGHTWEIGHT_LLM_URL}/chat`, {
           method: "POST",
@@ -119,8 +268,8 @@ export async function POST(req: NextRequest) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: lastUserMessage.content,
-            context: context ? `Based on the following document content, please answer the question:\n\n${context}` : "",
+            message: enhancedPrompt,
+            context: enhancedContext || "",
             conversation_history: conversationHistory,
             max_length: 200,
             temperature: 0.7,

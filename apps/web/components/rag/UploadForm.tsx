@@ -15,6 +15,7 @@ import { renderIcon } from "../../lib/icon-utils";
 import { Button as MovingButton } from "../ui/moving-border";
 import { StickyBanner } from "../ui/sticky-banner";
 import { Tabs } from "../ui/tabs";
+import { LoadingSpinner } from "../ui/loading-spinner";
 
 interface UploadFormProps {
   uploadMethod: "file" | "text";
@@ -77,15 +78,37 @@ function FileDropzone({
   return (
     <div
       {...getRootProps({
-        className: `p-8 text-center rounded-lg border-2 ${isDragActive ? "border-curious-cyan-500 bg-curious-cyan-500/10" : "border-gray-600"} border-dashed transition-colors hover:border-curious-cyan-500 cursor-pointer`,
+        className: `p-8 text-center rounded-lg border-2 ${
+          isDragActive 
+            ? "border-curious-cyan-500 bg-curious-cyan-500/10" 
+            : isUploading 
+              ? "border-curious-cyan-400 bg-curious-cyan-400/5"
+              : "border-gray-600"
+        } border-dashed transition-colors hover:border-curious-cyan-500 cursor-pointer`,
       })}
     >
       <input {...getInputProps()} />
-      {renderIcon(Upload, {
-        className: "mx-auto mb-4 w-12 h-12 text-gray-400",
-      })}
+      
+      {/* Show large 3D cube when uploading, otherwise show upload icon */}
+      {isUploading ? (
+        <div className="flex flex-col items-center mb-4">
+          <LoadingSpinner size="lg" use3D={true} />
+        </div>
+      ) : (
+        renderIcon(Upload, {
+          className: "mx-auto mb-4 w-12 h-12 text-gray-400",
+        })
+      )}
+      
       {isDragActive ? (
         <p className="mb-2 text-gray-300">Drop the files here...</p>
+      ) : isUploading ? (
+        <>
+          <p className="mb-2 text-cyan-300 font-medium">Processing your files...</p>
+          <p className="mb-4 text-sm text-cyan-400/70">
+            Please wait while we upload and process your documents
+          </p>
+        </>
       ) : (
         <>
           <p className="mb-2 text-gray-300">
@@ -97,6 +120,7 @@ function FileDropzone({
           </p>
         </>
       )}
+      
       <MovingButton
         disabled={isUploading}
         className="bg-slate-900/[0.8] text-white pointer-events-none"
@@ -105,7 +129,7 @@ function FileDropzone({
       >
         {isUploading ? (
           <span className="flex gap-2 items-center">
-            {renderIcon(Loader2, { className: "w-4 h-4 animate-spin" })}
+            <LoadingSpinner size="sm" use3D={true} />
             Uploading...
           </span>
         ) : (
@@ -272,7 +296,7 @@ export function UploadForm({
           >
             {isUploading ? (
               <span className="flex gap-2 items-center">
-                {renderIcon(Loader2, { className: "w-4 h-4 animate-spin" })}
+                <LoadingSpinner size="sm" use3D={true} />
                 Uploading...
               </span>
             ) : (

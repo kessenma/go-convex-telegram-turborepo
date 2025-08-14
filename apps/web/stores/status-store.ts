@@ -103,27 +103,7 @@ interface ConvexStatus {
 }
 
 // User Count Status Types
-interface UserCountStatus {
-  status: "connected" | "disconnected" | "connecting" | "error";
-  ready: boolean;
-  message: string;
-  activeUsers: number;
-  bySource?: {
-    web?: number;
-    mobile?: number;
-    telegram?: number;
-  };
-  details?: {
-    timestamp?: string;
-    lastUpdated?: string;
-    error?: string;
-    sourceBreakdown?: {
-      web?: number;
-      mobile?: number;
-      telegram?: number;
-    };
-  };
-}
+// UserCountStatus removed - now using @convex-dev/presence for user tracking
 
 // Docker Status Types
 interface DockerService {
@@ -171,31 +151,27 @@ interface SystemStatus {
   lightweightLlm: LightweightLLMStatus;
   convex: ConvexStatus;
   docker: DockerStatus;
-  userCount: UserCountStatus;
   lastUpdated: number;
   consecutiveErrors: {
     llm: number;
     lightweightLlm: number;
     convex: number;
     docker: number;
-    userCount: number;
   };
   pollingIntervals: {
     llm: number;
     lightweightLlm: number;
     convex: number;
     docker: number;
-    userCount: number;
   };
 }
 
 interface StatusStore {
-  // State
+  // Status states
   llmStatus: LLMStatus;
   lightweightLlmStatus: LightweightLLMStatus;
   convexStatus: ConvexStatus;
   dockerStatus: DockerStatus;
-  userCountStatus: UserCountStatus;
   
   // Consolidated LLM metrics
   consolidatedLLMMetrics: ConsolidatedLLMMetrics | null;
@@ -205,7 +181,6 @@ interface StatusStore {
     lightweightLlm: boolean;
     convex: boolean;
     docker: boolean;
-    userCount: boolean;
     consolidatedLLM: boolean;
   };
   lastUpdated: {
@@ -213,7 +188,6 @@ interface StatusStore {
     lightweightLlm: number;
     convex: number;
     docker: number;
-    userCount: number;
     consolidatedLLM: number;
   };
   consecutiveErrors: {
@@ -221,7 +195,6 @@ interface StatusStore {
     lightweightLlm: number;
     convex: number;
     docker: number;
-    userCount: number;
     consolidatedLLM: number;
   };
   pollingIntervals: {
@@ -229,7 +202,6 @@ interface StatusStore {
     lightweightLlm: number;
     convex: number;
     docker: number;
-    userCount: number;
     consolidatedLLM: number;
   };
 
@@ -238,13 +210,11 @@ interface StatusStore {
   setLightweightLlmStatus: (status: LightweightLLMStatus) => void;
   setConvexStatus: (status: ConvexStatus) => void;
   setDockerStatus: (status: DockerStatus) => void;
-  setUserCountStatus: (status: UserCountStatus) => void;
   setConsolidatedLLMMetrics: (metrics: ConsolidatedLLMMetrics) => void;
   setLLMLoading: (loading: boolean) => void;
   setLightweightLlmLoading: (loading: boolean) => void;
   setConvexLoading: (loading: boolean) => void;
   setDockerLoading: (loading: boolean) => void;
-  setUserCountLoading: (loading: boolean) => void;
   setConsolidatedLLMLoading: (loading: boolean) => void;
 
   // Error tracking
@@ -252,13 +222,11 @@ interface StatusStore {
   incrementLightweightLlmErrors: () => void;
   incrementConvexErrors: () => void;
   incrementDockerErrors: () => void;
-  incrementUserCountErrors: () => void;
   incrementConsolidatedLLMErrors: () => void;
   resetLLMErrors: () => void;
   resetLightweightLlmErrors: () => void;
   resetConvexErrors: () => void;
   resetDockerErrors: () => void;
-  resetUserCountErrors: () => void;
   resetConsolidatedLLMErrors: () => void;
 
   // Polling interval management
@@ -266,7 +234,6 @@ interface StatusStore {
   updateLightweightLlmPollingInterval: () => void;
   updateConvexPollingInterval: () => void;
   updateDockerPollingInterval: () => void;
-  updateUserCountPollingInterval: () => void;
   updateConsolidatedLLMPollingInterval: () => void;
 
   // Optimistic updates
@@ -276,7 +243,6 @@ interface StatusStore {
   ) => void;
   optimisticConvexUpdate: (partialStatus: Partial<ConvexStatus>) => void;
   optimisticDockerUpdate: (partialStatus: Partial<DockerStatus>) => void;
-  optimisticUserCountUpdate: (partialStatus: Partial<UserCountStatus>) => void;
   optimisticConsolidatedLLMUpdate: (partialMetrics: Partial<ConsolidatedLLMMetrics>) => void;
 
   // API actions
@@ -284,14 +250,12 @@ interface StatusStore {
   checkLightweightLlmStatus: () => Promise<boolean>;
   checkConvexStatus: () => Promise<boolean>;
   checkDockerStatus: () => Promise<boolean>;
-  checkUserCountStatus: () => Promise<boolean>;
   checkConsolidatedLLMMetrics: () => Promise<boolean>;
   checkAllStatus: () => Promise<{
     llm: boolean;
     lightweightLlm: boolean;
     convex: boolean;
     docker: boolean;
-    userCount: boolean;
     consolidatedLLM: boolean;
   }>;
 
@@ -324,12 +288,7 @@ const initialDockerStatus: DockerStatus = {
   message: "Checking Docker system...",
 };
 
-const initialUserCountStatus: UserCountStatus = {
-  status: "connecting",
-  ready: false,
-  message: "Checking active users...",
-  activeUsers: 0,
-};
+
 
 export const useStatusStore = create<StatusStore>()(
   devtools(
@@ -339,14 +298,14 @@ export const useStatusStore = create<StatusStore>()(
       lightweightLlmStatus: initialLightweightLlmStatus,
       convexStatus: initialConvexStatus,
       dockerStatus: initialDockerStatus,
-      userCountStatus: initialUserCountStatus,
+
       consolidatedLLMMetrics: null,
       loading: {
         llm: false,
         lightweightLlm: false,
         convex: false,
         docker: false,
-        userCount: false,
+
         consolidatedLLM: false,
       },
       lastUpdated: {
@@ -354,7 +313,7 @@ export const useStatusStore = create<StatusStore>()(
         lightweightLlm: 0,
         convex: 0,
         docker: 0,
-        userCount: 0,
+
         consolidatedLLM: 0,
       },
       consecutiveErrors: {
@@ -362,7 +321,7 @@ export const useStatusStore = create<StatusStore>()(
         lightweightLlm: 0,
         convex: 0,
         docker: 0,
-        userCount: 0,
+
         consolidatedLLM: 0,
       },
       pollingIntervals: {
@@ -370,7 +329,7 @@ export const useStatusStore = create<StatusStore>()(
         lightweightLlm: 300000, // 5 minutes default (much less aggressive)
         convex: 600000, // 10 minutes default (very conservative for Convex)
         docker: 180000, // 3 minutes default for Docker
-        userCount: 120000, // 2 minutes default for user count
+
         consolidatedLLM: 45000, // 45 seconds for consolidated metrics (more frequent since it's efficient)
       },
 
@@ -415,15 +374,7 @@ export const useStatusStore = create<StatusStore>()(
           "setDockerStatus"
         ),
 
-      setUserCountStatus: (status) =>
-        set(
-          (state) => ({
-            userCountStatus: status,
-            lastUpdated: { ...state.lastUpdated, userCount: Date.now() },
-          }),
-          false,
-          "setUserCountStatus"
-        ),
+
 
       setConsolidatedLLMMetrics: (metrics) =>
         set(
@@ -473,12 +424,7 @@ export const useStatusStore = create<StatusStore>()(
           "setDockerLoading"
         ),
 
-      setUserCountLoading: (loading) =>
-        set(
-          (state) => ({ loading: { ...state.loading, userCount: loading } }),
-          false,
-          "setUserCountLoading"
-        ),
+
 
       setConsolidatedLLMLoading: (loading) =>
         set(
@@ -536,17 +482,7 @@ export const useStatusStore = create<StatusStore>()(
           "incrementDockerErrors"
         ),
 
-      incrementUserCountErrors: () =>
-        set(
-          (state) => ({
-            consecutiveErrors: {
-              ...state.consecutiveErrors,
-              userCount: state.consecutiveErrors.userCount + 1,
-            },
-          }),
-          false,
-          "incrementUserCountErrors"
-        ),
+
 
       incrementConsolidatedLLMErrors: () =>
         set(
@@ -599,14 +535,7 @@ export const useStatusStore = create<StatusStore>()(
           "resetDockerErrors"
         ),
 
-      resetUserCountErrors: () =>
-        set(
-          (state) => ({
-            consecutiveErrors: { ...state.consecutiveErrors, userCount: 0 },
-          }),
-          false,
-          "resetUserCountErrors"
-        ),
+
 
       resetConsolidatedLLMErrors: () =>
         set(
@@ -713,31 +642,7 @@ export const useStatusStore = create<StatusStore>()(
         );
       },
 
-      updateUserCountPollingInterval: () => {
-        const { userCountStatus, consecutiveErrors } = get();
-        let interval = 45000; // Default 45 seconds (reduced frequency)
 
-        if (
-          userCountStatus.status === "connected" &&
-          userCountStatus.ready &&
-          consecutiveErrors.userCount === 0
-        ) {
-          interval = 90000; // 90 seconds for stable connections
-        } else if (consecutiveErrors.userCount > 0) {
-          interval = 30000; // 30 seconds when there are issues
-        }
-
-        set(
-          (state) => ({
-            pollingIntervals: {
-              ...state.pollingIntervals,
-              userCount: interval,
-            },
-          }),
-          false,
-          "updateUserCountPollingInterval"
-        );
-      },
 
       updateConsolidatedLLMPollingInterval: () => {
         const { consolidatedLLMMetrics, consecutiveErrors } = get();
@@ -822,19 +727,7 @@ export const useStatusStore = create<StatusStore>()(
         );
       },
 
-      optimisticUserCountUpdate: (partialStatus: Partial<UserCountStatus>) => {
-        const { userCountStatus } = get();
-        const updatedStatus = { ...userCountStatus, ...partialStatus };
 
-        set(
-          (state) => ({
-            userCountStatus: updatedStatus,
-            lastUpdated: { ...state.lastUpdated, userCount: Date.now() },
-          }),
-          false,
-          "optimisticUserCountUpdate"
-        );
-      },
 
       optimisticConsolidatedLLMUpdate: (partialMetrics: Partial<ConsolidatedLLMMetrics>) => {
         const { consolidatedLLMMetrics } = get();
@@ -1133,78 +1026,7 @@ export const useStatusStore = create<StatusStore>()(
         }
       },
 
-      checkUserCountStatus: async () => {
-        const {
-          setUserCountLoading,
-          setUserCountStatus,
-          incrementUserCountErrors,
-          resetUserCountErrors,
-          updateUserCountPollingInterval,
-        } = get();
 
-        setUserCountLoading(true);
-
-        try {
-          const response = await fetch("/api/users/active-count", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            signal: AbortSignal.timeout(5000),
-          });
-
-          if (!response.ok) {
-            incrementUserCountErrors();
-            setUserCountStatus({
-              status: "error",
-              ready: false,
-              message: `User count service unavailable (${response.status})`,
-              activeUsers: 0,
-              details: {
-                error: `HTTP ${response.status}: ${response.statusText}`,
-                timestamp: new Date().toISOString(),
-              },
-            });
-            updateUserCountPollingInterval();
-            return false;
-          }
-
-          const response_data = await response.json();
-          const data = response_data.data || response_data; // Handle both wrapped and unwrapped responses
-          resetUserCountErrors();
-          setUserCountStatus({
-            status: "connected",
-            ready: true,
-            message: `${data.activeUsers || 0} active users`,
-            activeUsers: data.activeUsers || 0,
-            bySource: data.bySource,
-            details: {
-              sourceBreakdown: data.bySource,
-              timestamp: new Date().toISOString(),
-            },
-          });
-          updateUserCountPollingInterval();
-          return true;
-        } catch (error) {
-          incrementUserCountErrors();
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : "Cannot connect to user count service";
-          setUserCountStatus({
-            status: "error",
-            ready: false,
-            message: "Cannot connect to user count service",
-            activeUsers: 0,
-            details: {
-              error: errorMessage,
-              timestamp: new Date().toISOString(),
-            },
-          });
-          updateUserCountPollingInterval();
-          return false;
-        } finally {
-          setUserCountLoading(false);
-        }
-      },
 
       checkConsolidatedLLMMetrics: async () => {
         const {
@@ -1311,7 +1133,6 @@ export const useStatusStore = create<StatusStore>()(
           checkLightweightLlmStatus,
           checkConvexStatus,
           checkDockerStatus,
-          checkUserCountStatus,
           checkConsolidatedLLMMetrics,
         } = get();
 
@@ -1320,14 +1141,12 @@ export const useStatusStore = create<StatusStore>()(
           lightweightLlmResult,
           convexResult,
           dockerResult,
-          userCountResult,
           consolidatedLLMResult,
         ] = await Promise.allSettled([
           checkLLMStatus(),
           checkLightweightLlmStatus(),
           checkConvexStatus(),
           checkDockerStatus(),
-          checkUserCountStatus(),
           checkConsolidatedLLMMetrics(),
         ]);
 
@@ -1341,10 +1160,6 @@ export const useStatusStore = create<StatusStore>()(
             convexResult.status === "fulfilled" ? convexResult.value : false,
           docker:
             dockerResult.status === "fulfilled" ? dockerResult.value : false,
-          userCount:
-            userCountResult.status === "fulfilled"
-              ? userCountResult.value
-              : false,
           consolidatedLLM:
             consolidatedLLMResult.status === "fulfilled"
               ? consolidatedLLMResult.value
@@ -1359,7 +1174,6 @@ export const useStatusStore = create<StatusStore>()(
           lightweightLlmStatus,
           convexStatus,
           dockerStatus,
-          userCountStatus,
         } = get();
 
         const llmHealthy = llmStatus.status === "healthy" && llmStatus.ready;
@@ -1370,19 +1184,16 @@ export const useStatusStore = create<StatusStore>()(
           convexStatus.status === "connected" && convexStatus.ready;
         const dockerHealthy =
           dockerStatus.status === "healthy" && dockerStatus.ready;
-        const userCountHealthy =
-          userCountStatus.status === "connected" && userCountStatus.ready;
 
         const healthyCount = [
           llmHealthy,
           lightweightLlmHealthy,
           convexHealthy,
           dockerHealthy,
-          userCountHealthy,
         ].filter(Boolean).length;
 
-        if (healthyCount === 5) return "healthy";
-        if (healthyCount >= 3) return "degraded";
+        if (healthyCount === 4) return "healthy";
+        if (healthyCount >= 2) return "degraded";
         return "critical";
       },
 
@@ -1392,14 +1203,12 @@ export const useStatusStore = create<StatusStore>()(
           lightweightLlmStatus,
           convexStatus,
           dockerStatus,
-          userCountStatus,
         } = get();
         return (
           llmStatus.ready &&
           lightweightLlmStatus.ready &&
           convexStatus.ready &&
-          dockerStatus.ready &&
-          userCountStatus.ready
+          dockerStatus.ready
         );
       },
     }),
@@ -1412,11 +1221,8 @@ export const useStatusStore = create<StatusStore>()(
 export type {
   ConvexStatus,
   DockerStatus,
-  UserCountStatus,
   DockerService,
   DockerNetwork,
   DockerResources,
   SystemStatus,
 };
-
-// ConsolidatedLLMMetrics is already exported above

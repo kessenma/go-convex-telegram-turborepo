@@ -7,7 +7,7 @@ import type {
   LightweightLLMStatus,
   ConsolidatedLLMMetrics,
   ConvexStatus,
-  UserCountStatus,
+
   DockerStatus,
 } from "../stores/status-store";
 
@@ -22,13 +22,13 @@ export function useConsolidatedStatus() {
     lightweightLlmStatus,
     consolidatedLLMMetrics,
     convexStatus,
-    userCountStatus,
+
     dockerStatus,
     checkLLMStatus,
     checkLightweightLlmStatus,
     checkConsolidatedLLMMetrics,
     checkConvexStatus,
-    checkUserCountStatus,
+
     checkDockerStatus,
     checkAllStatus,
   } = useStatusStore();
@@ -72,7 +72,7 @@ export function useConsolidatedStatus() {
         checkConsolidatedLLMMetrics(),
         checkConvexStatus(),
         checkDockerStatus(),
-        checkUserCountStatus(),
+    
       ]);
       setLastCheck(new Date());
     } catch (error) {
@@ -87,7 +87,7 @@ export function useConsolidatedStatus() {
     checkConsolidatedLLMMetrics,
     checkConvexStatus,
     checkDockerStatus,
-    checkUserCountStatus,
+
   ]);
 
   // Set up polling with dynamic intervals
@@ -214,7 +214,7 @@ export function useConsolidatedStatus() {
     lightweightLlmStatus,
     consolidatedLLMMetrics,
     convexStatus,
-    userCountStatus,
+
     dockerStatus,
     
     // LLM metrics
@@ -249,7 +249,7 @@ export function useStatusData() {
     lightweightLlmStatus,
     consolidatedLLMMetrics,
     convexStatus,
-    userCountStatus,
+
     dockerStatus,
   } = useStatusStore();
 
@@ -258,7 +258,7 @@ export function useStatusData() {
     lightweightLlmStatus,
     consolidatedLLMMetrics,
     convexStatus,
-    userCountStatus,
+
     dockerStatus,
   };
 }

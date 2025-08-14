@@ -6,8 +6,10 @@ import { HealthCheckProvider } from "../components/providers/health-check-provid
 import { SessionProvider } from "../components/providers/SessionProvider";
 import { CookieConsentProvider } from "../components/ui/cookie-consent-modal";
 import { NotificationsProvider } from "../contexts/NotificationsContext";
+import { NavigationLoadingProvider } from "../contexts/NavigationLoadingContext";
 import { DynamicConvexProvider, DynamicNavigation } from "../components/providers/ClientOnlyProvider";
 import { GlobalErrorBoundary } from "../components/providers/GlobalErrorBoundary";
+import { PageLoadingProvider } from "../components/providers/PageLoadingProvider";
 
 // Force dynamic rendering to prevent SSR context issues
 export const dynamic = "force-dynamic";
@@ -37,15 +39,18 @@ export default function RootLayout({
           <DynamicConvexProvider>
             <CookieConsentProvider>
               <NotificationsProvider>
-                <SessionProvider>
-                  <HealthCheckProvider>
-                    <DynamicNavigation />
-                    <main style={{ minHeight: "calc(100vh - 64px)" }}>
-                      {children}
-                    </main>
-                    <Toaster position="bottom-left" theme="dark" />
-                  </HealthCheckProvider>
-                </SessionProvider>
+                <NavigationLoadingProvider>
+                  <SessionProvider>
+                    <HealthCheckProvider>
+                      <DynamicNavigation />
+                      <main style={{ minHeight: "calc(100vh - 64px)" }}>
+                        {children}
+                      </main>
+                      <PageLoadingProvider />
+                      <Toaster position="bottom-left" theme="dark" />
+                    </HealthCheckProvider>
+                  </SessionProvider>
+                </NavigationLoadingProvider>
               </NotificationsProvider>
             </CookieConsentProvider>
           </DynamicConvexProvider>

@@ -691,7 +691,6 @@ def embed_text():
 def calculate_similarity():
     """Calculate similarity between texts"""
     start_time = time.time()
-    job_id = None
     
     try:
         if model is None:
@@ -705,15 +704,7 @@ def calculate_similarity():
         if not isinstance(texts, list) or len(texts) < 2:
             return jsonify({'error': 'texts must be a list with at least 2 items'}), 400
         
-        # Create conversion job
-        job_id = create_conversion_job(
-            job_type="similarity",
-            input_text=str(texts[:100]) if texts else None,  # Truncate for storage
-            request_source="api"
-        )
-        
-        if job_id:
-            update_conversion_job(job_id, "processing")
+        # Job tracking removed as part of tech debt cleanup
         
         # Generate embeddings
         embeddings = model.encode(texts)
@@ -723,14 +714,7 @@ def calculate_similarity():
         
         processing_time = int((time.time() - start_time) * 1000)
         
-        # Update job as completed
-        if job_id:
-            output_data = {
-                "text_count": len(texts),
-                "model": "all-MiniLM-L6-v2",
-                "similarity_matrix_size": f"{len(texts)}x{len(texts)}"
-            }
-            update_conversion_job(job_id, "completed", output_data=output_data, processing_time_ms=processing_time)
+        # Job tracking removed as part of tech debt cleanup
         
         return jsonify({
             'similarities': similarities.tolist(),
@@ -740,10 +724,6 @@ def calculate_similarity():
         
     except Exception as e:
         processing_time = int((time.time() - start_time) * 1000)
-        
-        # Update job as failed
-        if job_id:
-            update_conversion_job(job_id, "failed", error_message=str(e), processing_time_ms=processing_time)
         
         logger.error(f"Error in calculate_similarity: {e}")
         return jsonify({'error': str(e)}), 500
@@ -798,11 +778,25 @@ def semantic_search():
 def process_document_embedding():
     """Fetch document from Convex, generate embedding with chunking, and save back to Convex"""
     start_time = time.time()
-    job_id = None
     
     try:
         if model is None:
-            return jsonify({'error': 'Model not loaded'}), 500
+            logger.error("❌ Model is None - service running in degraded mode")
+            return jsonify({
+                'error': 'Model not loaded - service running in degraded mode',
+                'model_loaded': model_loaded,
+                'model_loading': model_loading,
+                'model_error': model_error
+            }), 503
+        
+        if not model_loaded:
+            logger.error(f"❌ Model not ready - loaded: {model_loaded}, loading: {model_loading}")
+            return jsonify({
+                'error': 'Model not ready - still loading or failed to load',
+                'model_loaded': model_loaded,
+                'model_loading': model_loading,
+                'model_error': model_error
+            }), 503
         
         data = request.get_json()
         if not data or 'document_id' not in data:
@@ -821,27 +815,49 @@ def process_document_embedding():
         logger.info(f"Processing document embedding for ID: {document_id} (chunking: {use_chunking})")
         logger.info(f"Convex URL used: {convex_url}")
         
-        # Create conversion job
-        job_id = create_conversion_job(
-            job_type="document_embedding",
-            document_id=document_id,
-            request_source="web_app"
-        )
-        
-        if job_id:
-            update_conversion_job(job_id, "processing")
+        # Job tracking removed as part of tech debt cleanup
         
         # Fetch document from Convex
         logger.info(f"Fetching document from Convex: {document_id}")
         fetch_url = f"{convex_url}/api/documents/{document_id}"
         logger.info(f"Fetching document from Convex at: {fetch_url}")
-        fetch_response = requests.get(fetch_url)
+        
+        try:
+            logger.info(f"🌐 Making request to: {fetch_url}")
+            fetch_response = requests.get(fetch_url, timeout=30)
+            logger.info(f"📡 Fetch response status: {fetch_response.status_code}")
+            logger.info(f"📋 Fetch response headers: {dict(fetch_response.headers)}")
+            
+            if fetch_response.status_code == 200:
+                logger.info("✅ Successfully fetched document from Convex")
+            else:
+                logger.warning(f"⚠️  Non-200 status code: {fetch_response.status_code}")
+                
+        except requests.exceptions.Timeout as e:
+            logger.error(f"⏰ Request timeout: {e}")
+            return jsonify({
+                'error': f'Request to Convex timed out: {str(e)}',
+                'convex_url': convex_url,
+                'fetch_url': fetch_url
+            }), 500
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"🔌 Connection error: {e}")
+            return jsonify({
+                'error': f'Failed to connect to Convex: {str(e)}',
+                'convex_url': convex_url,
+                'fetch_url': fetch_url
+            }), 500
+        except requests.exceptions.RequestException as e:
+            logger.error(f"❌ Request failed: {e}")
+            return jsonify({
+                'error': f'Request failed: {str(e)}',
+                'convex_url': convex_url,
+                'fetch_url': fetch_url
+            }), 500
         
         if fetch_response.status_code != 200:
             error_msg = f"Failed to fetch document from Convex: {fetch_response.status_code} - {fetch_response.text}"
             logger.error(error_msg)
-            if job_id:
-                update_conversion_job(job_id, "failed", error_message=error_msg)
             return jsonify({
                 'error': 'Failed to fetch document from Convex',
                 'convex_status': fetch_response.status_code,
@@ -856,8 +872,6 @@ def process_document_embedding():
         if not text:
             error_msg = "Document content is empty or missing"
             logger.error(error_msg)
-            if job_id:
-                update_conversion_job(job_id, "failed", error_message=error_msg)
             return jsonify({'error': error_msg}), 400
         
         logger.info(f"Document fetched successfully, content length: {len(text)}, type: {content_type}")
@@ -912,8 +926,6 @@ def process_document_embedding():
             if not chunk_embeddings:
                 error_msg = "Failed to generate embeddings for any chunks"
                 logger.error(error_msg)
-                if job_id:
-                    update_conversion_job(job_id, "failed", error_message=error_msg)
                 return jsonify({'error': error_msg}), 500
             
             # Save individual chunk embeddings instead of averaging
@@ -936,7 +948,7 @@ def process_document_embedding():
                     
                     save_response = requests.post(save_url, json=save_payload)
                     
-                    if save_response.status_code == 200:
+                    if save_response.status_code in (200, 201):
                         saved_chunks += 1
                         logger.info(f"Saved chunk {i+1}/{len(chunks)} embedding to Convex")
                     else:
@@ -949,20 +961,18 @@ def process_document_embedding():
             if saved_chunks == 0:
                 error_msg = "Failed to save any chunk embeddings"
                 logger.error(error_msg)
-                if job_id:
-                    update_conversion_job(job_id, "failed", error_message=error_msg)
                 return jsonify({'error': error_msg}), 500
             
             embedding_method = "individual_chunks"
             processing_time = int((time.time() - start_time) * 1000)
             
-            # Create notification for successful embedding
+            # Create notification for successful embedding (one per document)
             try:
                 notification_url = f"{convex_url}/api/notifications"
                 notification_payload = {
                     'type': 'document_embedded',
                     'title': 'Document Embedded',
-                    'message': f'"{document_title}" chunked into {saved_chunks} searchable pieces',
+                    'message': f'"{document_title}" has been embedded and chunked into {saved_chunks} searchable pieces',
                     'documentId': document_id,
                     'metadata': json.dumps({
                         'document_title': document_title,
@@ -977,24 +987,13 @@ def process_document_embedding():
                 
                 notification_response = requests.post(notification_url, json=notification_payload)
                 if notification_response.status_code in (200, 201):
-                    logger.info("Notification created successfully")
+                    logger.info(f"✅ Notification created successfully for document: {document_id}")
                 else:
-                    logger.warning(f"Failed to create notification: {notification_response.status_code} - {notification_response.text}")
+                    logger.warning(f"⚠️ Failed to create notification: {notification_response.status_code} - {notification_response.text}")
             except Exception as notification_error:
-                logger.error(f"Error creating notification: {notification_error}")
+                logger.error(f"❌ Error creating notification: {notification_error}")
             
-            # Update job as completed
-            if job_id:
-                output_data = {
-                    "document_id": document_id,
-                    "chunks_saved": saved_chunks,
-                    "total_chunks": len(chunks),
-                    "embedding_dimension": len(chunk_embeddings[0]) if chunk_embeddings else 0,
-                    "model": "all-MiniLM-L6-v2",
-                    "content_length": len(text),
-                    "embedding_method": embedding_method
-                }
-                update_conversion_job(job_id, "completed", output_data=json.dumps(output_data), processing_time_ms=processing_time)
+            # Job tracking removed as part of tech debt cleanup
             
             return jsonify({
                 'success': True,
@@ -1017,54 +1016,49 @@ def process_document_embedding():
         
         # Save embedding back to Convex
         logger.info("Saving embedding back to Convex...")
-        save_url = f"{convex_url}/api/embeddings?documentId={document_id}"
+        save_url = f"{convex_url}/api/embeddings/createDocumentEmbedding"
         save_payload = {
-            'embedding': embedding
+            'documentId': document_id,
+            'embedding': embedding,
+            'embeddingModel': 'all-MiniLM-L6-v2',
+            'embeddingDimensions': len(embedding),
+            'processingTimeMs': int((time.time() - start_time) * 1000)
         }
         
         save_response = requests.post(save_url, json=save_payload)
         
         processing_time = int((time.time() - start_time) * 1000)
         
-        if save_response.status_code == 200:
+        if save_response.status_code in (200, 201):
             logger.info("Embedding saved successfully to Convex")
             
-            # Create notification for successful embedding
+            # Create notification for successful embedding (one per document)
             try:
                 notification_url = f"{convex_url}/api/notifications"
                 notification_payload = {
                     'type': 'document_embedded',
                     'title': 'Document Embedded',
-                    'message': f'"{document_title}" embedding completed successfully',
+                    'message': f'"{document_title}" has been successfully embedded and is ready for search',
                     'documentId': document_id,
                     'metadata': json.dumps({
                         'document_title': document_title,
                         'embedding_dimension': len(embedding),
                         'model': 'all-MiniLM-L6-v2',
                         'processing_time_ms': processing_time,
-                        'embedding_method': embedding_method
+                        'embedding_method': embedding_method,
+                        'chunks_processed': 1
                     })
                 }
                 
                 notification_response = requests.post(notification_url, json=notification_payload)
                 if notification_response.status_code in (200, 201):
-                    logger.info("Notification created successfully")
+                    logger.info(f"✅ Notification created successfully for document: {document_id}")
                 else:
-                    logger.warning(f"Failed to create notification: {notification_response.status_code} - {notification_response.text}")
+                    logger.warning(f"⚠️ Failed to create notification: {notification_response.status_code} - {notification_response.text}")
             except Exception as notification_error:
-                logger.error(f"Error creating notification: {notification_error}")
+                logger.error(f"❌ Error creating notification: {notification_error}")
             
-            # Update job as completed
-            if job_id:
-                output_data = {
-                    "document_id": document_id,
-                    "embedding_dimension": len(embedding),
-                    "model": "all-MiniLM-L6-v2",
-                    "content_length": len(text),
-                    "embedding_method": embedding_method,
-                    "chunks_processed": len(chunk_embeddings) if use_chunking and len(text) > chunk_size else 1
-                }
-                update_conversion_job(job_id, "completed", output_data=json.dumps(output_data), processing_time_ms=processing_time)
+            # Job tracking removed as part of tech debt cleanup
             
             return jsonify({
                 'success': True,
@@ -1074,15 +1068,11 @@ def process_document_embedding():
                 'processing_time_ms': processing_time,
                 'content_length': len(text),
                 'embedding_method': embedding_method,
-                'chunks_processed': len(chunk_embeddings) if use_chunking and len(text) > chunk_size else 1
+                'chunks_processed': 1
             }), 200
         else:
             error_msg = f"Failed to save embedding to Convex: {save_response.status_code} - {save_response.text}"
             logger.error(error_msg)
-            
-            # Update job as failed
-            if job_id:
-                update_conversion_job(job_id, "failed", error_message=error_msg, processing_time_ms=processing_time)
             
             return jsonify({
                 'error': 'Failed to save embedding to Convex',
@@ -1095,17 +1085,12 @@ def process_document_embedding():
         error_msg = f"Error in process_document_embedding: {e}"
         logger.error(error_msg, exc_info=True)
         
-        # Update job as failed
-        if job_id:
-            update_conversion_job(job_id, "failed", error_message=str(e), processing_time_ms=processing_time)
-        
         return jsonify({'error': str(e)}), 500
 
 @app.route('/process-markdown', methods=['POST'])
 def process_markdown_document():
     """Process markdown content with chunking and generate embeddings"""
     start_time = time.time()
-    job_id = None
     
     try:
         if model is None:
@@ -1126,15 +1111,7 @@ def process_markdown_document():
         
         logger.info(f"Processing markdown document (length: {len(content)})")
         
-        # Create conversion job
-        job_id = create_conversion_job(
-            job_type="markdown_embedding",
-            document_id=document_id,
-            request_source="web_app"
-        )
-        
-        if job_id:
-            update_conversion_job(job_id, "processing")
+        # Job tracking removed as part of tech debt cleanup
         
         # Chunk the markdown content
         chunks = chunk_document(content, 'markdown', chunk_size, chunk_overlap)
@@ -1185,8 +1162,6 @@ def process_markdown_document():
         if not chunk_embeddings:
             error_msg = "Failed to generate embeddings for any chunks"
             logger.error(error_msg)
-            if job_id:
-                update_conversion_job(job_id, "failed", error_message=error_msg)
             return jsonify({'error': error_msg}), 500
         
         # Calculate average embedding
@@ -1241,17 +1216,7 @@ def process_markdown_document():
             except Exception as notification_error:
                 logger.error(f"Error creating notification: {notification_error}")
             
-            # Update job as completed
-            if job_id:
-                output_data = {
-                    "document_id": document_id,
-                    "embedding_dimension": len(avg_embedding),
-                    "model": "all-MiniLM-L6-v2",
-                    "content_length": len(content),
-                    "chunks_processed": len(chunk_embeddings),
-                    "embedding_method": "chunked_average"
-                }
-                update_conversion_job(job_id, "completed", output_data=json.dumps(output_data), processing_time_ms=processing_time)
+            # Job tracking removed as part of tech debt cleanup
             
             return jsonify({
                 'success': True,
@@ -1267,10 +1232,6 @@ def process_markdown_document():
             error_msg = f"Failed to save to Convex: {save_response.status_code} - {save_response.text}"
             logger.error(error_msg)
             
-            # Update job as failed
-            if job_id:
-                update_conversion_job(job_id, "failed", error_message=error_msg, processing_time_ms=processing_time)
-            
             return jsonify({
                 'error': 'Failed to save to Convex',
                 'convex_status': save_response.status_code,
@@ -1281,10 +1242,6 @@ def process_markdown_document():
         processing_time = int((time.time() - start_time) * 1000)
         error_msg = f"Error in process_markdown_document: {e}"
         logger.error(error_msg, exc_info=True)
-        
-        # Update job as failed
-        if job_id:
-            update_conversion_job(job_id, "failed", error_message=str(e), processing_time_ms=processing_time)
         
         return jsonify({'error': str(e)}), 500
 

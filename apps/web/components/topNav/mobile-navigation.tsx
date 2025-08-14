@@ -25,6 +25,9 @@ import { renderIcon, fixComponentReturnType } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
 import { Notifications } from "./Notifications";
 import { Settings } from "../settings/0Settings";
+import { useNavigationLoading } from "../../contexts/NavigationLoadingContext";
+import { LoadingSpinner } from "../ui/loading-spinner";
+import { MobileNavItem } from "./mobile-nav-item";
 
 interface NavItem {
   href: string;
@@ -119,6 +122,7 @@ export default function MobileNavigation(): React.ReactElement {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const id = useId();
+  const { isLoading, loadingPath, startLoading } = useNavigationLoading();
 
   // Handle scroll position
   useEffect(() => {
@@ -162,7 +166,14 @@ export default function MobileNavigation(): React.ReactElement {
   // Close menu when pathname changes (navigation occurs)
   useEffect(() => {
     setIsMenuOpen(false);
-  }, []);
+  }, [pathname]);
+
+  // Close menu when loading stops
+  useEffect(() => {
+    if (!isLoading) {
+      setIsMenuOpen(false);
+    }
+  }, [isLoading]);
 
   // Navigation items organized by category to match desktop navigation
   const navItems: readonly NavItem[] = [
@@ -200,9 +211,13 @@ export default function MobileNavigation(): React.ReactElement {
     if (href.startsWith("http")) {
       window.open(href, "_blank");
     } else {
+      startLoading(href);
       router.push(href);
     }
-    setIsMenuOpen(false);
+    // Keep menu open during loading
+    if (!isLoading) {
+      setIsMenuOpen(false);
+    }
   };
 
   useOutsideClick(menuRef, (_event: MouseEvent | TouchEvent) =>
@@ -215,9 +230,13 @@ export default function MobileNavigation(): React.ReactElement {
         {/* Logo */}
         <div
           className="flex gap-2 items-center font-semibold text-cyan-200 cursor-pointer"
-          onClick={() => router.push("/")}
+          onClick={() => handleNavClick("/")}
         >
-          {renderIcon(Bot, { className: "w-6 h-6" })}
+          {isLoading && loadingPath === "/" ? (
+            <LoadingSpinner size="sm" use3D={true} />
+          ) : (
+            renderIcon(Bot, { className: "w-6 h-6" })
+          )}
           <span
             className={`text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-white transition-opacity duration-200 ${isScrolled ? "overflow-hidden w-0 opacity-0" : "opacity-100"}`}
           >
@@ -311,45 +330,17 @@ export default function MobileNavigation(): React.ReactElement {
                     >
                       Home
                     </motion.div>
-                    {navItems.slice(0, 3).map((item, index) => {
-                      const IconComponent = item.icon;
-                      const isActive = pathname === item.href;
-
-                      return (
-                        <motion.button
-                          key={item.href}
-                          onClick={() => handleNavClick(item.href)}
-                          className={cn(
-                            "flex relative gap-2 items-center px-2 py-2 w-full text-sm text-left rounded-lg transition-colors",
-                            isActive
-                              ? "text-cyan-500 bg-slate-900"
-                              : "text-white/80 hover:text-cyan-300 hover:bg-slate-900/50"
-                          )}
-                          variants={{
-                            hidden: { opacity: 0, x: -10 },
-                            visible: { opacity: 1, x: 0 },
-                          }}
-                          whileHover={{ x: 5 }}
-                          whileTap={{ scale: 0.98 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 17,
-                          }}
-                        >
-                          <motion.span
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.2 + index * 0.05 }}
-                          >
-                            {renderIcon(IconComponent, {
-                              className: "w-4 h-4",
-                            })}
-                          </motion.span>
-                          <span className="font-medium">{item.label}</span>
-                        </motion.button>
-                      );
-                    })}
+                    {navItems.slice(0, 3).map((item, index) => (
+                      <MobileNavItem
+                        key={item.href}
+                        href={item.href}
+                        label={item.label}
+                        icon={item.icon}
+                        isActive={pathname === item.href}
+                        onClick={handleNavClick}
+                        index={index}
+                      />
+                    ))}
                   </motion.div>
 
                   {/* Messages Section */}
@@ -369,45 +360,17 @@ export default function MobileNavigation(): React.ReactElement {
                     >
                       Messages
                     </motion.div>
-                    {navItems.slice(3, 6).map((item, index) => {
-                      const IconComponent = item.icon;
-                      const isActive = pathname === item.href;
-
-                      return (
-                        <motion.button
-                          key={item.href}
-                          onClick={() => handleNavClick(item.href)}
-                          className={cn(
-                            "flex relative gap-2 items-center px-2 py-2 w-full text-sm text-left rounded-lg transition-colors",
-                            isActive
-                              ? "text-cyan-500 bg-slate-900"
-                              : "text-white/80 hover:text-cyan-300 hover:bg-slate-900/50"
-                          )}
-                          variants={{
-                            hidden: { opacity: 0, x: -10 },
-                            visible: { opacity: 1, x: 0 },
-                          }}
-                          whileHover={{ x: 5 }}
-                          whileTap={{ scale: 0.98 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 17,
-                          }}
-                        >
-                          <motion.span
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.2 + index * 0.05 }}
-                          >
-                            {renderIcon(IconComponent, {
-                              className: "w-4 h-4",
-                            })}
-                          </motion.span>
-                          <span className="font-medium">{item.label}</span>
-                        </motion.button>
-                      );
-                    })}
+                    {navItems.slice(3, 6).map((item, index) => (
+                      <MobileNavItem
+                        key={item.href}
+                        href={item.href}
+                        label={item.label}
+                        icon={item.icon}
+                        isActive={pathname === item.href}
+                        onClick={handleNavClick}
+                        index={index + 3}
+                      />
+                    ))}
                   </motion.div>
 
                   {/* RAG Section */}
@@ -427,45 +390,17 @@ export default function MobileNavigation(): React.ReactElement {
                     >
                       RAG
                     </motion.div>
-                    {navItems.slice(6, 10).map((item, index) => {
-                      const IconComponent = item.icon;
-                      const isActive = pathname === item.href;
-
-                      return (
-                        <motion.button
-                          key={item.href}
-                          onClick={() => handleNavClick(item.href)}
-                          className={cn(
-                            "flex relative gap-2 items-center px-2 py-2 w-full text-sm text-left rounded-lg transition-colors",
-                            isActive
-                              ? "text-cyan-500 bg-slate-900"
-                              : "text-white/80 hover:text-cyan-300 hover:bg-slate-900/50"
-                          )}
-                          variants={{
-                            hidden: { opacity: 0, x: -10 },
-                            visible: { opacity: 1, x: 0 },
-                          }}
-                          whileHover={{ x: 5 }}
-                          whileTap={{ scale: 0.98 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 17,
-                          }}
-                        >
-                          <motion.span
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.2 + index * 0.05 }}
-                          >
-                            {renderIcon(IconComponent, {
-                              className: "w-4 h-4",
-                            })}
-                          </motion.span>
-                          <span className="font-medium">{item.label}</span>
-                        </motion.button>
-                      );
-                    })}
+                    {navItems.slice(6, 10).map((item, index) => (
+                      <MobileNavItem
+                        key={item.href}
+                        href={item.href}
+                        label={item.label}
+                        icon={item.icon}
+                        isActive={pathname === item.href}
+                        onClick={handleNavClick}
+                        index={index + 6}
+                      />
+                    ))}
                   </motion.div>
 
                   {/* Console Section */}
@@ -484,59 +419,17 @@ export default function MobileNavigation(): React.ReactElement {
                     >
                       Console
                     </motion.div>
-                    {navItems.slice(10).map((item, index) => {
-                      const IconComponent = item.icon;
-                      const isActive = pathname === item.href;
-                      const _isExternal = item.href.startsWith("http");
-
-                      return (
-                        <motion.button
-                          key={item.href}
-                          onClick={() => handleNavClick(item.href)}
-                          className={cn(
-                            "flex relative gap-2 items-center px-2 py-2 w-full text-sm text-left rounded-lg transition-colors",
-                            isActive
-                              ? "text-cyan-500 bg-slate-900"
-                              : "text-white/80 hover:text-cyan-300 hover:bg-slate-900/50"
-                          )}
-                          variants={{
-                            hidden: { opacity: 0, x: -10 },
-                            visible: { opacity: 1, x: 0 },
-                          }}
-                          whileHover={{ x: 5 }}
-                          whileTap={{ scale: 0.98 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 17,
-                          }}
-                        >
-                          {isActive && (
-                            <motion.div
-                              className="absolute left-0 top-0 w-[2px] h-full bg-white/70 z-[100]"
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "100%", opacity: 1 }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 300,
-                                damping: 30,
-                                opacity: { duration: 0.2 },
-                              }}
-                            />
-                          )}
-                          <motion.span
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.2 + index * 0.05 }}
-                          >
-                            {renderIcon(IconComponent, {
-                              className: "w-4 h-4",
-                            })}
-                          </motion.span>
-                          <span className="font-medium">{item.label}</span>
-                        </motion.button>
-                      );
-                    })}
+                    {navItems.slice(10).map((item, index) => (
+                      <MobileNavItem
+                        key={item.href}
+                        href={item.href}
+                        label={item.label}
+                        icon={item.icon}
+                        isActive={pathname === item.href}
+                        onClick={handleNavClick}
+                        index={index + 10}
+                      />
+                    ))}
                   </motion.div>
                 </motion.div>
               </div>

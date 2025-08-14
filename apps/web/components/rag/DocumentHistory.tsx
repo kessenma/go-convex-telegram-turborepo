@@ -6,7 +6,7 @@ import type React from "react";
 import { memo, useCallback, useState } from "react";
 import { api } from "../../generated-convex";
 import { renderIcon } from "../../lib/icon-utils";
-import { useRagChatStore } from "../../stores/ragChatStore";
+import { useSetSelectedDocuments, useSetCurrentConversation } from "../../stores/unifiedChatStore";
 import { BackgroundGradient } from "../ui/backgrounds/background-gradient";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tool-tip";
 import type { GenericId as Id } from "convex/values";
@@ -19,8 +19,9 @@ const DocumentHistory = memo(function DocumentHistory({
 }: DocumentHistoryProps): React.ReactElement | null {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   
-  // Get state and actions from Zustand store
-  const { selectConversation, setSelectedDocuments } = useRagChatStore();
+  // Get state and actions from unified chat store
+  const setSelectedDocuments = useSetSelectedDocuments();
+  const setCurrentConversation = useSetCurrentConversation();
   
   // Fetch recent conversations
   const recentConversations = useQuery(api.ragChat.getRecentConversations, { limit: 20 });
@@ -33,11 +34,23 @@ const DocumentHistory = memo(function DocumentHistory({
   
   const handleConversationClick = useCallback((conversation: any) => {
     // Set the selected documents from the conversation
-    setSelectedDocuments(conversation.documentIds);
+    if (conversation.documentIds && conversation.documentTitles) {
+      const docs = conversation.documentIds.map((id: string, index: number) => ({
+        _id: id,
+        title: conversation.documentTitles[index] || 'Untitled Document',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        userId: '',
+        fileType: '',
+        fileSize: 0,
+        status: 'processed'
+      }));
+      setSelectedDocuments(docs);
+    }
     
-    // Navigate to chat with this conversation
-    selectConversation(conversation);
-  }, [setSelectedDocuments, selectConversation]);
+    // Set the current conversation
+    setCurrentConversation(conversation._id);
+  }, [setSelectedDocuments, setCurrentConversation]);
   
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);

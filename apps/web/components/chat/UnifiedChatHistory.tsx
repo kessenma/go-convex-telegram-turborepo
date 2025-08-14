@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useQuery } from "convex/react";
-import { MessageCircle, Clock, FileText, Trash2, FolderOpen, Bot, Filter } from "lucide-react";
+import { MessageCircle, Clock, FileText, FolderOpen, Bot } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import { api } from "../../generated-convex";
 import { renderIcon } from "../../lib/icon-utils";
@@ -86,11 +86,11 @@ const UnifiedChatHistory = memo(function UnifiedChatHistory({
         </div>
         <div className="space-y-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="p-4 bg-slate-800/40 rounded-xl border border-slate-600/30 animate-pulse">
-              <div className="flex items-center gap-3">
+            <div key={i} className="p-4 rounded-xl border animate-pulse bg-slate-800/40 border-slate-600/30">
+              <div className="flex gap-3 items-center">
                 <div className="w-10 h-10 bg-gray-600 rounded-xl"></div>
                 <div className="flex-1">
-                  <div className="w-3/4 h-4 bg-gray-600 rounded mb-2"></div>
+                  <div className="mb-2 w-3/4 h-4 bg-gray-600 rounded"></div>
                   <div className="w-1/2 h-3 bg-gray-600 rounded"></div>
                 </div>
               </div>
@@ -181,7 +181,7 @@ const UnifiedChatHistory = memo(function UnifiedChatHistory({
               }`}
               onClick={() => handleConversationClick(conversation, type)}
             >
-              <div className="flex items-start gap-4">
+              <div className="flex gap-4 items-start">
                 <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center border ${
                   type === 'rag'
                     ? 'bg-gradient-to-br from-emerald-500 to-green-500 border-emerald-400/30'
@@ -194,7 +194,7 @@ const UnifiedChatHistory = memo(function UnifiedChatHistory({
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex justify-between items-center mb-2">
                     <h3 className={`font-semibold truncate transition-colors ${
                       type === 'rag' 
                         ? 'text-emerald-100 group-hover:text-emerald-50'
@@ -202,7 +202,7 @@ const UnifiedChatHistory = memo(function UnifiedChatHistory({
                     }`}>
                       {conversation.title || "Untitled Conversation"}
                     </h3>
-                    <div className="flex items-center gap-2 text-xs text-slate-300/70">
+                    <div className="flex gap-2 items-center text-xs text-slate-300/70">
                       {renderIcon(Clock, { className: "w-3 h-3" })}
                       <span>{formatDate(conversation.lastMessageAt || conversation.createdAt)}</span>
                     </div>
@@ -237,14 +237,14 @@ const UnifiedChatHistory = memo(function UnifiedChatHistory({
                         .map((title: string, index: number) => (
                         <span 
                           key={index}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-slate-700/60 text-xs text-emerald-300 rounded-md border border-slate-600/40"
+                          className="inline-flex gap-1 items-center px-2 py-1 text-xs text-emerald-300 rounded-md border bg-slate-700/60 border-slate-600/40"
                         >
                           {renderIcon(FileText, { className: "w-3 h-3" })}
                           {title.length > 20 ? `${title.slice(0, 20)}...` : title}
                         </span>
                       ))}
                       {conversation.documentTitles.filter((title: string) => title && typeof title === 'string').length > 3 && (
-                        <span className="inline-flex items-center px-2 py-1 bg-slate-700/60 text-xs text-emerald-300/70 rounded-md border border-slate-600/40">
+                        <span className="inline-flex items-center px-2 py-1 text-xs rounded-md border bg-slate-700/60 text-emerald-300/70 border-slate-600/40">
                           +{conversation.documentTitles.filter((title: string) => title && typeof title === 'string').length - 3} more
                         </span>
                       )}

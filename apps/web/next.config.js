@@ -10,6 +10,14 @@ const nextConfig = {
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.resolve.alias.canvas = false;
+    } else {
+      // Exclude geoip-lite from client-side bundle
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        path: false,
+      };
     }
     return config;
   },

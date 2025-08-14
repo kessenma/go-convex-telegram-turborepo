@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { useCallback } from "react";
 import { api } from "../generated-convex";
 import { useDocumentStore } from "../stores/document-store";
@@ -12,6 +12,7 @@ export function useDocumentOperations(limit: number = 10) {
   // Convex queries
   const documentsQuery = useQuery(api.documents.getAllDocuments, { limit });
   const statsQuery = useQuery(api.documents.getDocumentStats);
+  const deleteDocumentMutation = useMutation(api.documents.deleteDocument);
 
   // Zustand store
   const {
@@ -58,14 +59,14 @@ export function useDocumentOperations(limit: number = 10) {
   const handleDeleteDocument = useCallback(
     async (documentId: string) => {
       try {
-        await deleteDocument(documentId);
+        await deleteDocument(documentId, deleteDocumentMutation);
         return true;
       } catch (error) {
         console.error("Failed to delete document:", error);
         return false;
       }
     },
-    [deleteDocument]
+    [deleteDocument, deleteDocumentMutation]
   );
 
   return {

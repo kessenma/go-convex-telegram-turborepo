@@ -40,12 +40,25 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "bg-gradient-to-br rounded-lg border shadow-lg backdrop-blur-md from-slate-800/60 to-slate-900/60 border-white/10",
+          "bg-gradient-to-br rounded-lg border shadow-lg backdrop-blur-md from-slate-800/60 to-slate-900/60 border-cyan-500/30 relative overflow-hidden",
           className
         )}
         style={Object.keys(combinedStyle).length > 0 ? combinedStyle : undefined}
       >
-        {children}
+        {/* Tron-like glowing border effect */}
+        <div className="absolute inset-0 rounded-lg border border-cyan-400/20 pointer-events-none" />
+        <div className="absolute inset-0 rounded-lg border-2 border-cyan-400/5 pointer-events-none" />
+        
+        {/* Subtle glow effect */}
+        <div className="absolute -inset-1 bg-cyan-500/5 blur-xl rounded-lg opacity-30 pointer-events-none" />
+        
+        {/* Top edge highlight */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent pointer-events-none" />
+        
+        {/* Content */}
+        <div className="relative z-10">
+          {children}
+        </div>
       </div>
     );
   }

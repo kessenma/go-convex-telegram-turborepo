@@ -24,18 +24,18 @@ import { ResponsiveModal, ResponsiveModalContent, ResponsiveModalHeader, Respons
 import { DocumentSelector } from '../rag/chat/DocumentSelector';
 import { UnifiedChatHistory } from './UnifiedChatHistory';
 import { DocumentViewer } from '../rag/DocumentViewer';
-import { useQuery, useMutation } from 'convex/react';
+import { useMutation } from 'convex/react';
 import type { GenericId as Id } from 'convex/values';
 import { api } from '../../generated-convex';
 import { useSafeQuery } from '../../hooks/use-safe-convex';
-import type { Document } from '../../app/RAG-chat/types';
+import type { Document } from '../../types/rag';
 import type { ChatMessage } from '../../stores/unifiedChatStore';
-import { 
-  useChatMode, 
-  useSelectedDocuments, 
-  useGeneralMessages, 
-  useRagMessages, 
-  useCurrentConversationId, 
+import {
+  useChatMode,
+  useSelectedDocuments,
+  useGeneralMessages,
+  useRagMessages,
+  useCurrentConversationId,
   useSetChatMode,
   useSetSelectedDocuments,
   useClearDocuments,
@@ -68,16 +68,16 @@ interface UnifiedChatInterfaceProps {
   onMessageCountChange?: (hasMessages: boolean) => void;
 }
 
-export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({ 
-  initialConversation, 
-  onDocumentCountChange, 
-  onMessageCountChange 
+export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
+  initialConversation,
+  onDocumentCountChange,
+  onMessageCountChange
 }: UnifiedChatInterfaceProps = {}) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [loadedConversation, setLoadedConversation] = useState<{ conversation: any; type: 'general' | 'rag' } | null>(initialConversation || null);
-  
+
   // Document viewer state
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
@@ -88,7 +88,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
   const generalMessages = useGeneralMessages();
   const ragMessages = useRagMessages();
   const currentConversationId = useCurrentConversationId();
-  
+
   const setChatMode = useSetChatMode();
   const setSelectedDocuments = useSetSelectedDocuments();
   const clearDocuments = useClearDocuments();
@@ -135,33 +135,41 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
       toast.error(err.message || 'An error occurred');
       llmProgress.setError(err.message || 'Unknown error');
     },
+    onFinish: (message) => {
+      console.log('RAG chat response:', message);
+      if (message.sources) {
+        console.log('RAG sources found:', message.sources.length);
+      } else {
+        console.warn('No RAG sources in response');
+      }
+    }
   });
 
   // Choose which chat to use based on mode - memoized
-  const currentChat = useMemo(() => 
-    chatMode === 'general' ? generalChat : ragChat, 
+  const currentChat = useMemo(() =>
+    chatMode === 'general' ? generalChat : ragChat,
     [chatMode, generalChat, ragChat]
   );
 
   // Sync store messages with chat hooks - memoized dependencies
   const generalMessagesRef = useRef(generalMessages);
   const ragMessagesRef = useRef(ragMessages);
-  
+
   useEffect(() => {
     generalMessagesRef.current = generalMessages;
   }, [generalMessages]);
-  
+
   useEffect(() => {
     ragMessagesRef.current = ragMessages;
   }, [ragMessages]);
-  
+
   useEffect(() => {
     if (chatMode === 'general') {
       generalChat.setMessages(generalMessagesRef.current);
     } else {
       ragChat.setMessages(ragMessagesRef.current);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatMode]);
 
   // Sync hook messages back to store when they change - optimized with refs
@@ -169,29 +177,29 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
   const ragChatMessagesRef = useRef(ragChat.messages);
   const generalMessagesLengthRef = useRef(generalMessages.length);
   const ragMessagesLengthRef = useRef(ragMessages.length);
-  
+
   // Update refs when messages change
   useEffect(() => {
     generalChatMessagesRef.current = generalChat.messages;
   }, [generalChat.messages]);
-  
+
   useEffect(() => {
     ragChatMessagesRef.current = ragChat.messages;
   }, [ragChat.messages]);
-  
+
   // Update length refs to prevent infinite loops
   useEffect(() => {
     generalMessagesLengthRef.current = generalMessages.length;
   }, [generalMessages.length]);
-  
+
   useEffect(() => {
     ragMessagesLengthRef.current = ragMessages.length;
   }, [ragMessages.length]);
-  
+
   // Sync general chat messages to store
   useEffect(() => {
-    if (chatMode === 'general' && 
-        generalChatMessagesRef.current.length !== generalMessagesLengthRef.current) {
+    if (chatMode === 'general' &&
+      generalChatMessagesRef.current.length !== generalMessagesLengthRef.current) {
       const formattedMessages = generalChatMessagesRef.current
         .filter(msg => msg.role === 'user' || msg.role === 'assistant')
         .map((msg) => {
@@ -209,13 +217,13 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
         });
       setGeneralMessages(formattedMessages);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatMode, generalChat.messages.length]);
 
   // Sync RAG chat messages to store
   useEffect(() => {
-    if (chatMode === 'rag' && 
-        ragChatMessagesRef.current.length !== ragMessagesLengthRef.current) {
+    if (chatMode === 'rag' &&
+      ragChatMessagesRef.current.length !== ragMessagesLengthRef.current) {
       const formattedMessages = ragChatMessagesRef.current
         .filter(msg => msg.role === 'user' || msg.role === 'assistant')
         .map((msg) => {
@@ -233,7 +241,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
         });
       setRagMessages(formattedMessages);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatMode, ragChat.messages.length]);
 
   // Load conversation messages when a conversation is selected
@@ -298,13 +306,13 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
               toast.error('Failed to load documents for this conversation');
             }
           };
-          
+
           fetchDocuments();
         }
       }
       setCurrentConversation(loadedConversation.conversation._id);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationLoader.messages, loadedConversation?.conversation?._id, loadedConversation?.type, documents]);
 
   // Scroll to bottom when messages change
@@ -324,7 +332,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
     } else {
       llmProgress.completeProcessing();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChat.isLoading]);
 
   // Update message count for background animation - memoized
@@ -335,11 +343,11 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
     }
     return selectedDocuments.length;
   }, [hasMessages, selectedDocuments.length, chatMode]);
-  
+
   useEffect(() => {
     onMessageCountChange?.(hasMessages);
     onDocumentCountChange?.(documentCount);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMessages, documentCount]);
 
   // Handle error state
@@ -348,17 +356,17 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
       llmProgress.setError(currentChat.error.message || 'Unknown error');
       toast.error(currentChat.error.message || 'An error occurred');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChat.error]);
 
   // Custom submit handler
   const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!currentChat.input.trim() || currentChat.isLoading) return;
-    
+
     currentChat.handleSubmit(e);
   };
-  
+
   // API mutation to update conversation type
   const updateConversationType = useMutation(api.conversations.index.updateConversationType);
 
@@ -366,12 +374,12 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
   const handleAddDocumentsToConversation = useCallback((documents: Document[]) => {
     // Only proceed if we have documents to add
     if (documents.length === 0) return;
-    
+
     // If we're in general mode with existing messages, we need to transition to RAG mode
     if (chatMode === 'general' && generalMessages.length > 0) {
       // First set the documents which will change the mode to RAG
       setSelectedDocuments(documents);
-      
+
       // If we have a current conversation ID, we need to update it in the database
       // to reflect the added documents
       if (currentConversationId) {
@@ -393,7 +401,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
       // Standard document selection
       setSelectedDocuments(documents);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatMode, generalMessages.length, currentConversationId, updateConversationType]);
 
   // Handle document selection - memoized
@@ -401,7 +409,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
     setSelectedDocuments(docs);
     // Update parent component about document count change
     onDocumentCountChange?.(docs.length);
-    
+
     // Show toast when documents change and start new conversation
     if (docs.length > 0) {
       toast.success(`Started new RAG chat with ${docs.length} document${docs.length > 1 ? 's' : ''}`);
@@ -427,17 +435,17 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
     // Set the loaded conversation which will trigger the useEffect to load messages
     setLoadedConversation({ conversation, type });
     setIsHistoryModalOpen(false);
-    
+
     // Set the current conversation ID in the store
     setCurrentConversation(conversation._id);
-    
+
     // Set the chat mode based on the conversation type
     setChatMode(type);
-    
+
     // If it's a RAG conversation, set the document count and load documents
     if (type === 'rag' && conversation.documentIds) {
       onDocumentCountChange?.(conversation.documentIds.length);
-      
+
       // Create Document objects from the IDs and titles
       if (conversation.documentIds && conversation.documentTitles) {
         const docs = conversation.documentIds.map((id: string, index: number) => ({
@@ -535,7 +543,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
                     {renderIcon(X, { className: "w-4 h-4" })}
                   </button>
                 )}
-                
+
                 <button
                   onClick={() => setIsDocumentModalOpen(true)}
                   className="flex gap-2 items-center p-2 text-cyan-400 rounded-lg border transition-all duration-200 border-cyan-500/20 bg-slate-700/50 hover:bg-slate-600/50 hover:text-cyan-300"
@@ -552,8 +560,8 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
               <div className="px-3 pb-3 sm:px-4 md:px-6 sm:pb-4">
                 <div className="flex flex-wrap gap-2">
                   {selectedDocuments.map((doc, index) => (
-                    <div 
-                      key={`doc-${doc._id}-${index}`} 
+                    <div
+                      key={`doc-${doc._id}-${index}`}
                       className="flex gap-2 items-center px-3 py-1 rounded-lg border transition-all duration-200 cursor-pointer bg-slate-700/50 border-cyan-500/20 hover:bg-slate-600/50"
                       onClick={() => handleDocumentClick(doc._id)}
                       title="Click to view document"
@@ -583,7 +591,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
                   {selectedDocuments.length > 0 && (
                     <>
                       {selectedDocuments.slice(0, 3).map((doc, index) => (
-                        <div 
+                        <div
                           key={`orbit-${doc._id}-${index}`}
                           className={`flex absolute z-10 justify-center items-center w-8 h-8 rounded-full orbit-animation-${index + 1}`}
                         >
@@ -592,7 +600,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
                           </div>
                         </div>
                       ))}
-                      
+
                       <style jsx>{`
                         @keyframes orbit1 {
                           0% { transform: translate(-50%, -50%) rotate(0deg) translateX(30px) rotate(0deg); }
@@ -635,7 +643,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
                   {chatMode === 'general' ? 'Ready to chat' : 'Ready to explore your documents'}
                 </h3>
                 <p className="max-w-md leading-relaxed text-cyan-200/70">
-                  {chatMode === 'general' 
+                  {chatMode === 'general'
                     ? "I'm here to help with any questions or topics you'd like to discuss. What's on your mind?"
                     : "Ask me anything about your selected documents. I'll provide detailed answers with source references."
                   }
@@ -673,7 +681,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm leading-relaxed whitespace-pre-wrap sm:text-base md:text-lg">{message.content}</p>
-                        
+
                         {/* Show sources for RAG messages */}
                         {chatMode === 'rag' && message.sources && message.sources.length > 0 && (
                           <div className="mt-2 space-y-2 sm:mt-4 sm:space-y-3">
@@ -791,7 +799,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
           <ResponsiveModalHeader>
             <ResponsiveModalTitle>Select Documents for RAG Chat</ResponsiveModalTitle>
           </ResponsiveModalHeader>
-          
+
           <div className="mt-4">
             {documents && (
               <DocumentSelector
@@ -816,7 +824,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
           <ResponsiveModalHeader>
             <ResponsiveModalTitle>Chat History</ResponsiveModalTitle>
           </ResponsiveModalHeader>
-          
+
           <div className="mt-4">
             <UnifiedChatHistory onConversationSelect={handleConversationSelect} />
           </div>

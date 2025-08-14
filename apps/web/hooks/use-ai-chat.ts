@@ -57,6 +57,11 @@ export function useAIChat({
 
     try {
       // Call our custom API endpoint
+      console.log("Sending chat request with body:", {
+        messages: [...messages, userMessage],
+        ...body
+      });
+      
       const response = await fetch(api, {
         method: 'POST',
         headers: {

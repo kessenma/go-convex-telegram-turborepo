@@ -16,7 +16,7 @@ export function useConsolidatedHealthCheck() {
     checkLightweightLlmStatus,
     checkConvexStatus,
     checkDockerStatus,
-    checkUserCountStatus,
+
     checkConsolidatedLLMMetrics,
     pollingIntervals,
     consecutiveErrors,
@@ -35,7 +35,7 @@ export function useConsolidatedHealthCheck() {
     lightweightLlm: 0,
     convex: 0,
     docker: 0,
-    userCount: 0,
+
     consolidatedLLM: 0,
   });
 
@@ -79,21 +79,7 @@ export function useConsolidatedHealthCheck() {
       checks.push(checkDockerStatus().catch(() => false));
     }
 
-    if (now - lastCheckTimes.current.userCount >= pollingIntervals.userCount) {
-      lastCheckTimes.current.userCount = now;
-      checks.push(checkUserCountStatus().catch(() => false));
-
-      // Trigger session cleanup when checking user count (every 75 seconds)
-      // This provides additional cleanup beyond the cron job
-      checks.push(
-        fetch("/api/users/active-count/cleanup", { method: "POST" })
-          .then(() => true)
-          .catch((error) => {
-            console.debug("Session cleanup request failed:", error);
-            return false;
-          })
-      );
-    }
+    // Note: Session cleanup is now handled automatically by the presence component
 
     // Execute all due checks in parallel
     if (checks.length > 0) {
@@ -110,7 +96,7 @@ export function useConsolidatedHealthCheck() {
     checkLightweightLlmStatus,
     checkConvexStatus,
     checkDockerStatus,
-    checkUserCountStatus,
+
     checkConsolidatedLLMMetrics,
     pollingIntervals,
   ]);
@@ -174,7 +160,7 @@ export function useStatusData() {
     lightweightLlmStatus,
     convexStatus,
     dockerStatus,
-    userCountStatus,
+
     consolidatedLLMMetrics,
     loading,
     lastUpdated,
@@ -189,7 +175,7 @@ export function useStatusData() {
     lightweightLlmStatus,
     convexStatus,
     dockerStatus,
-    userCountStatus,
+
     consolidatedLLMMetrics,
     loading,
     lastUpdated,
@@ -225,13 +211,6 @@ export function useStatusData() {
         consecutiveErrors: consecutiveErrors.docker,
         pollingInterval: pollingIntervals.docker,
         loading: loading.docker,
-      },
-      userCount: {
-        ...userCountStatus,
-        lastUpdated: lastUpdated.userCount,
-        consecutiveErrors: consecutiveErrors.userCount,
-        pollingInterval: pollingIntervals.userCount,
-        loading: loading.userCount,
       },
       consolidatedLLM: {
         metrics: consolidatedLLMMetrics,

@@ -6,3 +6,4 @@ requests==2.31.0
 pydantic==2.5.2
 psutil==5.9.6
 huggingface-hub==0.19.4
+langextract>=0.1.0

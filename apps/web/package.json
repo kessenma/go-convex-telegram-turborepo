@@ -16,6 +16,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@convex-dev/presence": "^0.1.5",
     "@convex-dev/rag": "^0.3.2",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -40,6 +41,7 @@
     "embedding-atlas": "^0.8.0",
     "framer-motion": "^12.23.0",
     "gsap": "^3.13.0",
+    "immer": "^10.1.1",
     "lucide-react": "^0.525.0",
     "mammoth": "^1.9.1",
     "motion": "^12.19.2",

@@ -3,8 +3,9 @@
 import { motion } from "framer-motion";
 import { Settings as SettingsIcon, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ExpandableCard } from "../ui/expandable-card-reusable";
-import { ScrollArea } from "../ui/scroll-area";
+
 import { Switch } from "../ui/switch";
 import { useOutsideClick } from "../../hooks/use-outside-clicks";
 import { renderIcon } from "../../lib/icon-utils";
@@ -16,6 +17,9 @@ import { VectorConverterStatus } from "./vector-status-indicator";
 
 import { UserCountIndicator } from "./user-count-indicator";
 import { ChangelogModal } from "../change-log/ChangelogModal";
+import { useNavigationLoading } from "../../contexts/NavigationLoadingContext";
+import { LoadingSpinner } from "../ui/loading-spinner";
+
 
 interface SettingsProps {
   className?: string;
@@ -32,6 +36,8 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const id = useId();
+  const router = useRouter();
+  const { isLoading, loadingPath, startLoading } = useNavigationLoading();
 
   // Status hooks not needed anymore since components manage their own state
 
@@ -161,6 +167,12 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
     }
   };
 
+  const handleSystemStatusClick = () => {
+    startLoading("/system-status");
+    router.push("/system-status");
+    setIsOpen(false); // Close settings panel
+  };
+
   useOutsideClick(ref, (_event: MouseEvent | TouchEvent) => setIsOpen(false));
 
   return (
@@ -181,8 +193,9 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
         buttonPosition={buttonPosition}
         liquidGlass={true}
         layoutId={`settings-card-${id}`}
+        zIndex={100}
       >
-        <ScrollArea className="h-[calc(min(60vh,500px))] overflow-y-auto">
+        <div className="h-[calc(min(60vh,500px))] overflow-y-auto overflow-x-visible">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-white font-md text-sn">
@@ -231,16 +244,16 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                   </motion.div>
 
                   <motion.div
-                      variants={{
+                    variants={{
                       hidden: { opacity: 0, y: 5 },
                       visible: { opacity: 1, y: 0 },
                     }}>
-                  <VectorConverterStatus
-                  size="sm"
-                  showLogs={true}
-                  showSummary={false}
-                  variant="consolidated"
-                  />
+                    <VectorConverterStatus
+                      size="sm"
+                      showLogs={true}
+                      showSummary={false}
+                      variant="consolidated"
+                    />
                   </motion.div>
 
                   {/* Convex Status */}
@@ -281,6 +294,8 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                       showLogs={false}
                     />
                   </motion.div>
+
+
                 </motion.div>
               </div>
 
@@ -370,12 +385,20 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
                           }
                           maxCommits={-1}
                         />
-                        <a
-                          href="/system-status"
+                        <button
+                          onClick={handleSystemStatusClick}
                           className="flex gap-1 items-center text-sm text-emerald-400 transition-colors hover:text-emerald-300"
+                          disabled={isLoading && loadingPath === "/system-status"}
                         >
-                          System Status
-                        </a>
+                          {isLoading && loadingPath === "/system-status" ? (
+                            <>
+                              <LoadingSpinner size="sm" use3D={true} />
+                              Loading...
+                            </>
+                          ) : (
+                            "System Status"
+                          )}
+                        </button>
                       </div>
                     </div>
                   </motion.div>
@@ -383,7 +406,7 @@ export function Settings({ className }: SettingsProps): React.ReactElement {
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </ExpandableCard>
     </div>
   );
