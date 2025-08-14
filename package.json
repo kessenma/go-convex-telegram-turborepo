@@ -11,7 +11,6 @@
     "convex:reset-db": "./helper-scripts/reset-convex-database.sh",
     "convex:full-reset": "./helper-scripts/reset-convex-database.sh && pnpm convex:deploy",
     "docker:reset-web": "./helper-scripts/reset-web-only.sh",
-
     "docker:deploy-convex": "./helper-scripts/deploy-convex.sh",
     "convex:deploy-api": "./helper-scripts/deploy-convex-api.sh",
     "convex:deploy-all": "./helper-scripts/deploy-convex-all.sh",
@@ -19,13 +18,11 @@
     "check-web-convex-endpoints": "./helper-scripts/api-web-convex-check.sh",
     "get-admin-key": "docker compose exec convex-backend ./generate_admin_key.sh",
     "docker:manage": "./helper-scripts/docker-manager.sh",
-
     "convex:dev:bot": "docker compose up convex-backend convex-dashboard telegram-bot -d && cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     "docker:restart-web-convex": "docker compose stop web-dashboard convex-backend convex-dashboard && docker compose up web-dashboard convex-backend convex-dashboard -d",
     "docker:vectorConvert-only": "docker compose up vector-convert-llm -d",
     "docker:vectorLLM-only": "docker compose up lightweight-llm -d",
     "docker:llm-rebuild": "docker compose stop lightweight-llm && docker compose build lightweight-llm && docker compose up lightweight-llm -d",
-
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
@@ -36,7 +33,6 @@
     "dev:bot": "cd apps/golang-telegram-bot && make dev",
     "dev:mobile": "cd apps/mobile && pnpm start",
     "dev:all": "turbo run dev --parallel",
-
     "start:convex": "cd apps/docker-convex && pnpm self-hosted:setup",
     "start:bot": "cd apps/golang-telegram-bot && make start",
     "start:mobile": "cd apps/mobile && pnpm start",
@@ -44,10 +40,8 @@
     "build:convex": "cd apps/docker-convex && pnpm deploy-functions",
     "build:bot": "cd apps/golang-telegram-bot && make build",
     "build:mobile": "cd apps/mobile && echo 'Mobile build not applicable for development'",
-
     "install:all": "pnpm install && cd apps/golang-telegram-bot && make install",
     "clean:all": "turbo run clean && cd apps/golang-telegram-bot && make clean",
-
     "mobile:setup-env": "cd apps/mobile && pnpm setup-env",
     "mobile:setup-ios": "cd apps/mobile && pnpm setup-ios",
     "mobile:setup-ios-system": "cd apps/mobile && pnpm setup-ios-system",
@@ -62,17 +56,14 @@
     "mobile:check-types": "cd apps/mobile && pnpm check-types",
     "mobile:lint": "cd apps/mobile && pnpm lint",
     "mobile:test": "cd apps/mobile && pnpm test",
-
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:restart-bot": "docker compose restart telegram-bot",
     "docker:build": "docker compose up --build -d",
-    
     "convex:deploy": "cd apps/docker-convex && CONVEX_URL=http://localhost:3210 pnpm convex dev --once",
     "convex:dev": "docker compose up convex-backend convex-dashboard -d",
     "docker:web-reset": "docker compose stop web-dashboard && docker compose rm -f web-dashboard && docker compose up web-dashboard -d",
-
     "docker:web-app-logs": "docker logs telegram-bot-web-dashboard-1 --tail 100",
     "docker:llm-transformer-logs": "docker logs telegram-bot-vector-convert-llm-1 --tail 100",
     "docker:llm-logs": "docker logs telegram-bot-lightweight-llm-1 --tail 100",
@@ -80,7 +71,6 @@
     "docker:convex-backend-logs": "docker logs telegram-bot-convex-backend-1 --tail 100",
     "docker:go-bot": "docker logs telegram-bot-telegram-bot-1  --tail 100",
     "docker:logs-all": "pnpm docker:web-app-logs && pnpm docker:convex-backend-logs && pnpm docker:llm-transformer-logs && pnpm docker:llm-logs",
-
     "test:api": "curl http://localhost:3210/api/health && echo '' && curl http://localhost:3210/api/telegram/messages",
     "test": "pnpm test:web && pnpm test:convex",
     "test:web": "cd apps/web && pnpm test",
@@ -89,8 +79,9 @@
     "test:coverage": "pnpm test:web --coverage"
   },
   "devDependencies": {
-    "prettier": "^3.6.0",
-    "turbo": "^2.5.4",
+    "convex": "1.25.4",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.5",
     "typescript": "5.8.2"
   },
   "packageManager": "pnpm@9.0.0",
