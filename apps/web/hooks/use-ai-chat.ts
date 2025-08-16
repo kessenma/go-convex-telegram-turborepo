@@ -19,6 +19,8 @@ interface UseChatOptions {
   body?: Record<string, any>;
   onError?: (error: Error) => void;
   onFinish?: (message: Message) => void;
+  onMessageSent?: (message: Message) => void;
+  onMessageReceived?: (message: Message) => void;
 }
 
 export function useAIChat({
@@ -26,6 +28,8 @@ export function useAIChat({
   body,
   onError,
   onFinish,
+  onMessageSent,
+  onMessageReceived,
 }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -54,6 +58,9 @@ export function useAIChat({
     setInput('');
     setIsLoading(true);
     setError(null);
+
+    // Call onMessageSent callback
+    onMessageSent?.(userMessage);
 
     try {
       // Call our custom API endpoint
@@ -108,6 +115,9 @@ export function useAIChat({
 
       setMessages((prev) => [...prev, assistantMessage]);
       onFinish?.(assistantMessage);
+      
+      // Call onMessageReceived callback
+      onMessageReceived?.(assistantMessage);
     } catch (err) {
       console.error('Chat error:', err);
       const errorInstance = err instanceof Error ? err : new Error('An error occurred');
@@ -116,7 +126,7 @@ export function useAIChat({
     } finally {
       setIsLoading(false);
     }
-  }, [api, body, input, isLoading, messages, onError, onFinish]);
+  }, [api, body, input, isLoading, messages, onError, onFinish, onMessageSent, onMessageReceived]);
 
   return {
     messages,

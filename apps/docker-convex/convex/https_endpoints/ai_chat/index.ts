@@ -53,7 +53,7 @@ export const generalChatAPI = httpAction(async (ctx, request) => {
         userId,
         userAgent,
         ipAddress,
-        llmModel: llmModel || "gpt-4",
+        llmModel: llmModel || "llama-3.2",
       });
       conversation = await getRagConversationBySessionIdFromDb(ctx, { sessionId });
     }
@@ -130,7 +130,7 @@ export const ragChatAPI = httpAction(async (ctx, request) => {
         userId,
         userAgent,
         ipAddress,
-        llmModel: llmModel || "gpt-4",
+        llmModel: llmModel || "llama-3.2",
       });
       conversation = await getGeneralConversationBySessionIdFromDb(ctx, { sessionId });
     }

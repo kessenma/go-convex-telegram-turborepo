@@ -1,4 +1,4 @@
-# Z-production deployment/docker-compose.yaml
+# docker-compose.yaml
 name: telegram-bot
 
 services:

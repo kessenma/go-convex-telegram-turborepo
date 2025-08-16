@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { useGeneralChat } from '../../hooks/use-general-chat';
 import { useAIChat } from '../../hooks/use-ai-chat';
-import { useConversationLoader } from '../../hooks/use-conversation-loader';
+
+import { useUnifiedChatPersistence } from '../../hooks/useUnifiedChatPersistence';
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { renderIcon } from '../../lib/icon-utils';
@@ -43,6 +44,7 @@ import {
   useSetRagMessages,
   useStartNewConversation,
   useSetCurrentConversation,
+  useUnifiedChatStore,
 } from '../../stores/unifiedChatStore';
 
 // Define the type for the message in our component
@@ -100,11 +102,22 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
   // Enhanced progress tracking
   const llmProgress = useLLMProgress();
 
-  // Load conversation messages if we have a loaded conversation
-  const conversationLoader = useConversationLoader(
-    loadedConversation?.conversation._id || null,
-    loadedConversation?.type || null
-  );
+  // Chat persistence hook
+  const chatPersistence = useUnifiedChatPersistence({
+    onConversationCreated: (conversationId) => {
+      console.log('Conversation created:', conversationId);
+      setCurrentConversation(conversationId);
+    },
+    onMessageSaved: (messageId) => {
+      console.log('Message saved:', messageId);
+    },
+    onError: (error) => {
+      console.error('Persistence error:', error);
+      toast.error('Failed to save conversation: ' + error.message);
+    }
+  });
+
+
 
   // Fetch documents for the modal
   const {
@@ -121,6 +134,18 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
       console.error('General chat error:', err);
       toast.error(err.message || 'An error occurred');
       llmProgress.setError(err.message || 'Unknown error');
+    },
+    onMessageSent: (message) => {
+      if (currentConversationId) {
+        const messageWithTimestamp = { ...message, timestamp: message.timestamp || Date.now() };
+        chatPersistence.saveMessage({ message: messageWithTimestamp, chatMode: 'general', conversationId: currentConversationId });
+      }
+    },
+    onMessageReceived: (message) => {
+      if (currentConversationId) {
+        const messageWithTimestamp = { ...message, timestamp: message.timestamp || Date.now() };
+        chatPersistence.saveMessage({ message: messageWithTimestamp, chatMode: 'general', conversationId: currentConversationId });
+      }
     },
   });
 
@@ -142,7 +167,19 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
       } else {
         console.warn('No RAG sources in response');
       }
-    }
+    },
+    onMessageSent: (message) => {
+      if (currentConversationId && (message.role === 'user' || message.role === 'assistant')) {
+        const messageWithTimestamp = { ...message, timestamp: Date.now(), role: message.role as 'user' | 'assistant' };
+        chatPersistence.saveMessage({ message: messageWithTimestamp, chatMode: 'rag', conversationId: currentConversationId });
+      }
+    },
+    onMessageReceived: (message) => {
+      if (currentConversationId && (message.role === 'user' || message.role === 'assistant')) {
+        const messageWithTimestamp = { ...message, timestamp: Date.now(), role: message.role as 'user' | 'assistant' };
+        chatPersistence.saveMessage({ message: messageWithTimestamp, chatMode: 'rag', conversationId: currentConversationId });
+      }
+    },
   });
 
   // Choose which chat to use based on mode - memoized
@@ -196,7 +233,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
     ragMessagesLengthRef.current = ragMessages.length;
   }, [ragMessages.length]);
 
-  // Sync general chat messages to store
+  // Sync general chat messages to store and save assistant messages
   useEffect(() => {
     if (chatMode === 'general' &&
       generalChatMessagesRef.current.length !== generalMessagesLengthRef.current) {
@@ -216,11 +253,31 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
           return message;
         });
       setGeneralMessages(formattedMessages);
+      
+      // Save new assistant messages to database
+      const newAssistantMessages = formattedMessages.filter(msg => 
+        msg.role === 'assistant' && 
+        !generalMessagesRef.current.some(existing => existing.id === msg.id)
+      );
+      
+      if (newAssistantMessages.length > 0 && currentConversationId) {
+        newAssistantMessages.forEach(async (msg) => {
+          try {
+            await chatPersistence.saveMessage({
+              message: msg,
+              conversationId: currentConversationId,
+              chatMode
+            });
+          } catch (error) {
+            console.error('Failed to save assistant message:', error);
+          }
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatMode, generalChat.messages.length]);
+  }, [chatMode, generalChat.messages.length, currentConversationId]);
 
-  // Sync RAG chat messages to store
+  // Sync RAG chat messages to store and save assistant messages
   useEffect(() => {
     if (chatMode === 'rag' &&
       ragChatMessagesRef.current.length !== ragMessagesLengthRef.current) {
@@ -240,80 +297,40 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
           return message;
         });
       setRagMessages(formattedMessages);
+      
+      // Save new assistant messages to database
+      const newAssistantMessages = formattedMessages.filter(msg => 
+        msg.role === 'assistant' && 
+        !ragMessagesRef.current.some(existing => existing.id === msg.id)
+      );
+      
+      if (newAssistantMessages.length > 0 && currentConversationId) {
+        newAssistantMessages.forEach(async (msg) => {
+          try {
+            await chatPersistence.saveMessage({
+              message: msg,
+              conversationId: currentConversationId,
+              chatMode
+            });
+          } catch (error) {
+            console.error('Failed to save assistant message:', error);
+          }
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatMode, ragChat.messages.length]);
+  }, [chatMode, ragChat.messages.length, currentConversationId]);
 
   // Load conversation messages when a conversation is selected
   useEffect(() => {
-    if (conversationLoader.messages && loadedConversation) {
-      const formattedMessages = conversationLoader.messages
-        .filter((msg: any) => msg.role === 'user' || msg.role === 'assistant')
-        .map((msg: any): Message => ({
-          id: msg.messageId,
-          role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
-          content: msg.content,
-          timestamp: msg.timestamp || Date.now(),
-          sources: msg.sources || [],
-          metadata: msg.metadata || {}
-        }));
-
-      // Set messages in the store and update chat mode
+    if (loadedConversation) {
+      // The store's loadConversationState should have already loaded the messages
+      // We just need to ensure the chat mode is set correctly
       setChatMode(loadedConversation.type);
-      if (loadedConversation.type === 'general') {
-        setGeneralMessages(formattedMessages);
-      } else {
-        setRagMessages(formattedMessages);
-        // If it's a RAG conversation, load the documents
-        if (loadedConversation.conversation.documentIds && loadedConversation.conversation.documentTitles) {
-          // Fetch the actual documents to get complete document objects
-          const fetchDocuments = async () => {
-            try {
-              // Use the documents we already fetched if available
-              if (documents) {
-                const docMap = new Map(documents.map(doc => [doc._id, doc]));
-                const docs = loadedConversation.conversation.documentIds.map((id: string, index: number) => {
-                  // Use the document from our cache if available, otherwise create a placeholder
-                  const doc = docMap.get(id) || {
-                    _id: id,
-                    title: loadedConversation.conversation.documentTitles[index] || 'Untitled Document',
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    userId: '',
-                    fileType: '',
-                    fileSize: 0,
-                    status: 'processed'
-                  };
-                  return doc;
-                });
-                setSelectedDocuments(docs);
-              } else {
-                // If documents aren't loaded yet, create placeholders
-                const docs = loadedConversation.conversation.documentIds.map((id: string, index: number) => ({
-                  _id: id,
-                  title: loadedConversation.conversation.documentTitles[index] || 'Untitled Document',
-                  createdAt: Date.now(),
-                  updatedAt: Date.now(),
-                  userId: '',
-                  fileType: '',
-                  fileSize: 0,
-                  status: 'processed'
-                }));
-                setSelectedDocuments(docs);
-              }
-            } catch (error) {
-              console.error('Error loading documents for conversation:', error);
-              toast.error('Failed to load documents for this conversation');
-            }
-          };
-
-          fetchDocuments();
-        }
-      }
       setCurrentConversation(loadedConversation.conversation._id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationLoader.messages, loadedConversation?.conversation?._id, loadedConversation?.type, documents]);
+  }, [loadedConversation?.conversation?._id, loadedConversation?.type]);
 
   // Scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -359,12 +376,52 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChat.error]);
 
-  // Custom submit handler
-  const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
+  // Custom submit handler with persistence
+  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!currentChat.input.trim() || currentChat.isLoading) return;
 
-    currentChat.handleSubmit(e);
+    const userMessage = currentChat.input.trim();
+    
+    // Create or get conversation if this is the first message
+     if (!currentConversationId) {
+       try {
+         await chatPersistence.createConversation({
+           type: chatMode,
+           chatMode,
+           selectedDocuments: chatMode === 'rag' ? selectedDocuments : [],
+           llmModel: 'llama-3.2' // You might want to make this configurable
+         });
+       } catch (error) {
+         console.error('Failed to create conversation:', error);
+         toast.error('Failed to start conversation');
+         return;
+       }
+     }
+ 
+     // Submit the message to the chat hook
+     currentChat.handleSubmit(e);
+ 
+     // Save the user message to database
+     if (currentConversationId) {
+       try {
+         const userMessageObj: ChatMessage = {
+           id: `user-${Date.now()}`,
+           role: 'user',
+           content: userMessage,
+           timestamp: Date.now()
+         };
+         
+         await chatPersistence.saveMessage({
+           message: userMessageObj,
+           conversationId: currentConversationId,
+           chatMode
+         });
+       } catch (error) {
+         console.error('Failed to save user message:', error);
+         // Don't show error to user as the message still works in UI
+       }
+     }
   };
 
   // API mutation to update conversation type
@@ -430,42 +487,64 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
   }, [clearDocuments, onDocumentCountChange]);
 
   // Handle conversation selection from history - memoized
-  const handleConversationSelect = useCallback((conversation: any, type: 'general' | 'rag') => {
+  const handleConversationSelect = useCallback(async (conversation: any, type: 'general' | 'rag') => {
     console.log('Selected conversation:', conversation, 'type:', type);
-    // Set the loaded conversation which will trigger the useEffect to load messages
-    setLoadedConversation({ conversation, type });
+    
+    // Use the store's loadConversationState function to properly load the conversation
+    const { loadConversationState, setGeneralMessages, setRagMessages } = useUnifiedChatStore.getState();
+    
+    // Load conversation metadata
+    loadConversationState({
+      id: conversation._id,
+      type: conversation.type || type,
+      title: conversation.title,
+      documentIds: conversation.documentIds,
+      documentTitles: conversation.documentTitles,
+      metadata: conversation.metadata || {}
+    });
+    
+    // Fetch messages from the database
+    try {
+      const response = await fetch(`/api/unified-chat/messages?conversationId=${encodeURIComponent(conversation._id)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const messages = data.messages || [];
+        
+        // Set messages in the appropriate store
+        if (type === 'general') {
+          setGeneralMessages(messages);
+          generalChat.setMessages(messages);
+        } else {
+          setRagMessages(messages);
+          ragChat.setMessages(messages);
+        }
+        
+        console.log(`Loaded ${messages.length} messages for conversation ${conversation._id}`);
+      } else {
+        console.error('Failed to load messages:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+    
     setIsHistoryModalOpen(false);
-
-    // Set the current conversation ID in the store
-    setCurrentConversation(conversation._id);
-
-    // Set the chat mode based on the conversation type
-    setChatMode(type);
-
-    // If it's a RAG conversation, set the document count and load documents
+    
+    // Set the loaded conversation to trigger message loading
+    setLoadedConversation({ conversation, type });
+    
+    // Update document count for RAG conversations
     if (type === 'rag' && conversation.documentIds) {
       onDocumentCountChange?.(conversation.documentIds.length);
-
-      // Create Document objects from the IDs and titles
-      if (conversation.documentIds && conversation.documentTitles) {
-        const docs = conversation.documentIds.map((id: string, index: number) => ({
-          _id: id,
-          title: conversation.documentTitles[index] || 'Untitled Document',
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          userId: '',
-          fileType: '',
-          fileSize: 0,
-          status: 'processed'
-        }));
-        setSelectedDocuments(docs);
-      }
     } else {
-      // For general chat, clear documents
-      clearDocuments();
       onDocumentCountChange?.(0);
     }
-  }, [onDocumentCountChange, setCurrentConversation, setChatMode, setSelectedDocuments, clearDocuments]);
+  }, [onDocumentCountChange, generalChat, ragChat, setGeneralMessages, setRagMessages]);
 
   // Handle document click to open viewer - memoized
   const handleDocumentClick = useCallback((documentId: string) => {

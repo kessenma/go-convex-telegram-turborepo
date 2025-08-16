@@ -28,6 +28,9 @@ interface UnifiedChatState {
   
   // Current conversation tracking
   currentConversationId: string | null;
+  conversationTitle: string | null;
+  isLoadingConversation: boolean;
+  conversationMetadata: Record<string, any>;
   
   // Actions
   setChatMode: (mode: ChatMode) => void;
@@ -45,7 +48,18 @@ interface UnifiedChatState {
   
   // Conversation management
   setCurrentConversation: (conversationId: string | null) => void;
+  setConversationTitle: (title: string | null) => void;
+  setConversationMetadata: (metadata: Record<string, any>) => void;
+  setLoadingConversation: (loading: boolean) => void;
   startNewConversation: () => void;
+  loadConversationState: (conversation: {
+    id: string;
+    type: ChatMode;
+    title?: string;
+    documentIds?: string[];
+    documentTitles?: string[];
+    metadata?: Record<string, any>;
+  }) => void;
   
   // Reset
   reset: () => void;
@@ -61,6 +75,9 @@ export const useUnifiedChatStore = create<UnifiedChatState>((set, get) => ({
   generalMessages: [],
   ragMessages: [],
   currentConversationId: null,
+  conversationTitle: null,
+  isLoadingConversation: false,
+  conversationMetadata: {},
   
   // Chat mode and document actions
   setChatMode: (mode: ChatMode) => {
@@ -184,10 +201,60 @@ export const useUnifiedChatStore = create<UnifiedChatState>((set, get) => ({
     set({ currentConversationId: conversationId });
   },
   
+  setConversationTitle: (title: string | null) => {
+    set({ conversationTitle: title });
+  },
+  
+  setConversationMetadata: (metadata: Record<string, any>) => {
+    set({ conversationMetadata: metadata });
+  },
+  
+  setLoadingConversation: (loading: boolean) => {
+    set({ isLoadingConversation: loading });
+  },
+  
+  loadConversationState: (conversation: {
+    id: string;
+    type: ChatMode;
+    title?: string;
+    documentIds?: string[];
+    documentTitles?: string[];
+    metadata?: Record<string, any>;
+  }) => {
+    const { selectedDocuments } = get();
+    
+    // Load documents if it's a RAG conversation
+      const newDocuments = conversation.type === 'rag' && conversation.documentIds && conversation.documentTitles
+        ? conversation.documentIds.map((id, index) => ({
+            _id: id as any, // Cast to proper Convex ID type
+            title: conversation.documentTitles![index] || 'Unknown Document',
+            content: '',
+            contentType: 'text/plain',
+            fileType: 'text',
+            fileSize: 0,
+            wordCount: 0,
+            uploadedAt: Date.now(),
+            hasEmbedding: true
+          }))
+        : [];
+    
+    set({
+      currentConversationId: conversation.id,
+      conversationTitle: conversation.title || null,
+      conversationMetadata: conversation.metadata || {},
+      chatMode: conversation.type,
+      selectedDocuments: newDocuments,
+      isLoadingConversation: false
+    });
+  },
+  
   startNewConversation: () => {
     const { chatMode } = get();
     set({ 
       currentConversationId: null,
+      conversationTitle: null,
+      conversationMetadata: {},
+      isLoadingConversation: false,
       // Clear messages for current mode
       ...(chatMode === 'general' ? { generalMessages: [] } : { ragMessages: [] })
     });

@@ -1,6 +1,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "../../../../generated-convex";
+import type { GenericId as Id } from "convex/values";
 import {
   SessionManager,
   sessionManager,
@@ -182,7 +183,7 @@ async function performVectorSearch(
       documentIds.map(async (docId) => {
         try {
           const doc = await convex.query(api.documents.getDocumentById, {
-            documentId: docId as any,
+            documentId: docId as Id<"rag_documents">,
           });
           return doc;
         } catch (error) {
@@ -454,7 +455,7 @@ INSTRUCTIONS:
     try {
       // Check if conversation exists, if not create it
       const conversation = await convex.query(
-        api.ragChat.getConversationBySessionId,
+        api.unifiedChat.getConversationBySessionId,
         {
           sessionId: currentSessionId,
         }
@@ -462,40 +463,60 @@ INSTRUCTIONS:
 
       let conversationId;
       if (!conversation) {
-        // Create new conversation
-        conversationId = await convex.mutation(api.ragChat.createConversation, {
-          sessionId: currentSessionId,
-          documentIds: documentIds as any[],
-          title: `Chat about ${documentIds.length} document${documentIds.length > 1 ? "s" : ""}`,
-          llmModel: llmResult.model_info?.model_name || "lightweight-llm",
-          userId: request.headers.get("x-user-id") || undefined,
-          userAgent: request.headers.get("user-agent") || undefined,
-          ipAddress:
-            request.headers.get("x-forwarded-for") ||
-            request.headers.get("x-real-ip") ||
-            undefined,
-        });
+        // Fetch document titles from Convex
+      const documentTitles = await Promise.all(
+        documentIds.map(async (docId) => {
+          try {
+            const doc = await convex.query(api.documents.getDocumentById, {
+              documentId: docId as any,
+            });
+            return doc?.title || "Untitled Document";
+          } catch (error) {
+            console.error(`Error fetching document ${docId}:`, error);
+            return "Untitled Document";
+          }
+        })
+      );
+
+      // Create new conversation
+      conversationId = await convex.mutation(api.unifiedChat.createConversation, {
+        sessionId: currentSessionId,
+        documentIds: documentIds as any[],
+        documentTitles: documentTitles,
+        title: `Chat about ${documentIds.length} document${documentIds.length > 1 ? "s" : ""}`,
+        llmModel: llmResult.model_info?.model_name || "lightweight-llm",
+        chatMode: "rag",
+        type: "rag",
+        userId: request.headers.get("x-user-id") || undefined,
+        userAgent: request.headers.get("user-agent") || undefined,
+        ipAddress:
+          request.headers.get("x-forwarded-for") ||
+          request.headers.get("x-real-ip") ||
+          undefined,
+      });
       } else {
         conversationId = conversation._id;
       }
 
       // Save user message
-      await convex.mutation(api.ragChat.addMessage, {
+      await convex.mutation(api.unifiedChat.addMessage, {
         conversationId: conversationId as any,
         messageId: `msg_${Date.now()}_user`,
         role: "user",
         content: message,
         tokenCount: llmResult.usage?.input_tokens || 0,
+        chatMode: "rag",
       });
 
       // Save assistant message
-      await convex.mutation(api.ragChat.addMessage, {
+      await convex.mutation(api.unifiedChat.addMessage, {
         conversationId: conversationId as any,
         messageId: `msg_${Date.now()}_assistant`,
         role: "assistant",
         content: llmResult.response,
         tokenCount: llmResult.usage?.output_tokens || 0,
         processingTimeMs: processingTime,
+        chatMode: "rag",
         sources: vectorResults.map((result) => ({
           documentId: result.documentId as any,
           title: result.title,

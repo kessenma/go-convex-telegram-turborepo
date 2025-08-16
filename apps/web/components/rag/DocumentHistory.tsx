@@ -24,12 +24,12 @@ const DocumentHistory = memo(function DocumentHistory({
   const setCurrentConversation = useSetCurrentConversation();
   
   // Fetch recent conversations
-  const recentConversations = useQuery(api.ragChat.getRecentConversations, { limit: 20 });
+  const recentConversations = useQuery(api.unifiedChat.getRecentConversations, { limit: 20 });
   
   // Fetch messages for selected conversation
   const conversationMessages = useQuery(
-    api.ragChat.getConversationMessages,
-    selectedConversationId ? { conversationId: selectedConversationId as Id<"rag_conversations"> } : "skip"
+    api.unifiedChat.getConversationMessages,
+    selectedConversationId ? { conversationId: selectedConversationId as Id<"unified_conversations"> } : "skip"
   );
   
   const handleConversationClick = useCallback((conversation: any) => {

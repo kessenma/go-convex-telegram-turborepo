@@ -18,9 +18,11 @@ export interface GeneralChatMessage {
 interface UseGeneralChatOptions {
   api: string;
   onError?: (error: Error) => void;
+  onMessageSent?: (message: GeneralChatMessage) => void;
+  onMessageReceived?: (message: GeneralChatMessage) => void;
 }
 
-export function useGeneralChat({ api, onError }: UseGeneralChatOptions) {
+export function useGeneralChat({ api, onError, onMessageSent, onMessageReceived }: UseGeneralChatOptions) {
   const [messages, setMessages] = useState<GeneralChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +50,9 @@ export function useGeneralChat({ api, onError }: UseGeneralChatOptions) {
     setInput('');
     setIsLoading(true);
     setError(null);
+    
+    // Call onMessageSent callback
+    onMessageSent?.(userMessage);
 
     // Cancel any ongoing request
     if (abortControllerRef.current) {
@@ -86,6 +91,7 @@ export function useGeneralChat({ api, onError }: UseGeneralChatOptions) {
         };
 
         setMessages(prev => [...prev, assistantMessage]);
+        onMessageReceived?.(assistantMessage);
       } catch (parseError) {
         // If JSON parsing fails, treat the response as plain text
         const assistantMessage: GeneralChatMessage = {

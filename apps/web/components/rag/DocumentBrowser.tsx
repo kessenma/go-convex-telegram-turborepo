@@ -28,7 +28,7 @@ const DocumentBrowser = memo(function DocumentBrowser({
   const [expandingDocument, setExpandingDocument] = useState<{ docId: string; paperIndex: number } | null>(null);
   
   // Get state and actions from stores
-  const { deletingIds, deleteDocument } = useDocumentStore();
+  const { deleteDocument } = useDocumentStore();
   const deleteDocumentMutation = useMutation(api.documents.deleteDocument);
   
   // Chat functionality removed - focusing on document management only
