@@ -236,7 +236,7 @@ export function AISDKProgressLoader({
                <div className="px-3 py-1 text-sm font-medium text-cyan-200 rounded-lg border bg-slate-700/50 border-cyan-500/20">
                  {formatTime(elapsedTime)}
                </div>
-               {estimatedTime && (
+               {estimatedTime !== undefined && (
                  <div className="mt-1 text-xs text-cyan-300/60">
                    ~{formatTime(estimatedTime)} total
                  </div>

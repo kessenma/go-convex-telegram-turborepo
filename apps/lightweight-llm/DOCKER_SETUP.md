@@ -130,7 +130,7 @@ docker run -e INSTALL_LANGEXTRACT=true lightweight-llm:latest
 
 3. **LangExtract Installation Issues**
    - Installation adds ~30-60 seconds to startup time
-   - Check logs for pip installation errors
+   - Check logs for uv installation errors
    - Fallback processing will be used if installation fails
 
 4. **Health Check Failures**
@@ -182,10 +182,10 @@ For development without Docker:
 cd apps/lightweight-llm
 
 # Install dependencies
-pip install -r requirements.txt
+uv sync
 
 # Optional: Install LangExtract
-pip install langextract
+uv add langextract
 
 # Run locally
 python main.py
@@ -208,7 +208,8 @@ apps/lightweight-llm/
 ├── Dockerfile                 # Docker build configuration
 ├── docker_startup.py         # Container startup script
 ├── main.py                   # Main FastAPI application
-├── requirements.txt          # Python dependencies
+├── pyproject.toml            # Python dependencies and project metadata
+├── uv.lock                   # Locked dependency versions
 ├── rag_processor.py          # Original RAG processor
 ├── quantitative_rag.py       # Quantitative query handling
 ├── qualitative_rag.py        # Qualitative query handling

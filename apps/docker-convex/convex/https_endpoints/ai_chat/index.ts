@@ -1,6 +1,8 @@
 // apps/docker-convex/convex/https_endpoints/ai_chat/index.ts
 import { httpRouter } from "convex/server";
 import { httpAction } from "../../_generated/server";
+import { Id } from "../../_generated/dataModel";
+import { v } from "convex/values";
 import {
   createGeneralConversationFromDb,
   addGeneralMessageFromDb,
@@ -25,6 +27,24 @@ import {
   GetRagConversationMessagesInput,
   GetRecentRagConversationsInput,
 } from "../../ragChat";
+import { updateConversationTitle } from "../../unifiedChat";
+
+// Helper function to update conversation title
+async function updateUnifiedConversationTitleFromDb(
+  ctx: any,
+  args: { conversationId: string; title: string }
+) {
+  try {
+    // Use direct database patch with the string ID
+    // This is safer than trying to convert to a Convex ID
+    await ctx.db.patch(args.conversationId, { title: args.title });
+    
+    return true;
+  } catch (error) {
+    console.error("Error in updateUnifiedConversationTitleFromDb:", error);
+    throw error;
+  }
+}
 
 
 
@@ -256,6 +276,38 @@ export const deleteThreadAPI = httpAction(async (ctx, request) => {
   );
 });
 
+// Update Conversation Title API
+export const updateConversationTitleAPI = httpAction(async (ctx, request) => {
+  try {
+    const body = await request.json();
+    const { conversationId, title } = body;
+
+    if (!conversationId || !title) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: conversationId, title" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Update the conversation title using the helper function
+    await updateUnifiedConversationTitleFromDb(ctx, {
+      conversationId,
+      title,
+    });
+
+    return new Response(
+      JSON.stringify({ success: true, message: "Conversation title updated successfully" }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error updating conversation title:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to update conversation title" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+});
+
 // HTTP routes (keeping the existing router structure)
 http.route({
   path: "/general-chat",
@@ -350,6 +402,12 @@ http.route({
       );
     }
   })
+});
+
+http.route({
+  path: "/conversations/update-title",
+  method: "POST",
+  handler: updateConversationTitleAPI
 });
 
 export default http;

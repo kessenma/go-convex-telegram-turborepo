@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # Global variables for model
 llm = None
 status_reporter = None
+title_generator = None
 
 # Model configuration - Using Llama 3.2 1B GGUF for fast RAG performance
 MODEL_PATH = os.getenv("MODEL_PATH", "./llama-3.2-1b-instruct-q4.gguf")
@@ -37,7 +38,7 @@ N_THREADS = int(os.getenv("N_THREADS", "8"))  # CPU threads
 N_GPU_LAYERS = int(os.getenv("N_GPU_LAYERS", "0"))  # GPU layers (0 for CPU only)
 
 # Status reporting configuration
-CONVEX_URL = os.getenv("CONVEX_URL", "http://localhost:3001")
+CONVEX_URL = os.getenv("CONVEX_URL", "http://localhost:3211")
 SERVICE_NAME = "lightweight-llm"
 
 MAX_TOKENS = 512
@@ -52,6 +53,8 @@ class ChatRequest(BaseModel):
     conversation_history: List[Dict[str, str]] = []
     max_length: Optional[int] = 512
     temperature: Optional[float] = 0.7
+    conversation_id: Optional[str] = None
+    is_new_conversation: Optional[bool] = False
 
 class ChatResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -60,6 +63,7 @@ class ChatResponse(BaseModel):
     model_info: Dict[str, Any]
     usage: Dict[str, Any]
     rag_metadata: Optional[Dict[str, Any]] = None
+    generated_title: Optional[str] = None
 
 class HealthResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -111,7 +115,7 @@ def get_memory_usage():
 
 def load_model():
     """Load the Llama 3.2 GGUF model using llama-cpp-python"""
-    global llm, status_reporter
+    global llm, status_reporter, title_generator
     
     try:
         # Send loading status
@@ -141,6 +145,9 @@ def load_model():
             f16_kv=True,    # Use 16-bit for key-value cache
         )
         
+        # Initialize title generator
+        title_generator = create_title_generator(llm)
+        
         logger.info("Llama 3.2 model loaded successfully")
         logger.info(f"Memory usage after loading: {get_memory_usage()}")
         
@@ -156,11 +163,15 @@ def load_model():
 
 def cleanup_model():
     """Clean up model resources"""
-    global llm
+    global llm, title_generator
     
     if llm is not None:
         del llm
         llm = None
+    
+    if title_generator is not None:
+        del title_generator
+        title_generator = None
     
     # Force garbage collection
     gc.collect()
@@ -242,6 +253,9 @@ app.add_middleware(
 
 # Import the RAG processors
 from rag_processor import process_rag_query
+
+# Import conversation title generator
+from conversation_title import create_title_generator
 
 # Try to import LangExtract RAG processor, fall back gracefully if not available
 try:
@@ -480,6 +494,21 @@ async def chat(request: ChatRequest):
         logger.info(f"Response generated successfully in {generation_time:.2f}s")
         logger.info(f"Tokens - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}")
         
+        # Generate conversation title if this is a new conversation
+        generated_title = None
+        if request.is_new_conversation and title_generator:
+            try:
+                logger.info("Generating conversation title...")
+                title_start_time = time.time()
+                generated_title = title_generator.generate_title(request.message, generated_text)
+                title_generation_time = time.time() - title_start_time
+                logger.info(f"Title generated successfully in {title_generation_time:.2f}s: {generated_title}")
+                
+
+            except Exception as e:
+                logger.error(f"Error generating conversation title: {str(e)}")
+                generated_title = None
+        
         return ChatResponse(
             response=generated_text,
             model_info={
@@ -494,7 +523,8 @@ async def chat(request: ChatRequest):
                 "output_tokens": completion_tokens,
                 "total_tokens": total_tokens
             },
-            rag_metadata=rag_metadata
+            rag_metadata=rag_metadata,
+            generated_title=generated_title
         )
         
     except Exception as e:

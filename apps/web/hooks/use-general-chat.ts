@@ -13,6 +13,7 @@ export interface GeneralChatMessage {
     score: number;
   }>;
   metadata?: Record<string, any>;
+  generated_title?: string;
 }
 
 interface UseGeneralChatOptions {
@@ -20,14 +21,17 @@ interface UseGeneralChatOptions {
   onError?: (error: Error) => void;
   onMessageSent?: (message: GeneralChatMessage) => void;
   onMessageReceived?: (message: GeneralChatMessage) => void;
+  onFinish?: (message: GeneralChatMessage) => void;
+  onTitleGenerated?: (title: string) => void;
 }
 
-export function useGeneralChat({ api, onError, onMessageSent, onMessageReceived }: UseGeneralChatOptions) {
+export function useGeneralChat({ api, onError, onMessageSent, onMessageReceived, onFinish, onTitleGenerated }: UseGeneralChatOptions) {
   const [messages, setMessages] = useState<GeneralChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -70,6 +74,8 @@ export function useGeneralChat({ api, onError, onMessageSent, onMessageReceived 
         },
         body: JSON.stringify({
           messages: [...messages, userMessage],
+          conversation_id: conversationId,
+          is_new_conversation: messages.length === 0,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -82,16 +88,28 @@ export function useGeneralChat({ api, onError, onMessageSent, onMessageReceived 
       
       try {
         const responseData = JSON.parse(responseText);
+        console.log('🎯 Parsed response data:', responseData);
+        console.log('🎯 Generated title in response:', responseData.generated_title);
         
         const assistantMessage: GeneralChatMessage = {
           id: nanoid(),
           role: 'assistant',
           content: responseData.response || responseData.content || responseText,
           timestamp: Date.now(),
+          generated_title: responseData.generated_title,
         };
+
+        // Check if a title was generated
+        if (responseData.generated_title && onTitleGenerated) {
+          console.log('🎯 Calling onTitleGenerated with:', responseData.generated_title);
+          onTitleGenerated(responseData.generated_title);
+        } else {
+          console.log('🎯 No title generated or no onTitleGenerated callback');
+        }
 
         setMessages(prev => [...prev, assistantMessage]);
         onMessageReceived?.(assistantMessage);
+        onFinish?.(assistantMessage);
       } catch (parseError) {
         // If JSON parsing fails, treat the response as plain text
         const assistantMessage: GeneralChatMessage = {
@@ -102,6 +120,8 @@ export function useGeneralChat({ api, onError, onMessageSent, onMessageReceived 
         };
 
         setMessages(prev => [...prev, assistantMessage]);
+        onMessageReceived?.(assistantMessage);
+        onFinish?.(assistantMessage);
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
@@ -138,5 +158,6 @@ export function useGeneralChat({ api, onError, onMessageSent, onMessageReceived 
     isLoading,
     error,
     setMessages,
+    setConversationId,
   };
 }

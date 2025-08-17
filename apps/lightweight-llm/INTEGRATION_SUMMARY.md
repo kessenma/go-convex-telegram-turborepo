@@ -18,7 +18,7 @@ Successfully integrated Google's LangExtract library into the Lightweight LLM se
 
 ### Files Modified
 1. **`main.py`** - Enhanced with LangExtract integration and fallback handling
-2. **`requirements.txt`** - Added LangExtract dependency
+2. **`pyproject.toml`** - Added LangExtract dependency
 3. **`Dockerfile`** - Updated to copy all necessary files and use startup script
 4. **`docker-compose.yaml`** - Added INSTALL_LANGEXTRACT environment variable
 5. **`rag_processor.py`** - Updated documentation for fallback role
@@ -123,7 +123,7 @@ curl -X POST http://localhost:8082/chat \
 ### Development
 ```bash
 # Local development with LangExtract
-pip install langextract
+uv add langextract
 python main.py
 ```
 

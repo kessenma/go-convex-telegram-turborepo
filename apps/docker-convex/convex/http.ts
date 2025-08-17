@@ -97,6 +97,41 @@ http.route({
   handler: healthRoutes.updateServiceStatusAPI,
 });
 
+// Update conversation title endpoint
+http.route({
+  path: "/api/updateConversationTitle",
+  method: "POST",
+  handler: httpAction(async ({ runMutation }, request) => {
+    try {
+      const body = await request.json();
+      const { conversationId, title } = body;
+      
+      if (!conversationId || !title) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Missing conversationId or title" }),
+          { status: 400 }
+        );
+      }
+      
+      await runMutation(api.unifiedChat.updateConversationTitle, {
+        conversationId,
+        title,
+      });
+      
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200 }
+      );
+    } catch (error) {
+      console.error("Error updating conversation title:", error);
+      return new Response(
+        JSON.stringify({ success: false, error: String(error) }),
+        { status: 500 }
+      );
+    }
+  }),
+});
+
 http.route({
   path: "/api/status/consolidated",
   method: "GET",

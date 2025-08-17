@@ -1,14 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-// Define the LLM service URL
-const LIGHTWEIGHT_LLM_URL = process.env.LIGHTWEIGHT_LLM_URL || 
-                           process.env.LIGHTWEIGHT_LLM_INTERNAL_URL || 
-                           "http://localhost:8082";
-
-// Define message types
-export interface Message {
+// Types for flexibility between two payload shapes
+interface BaseMessage {
   id?: string;
-  role: 'user' | 'assistant' | 'system' | 'function';
+  role: "user" | "assistant" | "system" | "function";
   content: string;
   name?: string;
   function_call?: {
@@ -17,100 +12,108 @@ export interface Message {
   };
 }
 
-export interface GeneralChatRequestBody {
-  messages: Message[];
+interface MessagesPayload {
+  messages: BaseMessage[];
+  conversation_id?: string;
+  is_new_conversation?: boolean;
 }
+
+interface SingleMessagePayload {
+  message: string;
+  conversation_id?: string;
+  is_new_conversation?: boolean;
+}
+
+const LIGHTWEIGHT_LLM_URL =
+  process.env.LIGHTWEIGHT_LLM_URL ||
+  process.env.LIGHTWEIGHT_LLM_INTERNAL_URL ||
+  "http://localhost:8082";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json() as GeneralChatRequestBody;
-    
-    if (!messages || !messages.length) {
-      return NextResponse.json(
-        { error: "Messages are required" },
-        { status: 400 }
-      );
-    }
+    const body = (await req.json()) as MessagesPayload | SingleMessagePayload;
 
-    console.log("General Chat - Starting...");
-    console.log("Messages:", messages.length);
+    // Derive message and conversation history depending on provided payload shape
+    let message = "";
+    let conversation_history:
+      | { role: string; content: string }[]
+      | undefined = undefined;
+    let is_new_conversation = false;
+    let conversation_id: string | undefined = undefined;
 
-    // Get the last user message
-    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-    if (!lastUserMessage) {
-      return NextResponse.json(
-        { error: "No user message found" },
-        { status: 400 }
-      );
-    }
-
-    // Convert messages to the format expected by the LLM service
-    const conversationHistory = messages.slice(0, -1).map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-
-    // Create a text encoder for the streaming response
-    const encoder = new TextEncoder();
-    
-    // Create a TransformStream to handle the streaming response
-    const stream = new TransformStream();
-    const writer = stream.writable.getWriter();
-
-    // Make the API call in the background
-    (async () => {
-      try {
-        // Call the LLM service
-        const llmResponse = await fetch(`${LIGHTWEIGHT_LLM_URL}/chat`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: lastUserMessage.content,
-            context: "", // No context for general chat
-            conversation_history: conversationHistory,
-            max_length: 200,
-            temperature: 0.7,
-          }),
-        });
-
-        if (!llmResponse.ok) {
-          const errorText = await llmResponse.text();
-          console.error("LLM service error:", errorText);
-          await writer.write(encoder.encode("Sorry, I encountered an error. Please try again later."));
-          await writer.close();
-          return;
-        }
-
-        const llmResult = await llmResponse.json();
-        console.log("LLM Response generated successfully");
-
-        // Create a response object with the LLM response
-        const responseObject = {
-          response: llmResult.response
-        };
-        
-        // Stream the JSON response
-        await writer.write(encoder.encode(JSON.stringify(responseObject)));
-        await writer.close();
-      } catch (error) {
-        console.error("Error in streaming response:", error);
-        await writer.write(encoder.encode("Sorry, I encountered an error. Please try again later."));
-        await writer.close();
+    if ("messages" in body && Array.isArray(body.messages)) {
+      // Determine the last user message and prior history
+      const lastUserMessage = [...body.messages].filter(
+        (m) => m.role === "user"
+      ).pop();
+      if (!lastUserMessage) {
+        return NextResponse.json(
+          { error: "No user message found" },
+          { status: 400 }
+        );
       }
-    })();
 
-    // Return the streaming response
-    return new Response(stream.readable, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-cache, no-transform',
-        'X-Content-Type-Options': 'nosniff',
-      },
+      message = lastUserMessage.content;
+      conversation_history = body.messages.slice(0, -1).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      is_new_conversation = Boolean(
+        (body as MessagesPayload).is_new_conversation
+      );
+      conversation_id = (body as MessagesPayload).conversation_id;
+    } else if ("message" in body && typeof body.message === "string") {
+      // Single message payload (used by title-generation call)
+      message = body.message;
+      conversation_history = [];
+      is_new_conversation = Boolean(
+        (body as SingleMessagePayload).is_new_conversation
+      );
+      conversation_id = (body as SingleMessagePayload).conversation_id;
+    } else {
+      return NextResponse.json(
+        { error: "Invalid request body: missing message(s)" },
+        { status: 400 }
+      );
+    }
+
+    // Call the Python LLM service. For general chat, no RAG context.
+    const llmResponse = await fetch(`${LIGHTWEIGHT_LLM_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        context: "",
+        conversation_history,
+        max_length: 200,
+        temperature: 0.7,
+        // Critical fields to enable title generation in Python
+        conversation_id,
+        is_new_conversation,
+      }),
     });
-  } catch (error) {
-    console.error("General Chat API error:", error);
+
+    if (!llmResponse.ok) {
+      const errorText = await llmResponse.text();
+      console.error("LLM service error:", errorText);
+      return NextResponse.json(
+        { error: "LLM service error", details: errorText },
+        { status: 502 }
+      );
+    }
+
+    const llmResult = await llmResponse.json();
+
+    // Return JSON with both response and optional generated_title
+    return NextResponse.json({
+      response: llmResult.response,
+      generated_title: llmResult.generated_title ?? null,
+      usage: llmResult.usage ?? null,
+      model_info: llmResult.model_info ?? null,
+    });
+  } catch (error: any) {
+    console.error("General chat API error:", error?.message || error);
     return NextResponse.json(
       {
         error: "Internal server error",

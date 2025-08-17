@@ -1,0 +1,47 @@
+[project]
+name = "vector-convert-llm"
+version = "0.1.0"
+description = "Vector conversion service using LLM embeddings"
+requires-python = ">=3.11"
+dependencies = [
+    "Flask==2.3.3",
+    "Flask-CORS==4.0.0",
+    "sentence-transformers==2.2.2",
+    "numpy==1.24.3",
+    "requests==2.31.0",
+    "langchain-text-splitters==0.0.1",
+    "psutil==5.9.5",
+    "gunicorn==21.2.0",
+    "torch==2.0.1",
+    "transformers==4.33.2",
+    "tokenizers==0.13.3",
+    "huggingface-hub==0.16.4",
+    "tqdm==4.66.1",
+    "regex==2023.8.8",
+    "safetensors==0.3.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "pytest",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatchling.build.targets.wheel]
+include = [
+    "*.py",
+    "*.sh",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]

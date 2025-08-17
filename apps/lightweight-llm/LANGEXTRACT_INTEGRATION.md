@@ -37,7 +37,7 @@ python install_langextract.py
 
 ### Option 2: Manual Setup
 ```bash
-pip install langextract
+uv add langextract
 
 # For local model support (recommended)
 # Install Ollama: https://ollama.ai/
@@ -209,7 +209,7 @@ The `/model-info` endpoint now includes LangExtract status:
 
 1. **LangExtract Import Error**
    ```bash
-   pip install langextract
+   uv add langextract
    ```
 
 2. **Ollama Model Not Found**

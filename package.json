@@ -56,6 +56,7 @@
     "mobile:check-types": "cd apps/mobile && pnpm check-types",
     "mobile:lint": "cd apps/mobile && pnpm lint",
     "mobile:test": "cd apps/mobile && pnpm test",
+    "docker:clean": "docker system prune -a --volumes && docker builder prune -a",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",

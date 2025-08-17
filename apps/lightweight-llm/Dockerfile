@@ -3,8 +3,11 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
 # Install huggingface-hub for model downloading
-RUN pip install huggingface-hub>=0.17.1
+RUN uv pip install --system huggingface-hub>=0.17.1
 
 # Set the environment variable for the huggingface-cli
 ENV HUGGINGFACE_HUB_ADD_TOKEN_AS_GIT_CREDENTIAL=false
@@ -44,10 +47,14 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --timeout 600 -r requirements.txt
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+# Copy pyproject.toml for dependency installation
+    COPY pyproject.toml ./
+    
+    # Install Python dependencies using uv
+    RUN uv pip install --system .
 
 # Copy the downloaded model from the builder stage
 COPY --from=builder /app/llama-3.2-1b-instruct-q4.gguf .
@@ -60,7 +67,7 @@ COPY quantitative_rag.py .
 COPY qualitative_rag.py .
 COPY langextract_rag.py .
 COPY install_langextract.py .
-COPY docker_startup.py .
+COPY conversation_title.py .
 
 # Expose the port the app runs on
 EXPOSE 8082

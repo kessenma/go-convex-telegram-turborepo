@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
 # Set working directory
 WORKDIR /app
 
@@ -29,12 +32,12 @@ RUN apt-get update && apt-get install -y \
     dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy dependency files first for better caching
+COPY pyproject.toml .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Extract dependencies and install using uv
+RUN python3 -c "import tomllib; f=open('pyproject.toml','rb'); data=tomllib.load(f); f.close(); deps=data['project']['dependencies']; [print(dep) for dep in deps]" > /tmp/requirements.txt && \
+    uv pip install --system -r /tmp/requirements.txt
 
 # Copy application code
 COPY main.py .

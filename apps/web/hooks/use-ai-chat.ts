@@ -12,6 +12,7 @@ export interface Message {
     snippet: string;
     score: number;
   }>;
+  generated_title?: string;
 }
 
 interface UseChatOptions {
@@ -21,6 +22,7 @@ interface UseChatOptions {
   onFinish?: (message: Message) => void;
   onMessageSent?: (message: Message) => void;
   onMessageReceived?: (message: Message) => void;
+  onTitleGenerated?: (title: string) => void;
 }
 
 export function useAIChat({
@@ -30,11 +32,13 @@ export function useAIChat({
   onFinish,
   onMessageSent,
   onMessageReceived,
+  onTitleGenerated,
 }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   // Handle input change
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -66,6 +70,8 @@ export function useAIChat({
       // Call our custom API endpoint
       console.log("Sending chat request with body:", {
         messages: [...messages, userMessage],
+        conversation_id: conversationId,
+        is_new_conversation: messages.length === 0,
         ...body
       });
       
@@ -76,6 +82,8 @@ export function useAIChat({
         },
         body: JSON.stringify({
           messages: [...messages, userMessage],
+          conversation_id: conversationId,
+          is_new_conversation: messages.length === 0,
           ...body,
         }),
       });
@@ -91,13 +99,19 @@ export function useAIChat({
       // Parse the response to check for JSON format (which might contain sources)
       let responseContent = responseText;
       let sources = undefined;
+      let jsonResponse = null;
       
       try {
         // Check if the response is JSON
-        const jsonResponse = JSON.parse(responseText);
+        jsonResponse = JSON.parse(responseText);
         if (jsonResponse.response) {
           responseContent = jsonResponse.response;
           sources = jsonResponse.sources;
+          
+          // Check if a title was generated
+          if (jsonResponse.generated_title && onTitleGenerated) {
+            onTitleGenerated(jsonResponse.generated_title);
+          }
         }
       } catch (e) {
         // Not JSON, use the text as is
@@ -111,6 +125,7 @@ export function useAIChat({
         role: 'assistant',
         content: responseContent,
         sources: sources,
+        generated_title: jsonResponse?.generated_title,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -136,5 +151,6 @@ export function useAIChat({
     isLoading,
     error,
     setMessages,
+    setConversationId,
   };
 }

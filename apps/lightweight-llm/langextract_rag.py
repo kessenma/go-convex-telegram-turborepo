@@ -19,7 +19,7 @@ try:
     logger.info("LangExtract library imported successfully")
 except ImportError as e:
     LANGEXTRACT_AVAILABLE = False
-    logger.warning(f"LangExtract not available: {e}. Install with: pip install langextract")
+    logger.warning(f"LangExtract not available: {e}. Install with: uv add langextract")
     # Create a dummy lx module for fallback
     class DummyLangExtract:
         class data:

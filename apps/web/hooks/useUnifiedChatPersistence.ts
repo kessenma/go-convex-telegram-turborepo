@@ -20,7 +20,8 @@ export function useUnifiedChatPersistence({
   // Convex mutations
   const createConversationMutation = useMutation(api.unifiedChat.createConversation);
   const addMessageMutation = useMutation(api.unifiedChat.addMessage);
-  
+  const updateConversationTitleMutation = useMutation(api.unifiedChat.updateConversationTitle);
+
   // Track current session and conversation
   const sessionIdRef = useRef<string>(nanoid());
   const currentConversationIdRef = useRef<string | null>(null);
@@ -44,7 +45,7 @@ export function useUnifiedChatPersistence({
     try {
       // Generate new session ID for new conversation
       sessionIdRef.current = nanoid();
-      
+
       const conversationId = await createConversationMutation({
         sessionId: sessionIdRef.current,
         type,
@@ -67,8 +68,9 @@ export function useUnifiedChatPersistence({
       });
 
       currentConversationIdRef.current = conversationId;
+      console.log('🎯 Set conversation ID in persistence hook:', conversationId);
       onConversationCreated?.(conversationId);
-      
+
       return conversationId;
     } catch (error) {
       const err = error instanceof Error ? error : new Error('Failed to create conversation');
@@ -91,7 +93,7 @@ export function useUnifiedChatPersistence({
   }) => {
     try {
       const targetConversationId = conversationId || currentConversationIdRef.current;
-      
+
       if (!targetConversationId) {
         throw new Error('No active conversation to save message to');
       }
@@ -117,7 +119,7 @@ export function useUnifiedChatPersistence({
       });
 
       onMessageSaved?.(messageDocId as string);
-      
+
       return messageDocId;
     } catch (error) {
       const err = error instanceof Error ? error : new Error('Failed to save message');
@@ -137,7 +139,7 @@ export function useUnifiedChatPersistence({
     conversationId?: string;
   }) => {
     const results: (string | Id<'unified_chat_messages'>)[] = [];
-    
+
     for (const message of messages) {
       try {
         const result = await saveMessage({
@@ -151,7 +153,7 @@ export function useUnifiedChatPersistence({
         // Continue with other messages even if one fails
       }
     }
-    
+
     return results;
   }, [saveMessage]);
 
@@ -217,6 +219,21 @@ export function useUnifiedChatPersistence({
     currentConversationIdRef.current = null;
   }, []);
 
+  // Update conversation title
+  const updateConversationTitle = useCallback(async (conversationId: string, title: string) => {
+    try {
+      await updateConversationTitleMutation({
+        conversationId: conversationId as Id<'unified_conversations'>,
+        title,
+      });
+      return true;
+    } catch (err) {
+      console.error('Failed to update conversation title:', err);
+      onError?.(err as Error);
+      throw err;
+    }
+  }, [updateConversationTitleMutation, onError]);
+
   return {
     createConversation,
     saveMessage,
@@ -225,6 +242,7 @@ export function useUnifiedChatPersistence({
     getCurrentConversationId,
     setCurrentConversationId,
     resetSession,
+    updateConversationTitle,
     sessionId: sessionIdRef.current,
   };
 }

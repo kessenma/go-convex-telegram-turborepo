@@ -186,7 +186,10 @@ function prioritizeNumericSections(text: string, numericValues: string[]): strin
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, documentIds = [] } = await req.json() as ChatRequestBody;
+    const { messages, documentIds = [], conversation_id, is_new_conversation } = await req.json() as ChatRequestBody & {
+      conversation_id?: string;
+      is_new_conversation?: boolean;
+    };
     
     if (!messages || !messages.length) {
       return NextResponse.json(
@@ -198,6 +201,8 @@ export async function POST(req: NextRequest) {
     console.log("AI SDK Chat - Starting...");
     console.log("Messages:", messages.length);
     console.log("Document IDs:", documentIds);
+    console.log("Conversation ID:", conversation_id);
+    console.log("Is New Conversation:", is_new_conversation);
 
     // Get the last user message
     const lastUserMessage = messages.filter(m => m.role === 'user').pop();
@@ -273,6 +278,8 @@ export async function POST(req: NextRequest) {
             conversation_history: conversationHistory,
             max_length: 200,
             temperature: 0.7,
+            conversation_id,
+            is_new_conversation,
           }),
         });
 
@@ -319,10 +326,11 @@ export async function POST(req: NextRequest) {
           }
         }
         
-        // Create a response object with the LLM response and sources
+        // Create a response object with the LLM response, sources, and title if generated
         const responseObject = {
           response: llmResult.response,
-          sources: sources
+          sources: sources,
+          generated_title: llmResult.generated_title || null
         };
         
         // Stream the JSON response
