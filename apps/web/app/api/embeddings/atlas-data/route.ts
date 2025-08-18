@@ -46,11 +46,11 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     // Prefer Convex HTTP router URL (internal in Docker), fallback to localhost default
-    const rawHttp = process.env.CONVEX_HTTP_URL || "http://localhost:3211";
+    const rawHttp = process.env.CONVEX_HTTP_URL || "http://localhost:3210";
     const convexHttpBase = normalizeHttpBase(rawHttp);
 
     // WS/base URL for ConvexHttpClient fallback
-    const rawWs = process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || "http://localhost:3210";
+    const rawWs = process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || "http://localhost:3211";
     const convexWsBase = normalizeWsBase(rawWs);
 
     console.log("=== ATLAS DATA API DEBUG START ===");
