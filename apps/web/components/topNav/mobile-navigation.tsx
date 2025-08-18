@@ -23,6 +23,7 @@ import { ExpandableCard } from "../../components/ui/expandable-card-reusable";
 import { useOutsideClick } from "../../hooks/use-outside-clicks";
 import { renderIcon, fixComponentReturnType } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
+import { ScrollArea } from "../ui/scroll-area";
 import { Notifications } from "./Notifications";
 import { Settings } from "../settings/0Settings";
 import { useNavigationLoading } from "../../contexts/NavigationLoadingContext";
@@ -176,26 +177,26 @@ export default function MobileNavigation(): React.ReactElement {
   }, [isLoading]);
 
   // Navigation items organized by category to match desktop navigation
-  const navItems: readonly NavItem[] = [
+  const navItems = [
     // Home section
-    { href: "/", label: "Dashboard", icon: HouseWifi },
-    { href: "/about", label: "About", icon: Info },
-    { href: "/architecture", label: "Architecture", icon: Blocks },
+    { href: "/", label: "Home", icon: HouseWifi },
+    { href: "/dashboard", label: "Dashboard", icon: Blocks },
+    { href: "/settings", label: "Settings", icon: Info },
 
     // Messages section
-    { href: "/messages", label: "All Messages", icon: MessageSquareText },
-    { href: "/threads", label: "Message Threads", icon: MessagesSquare },
-    { href: "/send", label: "Send Message", icon: MessageSquareShare },
+     { href: "/messages", label: "All Messages", icon: MessagesSquare },
+     { href: "/messages/create", label: "Create Message", icon: MessageSquareShare },
+     { href: "/messages/templates", label: "Templates", icon: MessagesSquare },
 
-    // RAG section
-    { href: "/RAG-upload", label: "Upload", icon: Upload },
-    { href: "/RAG-data", label: "Data", icon: Library },
-    { href: "/RAG-chat", label: "Chat", icon: BotMessageSquare },
-    { href: "/ai-chat", label: "AI Chat (Vercel SDK)", icon: Bot },
+    // Data section
+    { href: "/data", label: "Data", icon: Library },
+    { href: "/data/upload", label: "Upload Data", icon: Upload },
+    { href: "/data/sources", label: "Data Sources", icon: BotMessageSquare },
+    { href: "/data/embeddings", label: "Embeddings", icon: Bot },
 
     // Console section
     {
-      href: "/convex-web-console-directions",
+      href: "/console/guide",
       label: "Connection Guide",
       icon: Info,
     },
@@ -291,20 +292,21 @@ export default function MobileNavigation(): React.ReactElement {
                   </button>
                 </div>
 
-                <motion.div
-                  className="relative space-y-1"
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    hidden: { opacity: 0 },
-                    visible: {
-                      opacity: 1,
-                      transition: {
-                        staggerChildren: 0.05,
-                        delayChildren: 0.1,
+                <ScrollArea className="h-[calc(100vh-120px)]">
+                  <motion.div
+                    className="relative space-y-1 pr-4"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: {
+                        opacity: 1,
+                        transition: {
+                          staggerChildren: 0.05,
+                          delayChildren: 0.1,
+                        },
                       },
-                    },
-                  }}
+                    }}
                 >
                   {/* Content-aware L-shaped line animation */}
                   {isMenuOpen && (
@@ -432,6 +434,7 @@ export default function MobileNavigation(): React.ReactElement {
                     ))}
                   </motion.div>
                 </motion.div>
+                </ScrollArea>
               </div>
             </ExpandableCard>
           </div>

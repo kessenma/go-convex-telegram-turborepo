@@ -158,13 +158,7 @@ export default function Navigation(): React.ReactElement {
     {
       label: "Data",
       icon: Layers as React.FC<{ className?: string }>,
-      dropdown: [
-        {
-          href: "/RAG-data",
-          label: "Data",
-          icon: Library as React.FC<{ className?: string }>,
-        },
-      ],
+      href: "/RAG-data",
     },
     {
       label: "Console",
