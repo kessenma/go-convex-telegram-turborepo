@@ -160,19 +160,9 @@ export default function Navigation(): React.ReactElement {
       icon: Layers as React.FC<{ className?: string }>,
       dropdown: [
         {
-          href: "/RAG-upload",
-          label: "Upload",
-          icon: Upload as React.FC<{ className?: string }>,
-        },
-        {
           href: "/RAG-data",
           label: "Data",
           icon: Library as React.FC<{ className?: string }>,
-        },
-        {
-          href: "/RAG-chat",
-          label: "RAG Chat",
-          icon: BotMessageSquare as React.FC<{ className?: string }>,
         },
       ],
     },

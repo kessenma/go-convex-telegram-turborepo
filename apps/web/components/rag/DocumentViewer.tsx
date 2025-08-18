@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../generated-convex";
 import { type GenericId as Id } from "convex/values";
 import { Button } from "../ui/button";
@@ -72,7 +72,7 @@ export function DocumentViewer({
   );
 
   const deleteDocument = useMutation(api.documents.deleteDocument);
-  const retryEmbedding = useMutation(api.embeddings.createDocumentEmbedding);
+  const retryEmbedding = useAction(api.embeddings.triggerDocumentEmbedding);
 
   useEffect(() => {
     if (documentData) {
@@ -102,10 +102,7 @@ export function DocumentViewer({
     try {
       setRetryingEmbedding(true);
       await retryEmbedding({ 
-        documentId,
-        embedding: [], // This would normally be generated
-        embeddingModel: "default",
-        embeddingDimensions: 384
+        documentId
       });
       toast.success("Embedding generation started");
     } catch (error) {

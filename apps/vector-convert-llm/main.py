@@ -35,15 +35,22 @@ def log_request_info():
         logger.info(f"Incoming request: {request.method} {request.path}")
         logger.info(f"Request headers: {dict(request.headers)}")
         logger.info(f"Content-Type: {request.content_type}")
-        if request.content_type == 'application/json':
+        
+        # Only try to parse JSON for POST/PUT requests with content
+        if request.method in ['POST', 'PUT'] and request.content_type == 'application/json':
             try:
                 data = request.get_json(force=True)
                 logger.info(f"Request JSON: {data}")
             except Exception as e:
                 logger.info(f"Failed to parse JSON: {e}")
-                logger.info(f"Raw data: {request.get_data()}")
-        else:
-            logger.info(f"Request data: {request.get_data()}")
+                raw_data = request.get_data()
+                logger.info(f"Raw data: {raw_data}")
+        elif request.method in ['POST', 'PUT']:
+            raw_data = request.get_data()
+            if raw_data:
+                logger.info(f"Request data: {raw_data}")
+            else:
+                logger.info("No request data")
     except Exception as e:
         logger.error(f"Error in request logging: {e}")
 
