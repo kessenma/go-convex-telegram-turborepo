@@ -98,22 +98,38 @@ export function useAIChat({
 
       // Parse the response to check for JSON format (which might contain sources)
       let responseContent = responseText;
-      let sources = undefined;
-      let jsonResponse = null;
+      let sources: Array<{
+        documentId: string;
+        title: string;
+        snippet: string;
+        score: number;
+      }> | undefined = undefined;
+      // Define an interface for the expected JSON response structure
+      interface JsonResponse {
+        response?: string;
+        sources?: Array<{
+          documentId: string;
+          title: string;
+          snippet: string;
+          score: number;
+        }>;
+        generated_title?: string;
+      }
+      let jsonResponse: JsonResponse | null = null;
       
       try {
         // Check if the response is JSON
         jsonResponse = JSON.parse(responseText);
-        if (jsonResponse.response) {
+        if (jsonResponse && jsonResponse.response) {
           responseContent = jsonResponse.response;
           sources = jsonResponse.sources;
           
           // Check if a title was generated
-          if (jsonResponse.generated_title && onTitleGenerated) {
+          if (jsonResponse && jsonResponse.generated_title && onTitleGenerated) {
             onTitleGenerated(jsonResponse.generated_title);
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // Not JSON, use the text as is
         responseContent = responseText;
       }
