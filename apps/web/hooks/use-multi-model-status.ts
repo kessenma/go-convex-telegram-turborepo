@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useModelSelectionStore } from "../stores/use-model-selection-store";
 
 interface ModelStatus {
   name: string;
@@ -38,6 +39,9 @@ export function useMultiModelStatus(): UseMultiModelStatusReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  
+  // Import the model selection store
+  const { setSelectedModelLocal } = useModelSelectionStore();
 
   const fetchModelsStatus = useCallback(async () => {
     try {
@@ -56,13 +60,18 @@ export function useMultiModelStatus(): UseMultiModelStatusReturn {
       setCurrentModel(data.current_model);
       setLastUpdated(data.timestamp);
       
+      // Update the model selection store with the current model if it exists
+      if (data.current_model) {
+        setSelectedModelLocal(data.current_model);
+      }
+      
     } catch (err) {
       console.error('Error fetching models status:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setSelectedModelLocal]);
 
   // Initial fetch
   useEffect(() => {

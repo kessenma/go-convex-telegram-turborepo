@@ -9,12 +9,14 @@ import {
   ChevronDown,
   Cpu,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { renderIcon } from '../../../lib/icon-utils';
 import { TitleGenerationLoader } from '../../ui/loading/TitleGenerationLoader';
 import { SelectedDocumentsList } from './SelectedDocumentsList';
 import { useChatMode } from '../../../stores/unifiedChatStore';
 import { useMultiModelStatus } from '../../../hooks/use-multi-model-status';
+import { useModelSelectionStore } from '../../../stores/use-model-selection-store';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tool-tip';
 
 interface ChatHeaderProps {
   conversationTitle: string | null;
@@ -26,8 +28,6 @@ interface ChatHeaderProps {
   onRemoveDocumentsClick: () => void;
   onDocumentsClick: () => void;
   onDocumentClick: (documentId: string) => void;
-  selectedModel?: string;
-  onModelChange?: (modelName: string) => void;
 }
 
 export const ChatHeader = React.memo(function ChatHeader({
@@ -39,17 +39,55 @@ export const ChatHeader = React.memo(function ChatHeader({
   onNewConversationClick,
   onRemoveDocumentsClick,
   onDocumentsClick,
-  onDocumentClick,
-  selectedModel,
-  onModelChange
+  onDocumentClick
 }: ChatHeaderProps) {
   const chatMode = useChatMode();
-  const { modelsStatus } = useMultiModelStatus();
+  const { modelsStatus, currentModel: currentLoadedModel } = useMultiModelStatus();
+  const { selectedModel, setSelectedModel, availableModels, setAvailableModels } = useModelSelectionStore();
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
 
-  // Get available models that are loaded
-  const availableModels = Object.values(modelsStatus).filter(model => model.is_loaded);
-  const currentModel = availableModels.find(model => model.name === selectedModel) || availableModels[0];
+  // Get all models for display, but we'll handle selection logic separately
+  const allModelsList = Object.values(modelsStatus);
+  
+  // Get only selectable models for the available models list
+  const selectableModelsList = allModelsList.filter(model => 
+    model.is_loaded || model.status === "loaded"
+  );
+  
+  // Helper function to check if a model is selectable
+  const isModelSelectable = (model: any) => {
+    return model.is_loaded || model.status === "loaded";
+  };
+  
+  // Helper function to get tooltip message for non-selectable models
+  const getTooltipMessage = (model: any) => {
+    if (model.status === "downloading" || model.status === "loading") {
+      return "Model is currently downloading. Please wait for it to complete.";
+    }
+    if (model.status === "ready" && !model.is_loaded) {
+      return "Model needs to be downloaded before it can be used. Go to Settings > LLM Status to download.";
+    }
+    return "Model is not available for selection.";
+  };
+  
+  // Set available models in the store and initialize selected model
+  useEffect(() => {
+    if (selectableModelsList.length > 0) {
+      const modelNames = selectableModelsList.map(model => model.name);
+      
+      // Only update if the models list has actually changed
+      if (JSON.stringify(modelNames) !== JSON.stringify(availableModels)) {
+        setAvailableModels(modelNames);
+        
+        // Set initial selected model only if none is selected and we have models
+        if (!selectedModel && modelNames.length > 0) {
+          setSelectedModel(modelNames[0]);
+        }
+      }
+    }
+  }, [selectableModelsList.map(m => m.name).join(','), selectedModel]); // Use string join to avoid array reference issues
+  
+  const currentModel = selectableModelsList.find(model => model.name === selectedModel) || selectableModelsList[0];
 
   return (
     <div className="relative bg-gradient-to-r border-b backdrop-blur-md z-100 border-cyan-500/30 from-slate-800/40 via-slate-700/60 to-slate-800/40">
@@ -89,7 +127,7 @@ export const ChatHeader = React.memo(function ChatHeader({
               >
                 {renderIcon(Cpu, { className: "w-4 h-4" })}
                 <span className="hidden text-sm truncate sm:inline max-w-24">
-                  {currentModel?.display_name || 'Select Model'}
+                  {Object.values(modelsStatus).find(m => m.name === selectedModel)?.display_name || 'Select Model'}
                 </span>
                 {renderIcon(ChevronDown, { className: "w-3 h-3" })}
               </button>
@@ -99,25 +137,55 @@ export const ChatHeader = React.memo(function ChatHeader({
                 <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border shadow-xl backdrop-blur-md bg-slate-800/95 border-slate-600/50">
                   <div className="p-2">
                     <div className="px-2 mb-2 text-xs font-medium text-slate-400">Available Models</div>
-                    {availableModels.map((model) => (
-                      <button
-                        key={model.name}
-                        onClick={() => {
-                          onModelChange?.(model.name);
-                          setIsModelSelectorOpen(false);
-                        }}
-                        className={`w-full text-left p-2 rounded-md transition-all duration-200 ${
-                          model.name === selectedModel
-                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                            : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-200'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{model.display_name}</div>
-                        <div className="text-xs text-slate-400 mt-0.5">
-                          {model.name} • Ready
-                        </div>
-                      </button>
-                    ))}
+                    {allModelsList.map((model) => {
+                      const isSelected = selectedModel === model.name;
+                      const isSelectable = isModelSelectable(model);
+                      const tooltipMessage = getTooltipMessage(model);
+                      
+                      const modelButton = (
+                        <button
+                          key={model.name}
+                          onClick={() => {
+                            if (isSelectable) {
+                              setSelectedModel(model.name);
+                              setIsModelSelectorOpen(false);
+                            }
+                          }}
+                          disabled={!isSelectable}
+                          className={`w-full text-left p-2 rounded-md transition-all duration-200 ${
+                            isSelectable 
+                              ? 'cursor-pointer' 
+                              : 'cursor-not-allowed opacity-50'
+                          } ${
+                            isSelected
+                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                              : isSelectable
+                                ? 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-200'
+                                : 'text-slate-500'
+                          }`}
+                        >
+                          <div className="text-sm font-medium">{model.display_name}</div>
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {model.name} • {isSelected ? 'Default' : model.status || 'Unknown'}
+                          </div>
+                        </button>
+                      );
+                      
+                      if (!isSelectable) {
+                        return (
+                          <Tooltip key={model.name}>
+                            <TooltipTrigger asChild>
+                              {modelButton}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{tooltipMessage}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      }
+                      
+                      return modelButton;
+                    })}
                   </div>
                 </div>
               )}

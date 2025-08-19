@@ -21,9 +21,12 @@ import { renderIcon } from "../../lib/icon-utils";
 import { cn } from "../../lib/utils";
 import { Card } from "../ui/card";
 import { StatusIndicator } from "../ui/status-indicator";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../ui/accordion";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tool-tip";
+import { Button } from "../ui/button";
 import { LLMDownloadProgressBar } from "../ui/loading/llm-download-progress-bar";
+import { useModelSelectionStore } from "../../stores/use-model-selection-store";
+import { ModelSelectionModal } from "./model-selection-modal";
+import { ModelDownloadModal } from "./model-download-modal";
 
 interface LightweightVectorConverterStatusProps {
   size?: "sm" | "md" | "lg";
@@ -36,10 +39,15 @@ interface LightweightVectorConverterStatusProps {
 
 // Model information for info accordions
 const modelInfo = {
-  llama: {
-    name: "Meta Llama 3.2",
+  llama1b: {
+    name: "Meta Llama 3.2 1B",
     pros: ["Fast inference", "Good general knowledge", "Lightweight (1B parameters)", "Low memory usage"],
     cons: ["Limited specialized knowledge", "May struggle with complex reasoning", "Smaller context window"]
+  },
+  llama3b: {
+    name: "Meta Llama 3.2 3B",
+    pros: ["Fast inference", "Good general knowledge", "Medium-sized (3B parameters)", "Better reasoning than 1B"],
+    cons: ["Higher memory usage than 1B", "May struggle with very complex reasoning", "Smaller context window"]
   },
   gpt: {
     name: "DialoGPT Medium",
@@ -121,19 +129,41 @@ export const LightweightLLMStatus = ({
   const { status: lightweightLlmStatus, loading } = useLightweightLlmStatus();
   const { lightweightLlmStatus: consolidatedStatus } = useStatusData();
   const { modelsStatus, currentModel, loading: modelsLoading } = useMultiModelStatus();
+  const { selectedModel, setSelectedModel } = useModelSelectionStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Function to trigger model download
   const handleDownloadModel = async (modelName: string) => {
     try {
-      // TODO: Implement API call to trigger model download
       console.log(`Triggering download for model: ${modelName}`);
-      // This would typically make an API call to your backend to start the download
-      // await fetch(`/api/models/${modelName}/download`, { method: 'POST' })
+      
+      // Call the Python backend API to load/download the model
+      const response = await fetch(`/api/lightweight-llm/models/${modelName}/load`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        throw new Error(errorData.detail || `Failed to start download for ${modelName}`);
+      }
+
+      const result = await response.json();
+      console.log(`Download started for ${modelName}:`, result);
+      
+      // The download progress will be tracked through the existing status polling
+      // No need to show success toast here as the progress will be visible
+      
     } catch (error) {
       console.error(`Failed to trigger download for ${modelName}:`, error);
+      // You could add a toast notification here if you have toast imported
+      // toast.error(`Failed to start download: ${error.message}`);
     }
   };
 
@@ -155,20 +185,27 @@ export const LightweightLLMStatus = ({
            !anyModelDownloading;
   };
   
-  // Get model name from environment variable
-  const modelName = process.env.NEXT_PUBLIC_LLM_MODEL || "Meta Llama 3.2";
-
   // Get models sorted by priority
   const sortedModels = Object.values(modelsStatus).sort((a, b) => a.priority - b.priority);
-  const llamaModel = sortedModels.find(m => m.name.includes('Llama-3.2') || m.name.includes('llama-3.2'));
+  const llama1bModel = sortedModels.find(m => 
+    (m.name.includes('Llama-3.2-1B') || m.name.includes('llama-3.2-1b') || 
+     m.display_name?.includes('Llama 3.2 1B')) && 
+    !m.name.includes('3B') && !m.display_name?.includes('3B')
+  );
+  const llama3bModel = sortedModels.find(m => 
+    (m.name.includes('Llama-3.2-3B') || m.name.includes('llama-3.2-3b') || 
+     m.display_name?.includes('Llama 3.2 3B')) && 
+    (m.name.includes('3B') || m.display_name?.includes('3B'))
+  );
   const gptModel = sortedModels.find(m => m.name.includes('gpt-oss') || m.name.includes('openai-oss-20b') || m.name.includes('DialoGPT'));
   const medgemmaModel = sortedModels.find(m => m.name.includes('medgemma') || m.name.includes('MedGemma'));
   const falconModel = sortedModels.find(m => m.name.includes('falcon-h1-1b') || m.name.includes('flan-t5'));
 
-  // Determine overall status based on primary model (Llama 3.2)
-  const ready = llamaModel?.is_loaded || lightweightLlmStatus?.ready || false;
-  const status = ready ? "healthy" : (llamaModel?.status || lightweightLlmStatus?.status || "unknown");
-  const modelDisplayName = llamaModel?.display_name || lightweightLlmStatus?.model || "Meta Llama 3.2";
+  // Determine overall status based on any loaded Llama model
+  const anyLlamaLoaded = llama1bModel?.is_loaded || llama3bModel?.is_loaded;
+  const ready = anyLlamaLoaded || lightweightLlmStatus?.ready || false;
+  const status = ready ? "healthy" : (llama1bModel?.status || llama3bModel?.status || lightweightLlmStatus?.status || "unknown");
+  const modelDisplayName = (llama1bModel?.display_name || llama3bModel?.display_name || lightweightLlmStatus?.model || "Meta Llama 3.2");
   const progressMessage = lightweightLlmStatus?.message || null;
 
   // Extract values from the status object
@@ -282,10 +319,17 @@ export const LightweightLLMStatus = ({
     modelInfo: any, 
     isPrimary?: boolean 
   }) => {
+    const { selectedModel, setSelectedModel } = useModelSelectionStore();
+    const isSelected = model?.name === selectedModel;
+    
     if (!model) return null;
 
+    // Removed click functionality - model selection only via modal
+
     return (
-      <div className={`flex items-start space-x-3 ${!isPrimary ? 'pl-3 border-l-2 border-slate-600' : ''}`}>
+      <div 
+        className={`flex items-start space-x-3 ${!isPrimary ? 'pl-3 border-l-2 border-slate-600' : ''} ${isSelected ? 'p-1 rounded-md bg-slate-800/30' : ''}`}
+      >
         <StatusIndicator
           status={mapToStatusIndicatorStatus(model.status, model.is_loaded)}
           size={isPrimary ? size : "sm"}
@@ -300,15 +344,18 @@ export const LightweightLLMStatus = ({
               {model.is_loaded && (
                 <CheckCircle className="flex-shrink-0 w-4 h-4 text-green-400" />
               )}
+              {isSelected && (
+                <span className="text-xs px-1.5 py-0.5 bg-blue-600 text-white rounded-full">Default</span>
+              )}
               <Tooltip>
                 <TooltipTrigger>
                   <Info className="w-4 h-4 cursor-pointer text-slate-400 hover:text-slate-300" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <div className="p-2 max-w-xs rounded-xl shadow-xl shadow-cyan-500 bg-slate-950/50">
-                    <div className="mb-2 font-medium text-center text-cyan-500 rounded-xl shadow-xl shadow-cyan-500 bg-slate-950">{modelInfo.name}</div>
+                  <div className="p-2 max-w-xs rounded-xl">
+                    <div className="mb-2 font-mono text-xl text-center text-cyan-500 rounded-xl shadow-xl shadow-cyan-500 bg-slate-950">{modelInfo.name}</div>
                     <div className="mb-2 bg-green-900 rounded-xl">
-                      <div className="mb-1 ml-4 font-medium text-green-100">Pros:</div>
+                      <div className="mr-64 mb-1 ml-4 font-mono font-medium text-green-100 border-b-2 border-dashed">PROS:</div>
                       <ul className="mr-2 ml-2 space-y-1 text-xs text-white">
                         {modelInfo.pros.map((pro: string, idx: number) => (
                           <li key={idx}>• {pro}</li>
@@ -316,7 +363,7 @@ export const LightweightLLMStatus = ({
                       </ul>
                     </div>
                     <div className="mb-2 bg-red-900 rounded-xl">
-                      <div className="mb-1 ml-4 font-medium text-red-100">Cons:</div>
+                      <div className="mr-64 mb-1 ml-4 font-mono font-medium text-red-100 border-b-2 border-dashed">CONS:</div>
                        <ul className="mr-2 ml-2 space-y-1 text-xs text-white">
                         {modelInfo.cons.map((con: string, idx: number) => (
                           <li key={idx}>• {con}</li>
@@ -331,7 +378,10 @@ export const LightweightLLMStatus = ({
               <Tooltip>
                 <TooltipTrigger>
                   <button
-                    onClick={() => handleDownloadModel(modelKey)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering the parent onClick
+                      handleDownloadModel(modelKey);
+                    }}
                     disabled={!canDownloadModel(model, modelKey)}
                     className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
                       canDownloadModel(model, modelKey) 
@@ -364,7 +414,7 @@ export const LightweightLLMStatus = ({
               />
             ) : (
               <div className="flex items-center space-x-2">
-                {model.is_loaded || model.status === "loaded" || model.status === "ready" ? (
+                {model.is_loaded || model.status === "loaded" ? (
                   <Tooltip>
                     <TooltipTrigger>
                       <div className="relative cursor-pointer group">
@@ -373,7 +423,7 @@ export const LightweightLLMStatus = ({
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <span className="text-xs">Model is downloaded and ready to use</span>
+                      <span className="px-3 py-1 m-4 font-mono text-cyan-500 border-2 border-dashed text-md bg-slate-950">Model is downloaded and ready to use</span>
                     </TooltipContent>
                   </Tooltip>
                 ) : (
@@ -429,8 +479,18 @@ export const LightweightLLMStatus = ({
                 {getStatusText()}
               </span>
             </div>
-            <div className="text-xs text-slate-400">
-              {Object.values(modelsStatus).filter(m => m.is_loaded || m.status === "loaded" || m.status === "ready").length} of {Object.values(modelsStatus).length} models ready
+            <div className="flex justify-between items-center">
+              <div className="text-xs text-slate-400">
+                {Object.values(modelsStatus).filter(m => m.is_loaded || m.status === "loaded" || m.status === "ready").length} of {Object.values(modelsStatus).length} models ready
+              </div>
+              {selectedModel && (
+                <div className="flex items-center space-x-1">
+                  <span className="text-xs text-slate-500">Current:</span>
+                  <span className="text-xs font-medium text-blue-400">
+                    {Object.values(modelsStatus).find(m => m.name === selectedModel)?.display_name || selectedModel}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -457,12 +517,20 @@ export const LightweightLLMStatus = ({
           >
             <div className="p-3 bg-slate-950/30">
               <div className="space-y-3">
-                {/* Primary Model - Meta Llama 3.2 */}
+                {/* Llama 1B Model */}
                 <ModelCard 
-                  model={llamaModel || { display_name: "Meta Llama 3.2", status: "unknown", is_loaded: false }}
-                  modelKey="llama"
-                  modelInfo={modelInfo.llama}
+                  model={llama1bModel || { display_name: "Meta Llama 3.2 1B", status: "unknown", is_loaded: false }}
+                  modelKey="llama-1b"
+                  modelInfo={modelInfo.llama1b}
                   isPrimary={true}
+                />
+
+                {/* Llama 3B Model */}
+                <ModelCard 
+                  model={llama3bModel || { display_name: "Meta Llama 3.2 3B", status: "unknown", is_loaded: false }}
+                  modelKey="llama-3b"
+                  modelInfo={modelInfo.llama3b}
+                  isPrimary={false}
                 />
 
                 {/* Secondary Model - GPT-OSS-20B */}
@@ -596,6 +664,39 @@ export const LightweightLLMStatus = ({
           </div>
         </div>
       )}
+
+      {/* Model Management Buttons */}
+      <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
+        <Button
+          onClick={() => setShowModelSelector(true)}
+          className="w-full"
+          variant="secondary"
+        >
+          Default Model
+        </Button>
+        <Button
+          onClick={() => setShowDownloadModal(true)}
+          className="w-full"
+          variant="secondary"
+        >
+          <Download className="mr-2 w-4 h-4" />
+          Download Models
+        </Button>
+      </div>
+
+      {/* Model Selection Dialog */}
+      <ModelSelectionModal
+          open={showModelSelector}
+          onOpenChange={setShowModelSelector}
+          modelsStatus={modelsStatus}
+          currentModel={selectedModel || undefined}
+        />
+
+      {/* Model Download Dialog */}
+      <ModelDownloadModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+      />
 
 
     </Card>

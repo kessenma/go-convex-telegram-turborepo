@@ -49,6 +49,9 @@ class ChatResponse(BaseModel):
 class SwitchReq(BaseModel):
     model_id: str
 
+class SetDefaultModelReq(BaseModel):
+    model_id: str
+
 class HealthResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
     
@@ -450,6 +453,51 @@ async def switch_model(req: SwitchReq):
     except Exception as e:
         logger.error(f"Error switching model: {e}")
         raise HTTPException(status_code=500, detail=f"Error switching model: {str(e)}")
+
+@app.post("/admin/set-default")
+async def set_default_model(req: SetDefaultModelReq):
+    """Set the default model for the application"""
+    try:
+        if not model_manager:
+            raise HTTPException(status_code=503, detail="Model manager not initialized")
+        
+        # Check if model is available in config
+        if not config.is_model_available(req.model_id):
+            raise HTTPException(status_code=400, detail=f"Model {req.model_id} not available in configuration")
+        
+        # Update the default model in config
+        config.default_model = req.model_id
+        
+        # Switch to the new default model
+        success = await model_manager.switch_to(req.model_id)
+        
+        if not success:
+            raise HTTPException(status_code=400, detail=f"Failed to load default model {req.model_id}")
+        
+        return {
+            "ok": True,
+            "default_model": req.model_id,
+            "message": f"Successfully set {req.model_id} as default model"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error setting default model: {e}")
+        raise HTTPException(status_code=500, detail=f"Error setting default model: {str(e)}")
+
+@app.get("/admin/default-model")
+async def get_default_model():
+    """Get the current default model"""
+    try:
+        return {
+            "ok": True,
+            "default_model": config.default_model,
+            "current_model": model_manager.get_current_model() if model_manager else None
+        }
+    except Exception as e:
+        logger.error(f"Error getting default model: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting default model: {str(e)}")
 
 if __name__ == "__main__":
     # Start the server

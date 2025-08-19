@@ -119,17 +119,16 @@ const ResponsiveModalTitle = React.forwardRef<
 ResponsiveModalTitle.displayName = DialogPrimitive.Title.displayName;
 
 const ResponsiveModalDescription = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description
+  <div
     ref={ref}
     className={cn("text-sm text-slate-400", className)}
     {...props}
   />
 ));
-ResponsiveModalDescription.displayName =
-  DialogPrimitive.Description.displayName;
+ResponsiveModalDescription.displayName = "ResponsiveModalDescription";
 
 export {
   ResponsiveModal,
