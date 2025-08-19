@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     console.log(`Updating conversation title: ${conversationId} -> ${title}`);
 
     // Call the Convex HTTP API to update the conversation title
-    const response = await fetch(`${CONVEX_HTTP_URL}/api/updateConversationTitle`, {
+    const response = await fetch(`${CONVEX_HTTP_URL}/api/conversations/update-title`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

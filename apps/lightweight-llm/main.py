@@ -1,49 +1,29 @@
 import os
-import re
 import logging
 import asyncio
-import importlib.util
 from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
-
-# Set environment variables for optimal CPU performance
-os.environ["OMP_NUM_THREADS"] = "8"  # Increased for llama-cpp
-os.environ["MKL_NUM_THREADS"] = "8" 
-os.environ["OPENBLAS_NUM_THREADS"] = "8"
-os.environ["NUMEXPR_NUM_THREADS"] = "8"
-os.environ["VECLIB_MAXIMUM_THREADS"] = "8"
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from llama_cpp import Llama
 import psutil
-import gc
 import time
+
+from config import Config
+from model_manager import ModelManager
+from chat_handler import ChatHandler
 from status_reporter import StatusReporter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global variables for model
-llm = None
+# Global variables
+config = None
+model_manager = None
+chat_handler = None
 status_reporter = None
-title_generator = None
-
-# Model configuration - Using Llama 3.2 1B GGUF for fast RAG performance
-MODEL_PATH = os.getenv("MODEL_PATH", "./llama-3.2-1b-instruct-q4.gguf")
-N_CTX = int(os.getenv("N_CTX", "4096"))  # Context window
-N_THREADS = int(os.getenv("N_THREADS", "8"))  # CPU threads
-N_GPU_LAYERS = int(os.getenv("N_GPU_LAYERS", "0"))  # GPU layers (0 for CPU only)
-
-# Status reporting configuration
-CONVEX_URL = os.getenv("CONVEX_URL", "http://localhost:3211")
-SERVICE_NAME = "lightweight-llm"
-
-MAX_TOKENS = 512
-TEMPERATURE = 0.7
-TOP_P = 0.9
 
 class ChatRequest(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -55,6 +35,7 @@ class ChatRequest(BaseModel):
     temperature: Optional[float] = 0.7
     conversation_id: Optional[str] = None
     is_new_conversation: Optional[bool] = False
+    model: Optional[str] = None
 
 class ChatResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -65,6 +46,9 @@ class ChatResponse(BaseModel):
     rag_metadata: Optional[Dict[str, Any]] = None
     generated_title: Optional[str] = None
 
+class SwitchReq(BaseModel):
+    model_id: str
+
 class HealthResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
     
@@ -73,13 +57,29 @@ class HealthResponse(BaseModel):
     memory_usage: Dict[str, Any]
     model_path: str
 
+async def load_default_model_background():
+    """Load the default model in background after startup"""
+    try:
+        # Wait a bit for the app to fully start
+        await asyncio.sleep(2)
+        
+        default_model = config.get_default_model_config()
+        if default_model and model_manager:
+            logger.info(f"Starting background loading of default model: {default_model.name}")
+            success = model_manager.load_model(default_model.name)
+            if success:
+                logger.info(f"Successfully loaded default model: {default_model.name}")
+            else:
+                logger.warning(f"Failed to load default model: {default_model.name}")
+    except Exception as e:
+        logger.error(f"Error loading default model in background: {e}")
+
 def get_memory_usage():
     """Get current memory usage statistics"""
     try:
         process = psutil.Process()
         memory_info = process.memory_info()
         memory_percent = process.memory_percent()
-        cpu_percent = process.cpu_percent(interval=0.1)  # Get CPU usage
         
         # Get system memory info
         system_memory = psutil.virtual_memory()
@@ -87,152 +87,138 @@ def get_memory_usage():
         return {
             "process_memory_mb": round(memory_info.rss / 1024 / 1024, 2),
             "process_memory_percent": round(memory_percent, 2),
-            "process_cpu_percent": round(cpu_percent, 2),
             "system_memory_total_gb": round(system_memory.total / 1024 / 1024 / 1024, 2),
             "system_memory_available_gb": round(system_memory.available / 1024 / 1024 / 1024, 2),
-            "system_memory_used_percent": round(system_memory.percent, 2),
-            # Legacy fields for backward compatibility
-            "rss_mb": round(memory_info.rss / 1024 / 1024, 2),
-            "vms_mb": round(memory_info.vms / 1024 / 1024, 2),
-            "percent": round(memory_percent, 2),
-            "available_mb": round(psutil.virtual_memory().available / 1024 / 1024, 2)
+            "system_memory_percent": round(system_memory.percent, 2)
         }
     except Exception as e:
         logger.error(f"Error getting memory usage: {e}")
         return {
             "process_memory_mb": 0,
             "process_memory_percent": 0,
-            "process_cpu_percent": 0,
             "system_memory_total_gb": 0,
             "system_memory_available_gb": 0,
-            "system_memory_used_percent": 0,
-            "rss_mb": 0,
-            "vms_mb": 0,
-            "percent": 0,
-            "available_mb": 0,
-            "error": str(e)
+            "system_memory_percent": 0
         }
 
-def load_model():
-    """Load the Llama 3.2 GGUF model using llama-cpp-python"""
-    global llm, status_reporter, title_generator
+def initialize_services():
+    """Initialize all services"""
+    global config, model_manager, chat_handler, status_reporter
     
     try:
-        # Send loading status
-        if status_reporter:
-            status_reporter.send_loading_status("Loading Llama 3.2 model")
+        # Initialize configuration
+        config = Config()
+        logger.info("Configuration loaded successfully")
         
-        logger.info(f"Loading Llama 3.2 model from: {MODEL_PATH}")
-        logger.info(f"Context window: {N_CTX}, Threads: {N_THREADS}, GPU layers: {N_GPU_LAYERS}")
+        # Initialize model manager
+        model_manager = ModelManager()
+        logger.info("Model manager initialized")
         
-        # Check if model file exists
-        if not os.path.exists(MODEL_PATH):
-            error_msg = f"Model file not found: {MODEL_PATH}"
-            if status_reporter:
-                status_reporter.send_error_status(error_msg)
-            raise FileNotFoundError(error_msg)
+        # Load default model in background after startup
+        default_model = config.get_default_model_config()
+        if default_model:
+            logger.info(f"Default model '{default_model.name}' will be loaded in background")
+            # Start background task to load default model
+            asyncio.create_task(load_default_model_background())
+        else:
+            logger.info("No default model configured")
         
-        # Initialize the Llama model with conservative settings
-        llm = Llama(
-            model_path=MODEL_PATH,
-            n_ctx=N_CTX,
-            n_threads=N_THREADS,
-            n_gpu_layers=N_GPU_LAYERS,
-            verbose=True,   # Enable verbose for debugging
-            use_mmap=True,  # Use memory mapping for efficiency
-            use_mlock=False, # Disable mlock to avoid permission issues
-            n_batch=256,    # Smaller batch size for stability
-            f16_kv=True,    # Use 16-bit for key-value cache
+        # Initialize chat handler
+        chat_handler = ChatHandler(model_manager)
+        logger.info("Chat handler initialized")
+        
+        # Initialize status reporter
+        status_reporter = StatusReporter(
+            service_name=config.service_name,
+            convex_url=config.convex_url
         )
+        logger.info("Status reporter initialized")
         
-        # Initialize title generator
-        title_generator = create_title_generator(llm)
-        
-        logger.info("Llama 3.2 model loaded successfully")
-        logger.info(f"Memory usage after loading: {get_memory_usage()}")
-        
-        # Send healthy status
-        if status_reporter:
-            status_reporter.send_healthy_status("Llama-3.2-1B-Instruct")
+        return True
         
     except Exception as e:
-        logger.error(f"Failed to load model: {str(e)}")
-        if status_reporter:
-            status_reporter.send_error_status(str(e))
-        raise e
+        logger.error(f"Error initializing services: {str(e)}")
+        return False
 
-def cleanup_model():
-    """Clean up model resources"""
-    global llm, title_generator
+def cleanup_services():
+    """Clean up all services"""
+    global model_manager, chat_handler, status_reporter
     
-    if llm is not None:
-        del llm
-        llm = None
-    
-    if title_generator is not None:
-        del title_generator
-        title_generator = None
-    
-    # Force garbage collection
-    gc.collect()
-    
-    logger.info("Model cleanup completed")
+    try:
+        if model_manager:
+            logger.info("Cleaning up model manager...")
+            model_manager.cleanup()
+            model_manager = None
+            
+        if chat_handler:
+            chat_handler = None
+            
+        if status_reporter:
+            status_reporter = None
+            
+        logger.info("Services cleanup completed")
+        
+    except Exception as e:
+        logger.error(f"Error during cleanup: {str(e)}")
 
 def get_current_status():
-    """Get current service status for periodic reporting"""
-    global llm
-    
-    model_loaded = llm is not None
-    
-    if model_loaded:
+    """Get current service status"""
+    try:
+        memory_usage = get_memory_usage()
+        
+        if model_manager and model_manager.current_model:
+            return {
+                "status": "healthy",
+                "model_loaded": True,
+                "current_model": model_manager.current_model,
+                "available_models": model_manager.get_available_models(),
+                "memory_usage": memory_usage,
+                "timestamp": time.time()
+            }
+        else:
+            return {
+                "status": "error",
+                "model_loaded": False,
+                "current_model": None,
+                "available_models": [],
+                "memory_usage": memory_usage,
+                "timestamp": time.time()
+            }
+    except Exception as e:
+        logger.error(f"Error getting status: {e}")
         return {
-            'status': 'healthy',
-            'ready': True,
-            'message': 'Service is running normally',
-            'model': 'Llama-3.2-1B-Instruct',
-            'model_loaded': True,
-            'model_loading': False
-        }
-    else:
-        return {
-            'status': 'error',
-            'ready': False,
-            'message': 'Model not loaded',
-            'model': 'Llama-3.2-1B-Instruct',
-            'model_loaded': False,
-            'model_loading': False
+            "status": "error",
+            "model_loaded": False,
+            "current_model": None,
+            "available_models": [],
+            "memory_usage": {},
+            "timestamp": time.time(),
+            "error": str(e)
         }
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan"""
-    global status_reporter
-    
     # Startup
-    logger.info("Starting lightweight LLM service...")
-    
-    # Initialize status reporter
-    status_reporter = StatusReporter(SERVICE_NAME, CONVEX_URL)
-    status_reporter.send_startup_status()
+    logger.info("Starting Lightweight LLM Service...")
     
     try:
-        load_model()
+        # Initialize all services
+        success = initialize_services()
+        if not success:
+            raise Exception("Failed to initialize services")
         
-        # Start periodic status reporting every 30 seconds
-        status_reporter.start_periodic_reporting(interval_seconds=30, get_status_callback=get_current_status)
-        logger.info("Periodic status reporting started")
+        logger.info("Service startup completed successfully")
         
     except Exception as e:
-        logger.error(f"Failed to start service: {e}")
-        if status_reporter:
-            status_reporter.send_error_status(str(e))
-        raise
+        logger.error(f"Failed to start service: {str(e)}")
+        raise e
     
     yield
     
     # Shutdown
-    logger.info("Shutting down lightweight LLM service...")
-    cleanup_model()
+    logger.info("Shutting down Lightweight LLM Service...")
+    cleanup_services()
 
 # Create FastAPI app
 app = FastAPI(
@@ -251,389 +237,224 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Import the RAG processors
-from rag_processor import process_rag_query
-
-# Import conversation title generator
-from conversation_title import create_title_generator
-
-# Try to import LangExtract RAG processor, fall back gracefully if not available
-try:
-    from langextract_rag import enhanced_process_rag_query, get_langextract_processor
-    LANGEXTRACT_RAG_AVAILABLE = True
-    logger.info("LangExtract RAG processor imported successfully")
-except ImportError as e:
-    logger.warning(f"LangExtract RAG processor not available: {e}")
-    LANGEXTRACT_RAG_AVAILABLE = False
+# New endpoints for model management
+@app.get("/models")
+async def list_models():
+    """List available models and current model"""
+    if not model_manager:
+        raise HTTPException(status_code=503, detail="Model manager not initialized")
     
-    # Create fallback functions
-    def enhanced_process_rag_query(message: str, context: str):
-        """Fallback function when LangExtract is not available"""
-        enhanced_message, system_msg = process_rag_query(message, context)
-        metadata = {
-            "classification": {"query_type": "fallback", "confidence": 0.5},
-            "langextract_available": False,
-            "fallback_reason": "LangExtract not available"
+    try:
+        available_models = model_manager.get_available_models()
+        current_model = model_manager.current_model
+        
+        return {
+            "available_models": available_models,
+            "current_model": current_model
         }
-        return enhanced_message, system_msg, metadata
-    
-    def get_langextract_processor():
-        """Fallback function when LangExtract is not available"""
-        class FallbackClassification:
-            def __init__(self, query_type="general", confidence=0.5, key_entities=None, 
-                        expected_answer_type="general_response", extraction_focus=None):
-                self.query_type = query_type
-                self.confidence = confidence
-                self.key_entities = key_entities or []
-                self.expected_answer_type = expected_answer_type
-                self.extraction_focus = extraction_focus or []
-        
-        class FallbackProcessor:
-            def __init__(self):
-                self.extractor = None
-                self.model_name = "fallback"
-            
-            def classify_query(self, query: str):
-                return FallbackClassification()
-        
-        return FallbackProcessor()
+    except Exception as e:
+        logger.error(f"Error in /models endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving models: {str(e)}")
 
-def format_chat_prompt(message: str, context: str = "", conversation_history: List[Dict[str, str]] = None) -> tuple:
-    """Format the chat prompt for Llama-3.2 with proper chat template and RAG support
+@app.post("/models/{model_name}/load")
+async def load_model_endpoint(model_name: str):
+    """Load a specific model"""
+    if not model_manager:
+        raise HTTPException(status_code=503, detail="Model manager not initialized")
     
-    Returns:
-        tuple: (prompt, rag_metadata)
-    """
-    if conversation_history is None:
-        conversation_history = []
-    
-    # Llama-3.2 uses this format: <|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nsystem_message<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nuser_message<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n
-    
-    # System message for RAG
-    if context.strip():
-        # For RAG, include context in system message
-        max_context_length = 1500  # Be conservative with context length
-        if len(context) > max_context_length:
-            # Try to truncate at sentence boundaries
-            truncated_context = context[:max_context_length]
-            last_period = truncated_context.rfind('.')
-            if last_period > max_context_length * 0.7:
-                truncated_context = truncated_context[:last_period + 1]
-            else:
-                truncated_context = truncated_context + "..."
+    try:
+        success = model_manager.load_model(model_name)
+        if success:
+            return {"message": f"Model '{model_name}' loaded successfully", "current_model": model_manager.current_model}
         else:
-            truncated_context = context
-        
-        # Process the query using our enhanced LangExtract RAG processor
-        rag_metadata = None
-        try:
-            # First try the enhanced LangExtract processor
-            enhanced_message, system_msg, rag_metadata = enhanced_process_rag_query(message, truncated_context)
-            
-            # Log the enhanced classification results
-            classification = rag_metadata.get("classification", {})
-            query_type = classification.get("query_type", "unknown")
-            confidence = classification.get("confidence", 0.0)
-            
-            logger.info(f"LangExtract classification: {query_type} (confidence: {confidence:.2f})")
-            
-            if rag_metadata.get("extracted_entities"):
-                logger.info(f"Extracted {len(rag_metadata['extracted_entities'])} relevant entities")
-            
-            if not rag_metadata.get("langextract_available", False):
-                logger.info("LangExtract not available, using fallback classification")
-                
-        except Exception as e:
-            # If there's any error in the enhanced processor, fall back to the original
-            logger.error(f"Error in enhanced RAG processor: {e}. Falling back to original processor.")
+            raise HTTPException(status_code=400, detail=f"Failed to load model '{model_name}'")
+    except Exception as e:
+        logger.error(f"Error loading model {model_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error loading model: {str(e)}")
+
+@app.post("/models/unload")
+async def unload_model_endpoint():
+    """Unload the current model"""
+    if not model_manager:
+        raise HTTPException(status_code=503, detail="Model manager not initialized")
+    
+    try:
+        model_manager.unload_current_model()
+        return {"message": "Model unloaded successfully", "current_model": None}
+    except Exception as e:
+        logger.error(f"Error unloading model: {e}")
+        raise HTTPException(status_code=500, detail=f"Error unloading model: {str(e)}")
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """Generate chat response with RAG support"""
+    if not model_manager or not chat_handler:
+        raise HTTPException(status_code=503, detail="Services not initialized")
+    
+    # Handle model switching if requested
+    if request.model:
+        current_model_name = model_manager.current_model if model_manager.current_model else None
+        if current_model_name != request.model:
+            logger.info(f"Switching from {current_model_name} to {request.model}")
             try:
-                enhanced_message, system_msg = process_rag_query(message, truncated_context)
-                logger.info("Using original RAG processor")
-                # Create basic metadata for fallback
-                rag_metadata = {
-                    "classification": {"query_type": "fallback", "confidence": 0.5},
-                    "langextract_available": False,
-                    "fallback_used": True
-                }
-            except Exception as e2:
-                logger.error(f"Error in original RAG processor: {e2}. Using default prompt.")
-                system_msg = (
-                    "You are a helpful AI assistant. Answer questions based on the provided document information. "
-                    "Be concise and accurate. Pay attention to all details in the document, including any specific "
-                    "numbers, dates, or values that might be relevant to the query.\n\n"
-                    f"Document Information:\n{truncated_context}"
-                )
-                rag_metadata = {
-                    "classification": {"query_type": "default", "confidence": 0.3},
-                    "langextract_available": False,
-                    "error": "Both enhanced and original processors failed"
-                }
-    else:
-        system_msg = "You are a helpful AI assistant. Provide clear, concise, and accurate responses."
+                success = model_manager.load_model(request.model)
+                if not success:
+                    raise Exception("Load returned False")
+                logger.info(f"Successfully loaded model: {request.model}")
+            except Exception as e:
+                logger.error(f"Failed to load model {request.model}: {e}")
+                raise HTTPException(status_code=503, detail=f"Failed to load model {request.model}: {str(e)}")
     
-    # Build the chat prompt using Llama-3.2's format
-    prompt = f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_msg}<|eot_id|>"
     
-    # Add conversation history (keep last 2 exchanges)
-    if conversation_history:
-        recent_history = conversation_history[-2:]
-        for exchange in recent_history:
-            if exchange.get('role') == 'user':
-                prompt += f"<|start_header_id|>user<|end_header_id|>\n\n{exchange['content']}<|eot_id|>"
-            elif exchange.get('role') == 'assistant':
-                prompt += f"<|start_header_id|>assistant<|end_header_id|>\n\n{exchange['content']}<|eot_id|>"
-    
-    # Add current message
-    prompt += f"<|start_header_id|>user<|end_header_id|>\n\n{message}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
-    
-    # Return both prompt and metadata
-    return prompt, locals().get('rag_metadata', None)
+    try:
+        response = await chat_handler.process_message(
+            message=request.message,
+            context=request.context,
+            conversation_history=request.conversation_history,
+            max_length=request.max_length,
+            temperature=request.temperature,
+            conversation_id=request.conversation_id,
+            is_new_conversation=request.is_new_conversation
+        )
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error processing chat: {e}")
+        raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}")
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
-    global status_reporter
-    
-    model_loaded = llm is not None
-    memory_usage = get_memory_usage()
-    
-    # Send status update to Convex
-    if status_reporter:
-        if model_loaded:
-            status_reporter.send_healthy_status("Llama-3.2-1B-Instruct")
-        else:
-            status_reporter.send_error_status("Model not loaded")
-    
-    return HealthResponse(
-        status="healthy" if model_loaded else "error",
-        model_loaded=model_loaded,
-        memory_usage=memory_usage,
-        model_path=MODEL_PATH
-    )
-
-# Helper function for general text processing
-def process_text(text: str) -> str:
-    """Process text for better formatting"""
-    # Remove excessive whitespace
-    processed = re.sub(r'\s+', ' ', text).strip()
-    return processed
-
-# Check if RAG modules are available
-def check_rag_modules():
-    """Check if the RAG modules are available and load them if needed"""
-    modules = ['quantitative_rag', 'qualitative_rag', 'rag_processor']
-    missing = []
-    
-    for module in modules:
-        if importlib.util.find_spec(module) is None:
-            missing.append(module)
-    
-    if missing:
-        logger.warning(f"Missing RAG modules: {', '.join(missing)}. Some RAG features may not be available.")
-        return False
-    
-    return True
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    """Generate a chat response using Llama 3.2 via llama-cpp"""
-    if llm is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
     try:
-        # Check if RAG modules are available
-        has_rag_modules = check_rag_modules()
-        if not has_rag_modules:
-            logger.warning("RAG modules not available. Using default prompt formatting.")
+        memory_usage = get_memory_usage()
+        model_loaded = model_manager is not None and model_manager.current_model is not None
         
-        # Format the prompt and get RAG metadata
-        prompt, rag_metadata = format_chat_prompt(
-            message=request.message,
-            context=request.context,
-            conversation_history=request.conversation_history
+        return HealthResponse(
+            status="healthy" if model_loaded else "unhealthy",
+            model_loaded=model_loaded,
+            memory_usage=memory_usage,
+            model_path=config.get_model_config(model_manager.current_model).model_path if model_loaded and model_manager.current_model and config else "N/A"
         )
-        
-        logger.info(f"Generating response for message: {request.message[:100]}...")
-        logger.info(f"Formatted prompt: {prompt[:200]}...")
-        
-        # Generate response using llama-cpp
-        max_tokens = min(request.max_length or MAX_TOKENS, MAX_TOKENS)
-        temperature = request.temperature or TEMPERATURE
-        
-        start_time = time.time()
-        
-        # Generate response
-        output = llm(
-            prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=TOP_P,
-            stop=["<|eot_id|>", "<|start_header_id|>", "<|end_of_text|>"],  # Stop tokens for Llama-3.2
-            echo=False  # Don't include the prompt in the output
-        )
-        
-        generation_time = time.time() - start_time
-        
-        # Extract the response text
-        generated_text = output["choices"][0]["text"].strip()
-        
-        # Clean up any remaining special tokens
-        generated_text = generated_text.replace("<|eot_id|>", "").replace("<|start_header_id|>", "").replace("<|end_of_text|>", "").strip()
-        
-        # If no text was generated, provide a fallback
-        if not generated_text or len(generated_text.strip()) == 0:
-            generated_text = "I'm here and ready to help! How can I assist you today?"
-            logger.warning("No text generated, using fallback response")
-        
-        # Extract usage information
-        usage = output.get("usage", {})
-        prompt_tokens = usage.get("prompt_tokens", 0)
-        completion_tokens = usage.get("completion_tokens", 0)
-        total_tokens = usage.get("total_tokens", 0)
-        
-        logger.info(f"Response generated successfully in {generation_time:.2f}s")
-        logger.info(f"Tokens - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}")
-        
-        # Generate conversation title if this is a new conversation
-        generated_title = None
-        if request.is_new_conversation and title_generator:
-            try:
-                logger.info("Generating conversation title...")
-                title_start_time = time.time()
-                generated_title = title_generator.generate_title(request.message, generated_text)
-                title_generation_time = time.time() - title_start_time
-                logger.info(f"Title generated successfully in {title_generation_time:.2f}s: {generated_title}")
-                
-
-            except Exception as e:
-                logger.error(f"Error generating conversation title: {str(e)}")
-                generated_title = None
-        
-        return ChatResponse(
-            response=generated_text,
-            model_info={
-                "model_name": "Llama-3.2-1B-Instruct",
-                "model_path": MODEL_PATH,
-                "context_window": N_CTX,
-                "temperature": temperature,
-                "generation_time_s": round(generation_time, 2)
-            },
-            usage={
-                "input_tokens": prompt_tokens,
-                "output_tokens": completion_tokens,
-                "total_tokens": total_tokens
-            },
-            rag_metadata=rag_metadata,
-            generated_title=generated_title
-        )
-        
     except Exception as e:
-        logger.error(f"Error generating chat response: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate response: {str(e)}")
+        logger.error(f"Health check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
+
+
+# Model info endpoint
 @app.get("/model-info")
 async def get_model_info():
-    """Get information about the loaded model"""
-    if llm is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
+    """Get information about the current model and system"""
+    if not model_manager:
+        raise HTTPException(status_code=503, detail="Model manager not initialized")
     
-    # Check LangExtract availability
     try:
-        processor = get_langextract_processor()
-        langextract_status = {
-            "available": LANGEXTRACT_RAG_AVAILABLE and processor.extractor is not None,
-            "model": processor.model_name if processor.extractor else None,
-            "import_available": LANGEXTRACT_RAG_AVAILABLE
-        }
-    except Exception as e:
-        logger.error(f"Error checking LangExtract status: {e}")
-        langextract_status = {
-            "available": False,
-            "model": None,
-            "import_available": False,
-            "error": str(e)
-        }
-    
-    return {
-        "model_name": "Llama-3.2-1B-Instruct",
-        "model_path": MODEL_PATH,
-        "context_window": N_CTX,
-        "threads": N_THREADS,
-        "gpu_layers": N_GPU_LAYERS,
-        "memory_usage": get_memory_usage(),
-        "model_exists": os.path.exists(MODEL_PATH),
-        "langextract": langextract_status
-    }
-
-class QueryClassificationRequest(BaseModel):
-    model_config = {"protected_namespaces": ()}
-    
-    query: str
-
-class QueryClassificationResponse(BaseModel):
-    model_config = {"protected_namespaces": ()}
-    
-    query_type: str
-    confidence: float
-    key_entities: List[str]
-    expected_answer_type: str
-    extraction_focus: List[str]
-    langextract_available: bool
-
-@app.post("/classify-query", response_model=QueryClassificationResponse)
-async def classify_query(request: QueryClassificationRequest):
-    """Classify a query to understand its type and requirements"""
-    try:
-        processor = get_langextract_processor()
-        classification = processor.classify_query(request.query)
+        current_model_info = None
+        if model_manager.current_model:
+            current_model_config = config.get_model_config(model_manager.current_model)
+            if current_model_config:
+                current_model_info = {
+                    "name": current_model_config.name,
+                    "provider": current_model_config.provider.value,
+                    "model_path": current_model_config.model_path,
+                    "context_window": current_model_config.context_window,
+                    "threads": current_model_config.threads,
+                    "gpu_layers": current_model_config.gpu_layers
+                }
         
-        return QueryClassificationResponse(
-            query_type=classification.query_type,
-            confidence=classification.confidence,
-            key_entities=classification.key_entities,
-            expected_answer_type=classification.expected_answer_type,
-            extraction_focus=classification.extraction_focus,
-            langextract_available=LANGEXTRACT_RAG_AVAILABLE and processor.extractor is not None
-        )
+        return {
+            "current_model": current_model_info,
+            "available_models": model_manager.get_available_models(),
+            "memory_usage": get_memory_usage(),
+            "system_info": {
+                "service_name": config.service_name,
+                "convex_url": config.convex_url
+            }
+        }
         
     except Exception as e:
-        logger.error(f"Error classifying query: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to classify query: {str(e)}")
+        logger.error(f"Error getting model info: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get model info: {str(e)}")
 
-def install_langextract_if_requested():
-    """Install LangExtract if requested via environment variable"""
-    install_langextract = os.getenv("INSTALL_LANGEXTRACT", "false").lower() == "true"
+@app.get("/models/status")
+async def get_models_status():
+    """Get status and download progress for all models"""
+    try:
+        if not model_manager:
+            raise HTTPException(status_code=503, detail="Model manager not initialized")
+        
+        models_status = {}
+        
+        # Get all configured models
+        for model_name in config.models.keys():
+            model_config = config.get_model_config(model_name)
+            status = model_manager.get_model_status(model_name)
+            progress = model_manager.get_download_progress(model_name)
+            is_loaded = model_manager.is_model_loaded(model_name)
+            download_status = model_manager.get_download_status(model_name)
+            download_details = model_manager.get_download_details(model_name)
+            is_downloading = model_manager.is_downloading(model_name)
+            
+            models_status[model_name] = {
+                "name": model_name,
+                "display_name": model_config.display_name if model_config else model_name,
+                "provider": model_config.provider.value if model_config else "unknown",
+                "status": status,
+                "download_progress": progress,
+                "download_status": download_status,
+                "download_details": download_details,
+                "is_downloading": is_downloading,
+                "is_loaded": is_loaded,
+                "is_current": model_manager.current_model == model_name,
+                "priority": model_config.priority if model_config else 0,
+                "auto_download": model_config.auto_download if model_config else False
+            }
+        
+        return {
+            "models": models_status,
+            "current_model": model_manager.current_model,
+            "timestamp": time.time()
+        }
     
-    if install_langextract:
-        logger.info("Installing LangExtract as requested...")
-        try:
-            import subprocess
-            import sys
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "langextract"])
-            logger.info("LangExtract installed successfully!")
-            return True
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to install LangExtract: {e}")
-            logger.info("Continuing without LangExtract...")
-            return False
-    else:
-        logger.info("LangExtract installation not requested (set INSTALL_LANGEXTRACT=true to enable)")
-        return False
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting models status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting models status: {str(e)}")
+
+@app.post("/admin/switch")
+async def switch_model(req: SwitchReq):
+    """Switch to a different model at runtime"""
+    try:
+        if not model_manager:
+            raise HTTPException(status_code=503, detail="Model manager not initialized")
+        
+        # Check if model is available in config
+        if not config.is_model_available(req.model_id):
+            raise HTTPException(status_code=400, detail=f"Model {req.model_id} not available in configuration")
+        
+        # Attempt to switch to the new model
+        success = await model_manager.switch_to(req.model_id)
+        
+        if not success:
+            raise HTTPException(status_code=400, detail=f"Failed to load model {req.model_id}")
+        
+        return {
+            "ok": True, 
+            "current_model": req.model_id,
+            "message": f"Successfully switched to {req.model_id}"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error switching model: {e}")
+        raise HTTPException(status_code=500, detail=f"Error switching model: {str(e)}")
 
 if __name__ == "__main__":
+    # Start the server
     import uvicorn
-    
-    # Check if we're running in Docker and install LangExtract if requested
-    if os.getenv("DOCKER_CONTAINER", "false").lower() == "true" or os.path.exists("/.dockerenv"):
-        logger.info("Running in Docker container")
-        langextract_installed = install_langextract_if_requested()
-        if langextract_installed:
-            logger.info("LangExtract is available - enhanced RAG processing enabled")
-        else:
-            logger.info("LangExtract not available - using fallback RAG processing")
-    
-    # Get port from environment or default to 8082
-    port = int(os.getenv("PORT", 8082))
+    port = int(os.getenv("PORT", 8000))
     
     logger.info(f"Starting server on port {port}")
     

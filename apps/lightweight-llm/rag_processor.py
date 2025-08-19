@@ -23,8 +23,8 @@ from qualitative_rag import (
 
 def process_rag_query(message: str, context: str) -> Tuple[str, str]:
     """
-    Process a RAG query using the appropriate specialized module.
-    This is the original/fallback processor.
+    Process a RAG query by determining its type and applying the appropriate
+    processing strategy.
     
     Args:
         message: The user's query
@@ -33,65 +33,57 @@ def process_rag_query(message: str, context: str) -> Tuple[str, str]:
     Returns:
         Tuple of (enhanced_message, enhanced_context)
     """
-    # Check if this is a mixed query (contains both qualitative and quantitative aspects)
-    is_mixed = is_quantitative_query(message) and is_qualitative_query(message)
+    is_quant = is_quantitative_query(message)
+    is_qual = is_qualitative_query(message)
     
-    # Process based on query type
-    if is_mixed:
+    # Determine query type and process accordingly
+    if is_quant and is_qual:
         return process_mixed_query(message, context)
-    elif is_quantitative_query(message):
+    elif is_quant:
         return process_quantitative_query(message, context)
-    elif is_qualitative_query(message):
+    elif is_qual:
         return process_qualitative_query(message, context)
     else:
-        # Default to a general approach for unclassified queries
         return process_general_query(message, context)
 
 def process_quantitative_query(message: str, context: str) -> Tuple[str, str]:
-    """Process a quantitative (numeric) query"""
-    # Prioritize sections with numeric values
-    enhanced_context = prioritize_numeric_sections(context, message)
+    """Process a quantitative query focusing on numerical information"""
+    # Prioritize sections with numerical content
+    prioritized_context = prioritize_numeric_sections(context)
     
-    # Format the prompt for quantitative queries
-    return format_quantitative_prompt(message, enhanced_context or context)
+    # Format the prompt to emphasize quantitative aspects
+    enhanced_context = format_quantitative_prompt(prioritized_context)
+    
+    return message, enhanced_context
 
 def process_qualitative_query(message: str, context: str) -> Tuple[str, str]:
-    """Process a qualitative (descriptive) query"""
-    # Prioritize relevant sections based on key terms
-    enhanced_context = prioritize_relevant_sections(context, message)
+    """Process a qualitative query focusing on concepts and explanations"""
+    # Prioritize sections most relevant to the query
+    prioritized_context = prioritize_relevant_sections(message, context)
     
-    # Format the prompt for qualitative queries
-    return format_qualitative_prompt(message, enhanced_context or context)
+    # Format the prompt to emphasize qualitative aspects
+    enhanced_context = format_qualitative_prompt(prioritized_context)
+    
+    return message, enhanced_context
 
 def process_mixed_query(message: str, context: str) -> Tuple[str, str]:
-    """Process a mixed query (both qualitative and quantitative aspects)"""
-    # For mixed queries, we'll use a combined approach
+    """Process a query with both quantitative and qualitative aspects"""
+    # For mixed queries, combine both approaches
+    # First prioritize by relevance
+    relevant_context = prioritize_relevant_sections(message, context)
     
-    # First, try to prioritize sections with numeric values
-    numeric_context = prioritize_numeric_sections(context, message)
+    # Then ensure numerical sections are highlighted
+    prioritized_context = prioritize_numeric_sections(relevant_context)
     
-    # Then, within those sections, prioritize based on key terms
-    if numeric_context and numeric_context != context:
-        enhanced_context = prioritize_relevant_sections(numeric_context, message)
-    else:
-        # If numeric prioritization didn't change much, start with key term prioritization
-        relevant_context = prioritize_relevant_sections(context, message)
-        enhanced_context = prioritize_numeric_sections(relevant_context or context, message)
-    
-    # Create a combined prompt that addresses both aspects
-    enhanced_message = message
-    
-    # Create an enhanced system message for mixed queries
-    enhanced_context_prompt = (
-        "You are a helpful AI assistant that excels at both extracting specific information and providing clear explanations. "
-        "Answer questions based on the provided document information. Be thorough yet concise. "
-        "Pay special attention to any numeric values, dollar amounts, or figures mentioned in the document that relate to the query. "
-        "Also focus on explaining relevant concepts, processes, and relationships mentioned in the document. "
-        "Provide a well-structured response that addresses all aspects of the query.\n\n"
-        f"Document Information:\n{enhanced_context or context}"
+    # Create a balanced prompt that addresses both aspects
+    enhanced_context = (
+        "You are a helpful AI assistant. Answer the question based on the provided document information. "
+        "Pay special attention to both numerical data (statistics, measurements, quantities) AND "
+        "conceptual explanations or qualitative descriptions in the document.\n\n"
+        f"Document Information:\n{prioritized_context}"
     )
     
-    return enhanced_message, enhanced_context_prompt
+    return message, enhanced_context
 
 def process_general_query(message: str, context: str) -> Tuple[str, str]:
     """Process a general query that doesn't clearly fit into qualitative or quantitative categories"""

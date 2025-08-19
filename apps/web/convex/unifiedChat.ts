@@ -189,6 +189,18 @@ export const updateConversationTitle = mutation({
   },
 });
 
+// Update conversation model
+export const updateConversationModel = mutation({
+  args: {
+    conversationId: v.id("unified_conversations"),
+    llmModel: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.conversationId, { llmModel: args.llmModel });
+    return true;
+  },
+});
+
 // Mark conversation inactive
 export const deactivateConversation = mutation({
   args: {

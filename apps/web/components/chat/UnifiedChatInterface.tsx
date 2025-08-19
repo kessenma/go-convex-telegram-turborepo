@@ -88,6 +88,9 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
 
+  // Model selection state
+  const [selectedModel, setSelectedModel] = useState<string>('llama-3.2-1b');
+
   // Use optimized selectors to prevent unnecessary re-renders
   const chatMode = useChatMode();
   const selectedDocuments = useSelectedDocuments();
@@ -247,6 +250,7 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
     api: '/api/ai-chat',
     body: {
       documentIds: selectedDocuments.map(doc => doc._id),
+      selectedModel,
     },
     onError: (err) => {
       console.error('RAG chat error:', err);
@@ -722,6 +726,41 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
   const handleDocumentsClick = () => setIsDocumentModalOpen(true);
   const handleDocumentModalClose = () => setIsDocumentModalOpen(false);
 
+  // Model selection handler
+  const handleModelChange = useCallback(async (modelName: string) => {
+    setSelectedModel(modelName);
+    
+    // Switch model in the backend
+    try {
+      const response = await fetch('/api/lightweight-llm/admin/switch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ model_id: modelName }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      toast.success(`Switched to ${modelName}`);
+      console.log('Model switched successfully:', result);
+      
+    } catch (error) {
+      console.error('Failed to switch model:', error);
+      toast.error(`Failed to switch to ${modelName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return; // Don't save to conversation if model switch failed
+    }
+    
+    // Note: Model selection is now handled per-message rather than per-conversation
+    // No need to save model selection to conversation level
+    
+    console.log('Selected model changed to:', modelName);
+  }, [chatPersistence]);
+
   return (
     <>
       <BackgroundGradient color="cyan" containerClassName="w-full" tronMode={true} intensity="normal">
@@ -737,6 +776,8 @@ export const UnifiedChatInterface = React.memo(function UnifiedChatInterface({
             onRemoveDocumentsClick={handleRemoveDocumentsClick}
             onDocumentsClick={handleDocumentsClick}
             onDocumentClick={handleDocumentClick}
+            selectedModel={selectedModel}
+            onModelChange={handleModelChange}
           />
 
           <ChatMessageList

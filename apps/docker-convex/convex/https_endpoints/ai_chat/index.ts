@@ -1,19 +1,12 @@
 // apps/docker-convex/convex/https_endpoints/ai_chat/index.ts
 import { httpRouter } from "convex/server";
 import { httpAction } from "../../_generated/server";
-import { Id } from "../../_generated/dataModel";
-import { v } from "convex/values";
 import {
   createGeneralConversationFromDb,
   addGeneralMessageFromDb,
   getGeneralConversationBySessionIdFromDb,
   getGeneralConversationMessagesFromDb,
   getRecentGeneralConversationsFromDb,
-  CreateGeneralConversationInput,
-  AddGeneralMessageInput,
-  GetGeneralConversationBySessionIdInput,
-  GetGeneralConversationMessagesInput,
-  GetRecentGeneralConversationsInput,
 } from "../../generalChat";
 import {
   createRagConversationFromDb,
@@ -21,13 +14,7 @@ import {
   getRagConversationBySessionIdFromDb,
   getRagConversationMessagesFromDb,
   getRecentRagConversationsFromDb,
-  CreateRagConversationInput,
-  AddRagMessageInput,
-  GetRagConversationBySessionIdInput,
-  GetRagConversationMessagesInput,
-  GetRecentRagConversationsInput,
 } from "../../ragChat";
-import { updateConversationTitle } from "../../unifiedChat";
 
 // Helper function to update conversation title
 async function updateUnifiedConversationTitleFromDb(
@@ -35,11 +22,31 @@ async function updateUnifiedConversationTitleFromDb(
   args: { conversationId: string; title: string }
 ) {
   try {
-    // Use direct database patch with the string ID
-    // This is safer than trying to convert to a Convex ID
-    await ctx.db.patch(args.conversationId, { title: args.title });
-    
-    return true;
+    // First, try to determine the conversation type by checking both tables
+    // We'll try RAG first, then general
+    try {
+      await ctx.runMutation("ragChat:updateConversationTitle", {
+        conversationId: args.conversationId,
+        title: args.title,
+      });
+      return true;
+    } catch (ragError) {
+      // If RAG update fails, try general conversation
+      try {
+        await ctx.runMutation("generalChat:updateConversationTitle", {
+          conversationId: args.conversationId,
+          title: args.title,
+        });
+        return true;
+      } catch (generalError) {
+        console.error("Failed to update conversation title in both RAG and general tables:", {
+          ragError: ragError instanceof Error ? ragError.message : String(ragError),
+          generalError: generalError instanceof Error ? generalError.message : String(generalError),
+          conversationId: args.conversationId
+        });
+        throw new Error(`Failed to update conversation title: conversation not found in either RAG or general tables`);
+      }
+    }
   } catch (error) {
     console.error("Error in updateUnifiedConversationTitleFromDb:", error);
     throw error;

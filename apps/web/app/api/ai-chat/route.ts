@@ -20,6 +20,7 @@ export interface Message {
 export interface ChatRequestBody {
   messages: Message[];
   documentIds?: string[];
+  selectedModel?: string;
 }
 
 // Get document content for context
@@ -186,7 +187,7 @@ function prioritizeNumericSections(text: string, numericValues: string[]): strin
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, documentIds = [], conversation_id, is_new_conversation } = await req.json() as ChatRequestBody & {
+    const { messages, documentIds = [], conversation_id, is_new_conversation, selectedModel } = await req.json() as ChatRequestBody & {
       conversation_id?: string;
       is_new_conversation?: boolean;
     };
@@ -280,6 +281,7 @@ export async function POST(req: NextRequest) {
             temperature: 0.7,
             conversation_id,
             is_new_conversation,
+            model: selectedModel,
           }),
         });
 

@@ -70,6 +70,20 @@ export interface LightweightLLMStatus {
     percent?: number;
     available_mb?: number;
   };
+  models?: {
+    name: string;
+    display_name: string;
+    provider: string;
+    status: string;
+    download_progress: number;
+    loaded: boolean;
+    current_model: boolean;
+    priority: number;
+    auto_download: boolean;
+    download_status?: string;
+    download_details?: string;
+    is_downloading?: boolean;
+  }[];
 }
 
 // Convex Status Types
@@ -167,13 +181,12 @@ interface SystemStatus {
 }
 
 interface StatusStore {
-  // Status states
+  // State
   llmStatus: LLMStatus;
   lightweightLlmStatus: LightweightLLMStatus;
   convexStatus: ConvexStatus;
   dockerStatus: DockerStatus;
-  
-  // Consolidated LLM metrics
+  // Consolidated LLM Metrics
   consolidatedLLMMetrics: ConsolidatedLLMMetrics | null;
   
   loading: {
@@ -245,9 +258,10 @@ interface StatusStore {
   optimisticDockerUpdate: (partialStatus: Partial<DockerStatus>) => void;
   optimisticConsolidatedLLMUpdate: (partialMetrics: Partial<ConsolidatedLLMMetrics>) => void;
 
-  // API actions
+  // Status checking functions
   checkLLMStatus: () => Promise<boolean>;
   checkLightweightLlmStatus: () => Promise<boolean>;
+  checkModelStatus: () => Promise<boolean>;
   checkConvexStatus: () => Promise<boolean>;
   checkDockerStatus: () => Promise<boolean>;
   checkConsolidatedLLMMetrics: () => Promise<boolean>;

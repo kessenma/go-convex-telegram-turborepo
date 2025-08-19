@@ -1,27 +1,4 @@
-# Stage 1: Build stage with secret to download the model
-FROM python:3.11-slim AS builder
-
-WORKDIR /app
-
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
-
-# Install huggingface-hub for model downloading
-RUN uv pip install --system huggingface-hub>=0.17.1
-
-# Set the environment variable for the huggingface-cli
-ENV HUGGINGFACE_HUB_ADD_TOKEN_AS_GIT_CREDENTIAL=false
-
-# Use ARG to pass the secret token for use only during the build
-ARG HF_AUTH_TOKEN
-
-# Download Llama 3.2 1B model
-# Using Llama-3.2-1B which works well for local deployment
-RUN echo "Downloading Llama-3.2-1B model..."; \
-    huggingface-cli download bartowski/Llama-3.2-1B-Instruct-GGUF Llama-3.2-1B-Instruct-Q4_K_M.gguf --local-dir . --local-dir-use-symlinks False && \
-    mv Llama-3.2-1B-Instruct-Q4_K_M.gguf llama-3.2-1b-instruct-q4.gguf
-
-# Stage 2: Final image without secrets
+# Runtime model loading - no model baking
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -29,14 +6,16 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV MODEL_PATH=./llama-3.2-1b-instruct-q4.gguf
+ENV MODELS_DIR=/models
+ENV HF_CACHE_DIR=/root/.cache/huggingface
 ENV N_CTX=4096
 ENV N_THREADS=8
 ENV N_GPU_LAYERS=0
 ENV PORT=8082
 ENV DOCKER_CONTAINER=true
+ENV DEFAULT_MODEL=meta-llama/Llama-3.2-1B-Instruct
 
-# Install system dependencies required for llama-cpp-python
+# Install system dependencies required for llama-cpp-python and huggingface-hub
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -44,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     python3-dev \
     cmake \
+    git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -51,16 +31,19 @@ RUN apt-get update && apt-get install -y \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # Copy pyproject.toml for dependency installation
-    COPY pyproject.toml ./
-    
-    # Install Python dependencies using uv
-    RUN uv pip install --system .
+COPY pyproject.toml ./
 
-# Copy the downloaded model from the builder stage
-COPY --from=builder /app/llama-3.2-1b-instruct-q4.gguf .
+# Install Python dependencies using uv
+RUN uv pip install --system .
+
+# Create models directory for runtime model loading
+RUN mkdir -p /models
 
 # Copy the application code
 COPY main.py .
+COPY config.py .
+COPY model_manager.py .
+COPY chat_handler.py .
 COPY status_reporter.py .
 COPY rag_processor.py .
 COPY quantitative_rag.py .

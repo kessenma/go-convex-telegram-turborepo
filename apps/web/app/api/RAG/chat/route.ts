@@ -21,6 +21,7 @@ interface ChatRequest {
     content: string;
   }>;
   sessionId?: string;
+  selectedModel?: string;
 }
 
 interface VectorSearchResult {
@@ -314,7 +315,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ChatRequest = await request.json();
-    const { message, documentIds, conversationHistory, sessionId } = body;
+    const { message, documentIds, conversationHistory, sessionId, selectedModel } = body;
 
     if (!message || !documentIds || documentIds.length === 0) {
       return NextResponse.json(
@@ -436,6 +437,7 @@ INSTRUCTIONS:
         conversation_history: conversationHistory,
         max_length: 150, // Reduced for faster responses
         temperature: 0.7,
+        model: selectedModel || 'llama-3.2-1b', // Use selected model or default
       }),
     });
 
@@ -484,7 +486,7 @@ INSTRUCTIONS:
         documentIds: documentIds as any[],
         documentTitles: documentTitles,
         title: `Chat about ${documentIds.length} document${documentIds.length > 1 ? "s" : ""}`,
-        llmModel: llmResult.model_info?.model_name || "lightweight-llm",
+        llmModel: selectedModel || llmResult.model_info?.model_name || "llama-3.2-1b",
         chatMode: "rag",
         type: "rag",
         userId: request.headers.get("x-user-id") || undefined,
