@@ -6,7 +6,10 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  output: "standalone",
+  // Empty turbopack config to acknowledge Next.js 16+ Turbopack default
+  // Keep webpack config for backwards compatibility
+  turbopack: {},
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.resolve.alias.canvas = false;

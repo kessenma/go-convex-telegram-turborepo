@@ -2,8 +2,8 @@
   "name": "go-convex-telegram-turborepo",
   "private": true,
   "resolutions": {
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0"
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3"
   },
   "scripts": {
     "setup-init": "./setup.sh",

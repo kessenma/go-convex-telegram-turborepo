@@ -2,6 +2,7 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
@@ -46,12 +47,12 @@
     "mammoth": "^1.9.1",
     "motion": "^12.19.2",
     "nanoid": "^5.0.6",
-    "next": "15.3.0",
+    "next": "16.0.8",
     "node-telegram-bot-api": "^0.66.0",
     "ogl": "^1.0.11",
     "pdfjs-dist": "^5.3.93",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
     "react-dropzone": "^14.3.8",
     "react-three": "^0.9.7",
     "repomix": "^1.0.0",
@@ -64,13 +65,13 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.1.0",
+    "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.5.2",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.3",
     "@types/pdfjs-dist": "^2.10.378",
-    "@types/react": "19.1.8",
-    "@types/react-dom": "19.1.6",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.29.0",
     "eslint-plugin-unused-imports": "^4.1.4",
@@ -84,8 +85,8 @@
   },
   "pnpm": {
     "overrides": {
-      "@types/react": "19.1.8",
-      "@types/react-dom": "19.1.6"
+      "@types/react": "19.2.7",
+      "@types/react-dom": "19.2.3"
     }
   }
 }
